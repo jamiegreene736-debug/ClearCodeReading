@@ -1,0 +1,352 @@
+<!doctype html>
+<html lang="en" class="scroll-smooth">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Clear Code Reading | Human-Guided Reading Assessment and Lessons</title>
+  <meta name="description" content="Clear Code Reading blends playful digital reading assessment with real human evaluator review and personalized lessons for children ages 4-10.">
+  <meta name="theme-color" content="#00B8A9">
+  <meta property="og:title" content="Clear Code Reading">
+  <meta property="og:description" content="Where every child learns to read clearly — with smart technology and human touch.">
+  <meta property="og:type" content="website">
+  <link rel="icon" href="./assets/logo/clear-code-reading-icon.png" type="image/png">
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            tealWarm: '#00B8A9',
+            coral: '#FF6B6B',
+            navySoft: '#2C3E50',
+            sunny: '#FFD93D',
+            cream: '#FFF9EA',
+            mist: '#F0FFFC',
+            blush: '#FFF5F5'
+          },
+          boxShadow: {
+            glow: '0 24px 80px rgba(0, 184, 169, 0.22)',
+            coralGlow: '0 22px 70px rgba(255, 107, 107, 0.18)'
+          },
+          fontFamily: {
+            sans: ['Inter', 'Avenir Next', 'Nunito Sans', 'ui-sans-serif', 'system-ui', 'sans-serif']
+          }
+        }
+      }
+    };
+  </script>
+  <style>
+    .focus-ring:focus-visible { outline: 4px solid rgba(255, 217, 61, .75); outline-offset: 3px; }
+    .hero-pattern {
+      background:
+        radial-gradient(circle at 12% 18%, rgba(255, 217, 61, .28), transparent 24%),
+        radial-gradient(circle at 78% 8%, rgba(255, 107, 107, .17), transparent 24%),
+        radial-gradient(circle at 50% 92%, rgba(0, 184, 169, .14), transparent 30%),
+        linear-gradient(135deg, #fffdf6 0%, #f0fffc 48%, #fff5f5 100%);
+    }
+    .logo-plate {
+      background:
+        linear-gradient(135deg, rgba(255,255,255,.96), rgba(255,249,234,.92));
+    }
+  </style>
+</head>
+<body class="bg-white text-navySoft antialiased">
+  <header class="fixed inset-x-0 top-0 z-50 border-b border-tealWarm/10 bg-white/90 backdrop-blur-xl">
+    <nav class="mx-auto flex max-w-7xl items-center justify-between gap-4 px-4 py-3 sm:px-6 lg:px-8" aria-label="Main navigation">
+      <a href="#top" class="focus-ring logo-plate flex items-center gap-3 rounded-2xl px-2 py-1 shadow-sm ring-1 ring-navySoft/5">
+        <img src="./assets/logo/clear-code-reading-logo.png" alt="Clear Code Reading" class="h-12 w-auto max-w-[210px] object-contain sm:max-w-[280px]">
+      </a>
+      <div class="hidden items-center gap-8 text-sm font-bold text-navySoft/80 md:flex">
+        <a class="transition hover:text-tealWarm" href="#how">How it works</a>
+        <a class="transition hover:text-tealWarm" href="#difference">Difference</a>
+        <a class="transition hover:text-tealWarm" href="#audiences">For you</a>
+        <a class="transition hover:text-tealWarm" href="#results">Results</a>
+      </div>
+      <a href="/admin/" class="focus-ring inline-flex shrink-0 items-center justify-center rounded-full bg-coral px-5 py-3 text-sm font-extrabold text-white shadow-lg shadow-coral/25 transition hover:-translate-y-0.5 hover:bg-[#ff5757]">
+        Login
+      </a>
+    </nav>
+  </header>
+
+  <main id="top">
+    <section class="hero-pattern overflow-hidden pb-16 pt-28 sm:pb-24 sm:pt-32">
+      <div class="mx-auto grid max-w-7xl items-center gap-12 px-4 sm:px-6 lg:grid-cols-[1.02fr_.98fr] lg:px-8">
+        <div>
+          <p class="mb-5 inline-flex rounded-full bg-white px-4 py-2 text-sm font-extrabold text-tealWarm shadow-sm ring-1 ring-tealWarm/15">
+            Human-guided reading growth for ages 4-10
+          </p>
+          <h1 class="max-w-4xl text-4xl font-black leading-tight tracking-normal text-navySoft sm:text-6xl">
+            Where every child learns to read clearly.
+          </h1>
+          <p class="mt-6 max-w-2xl text-lg leading-8 text-navySoft/75 sm:text-xl">
+            Clear Code Reading starts with a playful digital assessment, adds a real human evaluator, then builds a personalized path through phonics, sight words, fluency, and comprehension.
+          </p>
+          <div class="mt-8 flex flex-col gap-3 sm:flex-row">
+            <button data-open-modal class="focus-ring rounded-full bg-tealWarm px-7 py-4 text-base font-black text-white shadow-glow transition hover:-translate-y-1 hover:bg-[#00a699]">
+              Start Free Assessment
+            </button>
+            <button data-open-modal class="focus-ring rounded-full bg-white px-7 py-4 text-base font-black text-navySoft shadow-coralGlow ring-1 ring-coral/20 transition hover:-translate-y-1 hover:ring-coral/40">
+              For Schools &amp; Teachers
+            </button>
+          </div>
+          <div class="mt-8 flex flex-wrap gap-3 text-sm font-bold text-navySoft/65">
+            <span class="rounded-full bg-white/80 px-4 py-2">COPPA-conscious</span>
+            <span class="rounded-full bg-white/80 px-4 py-2">Human evaluator review</span>
+            <span class="rounded-full bg-white/80 px-4 py-2">Adaptive lessons</span>
+          </div>
+        </div>
+
+        <div class="relative">
+          <div class="absolute -left-8 top-10 hidden h-20 w-20 rounded-[2rem] bg-sunny/70 blur-xl sm:block"></div>
+          <div class="relative rounded-[2rem] bg-white p-4 shadow-2xl shadow-tealWarm/15 ring-1 ring-tealWarm/10">
+            <img class="h-72 w-full rounded-[1.5rem] object-cover sm:h-[440px]" src="https://images.unsplash.com/photo-1503676260728-1c00da094a0b?auto=format&fit=crop&w=1400&q=80" alt="A smiling child reading with a teacher at a table">
+            <div class="absolute bottom-8 left-8 right-8 rounded-3xl bg-white/92 p-5 shadow-xl backdrop-blur">
+              <div class="flex items-center gap-3">
+                <div class="grid h-16 w-16 place-items-center overflow-hidden rounded-2xl bg-white shadow-md ring-1 ring-tealWarm/15">
+                  <img src="./assets/logo/clear-code-reading-icon.png" alt="" class="h-14 w-14 object-cover">
+                </div>
+                <div>
+                  <p class="text-sm font-black text-navySoft">Assessment reviewed</p>
+                  <p class="text-sm text-navySoft/65">Next lesson: short vowel decoding</p>
+                </div>
+              </div>
+              <div class="mt-4 h-3 overflow-hidden rounded-full bg-tealWarm/10">
+                <div class="h-full w-3/4 rounded-full bg-gradient-to-r from-tealWarm via-sunny to-coral"></div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section id="how" class="bg-white py-20">
+      <div class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+        <div class="max-w-3xl">
+          <p class="text-sm font-black uppercase tracking-[0.2em] text-coral">How it works</p>
+          <h2 class="mt-3 text-3xl font-black text-navySoft sm:text-5xl">A clear path from assessment to confident reading.</h2>
+        </div>
+        <div class="mt-12 grid gap-5 md:grid-cols-4">
+          <article class="rounded-3xl bg-cream p-6 shadow-sm transition hover:-translate-y-1 hover:shadow-xl">
+            <div class="mb-5 grid h-14 w-14 place-items-center rounded-2xl bg-tealWarm text-2xl font-black text-white">1</div>
+            <h3 class="text-xl font-black">Digital Assessment</h3>
+            <p class="mt-3 text-navySoft/70">Children play through friendly reading tasks that uncover decoding, fluency, and comprehension patterns.</p>
+          </article>
+          <article class="rounded-3xl bg-white p-6 shadow-lg shadow-navySoft/5 ring-1 ring-navySoft/10 transition hover:-translate-y-1 hover:shadow-xl">
+            <div class="mb-5 grid h-14 w-14 place-items-center rounded-2xl bg-coral text-2xl font-black text-white">2</div>
+            <h3 class="text-xl font-black">Human Evaluator Review</h3>
+            <p class="mt-3 text-navySoft/70">A trained evaluator confirms the results virtually or in person, keeping care at the center.</p>
+          </article>
+          <article class="rounded-3xl bg-cream p-6 shadow-sm transition hover:-translate-y-1 hover:shadow-xl">
+            <div class="mb-5 grid h-14 w-14 place-items-center rounded-2xl bg-sunny text-2xl font-black text-navySoft">3</div>
+            <h3 class="text-xl font-black">Personalized Lessons</h3>
+            <p class="mt-3 text-navySoft/70">Adaptive phonics, sight words, fluency, and comprehension lessons meet each child right where they are.</p>
+          </article>
+          <article class="rounded-3xl bg-white p-6 shadow-lg shadow-navySoft/5 ring-1 ring-navySoft/10 transition hover:-translate-y-1 hover:shadow-xl">
+            <div class="mb-5 grid h-14 w-14 place-items-center rounded-2xl bg-navySoft text-2xl font-black text-white">4</div>
+            <h3 class="text-xl font-black">Real Progress</h3>
+            <p class="mt-3 text-navySoft/70">Parents and educators see clear growth, next steps, and mastery records that are easy to trust.</p>
+          </article>
+        </div>
+      </div>
+    </section>
+
+    <section id="difference" class="bg-mist py-20">
+      <div class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+        <div class="grid gap-10 lg:grid-cols-[.85fr_1.15fr] lg:items-center">
+          <div>
+            <p class="text-sm font-black uppercase tracking-[0.2em] text-tealWarm">The Clear Code Difference</p>
+            <h2 class="mt-3 text-3xl font-black sm:text-5xl">Smart technology, checked by human wisdom.</h2>
+            <p class="mt-5 text-lg leading-8 text-navySoft/70">Reading is personal. We use technology to spot patterns quickly, then put real educators in the loop so every recommendation feels grounded, warm, and right for the child.</p>
+          </div>
+          <div class="grid gap-5 sm:grid-cols-2">
+            <div class="rounded-3xl bg-white p-6 shadow-xl shadow-tealWarm/10">
+              <h3 class="text-xl font-black text-tealWarm">Tech-only apps</h3>
+              <p class="mt-3 text-navySoft/70">Fast practice, but limited context when a child guesses, freezes, or needs reassurance.</p>
+            </div>
+            <div class="rounded-3xl bg-white p-6 shadow-xl shadow-coral/10 ring-2 ring-coral/20">
+              <h3 class="text-xl font-black text-coral">Clear Code Reading</h3>
+              <p class="mt-3 text-navySoft/70">Fast assessment plus human review, adaptive lessons, and progress parents can understand.</p>
+            </div>
+            <div class="rounded-3xl bg-white p-6 shadow-xl shadow-navySoft/5">
+              <h3 class="text-xl font-black">Static worksheets</h3>
+              <p class="mt-3 text-navySoft/70">Helpful practice, but hard to personalize and hard to measure over time.</p>
+            </div>
+            <div class="rounded-3xl bg-white p-6 shadow-xl shadow-sunny/20">
+              <h3 class="text-xl font-black">Adaptive curriculum</h3>
+              <p class="mt-3 text-navySoft/70">Each lesson sequence responds to the child’s actual decoding and comprehension needs.</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section id="audiences" class="bg-white py-20">
+      <div class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+        <div class="text-center">
+          <p class="text-sm font-black uppercase tracking-[0.2em] text-coral">Built for every reading team</p>
+          <h2 class="mt-3 text-3xl font-black sm:text-5xl">Parents, teachers, and schools all see the same clear picture.</h2>
+        </div>
+        <div class="mt-12 grid gap-6 lg:grid-cols-3">
+          <div class="rounded-[2rem] bg-cream p-8 shadow-sm">
+            <h3 class="text-2xl font-black">For Parents</h3>
+            <ul class="mt-5 space-y-3 text-navySoft/75">
+              <li>Know exactly where your child is thriving or stuck.</li>
+              <li>Get friendly progress reports without jargon.</li>
+              <li>Practice at home with joyful, confidence-building lessons.</li>
+            </ul>
+          </div>
+          <div class="rounded-[2rem] bg-mist p-8 shadow-sm ring-2 ring-tealWarm/20">
+            <h3 class="text-2xl font-black">For Teachers</h3>
+            <ul class="mt-5 space-y-3 text-navySoft/75">
+              <li>See assessment evidence and human-reviewed recommendations.</li>
+              <li>Group students by skill needs quickly.</li>
+              <li>Support intervention with measurable mastery records.</li>
+            </ul>
+          </div>
+          <div class="rounded-[2rem] bg-blush p-8 shadow-sm">
+            <h3 class="text-2xl font-black">For Schools</h3>
+            <ul class="mt-5 space-y-3 text-navySoft/75">
+              <li>Launch a COPPA-conscious reading workflow.</li>
+              <li>Blend virtual and in-person evaluator review.</li>
+              <li>Track progress across classrooms, programs, and districts.</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="bg-navySoft py-20 text-white">
+      <div class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+        <div class="grid gap-6 md:grid-cols-3">
+          <figure class="rounded-3xl bg-white/8 p-7 ring-1 ring-white/10">
+            <blockquote class="text-lg leading-8">“For the first time, I understood why my son was struggling. The human review made all the difference.”</blockquote>
+            <figcaption class="mt-5 font-black text-sunny">Maya R., parent</figcaption>
+          </figure>
+          <figure class="rounded-3xl bg-white/8 p-7 ring-1 ring-white/10">
+            <blockquote class="text-lg leading-8">“The assessment gives me data, but the evaluator notes give me context. That is what teachers need.”</blockquote>
+            <figcaption class="mt-5 font-black text-sunny">Elena P., reading specialist</figcaption>
+          </figure>
+          <figure class="rounded-3xl bg-white/8 p-7 ring-1 ring-white/10">
+            <blockquote class="text-lg leading-8">“Clear Code Reading helped us create a consistent reading support process across grade levels.”</blockquote>
+            <figcaption class="mt-5 font-black text-sunny">Marcus T., elementary principal</figcaption>
+          </figure>
+        </div>
+      </div>
+    </section>
+
+    <section id="results" class="bg-white py-20">
+      <div class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+        <div class="grid gap-6 md:grid-cols-4">
+          <div class="rounded-3xl bg-cream p-8 text-center">
+            <p class="text-5xl font-black text-tealWarm">4x</p>
+            <p class="mt-3 font-bold text-navySoft/70">more clarity than app-only practice</p>
+          </div>
+          <div class="rounded-3xl bg-cream p-8 text-center">
+            <p class="text-5xl font-black text-coral">24h</p>
+            <p class="mt-3 font-bold text-navySoft/70">typical human review turnaround</p>
+          </div>
+          <div class="rounded-3xl bg-cream p-8 text-center">
+            <p class="text-5xl font-black text-tealWarm">K-5</p>
+            <p class="mt-3 font-bold text-navySoft/70">phonics through comprehension support</p>
+          </div>
+          <div class="rounded-3xl bg-cream p-8 text-center">
+            <p class="text-5xl font-black text-coral">100%</p>
+            <p class="mt-3 font-bold text-navySoft/70">designed around child data privacy</p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="bg-gradient-to-br from-tealWarm to-[#007D78] py-20 text-white">
+      <div class="mx-auto max-w-4xl px-4 text-center sm:px-6 lg:px-8">
+        <h2 class="text-3xl font-black sm:text-5xl">Ready to unlock clear reading?</h2>
+        <p class="mx-auto mt-5 max-w-2xl text-lg leading-8 text-white/85">Start with a joyful assessment and end with a plan that feels personal, precise, and possible.</p>
+        <div class="mt-8 flex flex-col justify-center gap-3 sm:flex-row">
+          <button data-open-modal class="focus-ring rounded-full bg-white px-8 py-4 font-black text-tealWarm transition hover:-translate-y-1">
+            Start Free Assessment
+          </button>
+          <a href="/admin/" class="focus-ring rounded-full bg-navySoft px-8 py-4 font-black text-white transition hover:-translate-y-1">
+            Login
+          </a>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <footer class="bg-navySoft px-4 py-10 text-white sm:px-6 lg:px-8">
+    <div class="mx-auto flex max-w-7xl flex-col gap-6 md:flex-row md:items-center md:justify-between">
+      <div>
+        <span class="logo-plate inline-flex rounded-2xl p-2 shadow-sm">
+          <img src="./assets/logo/clear-code-reading-logo.png" alt="Clear Code Reading" class="h-12 w-auto max-w-[260px] object-contain">
+        </span>
+        <p class="mt-3 max-w-xl text-sm text-white/70">COPPA-conscious reading assessment and personalized curriculum with human evaluator review.</p>
+      </div>
+      <div class="flex flex-wrap gap-5 text-sm font-bold text-white/75">
+        <a href="#how" class="hover:text-sunny">How it works</a>
+        <a href="#difference" class="hover:text-sunny">Difference</a>
+        <a href="#audiences" class="hover:text-sunny">Programs</a>
+        <a href="/admin/" class="hover:text-sunny">Login</a>
+      </div>
+    </div>
+    <div class="mx-auto mt-8 max-w-7xl border-t border-white/10 pt-6 text-sm text-white/55">
+      © <span id="year"></span> Clear Code Reading. Built for clarity, confidence, and joy in reading.
+    </div>
+  </footer>
+
+  <div id="signup-modal" class="fixed inset-0 z-[60] hidden items-center justify-center bg-navySoft/70 px-4 backdrop-blur-sm" role="dialog" aria-modal="true" aria-labelledby="signup-title">
+    <div class="w-full max-w-lg rounded-[2rem] bg-white p-6 shadow-2xl">
+      <div class="flex items-start justify-between gap-6">
+        <div>
+          <p class="text-sm font-black uppercase tracking-[0.18em] text-tealWarm">Get started</p>
+          <h2 id="signup-title" class="mt-2 text-3xl font-black text-navySoft">Start your free reading assessment.</h2>
+        </div>
+        <button id="close-modal" class="focus-ring rounded-full bg-navySoft/5 px-4 py-2 font-black text-navySoft transition hover:bg-coral hover:text-white" aria-label="Close signup form">×</button>
+      </div>
+      <form class="mt-6 space-y-4">
+        <label class="block">
+          <span class="text-sm font-bold text-navySoft">Your name</span>
+          <input class="mt-2 w-full rounded-2xl border border-navySoft/15 px-4 py-3 focus:border-tealWarm focus:outline-none" type="text" name="name" autocomplete="name">
+        </label>
+        <label class="block">
+          <span class="text-sm font-bold text-navySoft">Email</span>
+          <input class="mt-2 w-full rounded-2xl border border-navySoft/15 px-4 py-3 focus:border-tealWarm focus:outline-none" type="email" name="email" autocomplete="email">
+        </label>
+        <label class="block">
+          <span class="text-sm font-bold text-navySoft">I am a...</span>
+          <select class="mt-2 w-full rounded-2xl border border-navySoft/15 px-4 py-3 focus:border-tealWarm focus:outline-none" name="audience">
+            <option>Parent</option>
+            <option>Teacher</option>
+            <option>School or district leader</option>
+          </select>
+        </label>
+        <button type="button" class="focus-ring w-full rounded-full bg-tealWarm px-6 py-4 font-black text-white transition hover:bg-[#00a699]">
+          Request Early Access
+        </button>
+        <p class="text-center text-xs leading-5 text-navySoft/55">By requesting access, you agree to receive Clear Code Reading updates. Child assessment data requires verified guardian consent.</p>
+      </form>
+    </div>
+  </div>
+
+  <script>
+    const modal = document.getElementById('signup-modal');
+    const closeModal = document.getElementById('close-modal');
+    document.getElementById('year').textContent = new Date().getFullYear();
+    document.querySelectorAll('[data-open-modal]').forEach((button) => {
+      button.addEventListener('click', () => {
+        modal.classList.remove('hidden');
+        modal.classList.add('flex');
+      });
+    });
+    closeModal.addEventListener('click', () => {
+      modal.classList.add('hidden');
+      modal.classList.remove('flex');
+    });
+    modal.addEventListener('click', (event) => {
+      if (event.target === modal) {
+        modal.classList.add('hidden');
+        modal.classList.remove('flex');
+      }
+    });
+  </script>
+</body>
+</html>

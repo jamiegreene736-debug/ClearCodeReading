@@ -1,0 +1,38 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 720 180" role="img" aria-labelledby="title desc">
+  <title id="title">Clear Code Reading logo</title>
+  <desc id="desc">An open teal book with decoding tiles turning into a clear wordmark for Clear Code Reading.</desc>
+  <defs>
+    <linearGradient id="bookGlow" x1="70" y1="28" x2="150" y2="150" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#FFD93D"/>
+      <stop offset="0.45" stop-color="#00B8A9"/>
+      <stop offset="1" stop-color="#008F86"/>
+    </linearGradient>
+    <filter id="softShadow" x="-20%" y="-20%" width="140%" height="150%">
+      <feDropShadow dx="0" dy="10" stdDeviation="10" flood-color="#2C3E50" flood-opacity="0.16"/>
+    </filter>
+  </defs>
+
+  <g filter="url(#softShadow)">
+    <rect x="28" y="24" width="132" height="132" rx="34" fill="#FFFFFF"/>
+    <path d="M94 52C80 39 62 36 45 43v75c17-7 36-4 49 9 13-13 32-16 49-9V43c-17-7-35-4-49 9Z" fill="url(#bookGlow)"/>
+    <path d="M94 52v75" stroke="#FFFFFF" stroke-width="6" stroke-linecap="round"/>
+    <path d="M57 63c10-2 20 0 28 7M57 82c10-2 20 0 28 7M103 70c8-7 18-9 28-7M103 89c8-7 18-9 28-7" stroke="#FFFFFF" stroke-width="5" stroke-linecap="round" opacity="0.82"/>
+    <circle cx="131" cy="42" r="10" fill="#FFD93D"/>
+    <circle cx="145" cy="61" r="5" fill="#FF6B6B"/>
+    <g transform="translate(45 120)">
+      <rect x="0" y="0" width="28" height="26" rx="8" fill="#FF6B6B"/>
+      <rect x="34" y="-7" width="28" height="26" rx="8" fill="#FFD93D"/>
+      <rect x="68" y="0" width="28" height="26" rx="8" fill="#00B8A9"/>
+      <text x="14" y="18" text-anchor="middle" font-family="Inter, Avenir Next, Nunito Sans, Arial, sans-serif" font-size="15" font-weight="800" fill="#FFFFFF">c</text>
+      <text x="48" y="11" text-anchor="middle" font-family="Inter, Avenir Next, Nunito Sans, Arial, sans-serif" font-size="15" font-weight="800" fill="#2C3E50">a</text>
+      <text x="82" y="18" text-anchor="middle" font-family="Inter, Avenir Next, Nunito Sans, Arial, sans-serif" font-size="15" font-weight="800" fill="#FFFFFF">t</text>
+    </g>
+  </g>
+
+  <g transform="translate(190 49)">
+    <text x="0" y="44" font-family="Inter, Avenir Next, Nunito Sans, Arial, sans-serif" font-size="45" font-weight="850" letter-spacing="-0.5" fill="#2C3E50">Clear Code</text>
+    <text x="0" y="92" font-family="Inter, Avenir Next, Nunito Sans, Arial, sans-serif" font-size="45" font-weight="850" letter-spacing="-0.5" fill="#00B8A9">Reading</text>
+    <path d="M246 88h75" stroke="#FFD93D" stroke-width="8" stroke-linecap="round"/>
+    <circle cx="337" cy="88" r="6" fill="#FF6B6B"/>
+  </g>
+</svg>
