@@ -1,3 +1,5 @@
+from decimal import Decimal
+
 from django.db import transaction
 from django.utils import timezone
 from rest_framework import serializers, status, viewsets
@@ -5,10 +7,19 @@ from rest_framework.decorators import action
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 
-from apps.api.permissions import COPPAConsentRequired, IsEvaluator, has_coppa_consent, user_can_evaluate_child
-from apps.assessments.models import Assessment
-from apps.assessments.serializers import AssessmentSerializer
+from apps.api.permissions import COPPAConsentRequired, IsEvaluator, has_coppa_consent, is_parent_of_child, user_can_evaluate_child
+from apps.assessments.models import Assessment, AssessmentQuestion, ChildAssessmentResponse
+from apps.assessments.serializers import (
+    AnswerSubmissionSerializer,
+    AssessmentQuestionSerializer,
+    AssessmentResultSerializer,
+    AssessmentSerializer,
+    ChildAssessmentResponseSerializer,
+    StartSurveySerializer,
+)
+from apps.assessments.services import compute_and_persist_assessment_result
 from apps.assessments.tasks import notify_assessment_review_completed
+from apps.notifications.tasks import notify_evaluator_assessment_human_review
 from apps.progress.models import Progress
 from apps.users.models import AuditLog
 
@@ -60,6 +71,169 @@ class AssessmentViewSet(viewsets.ModelViewSet):
         if not has_coppa_consent(child):
             raise serializers.ValidationError({"child": "COPPA consent is required before assigning assessments."})
         serializer.save(assigned_by=self.request.user, status=Assessment.Status.PENDING)
+
+    def _can_start_or_answer_for_child(self, user, child):
+        return is_parent_of_child(user, child) or user_can_evaluate_child(user, child)
+
+    def _question_queryset(self, section=None):
+        queryset = (
+            AssessmentQuestion.objects.filter(is_active=True, is_deleted=False)
+            .prefetch_related("question_options")
+            .order_by("category", "difficulty", "sort_order", "id")
+        )
+        if section:
+            queryset = queryset.filter(category=section)
+        return queryset
+
+    def _score_answer(self, question, selected_option, answer):
+        if selected_option is not None:
+            return selected_option.is_correct, selected_option.score_value
+
+        correct_answer = question.correct_answer or {}
+        if not correct_answer:
+            return None, None
+
+        expected = correct_answer.get("value", correct_answer)
+        submitted = answer.get("value", answer) if isinstance(answer, dict) else answer
+        is_correct = str(submitted).strip().lower() == str(expected).strip().lower()
+        return is_correct, Decimal("1") if is_correct else Decimal("0")
+
+    @action(detail=False, methods=["post"], url_path="start-survey", permission_classes=[IsAuthenticated, COPPAConsentRequired])
+    def start_survey(self, request):
+        serializer = StartSurveySerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        child = serializer.validated_data["child"]
+
+        if not self._can_start_or_answer_for_child(request.user, child):
+            return Response({"detail": "Only an approved parent/guardian or teacher can start this survey."}, status=status.HTTP_403_FORBIDDEN)
+        if not has_coppa_consent(child):
+            return Response({"detail": "COPPA consent is required before starting the reading survey."}, status=status.HTTP_403_FORBIDDEN)
+
+        section = serializer.validated_data["first_section"]
+        question_limit = serializer.validated_data["question_limit"]
+        school = serializer.validated_data.get("school") or child.school
+
+        with transaction.atomic():
+            assessment = Assessment.objects.create(
+                child=child,
+                school=school,
+                assigned_by=request.user,
+                assessment_type=Assessment.AssessmentType.DIAGNOSTIC,
+                status=Assessment.Status.IN_PROGRESS,
+                title=serializer.validated_data.get("title") or f"Reading Survey for {child.first_name}",
+                started_at=timezone.now(),
+                metadata={"source": "reading_survey", "started_by": request.user.id},
+            )
+            AuditLog.objects.create(
+                actor=request.user,
+                action="assessment.survey_started",
+                entity_type="Assessment",
+                entity_id=str(assessment.id),
+                after={"child_id": child.id, "section": section},
+            )
+
+        questions = self._question_queryset(section=section)[:question_limit]
+        return Response(
+            {
+                "assessment": AssessmentSerializer(assessment, context=self.get_serializer_context()).data,
+                "questions": AssessmentQuestionSerializer(questions, many=True).data,
+                "section": section,
+            },
+            status=status.HTTP_201_CREATED,
+        )
+
+    @action(detail=True, methods=["get"], permission_classes=[IsAuthenticated, COPPAConsentRequired])
+    def questions(self, request, pk=None):
+        assessment = self.get_object()
+        if not self._can_start_or_answer_for_child(request.user, assessment.child):
+            return Response({"detail": "Only an approved parent/guardian or teacher can view survey questions."}, status=status.HTTP_403_FORBIDDEN)
+
+        section = request.query_params.get("section")
+        if section and section not in AssessmentQuestion.Category.values:
+            return Response({"section": "Unknown survey section."}, status=status.HTTP_400_BAD_REQUEST)
+
+        questions = self._question_queryset(section=section)
+        return Response(AssessmentQuestionSerializer(questions, many=True).data)
+
+    @action(detail=True, methods=["post"], permission_classes=[IsAuthenticated, COPPAConsentRequired])
+    def answer(self, request, pk=None):
+        assessment = self.get_object()
+        if assessment.status not in {Assessment.Status.PENDING, Assessment.Status.IN_PROGRESS}:
+            return Response({"detail": "Only pending or in-progress surveys can accept answers."}, status=status.HTTP_400_BAD_REQUEST)
+        if not self._can_start_or_answer_for_child(request.user, assessment.child):
+            return Response({"detail": "Only an approved parent/guardian or teacher can answer this survey."}, status=status.HTTP_403_FORBIDDEN)
+
+        serializer = AnswerSubmissionSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        saved_responses = []
+
+        with transaction.atomic():
+            assessment.started_at = assessment.started_at or timezone.now()
+            assessment.status = Assessment.Status.IN_PROGRESS
+            assessment.save(update_fields=["started_at", "status", "updated_at"])
+
+            for answer_data in serializer.validated_data["answers"]:
+                question = answer_data["question"]
+                selected_option = answer_data.get("selected_option")
+                answer_payload = answer_data.get("answer", {})
+                is_correct, score_value = self._score_answer(question, selected_option, answer_payload)
+                response, _ = ChildAssessmentResponse.objects.update_or_create(
+                    assessment=assessment,
+                    child=assessment.child,
+                    question=question,
+                    defaults={
+                        "selected_option": selected_option,
+                        "answer": answer_payload,
+                        "is_correct": is_correct,
+                        "score_value": score_value,
+                        "time_taken": answer_data.get("time_taken"),
+                    },
+                )
+                saved_responses.append(response)
+
+            AuditLog.objects.create(
+                actor=request.user,
+                action="assessment.survey_answered",
+                entity_type="Assessment",
+                entity_id=str(assessment.id),
+                after={"answer_count": len(saved_responses), "child_id": assessment.child_id},
+            )
+
+        answered_count = ChildAssessmentResponse.objects.filter(assessment=assessment, is_deleted=False).count()
+        return Response(
+            {
+                "assessment": AssessmentSerializer(assessment, context=self.get_serializer_context()).data,
+                "responses": ChildAssessmentResponseSerializer(saved_responses, many=True).data,
+                "answered_count": answered_count,
+            }
+        )
+
+    @action(detail=True, methods=["post"], permission_classes=[IsAuthenticated, COPPAConsentRequired])
+    def complete(self, request, pk=None):
+        assessment = self.get_object()
+        if assessment.status not in {Assessment.Status.PENDING, Assessment.Status.IN_PROGRESS, Assessment.Status.HUMAN_REVIEW}:
+            return Response({"detail": "This survey has already been completed or archived."}, status=status.HTTP_400_BAD_REQUEST)
+        if not self._can_start_or_answer_for_child(request.user, assessment.child):
+            return Response({"detail": "Only an approved parent/guardian or teacher can complete this survey."}, status=status.HTTP_403_FORBIDDEN)
+
+        response_count = ChildAssessmentResponse.objects.filter(assessment=assessment, is_deleted=False).count()
+        if response_count == 0:
+            return Response({"detail": "At least one answer is required before completing the survey."}, status=status.HTTP_400_BAD_REQUEST)
+
+        previous_status = assessment.status
+        result = compute_and_persist_assessment_result(assessment.id)
+        assessment.refresh_from_db()
+        if previous_status == Assessment.Status.HUMAN_REVIEW:
+            notify_evaluator_assessment_human_review.delay(assessment.id)
+
+        final_message = result.final_scores.get("final_message", f"You are reading at an {result.reading_age}-year-old level")
+        return Response(
+            {
+                "assessment": AssessmentSerializer(assessment, context=self.get_serializer_context()).data,
+                "result": AssessmentResultSerializer(result).data,
+                "final_message": final_message,
+            }
+        )
 
     @action(detail=True, methods=["post"], permission_classes=[IsAuthenticated, COPPAConsentRequired])
     def submit(self, request, pk=None):

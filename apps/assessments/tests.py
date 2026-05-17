@@ -1,7 +1,11 @@
+from decimal import Decimal
+from types import SimpleNamespace
+
 from django.test import SimpleTestCase
 
 from apps.assessments.models import Assessment
 from apps.assessments.reading_survey import score_reading_survey
+from apps.assessments.services import calculate_reading_survey_results
 from apps.assessments.views import StatusTransitionSerializer
 
 
@@ -38,3 +42,36 @@ class AssessmentWorkflowTests(SimpleTestCase):
         self.assertIn("reading_age", result)
         self.assertIn("Phonics / decoding", result["strengths"])
         self.assertGreater(result["overall_percent"], 60)
+
+    def test_scoring_service_calculates_age_message_and_growth_areas(self):
+        responses = [
+            self._response("phonics", Decimal("1")),
+            self._response("phonics", Decimal("1")),
+            self._response("comprehension", Decimal("0")),
+            self._response("fluency", Decimal("0.5")),
+        ]
+
+        result = calculate_reading_survey_results(responses)
+
+        self.assertEqual(result["category_scores"]["phonics"]["score"], 100)
+        self.assertEqual(result["category_scores"]["comprehension"]["score"], 0)
+        self.assertIn("Phonics / decoding", result["strengths"])
+        self.assertIn("Comprehension", result["growth_areas"])
+        self.assertEqual(result["final_message"], f"You are reading at an {result['reading_age']:.1f}-year-old level")
+        self.assertGreaterEqual(result["reading_age"], 4.0)
+        self.assertLessEqual(result["reading_age"], 11.0)
+
+    def _response(self, category, score_value):
+        return SimpleNamespace(
+            question=SimpleNamespace(
+                category=category,
+                question_options=[
+                    SimpleNamespace(score_value=Decimal("0")),
+                    SimpleNamespace(score_value=Decimal("1")),
+                ],
+            ),
+            selected_option=None,
+            selected_option_id=None,
+            score_value=score_value,
+            is_correct=None,
+        )

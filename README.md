@@ -73,6 +73,10 @@ Schools:
 Assessments:
 
 - `/api/v1/assessments/`
+- `POST /api/v1/assessments/start-survey/`
+- `GET /api/v1/assessments/<id>/questions/?section=phonics`
+- `POST /api/v1/assessments/<id>/answer/`
+- `POST /api/v1/assessments/<id>/complete/`
 - `/api/v1/assessments/<id>/submit/`
 - `/api/v1/assessments/<id>/review/`
 - `/api/v1/assessments/<id>/transition/`
@@ -105,6 +109,133 @@ Clear Code Reading uses a human-in-the-loop assessment path:
 4. Completion updates progress records and queues parent notifications.
 
 Celery tasks notify evaluators when human review is needed and send parent progress reports after review.
+
+## Reading Survey
+
+The Reading Survey is the child-friendly digital assessment that starts the Clear Code Reading placement flow. It creates an `Assessment`, serves progressive questions, saves answers as `ChildAssessmentResponse` records, computes a reading-age estimate, and moves the assessment into `human_review` so a real evaluator can add notes before final placement.
+
+Seed the starter question bank:
+
+```bash
+docker compose run --rm web python manage.py seed_reading_survey_questions
+```
+
+The command seeds 14 starter questions and can be run repeatedly without creating duplicates.
+
+Reading Survey endpoints:
+
+- `POST /api/v1/assessments/start-survey/` creates a survey assessment and returns the first section of questions.
+- `GET /api/v1/assessments/<id>/questions/?section=phonics` returns questions, optionally filtered by KPI section.
+- `POST /api/v1/assessments/<id>/answer/` saves one answer or a batch of answers.
+- `POST /api/v1/assessments/<id>/complete/` computes the final report and queues evaluator review.
+
+Measured KPIs:
+
+- Phonemic awareness: beginning sounds, sound counting, and spoken-word sound awareness.
+- Letter sounds: letter-sound mapping and early alphabetic principle.
+- Phonics / decoding: CVC words, blends, digraphs, rhyming, and sound-symbol decoding.
+- Advanced decoding: vowel teams, more complex spelling patterns, and flexible decoding.
+- Sight words: recognition of high-frequency words.
+- Fluency: accuracy, pacing, and expression on short read-aloud prompts.
+- Vocabulary: child-friendly word meaning and context understanding.
+- Comprehension: prediction, inference, retell, and main-event understanding.
+- Writing readiness: complete-thought sentence production and early written/oral expression.
+- Reading confidence: self-reported comfort and willingness to try.
+
+Scoring:
+
+- Each response earns a numeric `score_value`, usually `0.00`, `0.50`, or `1.00`.
+- Category scores are converted to percentages.
+- Overall score is weighted, with extra emphasis on phonics, fluency, and comprehension.
+- Reading Age is mapped from the weighted score into a `4.0` to `11.0` year range.
+- The final child-facing message uses this format: `You are reading at an X-year-old level`.
+- Strengths are categories scoring `75%` or higher.
+- Growth areas are categories below `55%`.
+
+Example start request:
+
+```bash
+curl -X POST http://localhost:8000/api/v1/assessments/start-survey/ \
+  -H "Authorization: Bearer <access-token>" \
+  -H "Content-Type: application/json" \
+  -d '{"child": 1, "first_section": "phonics", "question_limit": 5}'
+```
+
+Example answer request:
+
+```bash
+curl -X POST http://localhost:8000/api/v1/assessments/1/answer/ \
+  -H "Authorization: Bearer <access-token>" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "answers": [
+      {"question": 5, "selected_option": 14, "time_taken": 8},
+      {"question": 6, "selected_option": 16, "time_taken": 6}
+    ]
+  }'
+```
+
+Example final report JSON:
+
+```json
+{
+  "assessment": {
+    "id": 1,
+    "status": "human_review",
+    "title": "Reading Survey for Maya",
+    "overall_score": 78,
+    "reading_age": "9.5",
+    "survey_completed_at": "2026-05-17T23:15:00Z"
+  },
+  "result": {
+    "id": 1,
+    "assessment": 1,
+    "final_scores": {
+      "overall_score": 78,
+      "response_count": 14,
+      "final_message": "You are reading at an 9.5-year-old level"
+    },
+    "reading_age": "9.5",
+    "grade_equivalent": "Grade 4",
+    "category_breakdown": {
+      "phonics": {
+        "label": "Phonics / decoding",
+        "earned": 2.0,
+        "possible": 2.0,
+        "score": 100,
+        "responses": 2
+      },
+      "comprehension": {
+        "label": "Comprehension",
+        "earned": 1.0,
+        "possible": 2.0,
+        "score": 50,
+        "responses": 2
+      }
+    },
+    "strengths": ["Phonics / decoding", "Sight words", "Vocabulary"],
+    "growth_areas": ["Comprehension", "Fluency"],
+    "teacher_summary": "Digital survey score: 78%. Estimated reading age: 9.5. Strengths: Phonics / decoding, Sight words, Vocabulary. Priority growth areas: Comprehension, Fluency. Human evaluator review is recommended before final placement.",
+    "final_message": "You are reading at an 9.5-year-old level"
+  },
+  "final_message": "You are reading at an 9.5-year-old level"
+}
+```
+
+Full flow test checklist:
+
+1. Start services: `docker compose up --build`.
+2. Run migrations: `docker compose run --rm web python manage.py migrate_schemas --shared`.
+3. Create an admin user: `docker compose run --rm web python manage.py createsuperuser`.
+4. Seed survey questions: `docker compose run --rm web python manage.py seed_reading_survey_questions`.
+5. Create or register a parent/child and grant COPPA consent.
+6. Get a JWT token from `POST /api/v1/auth/token/`.
+7. Start a survey with `POST /api/v1/assessments/start-survey/`.
+8. Fetch sections with `GET /api/v1/assessments/<id>/questions/?section=<kpi>`.
+9. Submit answers progressively with `POST /api/v1/assessments/<id>/answer/`.
+10. Complete the survey with `POST /api/v1/assessments/<id>/complete/`.
+11. Confirm the response includes `reading_age`, `category_breakdown`, `strengths`, `growth_areas`, `teacher_summary`, and `final_message`.
+12. Open `/admin/`, review the completed or human-review assessment, and add evaluator notes on the assessment result.
 
 ## COPPA Notes
 
