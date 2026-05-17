@@ -40,10 +40,25 @@ docker compose run --rm web python manage.py createsuperuser
 Useful URLs:
 
 - Admin: `http://localhost:8000/admin/`
+- Browser survey demo: `http://localhost:8000/assessment/`
 - Swagger docs: `http://localhost:8000/api/docs/`
 - ReDoc: `http://localhost:8000/api/redoc/`
 - OpenAPI schema: `http://localhost:8000/api/schema/`
 - Health check: `http://localhost:8000/api/v1/health/`
+
+Demo credentials:
+
+- Admin: `admin@clearcodereading.com` / `ClearCodeDemo!2026`
+- Teacher: `teacher@clearcodereading.com` / `ClearCodeDemo!2026`
+- Parent: `parent@clearcodereading.com` / `ClearCodeDemo!2026`
+
+Create or refresh demo credentials:
+
+```bash
+docker compose run --rm web python manage.py seed_demo_login
+```
+
+On Railway, the deploy start command runs migrations, seeds the Reading Survey question bank, and creates these demo credentials automatically.
 
 ## API Overview
 
@@ -113,6 +128,8 @@ Celery tasks notify evaluators when human review is needed and send parent progr
 ## Reading Survey
 
 The Reading Survey is the child-friendly digital assessment that starts the Clear Code Reading placement flow. It creates an `Assessment`, serves progressive questions, saves answers as `ChildAssessmentResponse` records, computes a reading-age estimate, and moves the assessment into `human_review` so a real evaluator can add notes before final placement.
+
+The current browser-based assessment experience is served at `/assessment/`. It is a standalone marketing/demo survey. The database-backed assessment workflow is available through the `/api/v1/assessments/` endpoints below.
 
 Seed the starter question bank:
 

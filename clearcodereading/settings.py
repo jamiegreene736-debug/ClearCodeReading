@@ -39,6 +39,10 @@ SHARED_APPS = [
     "apps.notifications.apps.NotificationsConfig",
     "apps.users",
     "apps.crm",
+    "apps.curriculum",
+    "apps.assessments",
+    "apps.progress",
+    "apps.api",
 ]
 
 TENANT_APPS = [
