@@ -1,0 +1,464 @@
+<!doctype html>
+<html lang="en" class="scroll-smooth">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Free Reading Survey | Clear Code Reading</title>
+  <meta name="description" content="Take the Clear Code Reading digital assessment to estimate reading age and key reading KPIs across phonics, sight words, fluency, vocabulary, and comprehension.">
+  <meta name="theme-color" content="#00B8A9">
+  <link rel="icon" href="/assets/logo/clear-code-reading-icon.png" type="image/png">
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            tealWarm: '#00B8A9',
+            coral: '#FF6B6B',
+            navySoft: '#2C3E50',
+            sunny: '#FFD93D',
+            cream: '#FFF9EA',
+            mist: '#F0FFFC',
+            blush: '#FFF5F5'
+          },
+          boxShadow: {
+            glow: '0 24px 80px rgba(0, 184, 169, 0.22)',
+            coralGlow: '0 22px 70px rgba(255, 107, 107, 0.18)'
+          },
+          fontFamily: {
+            sans: ['Inter', 'Avenir Next', 'Nunito Sans', 'ui-sans-serif', 'system-ui', 'sans-serif']
+          }
+        }
+      }
+    };
+  </script>
+  <style>
+    .focus-ring:focus-visible { outline: 4px solid rgba(255, 217, 61, .75); outline-offset: 3px; }
+    .page-bg {
+      background:
+        radial-gradient(circle at 14% 12%, rgba(255, 217, 61, .26), transparent 26%),
+        radial-gradient(circle at 82% 18%, rgba(255, 107, 107, .15), transparent 25%),
+        radial-gradient(circle at 50% 88%, rgba(0, 184, 169, .16), transparent 32%),
+        linear-gradient(135deg, #fffdf6 0%, #f0fffc 52%, #fff5f5 100%);
+    }
+    .logo-plate { background: linear-gradient(135deg, rgba(255,255,255,.96), rgba(255,249,234,.92)); }
+    .answer-card[aria-pressed="true"] {
+      border-color: #00B8A9;
+      background: #F0FFFC;
+      box-shadow: 0 18px 50px rgba(0, 184, 169, .14);
+      transform: translateY(-2px);
+    }
+  </style>
+</head>
+<body class="page-bg min-h-screen text-navySoft antialiased">
+  <header class="sticky top-0 z-40 border-b border-tealWarm/10 bg-white/90 backdrop-blur-xl">
+    <nav class="mx-auto flex max-w-7xl items-center justify-between gap-4 px-4 py-3 sm:px-6 lg:px-8">
+      <a href="/" class="focus-ring logo-plate rounded-2xl px-2 py-1 shadow-sm ring-1 ring-navySoft/5">
+        <img src="/assets/logo/clear-code-reading-logo.png" alt="Clear Code Reading" class="h-12 w-auto max-w-[220px] object-contain sm:max-w-[300px]">
+      </a>
+      <div class="flex items-center gap-3">
+        <a href="/" class="hidden rounded-full px-4 py-2 text-sm font-black text-navySoft/70 transition hover:text-tealWarm sm:inline-flex">Home</a>
+        <a href="/admin/" class="focus-ring rounded-full bg-coral px-5 py-3 text-sm font-extrabold text-white shadow-lg shadow-coral/25 transition hover:-translate-y-0.5 hover:bg-[#ff5757]">Login</a>
+      </div>
+    </nav>
+  </header>
+
+  <main class="mx-auto max-w-7xl px-4 py-10 sm:px-6 lg:px-8">
+    <section class="grid gap-8 lg:grid-cols-[.9fr_1.1fr] lg:items-start">
+      <aside class="rounded-[2rem] bg-white/88 p-6 shadow-2xl shadow-tealWarm/10 ring-1 ring-tealWarm/10 lg:sticky lg:top-28">
+        <p class="text-sm font-black uppercase tracking-[0.18em] text-coral">Free digital assessment</p>
+        <h1 class="mt-3 text-3xl font-black leading-tight sm:text-5xl">Find your child’s reading age and skill map.</h1>
+        <p class="mt-5 text-lg leading-8 text-navySoft/70">
+          This playful survey estimates reading level across the KPIs that matter: phonemic awareness, phonics, sight words, fluency, vocabulary, comprehension, writing readiness, and reading confidence.
+        </p>
+        <div class="mt-6 grid gap-3 text-sm font-bold text-navySoft/70 sm:grid-cols-2 lg:grid-cols-1 xl:grid-cols-2">
+          <span class="rounded-2xl bg-mist px-4 py-3">8-10 minutes</span>
+          <span class="rounded-2xl bg-blush px-4 py-3">Ages 4-10</span>
+          <span class="rounded-2xl bg-cream px-4 py-3">Parent-friendly result</span>
+          <span class="rounded-2xl bg-white px-4 py-3 ring-1 ring-navySoft/10">Human review ready</span>
+        </div>
+        <p class="mt-6 rounded-2xl bg-navySoft px-4 py-3 text-sm leading-6 text-white/85">
+          This is a screening estimate, not a diagnosis. Clear Code Reading pairs the digital result with a real human evaluator for final placement.
+        </p>
+      </aside>
+
+      <section class="rounded-[2rem] bg-white p-5 shadow-2xl shadow-navySoft/10 ring-1 ring-navySoft/10 sm:p-8">
+        <div id="assessment-app">
+          <div class="mb-6">
+            <div class="flex items-center justify-between gap-4">
+              <div>
+                <p id="step-eyebrow" class="text-sm font-black uppercase tracking-[0.18em] text-tealWarm">Step 1 of 12</p>
+                <h2 id="step-title" class="mt-2 text-2xl font-black sm:text-4xl">Let’s meet your reader.</h2>
+              </div>
+              <div class="hidden h-20 w-20 place-items-center overflow-hidden rounded-3xl bg-white shadow-md ring-1 ring-tealWarm/15 sm:grid">
+                <img src="/assets/logo/clear-code-reading-icon.png" alt="" class="h-20 w-20 object-cover">
+              </div>
+            </div>
+            <div class="mt-6 h-3 overflow-hidden rounded-full bg-navySoft/10">
+              <div id="progress-bar" class="h-full w-[8%] rounded-full bg-gradient-to-r from-tealWarm via-sunny to-coral transition-all duration-500"></div>
+            </div>
+          </div>
+
+          <div id="step-body"></div>
+
+          <div class="mt-8 flex flex-col-reverse gap-3 sm:flex-row sm:justify-between">
+            <button id="back-button" class="focus-ring rounded-full bg-navySoft/5 px-6 py-4 font-black text-navySoft transition hover:bg-navySoft/10" type="button">Back</button>
+            <button id="next-button" class="focus-ring rounded-full bg-tealWarm px-7 py-4 font-black text-white shadow-glow transition hover:-translate-y-0.5 hover:bg-[#00a699]" type="button">Next</button>
+          </div>
+        </div>
+      </section>
+    </section>
+  </main>
+
+  <template id="intro-template">
+    <div class="grid gap-5">
+      <label class="block">
+        <span class="text-sm font-black text-navySoft">Child first name</span>
+        <input id="child-name" class="mt-2 w-full rounded-2xl border border-navySoft/15 px-4 py-4 text-lg font-bold focus:border-tealWarm focus:outline-none" placeholder="Avery" autocomplete="off">
+      </label>
+      <label class="block">
+        <span class="text-sm font-black text-navySoft">Child age</span>
+        <select id="child-age" class="mt-2 w-full rounded-2xl border border-navySoft/15 px-4 py-4 text-lg font-bold focus:border-tealWarm focus:outline-none">
+          <option value="">Choose age</option>
+          <option value="4">4</option>
+          <option value="5">5</option>
+          <option value="6">6</option>
+          <option value="7">7</option>
+          <option value="8">8</option>
+          <option value="9">9</option>
+          <option value="10">10</option>
+        </select>
+      </label>
+      <div class="rounded-3xl bg-cream p-5">
+        <h3 class="text-lg font-black">How to answer</h3>
+        <p class="mt-2 text-navySoft/70">Sit with your child. Let them answer the reading questions. For fluency, listen for smoothness, accuracy, and confidence.</p>
+      </div>
+    </div>
+  </template>
+
+  <script>
+    const assessmentSteps = [
+      { type: 'intro', title: 'Let’s meet your reader.', eyebrow: 'Step 1 of 12' },
+      {
+        kpi: 'phonemicAwareness',
+        title: 'Sound awareness',
+        prompt: 'Which word starts with the same sound as “sun”?',
+        options: [
+          { label: 'sock', score: 1 },
+          { label: 'moon', score: 0 },
+          { label: 'fish', score: 0 },
+          { label: 'table', score: 0 }
+        ],
+        why: 'Phonemic awareness shows whether a child can hear and play with the sounds inside words.'
+      },
+      {
+        kpi: 'letterSound',
+        title: 'Letter-sound knowledge',
+        prompt: 'What sound does the letter m usually make?',
+        options: [
+          { label: '/m/ like moon', score: 1 },
+          { label: '/s/ like sun', score: 0 },
+          { label: '/t/ like top', score: 0 },
+          { label: 'I am not sure yet', score: 0 }
+        ],
+        why: 'Letter-sound knowledge is one of the first bridges into decoding.'
+      },
+      {
+        kpi: 'phonics',
+        title: 'Decoding a simple word',
+        prompt: 'Ask your child to read this word: “ship”. How did they do?',
+        options: [
+          { label: 'Read it smoothly and correctly', score: 1 },
+          { label: 'Sounded it out and got it', score: 0.75 },
+          { label: 'Needed help after trying', score: 0.35 },
+          { label: 'Could not read it yet', score: 0 }
+        ],
+        why: 'Phonics measures how letters and patterns become readable words.'
+      },
+      {
+        kpi: 'advancedPhonics',
+        title: 'Decoding a longer word',
+        prompt: 'Ask your child to read this word: “rainbow”. How did they do?',
+        options: [
+          { label: 'Read it smoothly and correctly', score: 1 },
+          { label: 'Broke it into parts and got it', score: 0.75 },
+          { label: 'Guessed from the first letter', score: 0.25 },
+          { label: 'Could not read it yet', score: 0 }
+        ],
+        why: 'Longer words show whether a child can combine chunks, vowel patterns, and syllables.'
+      },
+      {
+        kpi: 'sightWords',
+        title: 'Sight word recognition',
+        prompt: 'How many of these can your child read quickly: the, said, where, because, friend?',
+        options: [
+          { label: '0-1 words', score: 0.1 },
+          { label: '2 words', score: 0.35 },
+          { label: '3-4 words', score: 0.7 },
+          { label: 'All 5 words', score: 1 }
+        ],
+        why: 'Sight words support speed, expression, and comprehension.'
+      },
+      {
+        kpi: 'fluency',
+        title: 'Reading fluency',
+        prompt: 'Have your child read: “The little dog ran home because it started to rain.” What best describes the reading?',
+        options: [
+          { label: 'Smooth, accurate, and expressive', score: 1 },
+          { label: 'Mostly accurate with a few pauses', score: 0.75 },
+          { label: 'Word-by-word with several stops', score: 0.35 },
+          { label: 'Too hard to read right now', score: 0 }
+        ],
+        why: 'Fluency combines accuracy, pace, and expression.'
+      },
+      {
+        kpi: 'vocabulary',
+        title: 'Vocabulary',
+        prompt: 'In the sentence “The puppy was exhausted,” what does exhausted mean?',
+        options: [
+          { label: 'Very tired', score: 1 },
+          { label: 'Very hungry', score: 0 },
+          { label: 'Very loud', score: 0 },
+          { label: 'Very small', score: 0 }
+        ],
+        why: 'Vocabulary helps children understand what they read.'
+      },
+      {
+        kpi: 'comprehension',
+        title: 'Comprehension',
+        prompt: 'Read this aloud: “Mia packed an umbrella before school. Dark clouds filled the sky.” Why did Mia pack an umbrella?',
+        options: [
+          { label: 'She thought it might rain', score: 1 },
+          { label: 'She was going swimming', score: 0 },
+          { label: 'She lost her backpack', score: 0 },
+          { label: 'She wanted a snack', score: 0 }
+        ],
+        why: 'Comprehension shows whether a child can make meaning from text.'
+      },
+      {
+        kpi: 'writingReadiness',
+        title: 'Spelling and writing readiness',
+        prompt: 'Ask your child to spell the word “cat”. What happens?',
+        options: [
+          { label: 'Spells it correctly and confidently', score: 1 },
+          { label: 'Uses most sounds correctly', score: 0.7 },
+          { label: 'Writes one matching sound', score: 0.3 },
+          { label: 'Not ready for spelling yet', score: 0 }
+        ],
+        why: 'Early spelling reveals how clearly children hear and map sounds.'
+      },
+      {
+        kpi: 'confidence',
+        title: 'Reading confidence',
+        prompt: 'When reading gets tricky, what does your child usually do?',
+        options: [
+          { label: 'Keeps trying and uses strategies', score: 1 },
+          { label: 'Tries if an adult encourages them', score: 0.7 },
+          { label: 'Guesses quickly or gets frustrated', score: 0.3 },
+          { label: 'Avoids reading most of the time', score: 0 }
+        ],
+        why: 'Confidence affects stamina, practice, and long-term growth.'
+      },
+      { type: 'result', title: 'Your reading snapshot is ready.', eyebrow: 'Results' }
+    ];
+
+    const kpiLabels = {
+      phonemicAwareness: 'Phonemic awareness',
+      letterSound: 'Letter sounds',
+      phonics: 'Phonics / decoding',
+      advancedPhonics: 'Advanced decoding',
+      sightWords: 'Sight words',
+      fluency: 'Fluency',
+      vocabulary: 'Vocabulary',
+      comprehension: 'Comprehension',
+      writingReadiness: 'Writing readiness',
+      confidence: 'Reading confidence'
+    };
+
+    const state = {
+      stepIndex: 0,
+      childName: '',
+      childAge: '',
+      answers: {}
+    };
+
+    const body = document.getElementById('step-body');
+    const title = document.getElementById('step-title');
+    const eyebrow = document.getElementById('step-eyebrow');
+    const progress = document.getElementById('progress-bar');
+    const backButton = document.getElementById('back-button');
+    const nextButton = document.getElementById('next-button');
+
+    function render() {
+      const step = assessmentSteps[state.stepIndex];
+      title.textContent = step.title;
+      eyebrow.textContent = step.eyebrow || `Step ${state.stepIndex + 1} of ${assessmentSteps.length}`;
+      progress.style.width = `${Math.max(8, ((state.stepIndex + 1) / assessmentSteps.length) * 100)}%`;
+      backButton.classList.toggle('invisible', state.stepIndex === 0);
+      nextButton.textContent = state.stepIndex === assessmentSteps.length - 2 ? 'See Results' : state.stepIndex === assessmentSteps.length - 1 ? 'Start Again' : 'Next';
+
+      if (step.type === 'intro') renderIntro();
+      else if (step.type === 'result') renderResult();
+      else renderQuestion(step);
+    }
+
+    function renderIntro() {
+      body.innerHTML = document.getElementById('intro-template').innerHTML;
+      body.querySelector('#child-name').value = state.childName;
+      body.querySelector('#child-age').value = state.childAge;
+      body.querySelector('#child-name').addEventListener('input', (event) => state.childName = event.target.value);
+      body.querySelector('#child-age').addEventListener('change', (event) => state.childAge = event.target.value);
+    }
+
+    function renderQuestion(step) {
+      body.innerHTML = `
+        <div class="rounded-3xl bg-cream p-5">
+          <p class="text-sm font-black uppercase tracking-[0.16em] text-coral">${kpiLabels[step.kpi]}</p>
+          <p class="mt-3 text-2xl font-black leading-snug">${step.prompt}</p>
+          <p class="mt-3 text-sm leading-6 text-navySoft/65">${step.why}</p>
+        </div>
+        <div class="mt-5 grid gap-3 sm:grid-cols-2">
+          ${step.options.map((option, index) => `
+            <button type="button" class="answer-card focus-ring rounded-3xl border-2 border-navySoft/10 bg-white p-5 text-left font-black text-navySoft shadow-sm transition hover:-translate-y-0.5 hover:border-tealWarm/70" data-answer="${index}" aria-pressed="${state.answers[step.kpi] === index}">
+              ${option.label}
+            </button>
+          `).join('')}
+        </div>
+      `;
+      body.querySelectorAll('[data-answer]').forEach((button) => {
+        button.addEventListener('click', () => {
+          state.answers[step.kpi] = Number(button.dataset.answer);
+          renderQuestion(step);
+        });
+      });
+    }
+
+    function calculateResults() {
+      const scoredSteps = assessmentSteps.filter((step) => step.kpi);
+      const scores = {};
+      let total = 0;
+      scoredSteps.forEach((step) => {
+        const answerIndex = state.answers[step.kpi];
+        const score = answerIndex === undefined ? 0 : step.options[answerIndex].score;
+        scores[step.kpi] = score;
+        total += score;
+      });
+      const overall = total / scoredSteps.length;
+      const readingAge = Math.max(4, Math.min(11, 4 + overall * 7));
+      const roundedAge = Math.round(readingAge * 10) / 10;
+      const childAge = Number(state.childAge || 0);
+      const gap = childAge ? Math.round((roundedAge - childAge) * 10) / 10 : null;
+      const strengths = Object.entries(scores).filter(([, score]) => score >= 0.75).map(([key]) => kpiLabels[key]);
+      const growth = Object.entries(scores).filter(([, score]) => score < 0.55).map(([key]) => kpiLabels[key]);
+      return { scores, overall, readingAge: roundedAge, gap, strengths, growth };
+    }
+
+    function renderResult() {
+      const result = calculateResults();
+      const name = state.childName || 'Your child';
+      const levelText = `${result.readingAge.toFixed(1)}-year-old level`;
+      const growthList = result.growth.length ? result.growth.slice(0, 4) : ['Continue building fluency and comprehension with just-right texts'];
+      const strengthList = result.strengths.length ? result.strengths.slice(0, 4) : ['Early reading behaviors are emerging'];
+      const gapCopy = result.gap === null
+        ? 'Add your child’s age next time to compare reading age to chronological age.'
+        : result.gap >= 0.5
+          ? `${name} is currently reading above the selected age by about ${result.gap.toFixed(1)} years.`
+          : result.gap <= -0.5
+            ? `${name} is currently reading below the selected age by about ${Math.abs(result.gap).toFixed(1)} years.`
+            : `${name} is reading close to the selected age band.`;
+
+      body.innerHTML = `
+        <div class="rounded-[2rem] bg-gradient-to-br from-tealWarm to-[#007D78] p-7 text-white shadow-glow">
+          <p class="text-sm font-black uppercase tracking-[0.18em] text-sunny">Digital reading estimate</p>
+          <h3 class="mt-3 text-4xl font-black sm:text-6xl">You are reading at a ${levelText}</h3>
+          <p class="mt-4 text-lg leading-8 text-white/85">${gapCopy}</p>
+        </div>
+
+        <div class="mt-6 grid gap-4 sm:grid-cols-3">
+          <div class="rounded-3xl bg-cream p-5">
+            <p class="text-sm font-black text-navySoft/55">Overall readiness</p>
+            <p class="mt-2 text-3xl font-black text-tealWarm">${Math.round(result.overall * 100)}%</p>
+          </div>
+          <div class="rounded-3xl bg-blush p-5">
+            <p class="text-sm font-black text-navySoft/55">Best next step</p>
+            <p class="mt-2 text-xl font-black text-coral">${growthList[0]}</p>
+          </div>
+          <div class="rounded-3xl bg-mist p-5">
+            <p class="text-sm font-black text-navySoft/55">Review status</p>
+            <p class="mt-2 text-xl font-black text-tealWarm">Ready for human evaluator</p>
+          </div>
+        </div>
+
+        <div class="mt-6 grid gap-5 lg:grid-cols-2">
+          <div class="rounded-3xl bg-white p-5 shadow-sm ring-1 ring-navySoft/10">
+            <h4 class="text-xl font-black">Reading KPI map</h4>
+            <div class="mt-4 space-y-3">
+              ${Object.entries(result.scores).map(([key, score]) => `
+                <div>
+                  <div class="flex justify-between gap-3 text-sm font-black">
+                    <span>${kpiLabels[key]}</span>
+                    <span>${Math.round(score * 100)}%</span>
+                  </div>
+                  <div class="mt-1 h-2 overflow-hidden rounded-full bg-navySoft/10">
+                    <div class="h-full rounded-full bg-gradient-to-r from-tealWarm via-sunny to-coral" style="width:${Math.round(score * 100)}%"></div>
+                  </div>
+                </div>
+              `).join('')}
+            </div>
+          </div>
+
+          <div class="rounded-3xl bg-white p-5 shadow-sm ring-1 ring-navySoft/10">
+            <h4 class="text-xl font-black">Personalized recommendation</h4>
+            <p class="mt-3 text-navySoft/70">Clear Code Reading would place ${name} into a lesson path that starts with:</p>
+            <ul class="mt-4 space-y-3">
+              ${growthList.map(item => `<li class="rounded-2xl bg-blush px-4 py-3 font-bold text-navySoft">${item}</li>`).join('')}
+            </ul>
+            <h4 class="mt-6 text-xl font-black">Strengths to celebrate</h4>
+            <ul class="mt-4 space-y-3">
+              ${strengthList.map(item => `<li class="rounded-2xl bg-mist px-4 py-3 font-bold text-navySoft">${item}</li>`).join('')}
+            </ul>
+          </div>
+        </div>
+
+        <div class="mt-6 rounded-3xl bg-navySoft p-5 text-white">
+          <h4 class="text-xl font-black">What happens next?</h4>
+          <p class="mt-3 leading-7 text-white/80">A human evaluator can review the responses, confirm the placement, and build the exact sequence of phonics, sight word, fluency, and comprehension lessons. This keeps technology helpful without removing the human touch.</p>
+          <a href="/" class="mt-5 inline-flex rounded-full bg-white px-6 py-3 font-black text-tealWarm transition hover:-translate-y-0.5">Return to Clear Code Reading</a>
+        </div>
+      `;
+    }
+
+    function canAdvance() {
+      const step = assessmentSteps[state.stepIndex];
+      if (step.type === 'intro') return state.childName.trim() && state.childAge;
+      if (step.type === 'result') return true;
+      return state.answers[step.kpi] !== undefined;
+    }
+
+    nextButton.addEventListener('click', () => {
+      if (state.stepIndex === assessmentSteps.length - 1) {
+        state.stepIndex = 0;
+        state.childName = '';
+        state.childAge = '';
+        state.answers = {};
+        render();
+        return;
+      }
+      if (!canAdvance()) {
+        body.insertAdjacentHTML('beforeend', '<p class="mt-4 rounded-2xl bg-blush px-4 py-3 text-sm font-black text-coral">Please answer this step before continuing.</p>');
+        return;
+      }
+      state.stepIndex += 1;
+      render();
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    });
+
+    backButton.addEventListener('click', () => {
+      state.stepIndex = Math.max(0, state.stepIndex - 1);
+      render();
+    });
+
+    render();
+  </script>
+</body>
+</html>

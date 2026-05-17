@@ -6,6 +6,7 @@ from django.views.static import serve
 
 urlpatterns = [
     path("", TemplateView.as_view(template_name="index.html"), name="marketing_home"),
+    path("assessment/", TemplateView.as_view(template_name="assessment.html"), name="reading_assessment"),
     path("assets/<path:path>", serve, {"document_root": settings.BASE_DIR / "marketing-website" / "assets"}, name="marketing_assets"),
     path("admin/", admin.site.urls),
     path("api/", include("apps.api.urls")),
