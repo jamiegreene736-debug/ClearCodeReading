@@ -5,7 +5,8 @@
     "dockerfilePath": "Dockerfile"
   },
   "deploy": {
-    "startCommand": "python manage.py migrate_schemas --shared --noinput && python manage.py seed_reading_survey_questions && python manage.py seed_demo_login && gunicorn clearcodereading.wsgi:application --bind 0.0.0.0:${PORT:-8000} --workers ${WEB_CONCURRENCY:-3}",
+    "preDeployCommand": "sh /app/scripts/predeploy.sh",
+    "startCommand": "gunicorn clearcodereading.wsgi:application --bind 0.0.0.0:${PORT:-8000} --workers ${WEB_CONCURRENCY:-3}",
     "healthcheckPath": "/api/v1/health/",
     "healthcheckTimeout": 300,
     "restartPolicyType": "ON_FAILURE",
