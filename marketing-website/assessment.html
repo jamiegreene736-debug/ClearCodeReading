@@ -91,9 +91,12 @@
               <div>
                 <p id="step-eyebrow" class="text-sm font-black uppercase tracking-[0.18em] text-tealWarm">Step 1 of 12</p>
                 <h2 id="step-title" class="mt-2 text-2xl font-black sm:text-4xl">Let’s meet your reader.</h2>
-                <button id="read-current-button" class="focus-ring mt-4 rounded-full bg-mist px-4 py-2 text-sm font-black text-tealWarm shadow-sm ring-1 ring-tealWarm/20 transition hover:-translate-y-0.5 hover:bg-white" type="button">
-                  Read aloud
+                <button id="read-current-button" class="focus-ring group mt-4 inline-flex min-h-14 items-center gap-3 rounded-full bg-tealWarm px-5 py-3 text-base font-black text-white shadow-lg shadow-tealWarm/25 ring-2 ring-white transition hover:-translate-y-0.5 hover:bg-[#00a699]" type="button" aria-label="Tap to hear this question read aloud">
+                  <span class="grid h-9 w-9 place-items-center rounded-full bg-white text-xl text-tealWarm shadow-sm transition group-hover:scale-105" aria-hidden="true">▶</span>
+                  <span id="read-current-label">Tap to hear</span>
+                  <span class="hidden text-xl sm:inline" aria-hidden="true">🔊</span>
                 </button>
+                <p class="mt-2 text-sm font-bold text-navySoft/55">Press the speaker to hear the question.</p>
               </div>
               <div class="hidden h-20 w-20 place-items-center overflow-hidden rounded-3xl bg-white shadow-md ring-1 ring-tealWarm/15 sm:grid">
                 <img src="/assets/logo/clear-code-reading-icon.png" alt="" class="h-20 w-20 object-cover">
@@ -365,12 +368,12 @@
       }
       window.speechSynthesis.cancel();
       const queue = Array.isArray(parts) ? parts : [{ text: parts }];
-      readButton.textContent = 'Reading...';
+      setReadButtonState(true);
       readButton.setAttribute('aria-pressed', 'true');
 
       function speakNext(index) {
         if (index >= queue.length) {
-          readButton.textContent = 'Read aloud';
+          setReadButtonState(false);
           readButton.setAttribute('aria-pressed', 'false');
           return;
         }
@@ -384,8 +387,13 @@
       speakNext(0);
     }
 
+    function setReadButtonState(isReading) {
+      const label = document.getElementById('read-current-label');
+      if (label) label.textContent = isReading ? 'Listening...' : 'Tap to hear';
+    }
+
     function resetReadButton() {
-      readButton.textContent = 'Read aloud';
+      setReadButtonState(false);
       readButton.setAttribute('aria-pressed', 'false');
     }
 
@@ -414,7 +422,7 @@
       window.speechSynthesis?.cancel();
       const audio = new Audio(audioSrc);
       state.audioPlayer = audio;
-      readButton.textContent = 'Reading...';
+      setReadButtonState(true);
       readButton.setAttribute('aria-pressed', 'true');
       audio.addEventListener('ended', resetReadButton, { once: true });
       audio.addEventListener('error', () => {
