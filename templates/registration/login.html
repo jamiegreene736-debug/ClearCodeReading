@@ -59,7 +59,16 @@
         Parents, teachers, evaluators, and school teams use this portal to review reading KPIs, assessment results, human-review tasks, and next-step learning plans.
       </p>
 
-      <div class="mt-7 grid gap-3 sm:grid-cols-2">
+      <div class="mt-7 grid gap-3">
+        <form method="post" action="{% url 'demo_login' 'admin' %}">
+          {% csrf_token %}
+          <button class="focus-ring w-full rounded-3xl bg-cream p-5 text-left shadow-sm ring-1 ring-sunny/30 transition hover:-translate-y-1 hover:shadow-xl" type="submit">
+            <span class="block text-sm font-black uppercase tracking-[0.16em] text-navySoft/65">Demo Administrator</span>
+            <span class="mt-2 block text-xl font-black">Assign teachers and manage program work</span>
+            <span class="mt-2 block text-sm leading-6 text-navySoft/65">Teacher assignment, reader oversight, and internal admin access.</span>
+          </button>
+        </form>
+        <div class="grid gap-3 sm:grid-cols-2">
         <form method="post" action="{% url 'demo_login' 'parent' %}">
           {% csrf_token %}
           <button class="focus-ring w-full rounded-3xl bg-mist p-5 text-left shadow-sm ring-1 ring-tealWarm/15 transition hover:-translate-y-1 hover:shadow-xl" type="submit">
@@ -76,6 +85,7 @@
             <span class="mt-2 block text-sm leading-6 text-navySoft/65">Pending human reviews, skill gaps, and assessment evidence.</span>
           </button>
         </form>
+        </div>
       </div>
 
       <p class="mt-6 rounded-2xl bg-navySoft px-4 py-3 text-sm leading-6 text-white/80">
@@ -121,6 +131,7 @@
         <div class="mt-3 grid gap-2 text-sm font-bold text-navySoft/70">
           <p>Parent: parent@clearcodereading.com</p>
           <p>Teacher: teacher@clearcodereading.com</p>
+          <p>Administrator: admin@clearcodereading.com</p>
           <p>Password: ClearCodeDemo!2026</p>
         </div>
       </div>

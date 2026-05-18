@@ -1,9 +1,10 @@
 from django.contrib import messages
 from django.contrib.auth import get_user_model, login
 from django.contrib.auth.views import LoginView
-from django.db.models import Avg, Count
+from django.db.models import Avg
 from django.shortcuts import redirect
 from django.urls import reverse_lazy
+from django.utils import timezone
 from django.views.generic import TemplateView, View
 
 from apps.assessments.models import Assessment, AssessmentResult
@@ -11,9 +12,31 @@ from apps.users.models import ChildProfile, CustomUser, GuardianRelationship
 
 
 DEMO_LOGINS = {
+    "admin": "admin@clearcodereading.com",
     "parent": "parent@clearcodereading.com",
     "teacher": "teacher@clearcodereading.com",
 }
+
+DEMO_INBOX_MESSAGES = [
+    {
+        "sender": "Demo Teacher",
+        "audience": "teacher",
+        "body": "Hi! Avery did a great job with beginning sounds. I recommend five minutes of repeated reading practice tonight.",
+        "sent_at": "Today, 9:15 AM",
+    },
+    {
+        "sender": "Demo Parent",
+        "audience": "guardian",
+        "body": "Thank you. Should we focus more on fluency or comprehension this week?",
+        "sent_at": "Today, 9:22 AM",
+    },
+    {
+        "sender": "Demo Teacher",
+        "audience": "teacher",
+        "body": "Fluency first. Short familiar passages will help Avery read smoothly and build confidence.",
+        "sent_at": "Today, 9:34 AM",
+    },
+]
 
 
 class PortalLoginView(LoginView):
@@ -47,23 +70,22 @@ class DemoLoginView(View):
         return redirect("portal_dashboard")
 
 
-class PortalDashboardView(TemplateView):
-    template_name = "portal/dashboard.html"
-
+class PortalAuthMixin:
     def dispatch(self, request, *args, **kwargs):
         if not request.user.is_authenticated:
             return redirect(f"{reverse_lazy('login')}?next={request.path}")
         return super().dispatch(request, *args, **kwargs)
 
+
+class PortalDashboardView(PortalAuthMixin, TemplateView):
+    template_name = "portal/dashboard.html"
+
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         user = self.request.user
+        context["is_admin"] = user.role in {CustomUser.Role.SUPER_ADMIN, CustomUser.Role.SCHOOL_ADMIN}
         context["is_parent"] = user.role == CustomUser.Role.GUARDIAN
-        context["is_teacher"] = user.role in {
-            CustomUser.Role.TEACHER,
-            CustomUser.Role.SCHOOL_ADMIN,
-            CustomUser.Role.SUPER_ADMIN,
-        }
+        context["is_teacher"] = user.role == CustomUser.Role.TEACHER
 
         if context["is_parent"]:
             relationships = GuardianRelationship.objects.filter(
@@ -98,6 +120,8 @@ class PortalDashboardView(TemplateView):
                 "average_reading_age": latest_results.aggregate(value=Avg("reading_age"))["value"],
                 "child_count": len(children),
                 "kpi_count": self._kpi_count(latest_results.first()),
+                "teachers": CustomUser.objects.filter(role=CustomUser.Role.TEACHER, is_active=True, is_deleted=False),
+                "inbox_messages": self._inbox_messages()[-2:],
             }
         )
         return context
@@ -107,3 +131,66 @@ class PortalDashboardView(TemplateView):
         if result is None:
             return 0
         return len(result.category_breakdown or {})
+
+    def _inbox_messages(self):
+        return self.request.session.get("demo_inbox_messages", DEMO_INBOX_MESSAGES)
+
+
+class PortalInboxView(PortalAuthMixin, TemplateView):
+    template_name = "portal/inbox.html"
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context["thread_title"] = "Avery Reader support thread"
+        context["thread_messages"] = self.request.session.get("demo_inbox_messages", DEMO_INBOX_MESSAGES)
+        context["is_teacher"] = self.request.user.role == CustomUser.Role.TEACHER
+        context["is_parent"] = self.request.user.role == CustomUser.Role.GUARDIAN
+        context["is_admin"] = self.request.user.role in {CustomUser.Role.SUPER_ADMIN, CustomUser.Role.SCHOOL_ADMIN}
+        return context
+
+    def post(self, request, *args, **kwargs):
+        body = request.POST.get("message", "").strip()
+        if not body:
+            messages.error(request, "Write a message before sending.")
+            return redirect("portal_inbox")
+
+        sender = request.user.get_full_name() or request.user.email
+        inbox_messages = list(request.session.get("demo_inbox_messages", DEMO_INBOX_MESSAGES))
+        inbox_messages.append(
+            {
+                "sender": sender,
+                "audience": request.user.role,
+                "body": body,
+                "sent_at": timezone.localtime().strftime("%b %d, %I:%M %p"),
+            }
+        )
+        request.session["demo_inbox_messages"] = inbox_messages
+        messages.success(request, "Message added to the demo thread.")
+        return redirect("portal_inbox")
+
+
+class AssignTeacherView(PortalAuthMixin, View):
+    def post(self, request):
+        if request.user.role not in {CustomUser.Role.SUPER_ADMIN, CustomUser.Role.SCHOOL_ADMIN}:
+            messages.error(request, "Only program administrators can assign teachers.")
+            return redirect("portal_dashboard")
+
+        child_id = request.POST.get("child_id")
+        teacher_id = request.POST.get("teacher_id")
+        child = ChildProfile.objects.filter(id=child_id, is_deleted=False).first()
+        teacher = CustomUser.objects.filter(id=teacher_id, role=CustomUser.Role.TEACHER, is_active=True, is_deleted=False).first()
+        if child is None or teacher is None:
+            messages.error(request, "Choose a valid reader and teacher.")
+            return redirect("portal_dashboard")
+
+        child.learning_profile = {
+            **(child.learning_profile or {}),
+            "assigned_teacher_id": teacher.id,
+            "assigned_teacher_name": teacher.get_full_name() or teacher.email,
+            "assigned_teacher_email": teacher.email,
+            "assigned_by_admin_id": request.user.id,
+            "assigned_at": timezone.now().isoformat(),
+        }
+        child.save(update_fields=["learning_profile", "updated_at"])
+        messages.success(request, f"Assigned {teacher.get_full_name() or teacher.email} to {child}.")
+        return redirect("portal_dashboard")

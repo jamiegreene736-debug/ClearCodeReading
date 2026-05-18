@@ -45,6 +45,7 @@
         <img src="/assets/logo/clear-code-reading-logo.png" alt="Clear Code Reading" class="h-12 w-auto max-w-[230px] object-contain sm:max-w-[300px]">
       </a>
       <div class="flex items-center gap-3">
+        <a href="/inbox/" class="hidden rounded-full px-4 py-2 text-sm font-black text-navySoft/70 transition hover:text-tealWarm sm:inline-flex">Inbox</a>
         {% if request.user.is_staff %}
           <a href="/admin/" class="hidden rounded-full px-4 py-2 text-sm font-black text-navySoft/70 transition hover:text-tealWarm sm:inline-flex">Admin</a>
         {% endif %}
@@ -68,7 +69,7 @@
     <section class="grid gap-6 lg:grid-cols-[.85fr_1.15fr] lg:items-start">
       <aside class="rounded-[2rem] bg-white/90 p-6 shadow-2xl shadow-tealWarm/10 ring-1 ring-tealWarm/10 lg:sticky lg:top-28">
         <p class="text-sm font-black uppercase tracking-[0.18em] text-coral">
-          {% if is_parent %}Parent workspace{% else %}Teacher workspace{% endif %}
+          {% if is_admin %}Administrator workspace{% elif is_parent %}Parent workspace{% else %}Teacher workspace{% endif %}
         </p>
         <h1 class="mt-3 text-3xl font-black leading-tight sm:text-5xl">
           Hi, {{ request.user.first_name|default:request.user.email }}.
@@ -76,6 +77,8 @@
         <p class="mt-5 text-lg leading-8 text-navySoft/70">
           {% if is_parent %}
             Track your child's reading age, strengths, growth areas, and next steps after human review.
+          {% elif is_admin %}
+            Assign teachers, monitor demo readers, and keep the program workflow moving.
           {% else %}
             Review student KPIs, completed surveys, and assessments waiting for human evaluator notes.
           {% endif %}
@@ -101,6 +104,59 @@
       </aside>
 
       <section class="space-y-6">
+        {% if is_admin %}
+          <section class="rounded-[2rem] bg-white p-6 shadow-xl shadow-navySoft/8 ring-1 ring-navySoft/10">
+            <div class="flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
+              <div>
+                <p class="text-sm font-black uppercase tracking-[0.18em] text-coral">Program administration</p>
+                <h2 class="mt-2 text-3xl font-black">Assign a teacher to a reader</h2>
+              </div>
+              <a href="/admin/" class="focus-ring rounded-full bg-navySoft px-5 py-3 text-sm font-black text-white transition hover:-translate-y-0.5">Open Django admin</a>
+            </div>
+            <form class="mt-5 grid gap-3 md:grid-cols-[1fr_1fr_auto]" method="post" action="{% url 'assign_teacher' %}">
+              {% csrf_token %}
+              <label class="block">
+                <span class="text-sm font-black text-navySoft/65">Reader</span>
+                <select class="mt-2 w-full rounded-2xl border border-navySoft/15 px-4 py-3 font-bold focus:border-tealWarm focus:outline-none" name="child_id" required>
+                  {% for child in children %}
+                    <option value="{{ child.id }}">{{ child }}{% if child.learning_profile.assigned_teacher_name %} - {{ child.learning_profile.assigned_teacher_name }}{% endif %}</option>
+                  {% endfor %}
+                </select>
+              </label>
+              <label class="block">
+                <span class="text-sm font-black text-navySoft/65">Teacher</span>
+                <select class="mt-2 w-full rounded-2xl border border-navySoft/15 px-4 py-3 font-bold focus:border-tealWarm focus:outline-none" name="teacher_id" required>
+                  {% for teacher in teachers %}
+                    <option value="{{ teacher.id }}">{{ teacher.get_full_name|default:teacher.email }}</option>
+                  {% endfor %}
+                </select>
+              </label>
+              <button class="focus-ring self-end rounded-full bg-tealWarm px-6 py-3 font-black text-white shadow-lg shadow-tealWarm/20 transition hover:-translate-y-0.5" type="submit">Assign</button>
+            </form>
+          </section>
+        {% endif %}
+
+        <section class="rounded-[2rem] bg-white p-6 shadow-xl shadow-navySoft/8 ring-1 ring-navySoft/10">
+          <div class="flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
+            <div>
+              <p class="text-sm font-black uppercase tracking-[0.18em] text-tealWarm">Family-teacher inbox</p>
+              <h2 class="mt-2 text-3xl font-black">Avery Reader support thread</h2>
+            </div>
+            <a href="/inbox/" class="focus-ring rounded-full bg-coral px-5 py-3 text-sm font-black text-white shadow-lg shadow-coral/20 transition hover:-translate-y-0.5">Open inbox</a>
+          </div>
+          <div class="mt-5 grid gap-3">
+            {% for message in inbox_messages %}
+              <article class="rounded-3xl {% if message.audience == request.user.role %}bg-mist{% else %}bg-cream{% endif %} p-5">
+                <div class="flex items-center justify-between gap-3">
+                  <p class="font-black">{{ message.sender }}</p>
+                  <p class="text-xs font-bold text-navySoft/50">{{ message.sent_at }}</p>
+                </div>
+                <p class="mt-2 text-sm leading-6 text-navySoft/70">{{ message.body }}</p>
+              </article>
+            {% endfor %}
+          </div>
+        </section>
+
         {% if is_teacher %}
           <section class="rounded-[2rem] bg-white p-6 shadow-xl shadow-navySoft/8 ring-1 ring-navySoft/10">
             <div class="flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">

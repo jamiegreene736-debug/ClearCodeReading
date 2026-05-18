@@ -51,7 +51,13 @@ class Command(BaseCommand):
             student_identifier="DEMO-AVERY-READER",
             defaults={
                 "grade_level": ChildProfile.GradeLevel.GRADE_2,
-                "learning_profile": {"demo": True, "reading_goal": "Build confident decoding and fluency."},
+                "learning_profile": {
+                    "demo": True,
+                    "reading_goal": "Build confident decoding and fluency.",
+                    "assigned_teacher_id": teacher.id,
+                    "assigned_teacher_name": teacher.get_full_name() or teacher.email,
+                    "assigned_teacher_email": teacher.email,
+                },
                 "accommodations": [],
                 "is_deleted": False,
                 "deleted_at": None,
