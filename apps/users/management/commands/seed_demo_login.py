@@ -1,7 +1,9 @@
 from django.core.management.base import BaseCommand
+from django.db.models.signals import post_save
 from django.utils import timezone
 
 from apps.assessments.models import Assessment, AssessmentResult
+from apps.notifications.signals import handle_assessment_status_change
 from apps.users.models import ChildProfile, ConsentLog, CustomUser, GuardianRelationship
 
 
@@ -90,6 +92,31 @@ class Command(BaseCommand):
                 },
             )
 
+        completed_assessment, review_assessment = self._seed_demo_assessments(child=child, teacher=teacher)
+
+        self.stdout.write(self.style.SUCCESS("Created Clear Code Reading demo credentials:"))
+        self.stdout.write(f"  Admin:   {admin.email} / {DEMO_PASSWORD}")
+        self.stdout.write(f"  Teacher: {teacher.email} / {DEMO_PASSWORD}")
+        self.stdout.write(f"  Parent:  {parent.email} / {DEMO_PASSWORD}")
+        self.stdout.write(f"  Demo child id: {child.id} ({child})")
+        self.stdout.write(f"  Demo completed assessment id: {completed_assessment.id}")
+        self.stdout.write(f"  Demo review assessment id: {review_assessment.id}")
+
+    def _seed_demo_assessments(self, child, teacher):
+        signal_disconnected = post_save.disconnect(
+            receiver=handle_assessment_status_change,
+            sender=Assessment,
+        )
+        try:
+            return self._upsert_demo_assessments(child=child, teacher=teacher)
+        finally:
+            if signal_disconnected:
+                post_save.connect(
+                    receiver=handle_assessment_status_change,
+                    sender=Assessment,
+                )
+
+    def _upsert_demo_assessments(self, child, teacher):
         completed_assessment, _ = Assessment.objects.update_or_create(
             child=child,
             title="Demo Reading Survey - Avery Reader",
@@ -204,12 +231,7 @@ class Command(BaseCommand):
                 "deleted_at": None,
             },
         )
-
-        self.stdout.write(self.style.SUCCESS("Created Clear Code Reading demo credentials:"))
-        self.stdout.write(f"  Admin:   {admin.email} / {DEMO_PASSWORD}")
-        self.stdout.write(f"  Teacher: {teacher.email} / {DEMO_PASSWORD}")
-        self.stdout.write(f"  Parent:  {parent.email} / {DEMO_PASSWORD}")
-        self.stdout.write(f"  Demo child id: {child.id} ({child})")
+        return completed_assessment, review_assessment
 
     def _upsert_user(self, email, username, first_name, last_name, role, is_staff, is_superuser):
         user, _ = CustomUser.objects.update_or_create(
