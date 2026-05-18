@@ -6,7 +6,7 @@
   },
   "deploy": {
     "preDeployCommand": "sh /app/scripts/predeploy.sh",
-    "startCommand": "gunicorn clearcodereading.wsgi:application --bind 0.0.0.0:${PORT:-8000} --workers ${WEB_CONCURRENCY:-3}",
+    "startCommand": "sh -c 'gunicorn clearcodereading.wsgi:application --bind 0.0.0.0:${PORT:-8000} --workers ${WEB_CONCURRENCY:-3}'",
     "healthcheckPath": "/api/v1/health/",
     "healthcheckTimeout": 300,
     "restartPolicyType": "ON_FAILURE",
