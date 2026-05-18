@@ -292,45 +292,107 @@
     const progress = document.getElementById('progress-bar');
     const backButton = document.getElementById('back-button');
     const nextButton = document.getElementById('next-button');
+    const readButton = document.getElementById('read-current-button');
 
     function getPreferredVoice() {
       if (!('speechSynthesis' in window)) return null;
       const voices = window.speechSynthesis.getVoices();
+      if (!voices.length) return null;
+      const englishVoices = voices.filter(voice => voice.lang && voice.lang.toLowerCase().startsWith('en'));
+      const candidates = englishVoices.length ? englishVoices : voices;
       const preferredNames = [
-        'Samantha', 'Victoria', 'Susan', 'Karen', 'Moira',
-        'Google US English Female', 'Microsoft Aria', 'Microsoft Jenny', 'Microsoft Zira'
+        'Samantha (Enhanced)', 'Samantha', 'Victoria (Enhanced)', 'Victoria',
+        'Karen (Enhanced)', 'Karen', 'Moira (Enhanced)', 'Moira',
+        'Google US English', 'Microsoft Jenny', 'Microsoft Aria', 'Microsoft Zira'
       ];
-      return voices.find(voice => preferredNames.some(name => voice.name.includes(name)))
-        || voices.find(voice => voice.lang && voice.lang.toLowerCase().startsWith('en') && /female|woman|samantha|victoria|karen|jenny|aria|zira/i.test(voice.name))
-        || voices.find(voice => voice.lang && voice.lang.toLowerCase().startsWith('en'))
-        || voices[0]
-        || null;
+      return candidates
+        .map(voice => {
+          const name = voice.name.toLowerCase();
+          let score = 0;
+          preferredNames.forEach((preferredName, index) => {
+            if (voice.name.includes(preferredName)) score += 120 - index;
+          });
+          if (/enhanced|premium|natural|neural|online/i.test(voice.name)) score += 60;
+          if (/samantha|victoria|karen|moira|jenny|aria|zira|female|woman/i.test(voice.name)) score += 45;
+          if (/google|microsoft|apple/i.test(voice.name)) score += 20;
+          if (/compact|default|fred|daniel|alex|male/i.test(name)) score -= 40;
+          if (voice.localService === false) score += 10;
+          return { voice, score };
+        })
+        .sort((a, b) => b.score - a.score)[0].voice;
     }
 
-    function speak(text) {
+    function normalizeSpeechText(text) {
+      return text
+        .replace(/[“”]/g, '"')
+        .replace(/—/g, ', ')
+        .replace(/\/m\//g, 'the mmm sound')
+        .replace(/\s+/g, ' ')
+        .trim();
+    }
+
+    function buildUtterance(text, options = {}) {
+      const utterance = new SpeechSynthesisUtterance(normalizeSpeechText(text));
+      utterance.voice = state.preferredVoice || getPreferredVoice();
+      utterance.rate = options.rate || 0.82;
+      utterance.pitch = options.pitch || 1.03;
+      utterance.volume = 1;
+      return utterance;
+    }
+
+    function speak(parts) {
       if (!('speechSynthesis' in window)) {
         body.insertAdjacentHTML('beforeend', '<p class="mt-4 rounded-2xl bg-blush px-4 py-3 text-sm font-black text-coral">Read aloud is not available in this browser.</p>');
         return;
       }
       window.speechSynthesis.cancel();
-      const utterance = new SpeechSynthesisUtterance(text);
-      utterance.voice = state.preferredVoice || getPreferredVoice();
-      utterance.rate = 0.88;
-      utterance.pitch = 1.08;
-      utterance.volume = 1;
-      window.speechSynthesis.speak(utterance);
+      const queue = Array.isArray(parts) ? parts : [{ text: parts }];
+      readButton.textContent = 'Reading...';
+      readButton.setAttribute('aria-pressed', 'true');
+
+      function speakNext(index) {
+        if (index >= queue.length) {
+          readButton.textContent = 'Read aloud';
+          readButton.setAttribute('aria-pressed', 'false');
+          return;
+        }
+        const part = queue[index];
+        const utterance = buildUtterance(part.text, part);
+        utterance.onend = () => window.setTimeout(() => speakNext(index + 1), part.pause || 180);
+        utterance.onerror = () => speakNext(index + 1);
+        window.speechSynthesis.speak(utterance);
+      }
+
+      speakNext(0);
     }
 
     function speechTextForStep(step) {
       if (step.type === 'intro') {
-        return 'Welcome to Clear Code Reading. First, enter your child’s name and age. Sit with your child and let them answer the reading questions.';
+        return [
+          { text: 'Hi there. Welcome to Clear Code Reading.', rate: 0.82, pitch: 1.06, pause: 350 },
+          { text: 'First, type your child’s name and choose their age.', rate: 0.8, pause: 300 },
+          { text: 'Then sit together and let your child answer the reading questions.', rate: 0.8 }
+        ];
       }
       if (step.type === 'result') {
         const result = calculateResults();
-        return `Your reading snapshot is ready. You are reading at a ${result.readingAge.toFixed(1)} year old level.`;
+        return [
+          { text: 'Your reading snapshot is ready.', rate: 0.82, pitch: 1.05, pause: 300 },
+          { text: `You are reading at a ${result.readingAge.toFixed(1)} year old level.`, rate: 0.78, pitch: 1.04 }
+        ];
       }
-      const options = step.options.map((option, index) => `Choice ${index + 1}: ${option.label}.`).join(' ');
-      return `${step.title}. ${step.prompt} ${step.why} ${options}`;
+      return [
+        { text: step.title, rate: 0.82, pitch: 1.05, pause: 260 },
+        { text: step.prompt, rate: 0.76, pitch: 1.04, pause: 520 },
+        { text: 'Here are the choices.', rate: 0.8, pause: 220 },
+        ...step.options.map((option, index) => ({
+          text: `Choice ${index + 1}. ${option.label}.`,
+          rate: 0.72,
+          pitch: 1.03,
+          pause: 360
+        })),
+        { text: step.why, rate: 0.84, pitch: 1.01 }
+      ];
     }
 
     if ('speechSynthesis' in window) {
@@ -508,7 +570,13 @@
       render();
     });
 
-    document.getElementById('read-current-button').addEventListener('click', () => {
+    readButton.addEventListener('click', () => {
+      if ('speechSynthesis' in window && window.speechSynthesis.speaking) {
+        window.speechSynthesis.cancel();
+        readButton.textContent = 'Read aloud';
+        readButton.setAttribute('aria-pressed', 'false');
+        return;
+      }
       speak(speechTextForStep(assessmentSteps[state.stepIndex]));
     });
 
