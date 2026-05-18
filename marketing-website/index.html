@@ -54,7 +54,7 @@
   <header class="fixed inset-x-0 top-0 z-50 border-b border-tealWarm/10 bg-white/90 backdrop-blur-xl">
     <nav class="mx-auto flex max-w-7xl items-center justify-between gap-4 px-4 py-3 sm:px-6 lg:px-8" aria-label="Main navigation">
       <a href="#top" class="focus-ring logo-plate flex items-center gap-3 rounded-2xl px-2 py-1 shadow-sm ring-1 ring-navySoft/5">
-        <img src="./assets/logo/clear-code-reading-logo.png" alt="Clear Code Reading" class="h-12 w-auto max-w-[210px] object-contain sm:max-w-[280px]">
+        <img src="./assets/logo/clear-code-reading-logo.png" alt="Clear Code Reading" class="h-12 w-auto max-w-[150px] object-contain sm:max-w-[280px]">
       </a>
       <div class="hidden items-center gap-6 text-sm font-bold text-navySoft/80 lg:flex">
         <a class="transition hover:text-tealWarm" href="#how">How it works</a>
@@ -64,10 +64,11 @@
         <a class="transition hover:text-tealWarm" href="#results">Results</a>
       </div>
       <div class="flex shrink-0 items-center gap-2 sm:gap-3">
-        <a href="/assessment/" class="focus-ring hidden items-center justify-center rounded-full bg-tealWarm px-5 py-3 text-sm font-extrabold text-white shadow-lg shadow-tealWarm/20 transition hover:-translate-y-0.5 hover:bg-[#00a699] md:inline-flex">
-          Start assessment
+        <a href="/assessment/" class="focus-ring inline-flex items-center justify-center rounded-full bg-tealWarm px-4 py-3 text-sm font-extrabold text-white shadow-lg shadow-tealWarm/20 transition hover:-translate-y-0.5 hover:bg-[#00a699] sm:px-5">
+          <span class="sm:hidden">Start</span>
+          <span class="hidden sm:inline">Start assessment</span>
         </a>
-        <a href="/login/" class="focus-ring inline-flex items-center justify-center rounded-full bg-coral px-5 py-3 text-sm font-extrabold text-white shadow-lg shadow-coral/25 transition hover:-translate-y-0.5 hover:bg-[#ff5757]">
+        <a href="/login/" class="focus-ring inline-flex items-center justify-center rounded-full bg-coral px-4 py-3 text-sm font-extrabold text-white shadow-lg shadow-coral/25 transition hover:-translate-y-0.5 hover:bg-[#ff5757] sm:px-5">
           Login
         </a>
       </div>
@@ -75,8 +76,8 @@
   </header>
 
   <main id="top">
-    <section class="hero-pattern overflow-hidden pb-16 pt-28 sm:pb-24 sm:pt-32">
-      <div class="mx-auto grid max-w-7xl items-center gap-12 px-4 sm:px-6 lg:grid-cols-[1.02fr_.98fr] lg:px-8">
+    <section class="hero-pattern overflow-hidden pb-12 pt-20 sm:pb-24 sm:pt-32">
+      <div class="mx-auto grid max-w-7xl items-center gap-8 px-4 sm:gap-12 sm:px-6 lg:grid-cols-[1.02fr_.98fr] lg:px-8">
         <div>
           {% if messages %}
             <div class="mb-5 space-y-2">
@@ -85,21 +86,21 @@
               {% endfor %}
             </div>
           {% endif %}
-          <p class="mb-5 inline-flex rounded-full bg-white px-4 py-2 text-sm font-extrabold text-tealWarm shadow-sm ring-1 ring-tealWarm/15">
+          <p class="mb-3 inline-flex rounded-full bg-white px-4 py-2 text-sm font-extrabold text-tealWarm shadow-sm ring-1 ring-tealWarm/15 sm:mb-5">
             Human-guided reading growth for ages 4-10
           </p>
-          <h1 class="max-w-4xl text-4xl font-black leading-tight tracking-normal text-navySoft sm:text-6xl">
+          <h1 class="max-w-4xl text-3xl font-black leading-tight tracking-normal text-navySoft sm:text-6xl">
             Where every child learns to read clearly.
           </h1>
-          <p class="mt-6 max-w-2xl text-lg leading-8 text-navySoft/75 sm:text-xl">
+          <p class="mt-4 max-w-2xl text-base leading-7 text-navySoft/75 sm:mt-6 sm:text-xl sm:leading-8">
             Clear Code Reading starts with a playful digital assessment, adds a real human evaluator, then builds a personalized path through phonics, sight words, fluency, and comprehension.
           </p>
-          <div class="mt-8 lg:hidden">
+          <div class="mt-5 lg:hidden">
             <div class="relative rounded-[2rem] bg-white p-3 shadow-2xl shadow-tealWarm/15 ring-1 ring-tealWarm/10">
-              <img class="h-72 w-full rounded-[1.5rem] object-cover object-center" src="./assets/images/hero-reading-assessment.png" alt="Illustration of a smiling child using the Clear Code Reading tablet assessment with books, alphabet blocks, and a reading age estimate card.">
+              <img class="h-48 w-full rounded-[1.5rem] object-cover object-center sm:h-72" src="https://images.unsplash.com/photo-1771765754567-e7b5bbf6a3b3?auto=format&fit=crop&w=1200&q=85" alt="A smiling child reading with a caring educator in a bright classroom.">
             </div>
           </div>
-          <div class="mt-8 flex flex-col gap-3 sm:flex-row">
+          <div class="mt-5 flex flex-col gap-3 sm:mt-8 sm:flex-row">
             <a href="/assessment/" class="focus-ring rounded-full bg-tealWarm px-7 py-4 text-center text-base font-black text-white shadow-glow transition hover:-translate-y-1 hover:bg-[#00a699]">
               Start free assessment
             </a>
@@ -107,7 +108,7 @@
               For schools &amp; teachers
             </button>
           </div>
-          <div class="mt-8 flex flex-wrap gap-3 text-sm font-bold text-navySoft/65">
+          <div class="mt-6 flex flex-wrap gap-3 text-sm font-bold text-navySoft/65 sm:mt-8">
             <span class="rounded-full bg-white/80 px-4 py-2">COPPA-conscious</span>
             <span class="rounded-full bg-white/80 px-4 py-2">Human evaluator review</span>
             <span class="rounded-full bg-white/80 px-4 py-2">Adaptive lessons</span>
@@ -117,7 +118,7 @@
         <div class="relative hidden lg:block">
           <div class="absolute -left-8 top-10 hidden h-20 w-20 rounded-[2rem] bg-sunny/70 blur-xl sm:block"></div>
           <div class="relative rounded-[2rem] bg-white p-4 shadow-2xl shadow-tealWarm/15 ring-1 ring-tealWarm/10">
-            <img class="h-72 w-full rounded-[1.5rem] object-cover object-center sm:h-[440px]" src="./assets/images/hero-reading-assessment.png" alt="Illustration of a smiling child using the Clear Code Reading tablet assessment with books, alphabet blocks, and a reading age estimate card.">
+            <img class="h-72 w-full rounded-[1.5rem] object-cover object-center sm:h-[440px]" src="https://images.unsplash.com/photo-1771765754567-e7b5bbf6a3b3?auto=format&fit=crop&w=1400&q=85" alt="A smiling child reading with a caring educator in a bright classroom.">
           </div>
         </div>
       </div>
@@ -129,17 +130,39 @@
           <p class="text-sm font-black uppercase tracking-[0.2em] text-coral">How it works</p>
           <h2 class="mt-3 text-3xl font-black text-navySoft sm:text-5xl">A clear path from assessment to confident reading.</h2>
         </div>
-        <div class="mt-12 flex justify-center">
-          <figure class="w-full max-w-[980px] overflow-hidden rounded-[2rem] bg-white shadow-2xl shadow-tealWarm/10 ring-1 ring-navySoft/10">
-            <img
-              src="./assets/images/how-it-works-cards.png"
-              srcset="./assets/images/how-it-works-cards.png 1254w, ./assets/images/how-it-works-cards@2x.png 2508w"
-              sizes="(min-width: 1280px) 980px, calc(100vw - 2rem)"
-              alt="Four illustrated Clear Code Reading cards: Digital Assessment, Human Evaluator Review, Personalized Lessons, and Real Progress."
-              class="w-full"
-              loading="lazy"
-            >
-          </figure>
+        <div class="mt-12 grid gap-5 md:grid-cols-2 xl:grid-cols-4">
+          <article class="overflow-hidden rounded-[2rem] bg-mist shadow-xl shadow-tealWarm/10 ring-1 ring-navySoft/10 transition hover:-translate-y-1">
+            <img src="https://images.unsplash.com/photo-1588072432836-e10032774350?auto=format&fit=crop&w=900&q=85" alt="A child working through a reading activity in a classroom." class="h-52 w-full object-cover" loading="lazy">
+            <div class="p-6">
+              <span class="grid h-11 w-11 place-items-center rounded-2xl bg-tealWarm text-xl font-black text-white">1</span>
+              <h3 class="mt-5 text-2xl font-black">Digital Assessment</h3>
+              <p class="mt-3 text-sm leading-6 text-navySoft/70">Children play through friendly reading tasks that uncover decoding, fluency, and comprehension patterns.</p>
+            </div>
+          </article>
+          <article class="overflow-hidden rounded-[2rem] bg-blush shadow-xl shadow-coral/10 ring-1 ring-navySoft/10 transition hover:-translate-y-1">
+            <img src="https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?auto=format&fit=crop&w=900&q=85" alt="A warm educator reviewing reading notes with a student." class="h-52 w-full object-cover" loading="lazy">
+            <div class="p-6">
+              <span class="grid h-11 w-11 place-items-center rounded-2xl bg-coral text-xl font-black text-white">2</span>
+              <h3 class="mt-5 text-2xl font-black">Human Evaluator Review</h3>
+              <p class="mt-3 text-sm leading-6 text-navySoft/70">A trained evaluator confirms the results virtually or in person, keeping care at the center.</p>
+            </div>
+          </article>
+          <article class="overflow-hidden rounded-[2rem] bg-cream shadow-xl shadow-sunny/10 ring-1 ring-navySoft/10 transition hover:-translate-y-1">
+            <img src="https://images.unsplash.com/photo-1488521787991-ed7bbaae773c?auto=format&fit=crop&w=900&q=85" alt="A child and teacher reading together during a personalized lesson." class="h-52 w-full object-cover" loading="lazy">
+            <div class="p-6">
+              <span class="grid h-11 w-11 place-items-center rounded-2xl bg-sunny text-xl font-black text-navySoft">3</span>
+              <h3 class="mt-5 text-2xl font-black">Personalized Lessons</h3>
+              <p class="mt-3 text-sm leading-6 text-navySoft/70">Adaptive phonics, sight words, fluency, and comprehension lessons meet each child right where they are.</p>
+            </div>
+          </article>
+          <article class="overflow-hidden rounded-[2rem] bg-white shadow-xl shadow-navySoft/10 ring-1 ring-navySoft/10 transition hover:-translate-y-1">
+            <img src="https://images.unsplash.com/photo-1542810634-71277d95dcbb?auto=format&fit=crop&w=900&q=85" alt="A happy child reading with a parent and celebrating progress." class="h-52 w-full object-cover" loading="lazy">
+            <div class="p-6">
+              <span class="grid h-11 w-11 place-items-center rounded-2xl bg-navySoft text-xl font-black text-white">4</span>
+              <h3 class="mt-5 text-2xl font-black">Real Progress</h3>
+              <p class="mt-3 text-sm leading-6 text-navySoft/70">Parents and educators see clear growth, next steps, and mastery records that are easy to trust.</p>
+            </div>
+          </article>
         </div>
       </div>
     </section>
@@ -151,17 +174,23 @@
           <h2 class="mt-3 text-3xl font-black sm:text-5xl">Smart technology, checked by human wisdom.</h2>
           <p class="mt-5 text-lg leading-8 text-navySoft/70">Reading is personal. We use technology to spot patterns quickly, then put real educators in the loop so every recommendation feels grounded, warm, and right for the child.</p>
         </div>
-        <div class="mt-12 flex justify-center">
-          <figure class="w-full max-w-[1120px] overflow-hidden rounded-[2rem] bg-white shadow-2xl shadow-coral/10 ring-1 ring-navySoft/10">
-            <img
-              src="./assets/images/clear-code-difference-comparison.png"
-              srcset="./assets/images/clear-code-difference-comparison.png 1536w, ./assets/images/clear-code-difference-comparison@2x.png 3072w"
-              sizes="(min-width: 1280px) 1120px, calc(100vw - 2rem)"
-              alt="Comparison graphic showing tech-only apps and static worksheets versus Clear Code Reading and adaptive curriculum."
-              class="w-full"
-              loading="lazy"
-            >
-          </figure>
+        <div class="mt-12 grid gap-5 lg:grid-cols-2">
+          <article class="overflow-hidden rounded-[2rem] bg-white shadow-xl shadow-navySoft/10 ring-1 ring-navySoft/10">
+            <img src="https://images.unsplash.com/photo-1509062522246-3755977927d7?auto=format&fit=crop&w=1100&q=85" alt="Students practicing reading in a classroom." class="h-56 w-full object-cover" loading="lazy">
+            <div class="p-7">
+              <p class="text-sm font-black uppercase tracking-[0.16em] text-navySoft/45">Tech-only apps and worksheets</p>
+              <h3 class="mt-3 text-2xl font-black">Practice without enough context</h3>
+              <p class="mt-3 leading-7 text-navySoft/70">Fast practice can help, but it is hard to know when a child is guessing, freezing, or needs reassurance from a real person.</p>
+            </div>
+          </article>
+          <article class="overflow-hidden rounded-[2rem] bg-white shadow-2xl shadow-coral/15 ring-2 ring-coral/20">
+            <img src="https://images.unsplash.com/photo-1588072432836-e10032774350?auto=format&fit=crop&w=1100&q=85" alt="A teacher and child reading together in a bright learning space." class="h-56 w-full object-cover" loading="lazy">
+            <div class="p-7">
+              <p class="text-sm font-black uppercase tracking-[0.16em] text-coral">Clear Code Reading</p>
+              <h3 class="mt-3 text-2xl font-black">Fast insight, checked by human wisdom</h3>
+              <p class="mt-3 leading-7 text-navySoft/70">The digital survey spots patterns quickly, then an evaluator reviews the evidence and guides the lesson path with warmth and judgment.</p>
+            </div>
+          </article>
         </div>
       </div>
     </section>
