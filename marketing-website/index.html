@@ -131,12 +131,23 @@
             <p class="text-sm font-black uppercase tracking-[0.2em] text-coral">How it works</p>
             <button
               type="button"
-              class="focus-ring inline-flex items-center justify-center rounded-full bg-tealWarm px-4 py-2 text-sm font-black text-white shadow-lg shadow-tealWarm/20 transition hover:-translate-y-0.5 hover:bg-[#00a699]"
+              class="focus-ring inline-flex items-center gap-2 rounded-full bg-white px-4 py-2 text-sm font-black text-navySoft shadow-lg shadow-tealWarm/15 ring-2 ring-tealWarm/25 transition hover:-translate-y-0.5 hover:bg-mist hover:ring-tealWarm/45"
               data-section-audio="marketingHowItWorks"
-              data-idle-label="Explain out loud"
-              data-playing-label="Explaining..."
+              data-idle-label="Listen to section"
+              data-playing-label="Playing audio..."
+              aria-label="Play audio explanation for the How it works section"
             >
-              Explain out loud
+              <span class="flex h-8 w-8 items-center justify-center rounded-full bg-tealWarm text-white shadow-sm" aria-hidden="true">
+                <svg class="h-4 w-4 translate-x-px" viewBox="0 0 24 24" fill="currentColor">
+                  <path d="M8 5.5v13l10-6.5-10-6.5Z"></path>
+                </svg>
+              </span>
+              <span class="flex items-center gap-1.5" data-section-audio-label>Listen to section</span>
+              <svg class="h-4 w-4 text-tealWarm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <path d="M11 5 6 9H3v6h3l5 4V5Z"></path>
+                <path d="M15.5 8.5a5 5 0 0 1 0 7"></path>
+                <path d="M18.5 5.5a9 9 0 0 1 0 13"></path>
+              </svg>
             </button>
           </div>
           <h2 class="mt-3 text-3xl font-black text-navySoft sm:text-5xl">A clear path from assessment to confident reading.</h2>
@@ -163,12 +174,23 @@
             <p class="text-sm font-black uppercase tracking-[0.2em] text-tealWarm">The Clear Code Difference</p>
             <button
               type="button"
-              class="focus-ring inline-flex items-center justify-center rounded-full bg-coral px-4 py-2 text-sm font-black text-white shadow-lg shadow-coral/20 transition hover:-translate-y-0.5 hover:bg-[#ff5757]"
+              class="focus-ring inline-flex items-center gap-2 rounded-full bg-white px-4 py-2 text-sm font-black text-navySoft shadow-lg shadow-coral/15 ring-2 ring-coral/25 transition hover:-translate-y-0.5 hover:bg-blush hover:ring-coral/45"
               data-section-audio="marketingDifference"
-              data-idle-label="Explain out loud"
-              data-playing-label="Explaining..."
+              data-idle-label="Listen to section"
+              data-playing-label="Playing audio..."
+              aria-label="Play audio explanation for the Clear Code Difference section"
             >
-              Explain out loud
+              <span class="flex h-8 w-8 items-center justify-center rounded-full bg-coral text-white shadow-sm" aria-hidden="true">
+                <svg class="h-4 w-4 translate-x-px" viewBox="0 0 24 24" fill="currentColor">
+                  <path d="M8 5.5v13l10-6.5-10-6.5Z"></path>
+                </svg>
+              </span>
+              <span class="flex items-center gap-1.5" data-section-audio-label>Listen to section</span>
+              <svg class="h-4 w-4 text-coral" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <path d="M11 5 6 9H3v6h3l5 4V5Z"></path>
+                <path d="M15.5 8.5a5 5 0 0 1 0 7"></path>
+                <path d="M18.5 5.5a9 9 0 0 1 0 13"></path>
+              </svg>
             </button>
           </div>
           <h2 class="mt-3 text-3xl font-black sm:text-5xl">Smart technology, checked by human wisdom.</h2>
@@ -385,7 +407,8 @@
 
     function resetSectionAudioButton(button) {
       if (!button) return;
-      button.textContent = button.dataset.idleLabel || 'Explain out loud';
+      const label = button.querySelector('[data-section-audio-label]');
+      if (label) label.textContent = button.dataset.idleLabel || 'Listen to section';
       button.removeAttribute('aria-pressed');
       button.disabled = false;
     }
@@ -417,7 +440,8 @@
         const audio = new Audio(`/assessment-audio/${key}.mp3`);
         sectionAudioPlayer = audio;
         activeSectionAudioButton = button;
-        button.textContent = button.dataset.playingLabel || 'Explaining...';
+        const label = button.querySelector('[data-section-audio-label]');
+        if (label) label.textContent = button.dataset.playingLabel || 'Playing audio...';
         button.setAttribute('aria-pressed', 'true');
         button.disabled = true;
 
