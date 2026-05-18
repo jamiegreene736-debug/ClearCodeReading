@@ -1,4 +1,5 @@
 from django.db import models
+from django.conf import settings
 from django.utils import timezone
 
 
@@ -105,3 +106,94 @@ class TeachingAid(TimestampedModel, SoftDeleteModel):
 
     def __str__(self):
         return self.title
+
+
+class LessonTemplate(TimestampedModel, SoftDeleteModel):
+    title = models.CharField(max_length=255)
+    slug = models.SlugField(max_length=160, unique=True)
+    skill = models.ForeignKey(Skill, on_delete=models.SET_NULL, null=True, blank=True, related_name="lesson_templates")
+    grade_band = models.CharField(max_length=64, blank=True, db_index=True)
+    description = models.TextField(blank=True)
+    goal = models.CharField(max_length=255, blank=True)
+    recommended_minutes = models.PositiveIntegerField(default=15)
+    activities = models.JSONField(default=list, blank=True)
+    materials = models.JSONField(default=list, blank=True)
+    is_active = models.BooleanField(default=True, db_index=True)
+
+    class Meta:
+        ordering = ["title"]
+        indexes = [
+            models.Index(fields=["slug"]),
+            models.Index(fields=["grade_band", "is_active"]),
+            models.Index(fields=["skill", "is_active"]),
+            models.Index(fields=["is_deleted", "created_at"]),
+        ]
+
+    def __str__(self):
+        return self.title
+
+
+class TeacherLessonTemplate(TimestampedModel, SoftDeleteModel):
+    teacher = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name="assigned_lesson_templates",
+        limit_choices_to={"role": "teacher"},
+    )
+    template = models.ForeignKey(LessonTemplate, on_delete=models.CASCADE, related_name="teacher_assignments")
+    assigned_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="template_assignments_made",
+    )
+    notes = models.TextField(blank=True)
+
+    class Meta:
+        ordering = ["teacher__last_name", "template__title"]
+        constraints = [
+            models.UniqueConstraint(fields=["teacher", "template"], name="unique_teacher_lesson_template"),
+        ]
+        indexes = [
+            models.Index(fields=["teacher", "is_deleted"]),
+            models.Index(fields=["template", "is_deleted"]),
+            models.Index(fields=["is_deleted", "created_at"]),
+        ]
+
+    def __str__(self):
+        return f"{self.template} -> {self.teacher}"
+
+
+class ChildLessonAssignment(TimestampedModel, SoftDeleteModel):
+    class Status(models.TextChoices):
+        ASSIGNED = "assigned", "Assigned"
+        IN_PROGRESS = "in_progress", "In Progress"
+        COMPLETED = "completed", "Completed"
+        PAUSED = "paused", "Paused"
+
+    child = models.ForeignKey("users.ChildProfile", on_delete=models.CASCADE, related_name="lesson_assignments")
+    template = models.ForeignKey(LessonTemplate, on_delete=models.PROTECT, related_name="child_assignments")
+    assigned_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="child_lesson_assignments_made",
+    )
+    status = models.CharField(max_length=32, choices=Status.choices, default=Status.ASSIGNED, db_index=True)
+    due_date = models.DateField(null=True, blank=True, db_index=True)
+    teacher_notes = models.TextField(blank=True)
+    completed_at = models.DateTimeField(null=True, blank=True)
+
+    class Meta:
+        ordering = ["status", "due_date", "-created_at"]
+        indexes = [
+            models.Index(fields=["child", "status"]),
+            models.Index(fields=["template", "status"]),
+            models.Index(fields=["assigned_by", "status"]),
+            models.Index(fields=["is_deleted", "created_at"]),
+        ]
+
+    def __str__(self):
+        return f"{self.template} for {self.child}"

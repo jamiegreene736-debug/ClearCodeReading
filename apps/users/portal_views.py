@@ -6,10 +6,12 @@ from django.shortcuts import redirect
 from django.urls import reverse_lazy
 from django.utils import timezone
 from django.utils.crypto import get_random_string
+from django.utils.dateparse import parse_date
 from django.views.generic import TemplateView, View
 
 from apps.assessments.models import Assessment, AssessmentResult
 from apps.crm.models import Lead
+from apps.curriculum.models import ChildLessonAssignment, LessonTemplate, TeacherLessonTemplate
 from apps.users.models import ChildProfile, CustomUser, GuardianRelationship
 
 
@@ -88,6 +90,7 @@ class PortalDashboardView(PortalAuthMixin, TemplateView):
         context["is_admin"] = user.role in {CustomUser.Role.SUPER_ADMIN, CustomUser.Role.SCHOOL_ADMIN}
         context["is_parent"] = user.role == CustomUser.Role.GUARDIAN
         context["is_teacher"] = user.role == CustomUser.Role.TEACHER
+        context["is_child"] = user.role == CustomUser.Role.STUDENT
 
         if context["is_parent"]:
             relationships = GuardianRelationship.objects.filter(
@@ -96,6 +99,11 @@ class PortalDashboardView(PortalAuthMixin, TemplateView):
                 child__is_deleted=False,
             ).select_related("child")
             children = [relationship.child for relationship in relationships]
+        elif context["is_child"]:
+            child_profile = getattr(user, "child_profile", None)
+            children = [child_profile] if child_profile and not child_profile.is_deleted else []
+        elif context["is_teacher"]:
+            children = self._children_for_teacher(user)
         else:
             children = list(ChildProfile.objects.filter(is_deleted=False).order_by("last_name", "first_name")[:12])
 
@@ -119,6 +127,23 @@ class PortalDashboardView(PortalAuthMixin, TemplateView):
             lead_count = lead_queryset.count()
             new_lead_count = lead_queryset.filter(status=Lead.Status.NEW).count()
 
+        lesson_templates = LessonTemplate.objects.filter(is_active=True, is_deleted=False).select_related("skill")
+        teacher_template_assignments = TeacherLessonTemplate.objects.filter(is_deleted=False).select_related(
+            "teacher", "template", "assigned_by"
+        )
+        if context["is_teacher"]:
+            teacher_template_assignments = teacher_template_assignments.filter(teacher=user)
+            available_lesson_templates = [assignment.template for assignment in teacher_template_assignments]
+        elif context["is_admin"]:
+            available_lesson_templates = lesson_templates
+        else:
+            available_lesson_templates = LessonTemplate.objects.none()
+
+        child_lesson_assignments = ChildLessonAssignment.objects.filter(
+            child__in=children,
+            is_deleted=False,
+        ).select_related("child", "template", "assigned_by")
+
         context.update(
             {
                 "children": children,
@@ -135,9 +160,21 @@ class PortalDashboardView(PortalAuthMixin, TemplateView):
                 "lead_count": lead_count,
                 "new_lead_count": new_lead_count,
                 "inbox_messages": self._inbox_messages()[-2:],
+                "lesson_templates": lesson_templates,
+                "available_lesson_templates": available_lesson_templates,
+                "teacher_template_assignments": teacher_template_assignments[:12],
+                "child_lesson_assignments": child_lesson_assignments[:12],
             }
         )
         return context
+
+    @staticmethod
+    def _children_for_teacher(teacher):
+        assigned_children = []
+        for child in ChildProfile.objects.filter(is_deleted=False).order_by("last_name", "first_name"):
+            if str((child.learning_profile or {}).get("assigned_teacher_id")) == str(teacher.id):
+                assigned_children.append(child)
+        return assigned_children
 
     @staticmethod
     def _kpi_count(result):
@@ -206,6 +243,96 @@ class AssignTeacherView(PortalAuthMixin, View):
         }
         child.save(update_fields=["learning_profile", "updated_at"])
         messages.success(request, f"Assigned {teacher.get_full_name() or teacher.email} to {child}.")
+        return redirect("portal_dashboard")
+
+
+class AssignTemplateToTeacherView(PortalAuthMixin, View):
+    def post(self, request):
+        if request.user.role not in {CustomUser.Role.SUPER_ADMIN, CustomUser.Role.SCHOOL_ADMIN}:
+            messages.error(request, "Only program administrators can assign lesson templates.")
+            return redirect("portal_dashboard")
+
+        teacher = CustomUser.objects.filter(
+            id=request.POST.get("teacher_id"),
+            role=CustomUser.Role.TEACHER,
+            is_active=True,
+            is_deleted=False,
+        ).first()
+        template = LessonTemplate.objects.filter(
+            id=request.POST.get("template_id"),
+            is_active=True,
+            is_deleted=False,
+        ).first()
+        if teacher is None or template is None:
+            messages.error(request, "Choose a valid teacher and lesson template.")
+            return redirect("portal_dashboard")
+
+        assignment, created = TeacherLessonTemplate.objects.update_or_create(
+            teacher=teacher,
+            template=template,
+            defaults={
+                "assigned_by": request.user,
+                "notes": request.POST.get("notes", "").strip(),
+                "is_deleted": False,
+                "deleted_at": None,
+            },
+        )
+        verb = "Assigned" if created else "Updated"
+        messages.success(request, f"{verb} {template.title} for {teacher.get_full_name() or teacher.email}.")
+        return redirect("portal_dashboard")
+
+
+class AssignLessonTemplateToChildView(PortalAuthMixin, View):
+    def post(self, request):
+        if request.user.role not in {CustomUser.Role.SUPER_ADMIN, CustomUser.Role.SCHOOL_ADMIN, CustomUser.Role.TEACHER}:
+            messages.error(request, "Only teachers and administrators can assign lessons.")
+            return redirect("portal_dashboard")
+
+        child = ChildProfile.objects.filter(id=request.POST.get("child_id"), is_deleted=False).first()
+        template = LessonTemplate.objects.filter(
+            id=request.POST.get("template_id"),
+            is_active=True,
+            is_deleted=False,
+        ).first()
+        if child is None or template is None:
+            messages.error(request, "Choose a valid reader and lesson template.")
+            return redirect("portal_dashboard")
+
+        if request.user.role == CustomUser.Role.TEACHER:
+            if str((child.learning_profile or {}).get("assigned_teacher_id")) != str(request.user.id):
+                messages.error(request, "That reader is not assigned to your teacher workspace.")
+                return redirect("portal_dashboard")
+            has_template = TeacherLessonTemplate.objects.filter(
+                teacher=request.user,
+                template=template,
+                is_deleted=False,
+            ).exists()
+            if not has_template:
+                messages.error(request, "That lesson template has not been assigned to you by an administrator.")
+                return redirect("portal_dashboard")
+
+        due_date_value = parse_date(request.POST.get("due_date", "").strip()) if request.POST.get("due_date") else None
+        existing = ChildLessonAssignment.objects.filter(
+            child=child,
+            template=template,
+            status__in=[ChildLessonAssignment.Status.ASSIGNED, ChildLessonAssignment.Status.IN_PROGRESS],
+            is_deleted=False,
+        ).first()
+        if existing:
+            existing.assigned_by = request.user
+            existing.due_date = due_date_value
+            existing.teacher_notes = request.POST.get("teacher_notes", "").strip()
+            existing.save(update_fields=["assigned_by", "due_date", "teacher_notes", "updated_at"])
+            messages.success(request, f"Updated {template.title} for {child}.")
+        else:
+            ChildLessonAssignment.objects.create(
+                child=child,
+                template=template,
+                assigned_by=request.user,
+                due_date=due_date_value,
+                teacher_notes=request.POST.get("teacher_notes", "").strip(),
+            )
+            messages.success(request, f"Assigned {template.title} to {child}.")
         return redirect("portal_dashboard")
 
 

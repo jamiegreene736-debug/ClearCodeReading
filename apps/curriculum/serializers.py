@@ -1,6 +1,6 @@
 from rest_framework import serializers
 
-from apps.curriculum.models import Lesson, Skill, TeachingAid
+from apps.curriculum.models import ChildLessonAssignment, Lesson, LessonTemplate, Skill, TeacherLessonTemplate, TeachingAid
 
 
 class SkillSerializer(serializers.ModelSerializer):
@@ -87,3 +87,101 @@ class LessonSerializer(serializers.ModelSerializer):
             "updated_at",
         ]
         read_only_fields = ["id", "skill_detail", "teaching_aids", "is_deleted", "deleted_at", "created_at", "updated_at"]
+
+
+class LessonTemplateSerializer(serializers.ModelSerializer):
+    skill_detail = SkillSerializer(source="skill", read_only=True)
+
+    class Meta:
+        model = LessonTemplate
+        fields = [
+            "id",
+            "title",
+            "slug",
+            "skill",
+            "skill_detail",
+            "grade_band",
+            "description",
+            "goal",
+            "recommended_minutes",
+            "activities",
+            "materials",
+            "is_active",
+            "is_deleted",
+            "deleted_at",
+            "created_at",
+            "updated_at",
+        ]
+        read_only_fields = ["id", "skill_detail", "is_deleted", "deleted_at", "created_at", "updated_at"]
+
+
+class TeacherLessonTemplateSerializer(serializers.ModelSerializer):
+    teacher_name = serializers.CharField(source="teacher.get_full_name", read_only=True)
+    teacher_email = serializers.EmailField(source="teacher.email", read_only=True)
+    template_detail = LessonTemplateSerializer(source="template", read_only=True)
+    assigned_by_name = serializers.CharField(source="assigned_by.get_full_name", read_only=True)
+
+    class Meta:
+        model = TeacherLessonTemplate
+        fields = [
+            "id",
+            "teacher",
+            "teacher_name",
+            "teacher_email",
+            "template",
+            "template_detail",
+            "assigned_by",
+            "assigned_by_name",
+            "notes",
+            "is_deleted",
+            "deleted_at",
+            "created_at",
+            "updated_at",
+        ]
+        read_only_fields = [
+            "id",
+            "teacher_name",
+            "teacher_email",
+            "template_detail",
+            "assigned_by_name",
+            "is_deleted",
+            "deleted_at",
+            "created_at",
+            "updated_at",
+        ]
+
+
+class ChildLessonAssignmentSerializer(serializers.ModelSerializer):
+    child_name = serializers.CharField(source="child.__str__", read_only=True)
+    template_detail = LessonTemplateSerializer(source="template", read_only=True)
+    assigned_by_name = serializers.CharField(source="assigned_by.get_full_name", read_only=True)
+
+    class Meta:
+        model = ChildLessonAssignment
+        fields = [
+            "id",
+            "child",
+            "child_name",
+            "template",
+            "template_detail",
+            "assigned_by",
+            "assigned_by_name",
+            "status",
+            "due_date",
+            "teacher_notes",
+            "completed_at",
+            "is_deleted",
+            "deleted_at",
+            "created_at",
+            "updated_at",
+        ]
+        read_only_fields = [
+            "id",
+            "child_name",
+            "template_detail",
+            "assigned_by_name",
+            "is_deleted",
+            "deleted_at",
+            "created_at",
+            "updated_at",
+        ]

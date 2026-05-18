@@ -1,7 +1,7 @@
 from django.test import SimpleTestCase
 
-from apps.curriculum.models import Skill, TeachingAid
-from apps.curriculum.serializers import LessonSerializer, SkillSerializer
+from apps.curriculum.models import ChildLessonAssignment, LessonTemplate, Skill, TeachingAid
+from apps.curriculum.serializers import ChildLessonAssignmentSerializer, LessonSerializer, LessonTemplateSerializer, SkillSerializer
 
 
 class CurriculumTests(SimpleTestCase):
@@ -19,3 +19,11 @@ class CurriculumTests(SimpleTestCase):
 
     def test_skill_serializer_has_prerequisite_details(self):
         self.assertIn("prerequisite_details", SkillSerializer().fields)
+
+    def test_lesson_templates_support_teacher_assignment(self):
+        self.assertIn("assigned", ChildLessonAssignment.Status.values)
+        self.assertTrue(LessonTemplate._meta.get_field("activities").default is list)
+
+    def test_lesson_assignment_serializers_include_portal_fields(self):
+        self.assertIn("activities", LessonTemplateSerializer().fields)
+        self.assertIn("teacher_notes", ChildLessonAssignmentSerializer().fields)

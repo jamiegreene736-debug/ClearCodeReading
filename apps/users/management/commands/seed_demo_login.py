@@ -1,8 +1,11 @@
+from datetime import timedelta
+
 from django.core.management.base import BaseCommand
 from django.db.models.signals import post_save
 from django.utils import timezone
 
 from apps.assessments.models import Assessment, AssessmentResult
+from apps.curriculum.models import ChildLessonAssignment, LessonTemplate, TeacherLessonTemplate
 from apps.notifications.signals import handle_assessment_status_change
 from apps.users.models import ChildProfile, ConsentLog, CustomUser, GuardianRelationship
 
@@ -99,6 +102,7 @@ class Command(BaseCommand):
             )
 
         completed_assessment, review_assessment = self._seed_demo_assessments(child=child, teacher=teacher)
+        template_count, lesson_count = self._seed_demo_lessons(child=child, teacher=teacher, admin=admin)
 
         self.stdout.write(self.style.SUCCESS("Created Clear Code Reading demo credentials:"))
         self.stdout.write(f"  Admin:   {admin.email} / {DEMO_PASSWORD}")
@@ -107,6 +111,45 @@ class Command(BaseCommand):
         self.stdout.write(f"  Demo child id: {child.id} ({child})")
         self.stdout.write(f"  Demo completed assessment id: {completed_assessment.id}")
         self.stdout.write(f"  Demo review assessment id: {review_assessment.id}")
+        self.stdout.write(f"  Demo lesson templates assigned to teacher: {template_count}")
+        self.stdout.write(f"  Demo child lesson assignments: {lesson_count}")
+
+    def _seed_demo_lessons(self, child, teacher, admin):
+        templates = list(
+            LessonTemplate.objects.filter(
+                slug__in=["beginning-sounds-sprint", "short-vowel-decoding", "fluency-builder"],
+                is_active=True,
+                is_deleted=False,
+            )
+        )
+        for template in templates:
+            TeacherLessonTemplate.objects.update_or_create(
+                teacher=teacher,
+                template=template,
+                defaults={
+                    "assigned_by": admin,
+                    "notes": "Demo access for teacher lesson assignment workflow.",
+                    "is_deleted": False,
+                    "deleted_at": None,
+                },
+            )
+
+        lesson_count = 0
+        for template in templates[:2]:
+            ChildLessonAssignment.objects.update_or_create(
+                child=child,
+                template=template,
+                status=ChildLessonAssignment.Status.ASSIGNED,
+                defaults={
+                    "assigned_by": teacher,
+                    "due_date": timezone.localdate() + timedelta(days=7),
+                    "teacher_notes": "Demo plan: complete this before the next reading check-in.",
+                    "is_deleted": False,
+                    "deleted_at": None,
+                },
+            )
+            lesson_count += 1
+        return len(templates), lesson_count
 
     def _seed_demo_assessments(self, child, teacher):
         signal_disconnected = post_save.disconnect(
