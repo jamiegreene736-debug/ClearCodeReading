@@ -1,6 +1,6 @@
 from django.core.management.base import BaseCommand
 
-from apps.assessments.management.commands.generate_assessment_audio import ASSESSMENT_AUDIO
+from apps.assessments.audio import ASSESSMENT_AUDIO
 from apps.assessments.models import AssessmentAudioAsset
 
 

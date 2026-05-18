@@ -1,8 +1,10 @@
 from decimal import Decimal
 from types import SimpleNamespace
+from unittest.mock import patch
 
 from django.test import SimpleTestCase
 
+from apps.assessments.audio import generate_audio_asset
 from apps.assessments.models import Assessment
 from apps.assessments.reading_survey import score_reading_survey
 from apps.assessments.services import calculate_reading_survey_results
@@ -60,6 +62,33 @@ class AssessmentWorkflowTests(SimpleTestCase):
         self.assertEqual(result["final_message"], f"You are reading at an {result['reading_age']:.1f}-year-old level")
         self.assertGreaterEqual(result["reading_age"], 4.0)
         self.assertLessEqual(result["reading_age"], 11.0)
+
+    @patch.dict("os.environ", {"ELEVENLABS_API_KEY": "test-key", "ELEVENLABS_VOICE_ID": "test-voice"})
+    @patch("apps.assessments.audio.create_elevenlabs_speech", return_value=b"fake-mp3")
+    @patch("apps.assessments.audio.AssessmentAudioAsset")
+    def test_generate_audio_asset_creates_missing_cached_clip(self, asset_model, create_speech):
+        asset_model.objects.filter.return_value.first.return_value = None
+        cached_asset = SimpleNamespace(byte_length=8)
+        asset_model.objects.update_or_create.return_value = (cached_asset, True)
+
+        asset, did_generate = generate_audio_asset("intro")
+
+        self.assertIs(asset, cached_asset)
+        self.assertTrue(did_generate)
+        create_speech.assert_called_once()
+        asset_model.objects.update_or_create.assert_called_once()
+        self.assertEqual(asset_model.objects.update_or_create.call_args.kwargs["key"], "intro")
+
+    @patch("apps.assessments.audio.AssessmentAudioAsset")
+    def test_generate_audio_asset_skips_existing_cached_clip(self, asset_model):
+        cached_asset = SimpleNamespace(byte_length=8)
+        asset_model.objects.filter.return_value.first.return_value = cached_asset
+
+        asset, did_generate = generate_audio_asset("intro")
+
+        self.assertIs(asset, cached_asset)
+        self.assertFalse(did_generate)
+        asset_model.objects.update_or_create.assert_not_called()
 
     def _response(self, category, score_value):
         return SimpleNamespace(

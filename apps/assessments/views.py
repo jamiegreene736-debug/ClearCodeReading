@@ -1,3 +1,4 @@
+import logging
 from decimal import Decimal
 
 from django.http import Http404, HttpResponse
@@ -9,6 +10,7 @@ from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 
 from apps.api.permissions import COPPAConsentRequired, IsEvaluator, has_coppa_consent, is_parent_of_child, user_can_evaluate_child
+from apps.assessments.audio import AudioGenerationError, generate_audio_asset
 from apps.assessments.models import Assessment, AssessmentAudioAsset, AssessmentQuestion, ChildAssessmentResponse
 from apps.assessments.serializers import (
     AnswerSubmissionSerializer,
@@ -25,10 +27,17 @@ from apps.progress.models import Progress
 from apps.users.models import AuditLog
 
 
+logger = logging.getLogger(__name__)
+
+
 def assessment_audio(request, key):
     audio = AssessmentAudioAsset.objects.filter(key=key).first()
     if audio is None:
-        raise Http404("Assessment audio not found.")
+        try:
+            audio, _ = generate_audio_asset(key)
+        except AudioGenerationError as exc:
+            logger.warning("Assessment audio unavailable for %s: %s", key, exc)
+            raise Http404("Assessment audio not found.")
     response = HttpResponse(bytes(audio.audio), content_type=audio.content_type)
     response["Cache-Control"] = "public, max-age=31536000, immutable"
     response["Content-Length"] = str(audio.byte_length)

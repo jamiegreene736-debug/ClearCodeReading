@@ -17,7 +17,7 @@ urlpatterns = [
     path("inbox/", PortalInboxView.as_view(), name="portal_inbox"),
     path("assign-teacher/", AssignTeacherView.as_view(), name="assign_teacher"),
     path("demo-login/<str:role>/", DemoLoginView.as_view(), name="demo_login"),
-    path("assessment-audio/<slug:key>.mp3", assessment_audio, name="assessment_audio"),
+    path("assessment-audio/<str:key>.mp3", assessment_audio, name="assessment_audio"),
     path("assets/<path:path>", serve, {"document_root": settings.BASE_DIR / "marketing-website" / "assets"}, name="marketing_assets"),
     path("admin/", admin.site.urls),
     path("api/", include("apps.api.urls")),
