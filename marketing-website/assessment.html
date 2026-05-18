@@ -89,6 +89,9 @@
               <div>
                 <p id="step-eyebrow" class="text-sm font-black uppercase tracking-[0.18em] text-tealWarm">Step 1 of 12</p>
                 <h2 id="step-title" class="mt-2 text-2xl font-black sm:text-4xl">Let’s meet your reader.</h2>
+                <button id="read-current-button" class="focus-ring mt-4 rounded-full bg-mist px-4 py-2 text-sm font-black text-tealWarm shadow-sm ring-1 ring-tealWarm/20 transition hover:-translate-y-0.5 hover:bg-white" type="button">
+                  Read aloud
+                </button>
               </div>
               <div class="hidden h-20 w-20 place-items-center overflow-hidden rounded-3xl bg-white shadow-md ring-1 ring-tealWarm/15 sm:grid">
                 <img src="/assets/logo/clear-code-reading-icon.png" alt="" class="h-20 w-20 object-cover">
@@ -142,26 +145,26 @@
       {
         kpi: 'phonemicAwareness',
         title: 'Sound awareness',
-        prompt: 'Which word starts with the same sound as “sun”?',
+        prompt: 'Listen: sun, soap, moon. Which word starts like “sun”?',
         options: [
-          { label: 'sock', score: 1 },
+          { label: 'soap', score: 1 },
           { label: 'moon', score: 0 },
           { label: 'fish', score: 0 },
           { label: 'table', score: 0 }
         ],
-        why: 'Phonemic awareness shows whether a child can hear and play with the sounds inside words.'
+        why: 'This checks whether your child can hear the first sound in a word.'
       },
       {
         kpi: 'letterSound',
         title: 'Letter-sound knowledge',
-        prompt: 'What sound does the letter m usually make?',
+        prompt: 'Which word starts with /m/ like moon?',
         options: [
-          { label: '/m/ like moon', score: 1 },
-          { label: '/s/ like sun', score: 0 },
-          { label: '/t/ like top', score: 0 },
+          { label: 'map', score: 1 },
+          { label: 'sun', score: 0 },
+          { label: 'top', score: 0 },
           { label: 'I am not sure yet', score: 0 }
         ],
-        why: 'Letter-sound knowledge is one of the first bridges into decoding.'
+        why: 'This checks whether your child can match a sound to the beginning of a word.'
       },
       {
         kpi: 'phonics',
@@ -279,7 +282,8 @@
       stepIndex: 0,
       childName: '',
       childAge: '',
-      answers: {}
+      answers: {},
+      preferredVoice: null
     };
 
     const body = document.getElementById('step-body');
@@ -288,6 +292,52 @@
     const progress = document.getElementById('progress-bar');
     const backButton = document.getElementById('back-button');
     const nextButton = document.getElementById('next-button');
+
+    function getPreferredVoice() {
+      if (!('speechSynthesis' in window)) return null;
+      const voices = window.speechSynthesis.getVoices();
+      const preferredNames = [
+        'Samantha', 'Victoria', 'Susan', 'Karen', 'Moira',
+        'Google US English Female', 'Microsoft Aria', 'Microsoft Jenny', 'Microsoft Zira'
+      ];
+      return voices.find(voice => preferredNames.some(name => voice.name.includes(name)))
+        || voices.find(voice => voice.lang && voice.lang.toLowerCase().startsWith('en') && /female|woman|samantha|victoria|karen|jenny|aria|zira/i.test(voice.name))
+        || voices.find(voice => voice.lang && voice.lang.toLowerCase().startsWith('en'))
+        || voices[0]
+        || null;
+    }
+
+    function speak(text) {
+      if (!('speechSynthesis' in window)) {
+        body.insertAdjacentHTML('beforeend', '<p class="mt-4 rounded-2xl bg-blush px-4 py-3 text-sm font-black text-coral">Read aloud is not available in this browser.</p>');
+        return;
+      }
+      window.speechSynthesis.cancel();
+      const utterance = new SpeechSynthesisUtterance(text);
+      utterance.voice = state.preferredVoice || getPreferredVoice();
+      utterance.rate = 0.88;
+      utterance.pitch = 1.08;
+      utterance.volume = 1;
+      window.speechSynthesis.speak(utterance);
+    }
+
+    function speechTextForStep(step) {
+      if (step.type === 'intro') {
+        return 'Welcome to Clear Code Reading. First, enter your child’s name and age. Sit with your child and let them answer the reading questions.';
+      }
+      if (step.type === 'result') {
+        const result = calculateResults();
+        return `Your reading snapshot is ready. You are reading at a ${result.readingAge.toFixed(1)} year old level.`;
+      }
+      const options = step.options.map((option, index) => `Choice ${index + 1}: ${option.label}.`).join(' ');
+      return `${step.title}. ${step.prompt} ${step.why} ${options}`;
+    }
+
+    if ('speechSynthesis' in window) {
+      window.speechSynthesis.onvoiceschanged = () => {
+        state.preferredVoice = getPreferredVoice();
+      };
+    }
 
     function render() {
       const step = assessmentSteps[state.stepIndex];
@@ -456,6 +506,10 @@
     backButton.addEventListener('click', () => {
       state.stepIndex = Math.max(0, state.stepIndex - 1);
       render();
+    });
+
+    document.getElementById('read-current-button').addEventListener('click', () => {
+      speak(speechTextForStep(assessmentSteps[state.stepIndex]));
     });
 
     render();

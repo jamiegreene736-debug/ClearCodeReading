@@ -8,13 +8,14 @@ QUESTIONS = [
         "category": AssessmentQuestion.Category.PHONEMIC_AWARENESS,
         "difficulty": AssessmentQuestion.Difficulty.PRE_READER,
         "question_type": AssessmentQuestion.QuestionType.MULTIPLE_CHOICE,
-        "question_text": "Which two words start with the same sound?",
-        "correct_answer": {"value": "sun_sock"},
+        "question_text": "Listen: sun, soap, moon. Which word starts like sun?",
+        "correct_answer": {"value": "soap"},
         "sort_order": 10,
         "options": [
-            {"label": "sun and sock", "value": "sun_sock", "is_correct": True, "score_value": "1.00"},
-            {"label": "moon and fish", "value": "moon_fish", "is_correct": False, "score_value": "0.00"},
-            {"label": "cat and dog", "value": "cat_dog", "is_correct": False, "score_value": "0.00"},
+            {"label": "soap", "value": "soap", "is_correct": True, "score_value": "1.00"},
+            {"label": "moon", "value": "moon", "is_correct": False, "score_value": "0.00"},
+            {"label": "fish", "value": "fish", "is_correct": False, "score_value": "0.00"},
+            {"label": "table", "value": "table", "is_correct": False, "score_value": "0.00"},
         ],
     },
     {
@@ -47,13 +48,14 @@ QUESTIONS = [
         "category": AssessmentQuestion.Category.LETTER_SOUND,
         "difficulty": AssessmentQuestion.Difficulty.EMERGING,
         "question_type": AssessmentQuestion.QuestionType.MULTIPLE_CHOICE,
-        "question_text": "Which word begins with the letter B?",
-        "correct_answer": {"value": "ball"},
+        "question_text": "Which word starts with /b/ like ball?",
+        "correct_answer": {"value": "bike"},
         "sort_order": 40,
         "options": [
-            {"label": "ball", "value": "ball", "is_correct": True, "score_value": "1.00"},
+            {"label": "bike", "value": "bike", "is_correct": True, "score_value": "1.00"},
             {"label": "sun", "value": "sun", "is_correct": False, "score_value": "0.00"},
             {"label": "map", "value": "map", "is_correct": False, "score_value": "0.00"},
+            {"label": "fish", "value": "fish", "is_correct": False, "score_value": "0.00"},
         ],
     },
     {
@@ -196,6 +198,7 @@ class Command(BaseCommand):
         updated_questions = 0
         created_options = 0
         updated_options = 0
+        active_question_texts = {question["question_text"] for question in QUESTIONS}
 
         for question_data in QUESTIONS:
             option_data = question_data["options"]
@@ -241,6 +244,11 @@ class Command(BaseCommand):
                 )
                 created_options += int(option_created)
                 updated_options += int(not option_created)
+
+        AssessmentQuestion.objects.filter(
+            metadata__seed_source="seed_reading_survey_questions",
+            is_deleted=False,
+        ).exclude(question_text__in=active_question_texts).update(is_deleted=True)
 
         self.stdout.write(
             self.style.SUCCESS(
