@@ -278,12 +278,28 @@
       confidence: 'Reading confidence'
     };
 
+    const cachedAudioByStep = {
+      intro: '/assets/audio/assessment/intro.mp3',
+      phonemicAwareness: '/assets/audio/assessment/phonemic-awareness.mp3',
+      letterSound: '/assets/audio/assessment/letter-sound.mp3',
+      phonics: '/assets/audio/assessment/phonics.mp3',
+      advancedPhonics: '/assets/audio/assessment/advanced-phonics.mp3',
+      sightWords: '/assets/audio/assessment/sight-words.mp3',
+      fluency: '/assets/audio/assessment/fluency.mp3',
+      vocabulary: '/assets/audio/assessment/vocabulary.mp3',
+      comprehension: '/assets/audio/assessment/comprehension.mp3',
+      writingReadiness: '/assets/audio/assessment/writing-readiness.mp3',
+      confidence: '/assets/audio/assessment/confidence.mp3',
+      result: '/assets/audio/assessment/result.mp3'
+    };
+
     const state = {
       stepIndex: 0,
       childName: '',
       childAge: '',
       answers: {},
-      preferredVoice: null
+      preferredVoice: null,
+      audioPlayer: null
     };
 
     const body = document.getElementById('step-body');
@@ -364,6 +380,43 @@
       }
 
       speakNext(0);
+    }
+
+    function resetReadButton() {
+      readButton.textContent = 'Read aloud';
+      readButton.setAttribute('aria-pressed', 'false');
+    }
+
+    function cachedAudioForStep(step) {
+      if (step.type === 'intro') return cachedAudioByStep.intro;
+      if (step.type === 'result') return cachedAudioByStep.result;
+      return cachedAudioByStep[step.kpi] || null;
+    }
+
+    function playCachedAudio(step) {
+      const audioSrc = cachedAudioForStep(step);
+      if (!audioSrc) return false;
+      if (state.audioPlayer) {
+        state.audioPlayer.pause();
+        state.audioPlayer = null;
+      }
+      window.speechSynthesis?.cancel();
+      const audio = new Audio(audioSrc);
+      state.audioPlayer = audio;
+      readButton.textContent = 'Reading...';
+      readButton.setAttribute('aria-pressed', 'true');
+      audio.addEventListener('ended', resetReadButton, { once: true });
+      audio.addEventListener('error', () => {
+        state.audioPlayer = null;
+        resetReadButton();
+        speak(speechTextForStep(step));
+      }, { once: true });
+      audio.play().catch(() => {
+        state.audioPlayer = null;
+        resetReadButton();
+        speak(speechTextForStep(step));
+      });
+      return true;
     }
 
     function speechTextForStep(step) {
@@ -571,13 +624,22 @@
     });
 
     readButton.addEventListener('click', () => {
-      if ('speechSynthesis' in window && window.speechSynthesis.speaking) {
-        window.speechSynthesis.cancel();
-        readButton.textContent = 'Read aloud';
-        readButton.setAttribute('aria-pressed', 'false');
+      if (state.audioPlayer && !state.audioPlayer.paused) {
+        state.audioPlayer.pause();
+        state.audioPlayer.currentTime = 0;
+        state.audioPlayer = null;
+        resetReadButton();
         return;
       }
-      speak(speechTextForStep(assessmentSteps[state.stepIndex]));
+      if ('speechSynthesis' in window && window.speechSynthesis.speaking) {
+        window.speechSynthesis.cancel();
+        resetReadButton();
+        return;
+      }
+      const step = assessmentSteps[state.stepIndex];
+      if (!playCachedAudio(step)) {
+        speak(speechTextForStep(step));
+      }
     });
 
     render();

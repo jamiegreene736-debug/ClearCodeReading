@@ -139,6 +139,27 @@ docker compose run --rm web python manage.py seed_reading_survey_questions
 
 The command seeds 14 starter questions and can be run repeatedly without creating duplicates.
 
+### ElevenLabs assessment audio
+
+The browser assessment can use cached ElevenLabs MP3 files instead of robotic browser speech. This keeps free-tier usage under control because audio is generated once, saved into `marketing-website/assets/audio/assessment/`, and then served as static files.
+
+Set your key and voice id locally, then generate missing files:
+
+```bash
+export ELEVENLABS_API_KEY=your-key
+export ELEVENLABS_VOICE_ID=your-voice-id
+python manage.py generate_assessment_audio
+```
+
+Useful options:
+
+- `--dry-run` shows the files that would be generated without calling ElevenLabs.
+- `--force` regenerates existing MP3s. Avoid this on the free tier unless you intentionally want to spend credits again.
+- `--model-id` defaults to `eleven_multilingual_v2`.
+- `--output-format` defaults to `mp3_44100_128`.
+
+After generating audio, commit the MP3 files so Railway serves the cached recordings and the frontend does not call ElevenLabs from the child’s browser. If an MP3 is missing, the assessment falls back to browser speech.
+
 Reading Survey endpoints:
 
 - `POST /api/v1/assessments/start-survey/` creates a survey assessment and returns the first section of questions.
