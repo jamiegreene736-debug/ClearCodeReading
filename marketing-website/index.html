@@ -134,12 +134,13 @@
               class="focus-ring inline-flex items-center gap-2 rounded-full bg-white px-4 py-2 text-sm font-black text-navySoft shadow-lg shadow-tealWarm/15 ring-2 ring-tealWarm/25 transition hover:-translate-y-0.5 hover:bg-mist hover:ring-tealWarm/45"
               data-section-audio="marketingHowItWorks"
               data-idle-label="Listen to section"
-              data-playing-label="Playing audio..."
+              data-playing-label="Pause audio"
+              data-paused-label="Resume audio"
               aria-label="Play audio explanation for the How it works section"
             >
               <span class="flex h-8 w-8 items-center justify-center rounded-full bg-tealWarm text-white shadow-sm" aria-hidden="true">
                 <svg class="h-4 w-4 translate-x-px" viewBox="0 0 24 24" fill="currentColor">
-                  <path d="M8 5.5v13l10-6.5-10-6.5Z"></path>
+                  <path data-section-audio-icon d="M8 5.5v13l10-6.5-10-6.5Z"></path>
                 </svg>
               </span>
               <span class="flex items-center gap-1.5" data-section-audio-label>Listen to section</span>
@@ -177,12 +178,13 @@
               class="focus-ring inline-flex items-center gap-2 rounded-full bg-white px-4 py-2 text-sm font-black text-navySoft shadow-lg shadow-coral/15 ring-2 ring-coral/25 transition hover:-translate-y-0.5 hover:bg-blush hover:ring-coral/45"
               data-section-audio="marketingDifference"
               data-idle-label="Listen to section"
-              data-playing-label="Playing audio..."
+              data-playing-label="Pause audio"
+              data-paused-label="Resume audio"
               aria-label="Play audio explanation for the Clear Code Difference section"
             >
               <span class="flex h-8 w-8 items-center justify-center rounded-full bg-coral text-white shadow-sm" aria-hidden="true">
                 <svg class="h-4 w-4 translate-x-px" viewBox="0 0 24 24" fill="currentColor">
-                  <path d="M8 5.5v13l10-6.5-10-6.5Z"></path>
+                  <path data-section-audio-icon d="M8 5.5v13l10-6.5-10-6.5Z"></path>
                 </svg>
               </span>
               <span class="flex items-center gap-1.5" data-section-audio-label>Listen to section</span>
@@ -404,13 +406,35 @@
 
     let sectionAudioPlayer = null;
     let activeSectionAudioButton = null;
+    const sectionAudioPlayIcon = 'M8 5.5v13l10-6.5-10-6.5Z';
+    const sectionAudioPauseIcon = 'M7 5h3v14H7V5Zm7 0h3v14h-3V5Z';
+
+    function setSectionAudioButtonState(button, state) {
+      if (!button) return;
+      const label = button.querySelector('[data-section-audio-label]');
+      const icon = button.querySelector('[data-section-audio-icon]');
+      if (state === 'playing') {
+        if (label) label.textContent = button.dataset.playingLabel || 'Pause audio';
+        if (icon) icon.setAttribute('d', sectionAudioPauseIcon);
+        button.setAttribute('aria-pressed', 'true');
+        button.setAttribute('aria-label', 'Pause section audio');
+        return;
+      }
+      if (state === 'paused') {
+        if (label) label.textContent = button.dataset.pausedLabel || 'Resume audio';
+        if (icon) icon.setAttribute('d', sectionAudioPlayIcon);
+        button.setAttribute('aria-pressed', 'false');
+        button.setAttribute('aria-label', 'Resume section audio');
+        return;
+      }
+      if (label) label.textContent = button.dataset.idleLabel || 'Listen to section';
+      if (icon) icon.setAttribute('d', sectionAudioPlayIcon);
+      button.removeAttribute('aria-pressed');
+    }
 
     function resetSectionAudioButton(button) {
       if (!button) return;
-      const label = button.querySelector('[data-section-audio-label]');
-      if (label) label.textContent = button.dataset.idleLabel || 'Listen to section';
-      button.removeAttribute('aria-pressed');
-      button.disabled = false;
+      setSectionAudioButtonState(button, 'idle');
     }
 
     function showSectionAudioStatus(button, message) {
@@ -430,6 +454,18 @@
         const key = button.dataset.sectionAudio;
         if (!key) return;
 
+        if (sectionAudioPlayer && activeSectionAudioButton === button) {
+          if (sectionAudioPlayer.paused) {
+            sectionAudioPlayer.play()
+              .then(() => setSectionAudioButtonState(button, 'playing'))
+              .catch(() => showSectionAudioStatus(button, 'Tap again to hear this section out loud.'));
+          } else {
+            sectionAudioPlayer.pause();
+            setSectionAudioButtonState(button, 'paused');
+          }
+          return;
+        }
+
         if (sectionAudioPlayer) {
           sectionAudioPlayer.pause();
           sectionAudioPlayer.currentTime = 0;
@@ -440,10 +476,7 @@
         const audio = new Audio(`/assessment-audio/${key}.mp3`);
         sectionAudioPlayer = audio;
         activeSectionAudioButton = button;
-        const label = button.querySelector('[data-section-audio-label]');
-        if (label) label.textContent = button.dataset.playingLabel || 'Playing audio...';
-        button.setAttribute('aria-pressed', 'true');
-        button.disabled = true;
+        setSectionAudioButtonState(button, 'playing');
 
         audio.addEventListener('ended', () => {
           resetSectionAudioButton(button);
