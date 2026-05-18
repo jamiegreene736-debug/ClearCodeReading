@@ -560,6 +560,33 @@
           <p class="mt-4 text-lg leading-8 text-white/85">${gapCopy}</p>
         </div>
 
+        <form class="mt-6 rounded-[2rem] bg-white p-5 shadow-xl shadow-tealWarm/10 ring-2 ring-tealWarm/15" method="post" action="/crm/signup/">
+          <input type="hidden" name="csrfmiddlewaretoken" value="${getCookie('csrftoken')}">
+          <input type="hidden" name="audience" value="parent">
+          <input type="hidden" name="organization_name" value="Reading assessment follow-up">
+          <input type="hidden" name="estimated_students" value="1">
+          <input type="hidden" name="notes" value="${escapeAttribute(`Assessment follow-up requested for ${name}. Estimated reading age: ${levelText}. Best next step: ${growthList[0]}.`)}">
+          <div class="flex flex-col gap-2 md:flex-row md:items-start md:justify-between">
+            <div>
+              <p class="text-sm font-black uppercase tracking-[0.16em] text-coral">Human evaluator review</p>
+              <h4 class="mt-2 text-2xl font-black">Want a real evaluator to review this?</h4>
+              <p class="mt-2 text-sm leading-6 text-navySoft/65">Enter the parent or guardian contact info and a Clear Code Reading human evaluator can follow up.</p>
+            </div>
+            <span class="rounded-full bg-mist px-4 py-2 text-sm font-black text-tealWarm">Recommended</span>
+          </div>
+          <div class="mt-5 grid gap-3 md:grid-cols-[1fr_1fr_auto]">
+            <label class="block">
+              <span class="text-sm font-black text-navySoft/65">Your name</span>
+              <input class="mt-2 w-full rounded-2xl border border-navySoft/15 px-4 py-3 font-bold focus:border-tealWarm focus:outline-none" type="text" name="name" autocomplete="name" required>
+            </label>
+            <label class="block">
+              <span class="text-sm font-black text-navySoft/65">Email address</span>
+              <input class="mt-2 w-full rounded-2xl border border-navySoft/15 px-4 py-3 font-bold focus:border-tealWarm focus:outline-none" type="email" name="email" autocomplete="email" required>
+            </label>
+            <button class="focus-ring self-end rounded-full bg-coral px-6 py-3 font-black text-white shadow-lg shadow-coral/20 transition hover:-translate-y-0.5 hover:bg-[#ff5757]" type="submit">Request review</button>
+          </div>
+        </form>
+
         <div class="mt-6 grid gap-4 sm:grid-cols-3">
           <div class="rounded-3xl bg-cream p-5">
             <p class="text-sm font-black text-navySoft/55">Overall readiness</p>
@@ -612,6 +639,21 @@
           <a href="/" class="mt-5 inline-flex rounded-full bg-white px-6 py-3 font-black text-tealWarm transition hover:-translate-y-0.5">Return to Clear Code Reading</a>
         </div>
       `;
+    }
+
+    function escapeAttribute(value) {
+      return String(value)
+        .replace(/&/g, '&amp;')
+        .replace(/"/g, '&quot;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;');
+    }
+
+    function getCookie(name) {
+      return document.cookie
+        .split('; ')
+        .find((row) => row.startsWith(`${name}=`))
+        ?.split('=')[1] || '';
     }
 
     function canAdvance() {
