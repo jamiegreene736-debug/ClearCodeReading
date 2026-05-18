@@ -389,12 +389,12 @@
       readButton.setAttribute('aria-pressed', 'false');
     }
 
-    function showAudioPreparingMessage() {
+    function showAudioFallbackMessage() {
       const existing = document.getElementById('audio-status-message');
       if (existing) existing.remove();
       body.insertAdjacentHTML(
         'beforeend',
-        '<p id="audio-status-message" class="mt-4 rounded-2xl bg-blush px-4 py-3 text-sm font-black text-coral">The friendly reading voice is being prepared. Please try again in a moment.</p>'
+        '<p id="audio-status-message" class="mt-4 rounded-2xl bg-blush px-4 py-3 text-sm font-black text-coral">The ElevenLabs voice is not connected yet, so I am using this device voice for now.</p>'
       );
     }
 
@@ -420,12 +420,14 @@
       audio.addEventListener('error', () => {
         state.audioPlayer = null;
         resetReadButton();
-        showAudioPreparingMessage();
+        showAudioFallbackMessage();
+        speak(speechTextForStep(step));
       }, { once: true });
       audio.play().catch(() => {
         state.audioPlayer = null;
         resetReadButton();
-        showAudioPreparingMessage();
+        showAudioFallbackMessage();
+        speak(speechTextForStep(step));
       });
       return true;
     }

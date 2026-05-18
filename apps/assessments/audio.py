@@ -1,6 +1,7 @@
 import hashlib
 import json
 import os
+import re
 from urllib.error import HTTPError, URLError
 from urllib.parse import urlencode
 from urllib.request import Request, urlopen
@@ -110,7 +111,31 @@ class AudioGenerationError(Exception):
 
 
 def get_elevenlabs_api_key():
-    return os.getenv("ELEVENLABS_API_KEY") or os.getenv("XI_API_KEY")
+    return normalize_secret(os.getenv("ELEVENLABS_API_KEY") or os.getenv("XI_API_KEY"))
+
+
+def normalize_secret(value):
+    if not value:
+        return ""
+    value = value.strip().strip('"').strip("'").strip()
+    if value.lower().startswith("bearer "):
+        value = value[7:].strip()
+    if "=" in value and "\n" not in value:
+        value = value.split("=", 1)[1].strip().strip('"').strip("'").strip()
+    return value
+
+
+def normalize_voice_id(value):
+    value = normalize_secret(value)
+    if not value:
+        return ""
+    match = re.search(r"/voice(?:s)?/([A-Za-z0-9_-]+)", value)
+    if match:
+        return match.group(1)
+    match = re.search(r"/text-to-speech/([A-Za-z0-9_-]+)", value)
+    if match:
+        return match.group(1)
+    return value.rstrip("/").split("/")[-1]
 
 
 def create_elevenlabs_speech(api_key, voice_id, model_id, output_format, text):
@@ -178,9 +203,9 @@ def generate_audio_asset(key, *, voice_id=None, model_id=None, output_format=Non
         return existing, False
 
     api_key = get_elevenlabs_api_key()
-    voice_id = voice_id or os.getenv("ELEVENLABS_VOICE_ID")
-    model_id = model_id or os.getenv("ELEVENLABS_MODEL_ID", DEFAULT_MODEL_ID)
-    output_format = output_format or os.getenv("ELEVENLABS_OUTPUT_FORMAT", DEFAULT_OUTPUT_FORMAT)
+    voice_id = normalize_voice_id(voice_id or os.getenv("ELEVENLABS_VOICE_ID"))
+    model_id = normalize_secret(model_id or os.getenv("ELEVENLABS_MODEL_ID", DEFAULT_MODEL_ID))
+    output_format = normalize_secret(output_format or os.getenv("ELEVENLABS_OUTPUT_FORMAT", DEFAULT_OUTPUT_FORMAT))
     if not voice_id:
         raise AudioGenerationError("Set ELEVENLABS_VOICE_ID before generating audio.")
     if not api_key:
@@ -196,7 +221,7 @@ def generate_audio_asset(key, *, voice_id=None, model_id=None, output_format=Non
             text=item["text"],
         )
     except AudioGenerationError as exc:
-        fallback_voice_id = os.getenv("ELEVENLABS_FALLBACK_VOICE_ID", DEFAULT_FALLBACK_VOICE_ID)
+        fallback_voice_id = normalize_voice_id(os.getenv("ELEVENLABS_FALLBACK_VOICE_ID", DEFAULT_FALLBACK_VOICE_ID))
         if not fallback_voice_id or fallback_voice_id == voice_id or not should_try_fallback_voice(exc):
             raise
         fallback_for_voice_id = voice_id

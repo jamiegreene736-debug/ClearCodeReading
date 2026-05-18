@@ -4,7 +4,7 @@ from unittest.mock import patch
 
 from django.test import SimpleTestCase
 
-from apps.assessments.audio import generate_audio_asset
+from apps.assessments.audio import generate_audio_asset, normalize_secret, normalize_voice_id
 from apps.assessments.models import Assessment
 from apps.assessments.reading_survey import score_reading_survey
 from apps.assessments.services import calculate_reading_survey_results
@@ -89,6 +89,16 @@ class AssessmentWorkflowTests(SimpleTestCase):
         self.assertIs(asset, cached_asset)
         self.assertFalse(did_generate)
         asset_model.objects.update_or_create.assert_not_called()
+
+    def test_elevenlabs_secret_normalization_handles_common_copy_paste_values(self):
+        self.assertEqual(normalize_secret('"Bearer test-key"'), "test-key")
+        self.assertEqual(normalize_secret("ELEVENLABS_API_KEY='test-key'"), "test-key")
+
+    def test_elevenlabs_voice_normalization_extracts_ids_from_urls(self):
+        self.assertEqual(
+            normalize_voice_id("https://api.elevenlabs.io/v1/text-to-speech/abc123"),
+            "abc123",
+        )
 
     def _response(self, category, score_value):
         return SimpleNamespace(

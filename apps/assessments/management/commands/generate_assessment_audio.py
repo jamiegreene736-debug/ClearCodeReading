@@ -8,6 +8,8 @@ from apps.assessments.audio import (
     DEFAULT_OUTPUT_FORMAT,
     AudioGenerationError,
     generate_audio_asset,
+    get_elevenlabs_api_key,
+    normalize_voice_id,
 )
 
 
@@ -23,10 +25,10 @@ class Command(BaseCommand):
         parser.add_argument("--output-format", default=os.getenv("ELEVENLABS_OUTPUT_FORMAT", DEFAULT_OUTPUT_FORMAT))
 
     def handle(self, *args, **options):
-        voice_id = options["voice_id"]
+        voice_id = normalize_voice_id(options["voice_id"])
         if not voice_id and not options["dry_run"]:
             raise CommandError("Set ELEVENLABS_VOICE_ID or pass --voice-id.")
-        if not (os.getenv("ELEVENLABS_API_KEY") or os.getenv("XI_API_KEY")) and not options["dry_run"]:
+        if not get_elevenlabs_api_key() and not options["dry_run"]:
             raise CommandError("Set ELEVENLABS_API_KEY before generating audio.")
 
         generated = 0
