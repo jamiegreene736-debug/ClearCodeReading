@@ -127,7 +127,18 @@
     <section id="how" class="bg-white py-20">
       <div class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
         <div class="max-w-3xl">
-          <p class="text-sm font-black uppercase tracking-[0.2em] text-coral">How it works</p>
+          <div class="flex flex-col items-start gap-3 sm:flex-row sm:items-center">
+            <p class="text-sm font-black uppercase tracking-[0.2em] text-coral">How it works</p>
+            <button
+              type="button"
+              class="focus-ring inline-flex items-center justify-center rounded-full bg-tealWarm px-4 py-2 text-sm font-black text-white shadow-lg shadow-tealWarm/20 transition hover:-translate-y-0.5 hover:bg-[#00a699]"
+              data-section-audio="marketingHowItWorks"
+              data-idle-label="Explain out loud"
+              data-playing-label="Explaining..."
+            >
+              Explain out loud
+            </button>
+          </div>
           <h2 class="mt-3 text-3xl font-black text-navySoft sm:text-5xl">A clear path from assessment to confident reading.</h2>
         </div>
         <div class="mt-12 flex justify-center">
@@ -148,7 +159,18 @@
     <section id="difference" class="bg-mist py-20">
       <div class="mx-auto max-w-[1440px] px-4 sm:px-6 lg:px-8">
         <div class="mx-auto max-w-3xl text-center">
-          <p class="text-sm font-black uppercase tracking-[0.2em] text-tealWarm">The Clear Code Difference</p>
+          <div class="flex flex-col items-center justify-center gap-3 sm:flex-row">
+            <p class="text-sm font-black uppercase tracking-[0.2em] text-tealWarm">The Clear Code Difference</p>
+            <button
+              type="button"
+              class="focus-ring inline-flex items-center justify-center rounded-full bg-coral px-4 py-2 text-sm font-black text-white shadow-lg shadow-coral/20 transition hover:-translate-y-0.5 hover:bg-[#ff5757]"
+              data-section-audio="marketingDifference"
+              data-idle-label="Explain out loud"
+              data-playing-label="Explaining..."
+            >
+              Explain out loud
+            </button>
+          </div>
           <h2 class="mt-3 text-3xl font-black sm:text-5xl">Smart technology, checked by human wisdom.</h2>
           <p class="mt-5 text-lg leading-8 text-navySoft/70">Reading is personal. We use technology to spot patterns quickly, then put real educators in the loop so every recommendation feels grounded, warm, and right for the child.</p>
         </div>
@@ -356,6 +378,67 @@
         modal.classList.add('hidden');
         modal.classList.remove('flex');
       }
+    });
+
+    let sectionAudioPlayer = null;
+    let activeSectionAudioButton = null;
+
+    function resetSectionAudioButton(button) {
+      if (!button) return;
+      button.textContent = button.dataset.idleLabel || 'Explain out loud';
+      button.removeAttribute('aria-pressed');
+      button.disabled = false;
+    }
+
+    function showSectionAudioStatus(button, message) {
+      const section = button.closest('section');
+      const existing = section.querySelector('[data-section-audio-status]');
+      if (existing) existing.remove();
+      const status = document.createElement('p');
+      status.dataset.sectionAudioStatus = 'true';
+      status.className = 'mt-3 rounded-2xl bg-blush px-4 py-3 text-sm font-black text-coral';
+      status.textContent = message;
+      button.closest('div').insertAdjacentElement('afterend', status);
+      window.setTimeout(() => status.remove(), 4500);
+    }
+
+    document.querySelectorAll('[data-section-audio]').forEach((button) => {
+      button.addEventListener('click', () => {
+        const key = button.dataset.sectionAudio;
+        if (!key) return;
+
+        if (sectionAudioPlayer) {
+          sectionAudioPlayer.pause();
+          sectionAudioPlayer.currentTime = 0;
+          sectionAudioPlayer = null;
+        }
+        resetSectionAudioButton(activeSectionAudioButton);
+
+        const audio = new Audio(`/assessment-audio/${key}.mp3`);
+        sectionAudioPlayer = audio;
+        activeSectionAudioButton = button;
+        button.textContent = button.dataset.playingLabel || 'Explaining...';
+        button.setAttribute('aria-pressed', 'true');
+        button.disabled = true;
+
+        audio.addEventListener('ended', () => {
+          resetSectionAudioButton(button);
+          sectionAudioPlayer = null;
+          activeSectionAudioButton = null;
+        }, { once: true });
+        audio.addEventListener('error', () => {
+          resetSectionAudioButton(button);
+          sectionAudioPlayer = null;
+          activeSectionAudioButton = null;
+          showSectionAudioStatus(button, 'The friendly voice is being prepared. Please try again in a moment.');
+        }, { once: true });
+        audio.play().catch(() => {
+          resetSectionAudioButton(button);
+          sectionAudioPlayer = null;
+          activeSectionAudioButton = null;
+          showSectionAudioStatus(button, 'Tap again to hear this section out loud.');
+        });
+      });
     });
   </script>
 </body>

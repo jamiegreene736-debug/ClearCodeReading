@@ -100,6 +100,26 @@ ASSESSMENT_AUDIO = {
             "growth areas, and next steps for a human evaluator to review."
         ),
     },
+    "marketingHowItWorks": {
+        "filename": "marketing-how-it-works.mp3",
+        "text": (
+            "Here is how Clear Code Reading works. First, children play through a friendly digital assessment "
+            "that reveals decoding, fluency, and comprehension patterns. Next, a caring human evaluator reviews "
+            "the results and listens to the child. Then, personalized lessons support phonics, sight words, "
+            "fluency, and comprehension. Finally, families and educators see real progress, clear next steps, "
+            "and mastery records they can trust."
+        ),
+    },
+    "marketingDifference": {
+        "filename": "marketing-clear-code-difference.mp3",
+        "text": (
+            "Here is the Clear Code difference. Tech-only apps can be fast, but they miss context when a child "
+            "guesses, freezes, or needs reassurance. Static worksheets can help with practice, but they are hard "
+            "to personalize and measure over time. Clear Code Reading combines a fast assessment with human review, "
+            "adaptive lessons, and progress parents can understand. The curriculum responds to each child's actual "
+            "decoding and comprehension needs."
+        ),
+    },
 }
 
 
