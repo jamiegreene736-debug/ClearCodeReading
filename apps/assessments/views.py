@@ -48,6 +48,7 @@ def assessment_audio(request, key):
             response = HttpResponse("Assessment audio is not ready.", status=503, content_type="text/plain")
             response["Cache-Control"] = "no-store"
             response["X-Assessment-Audio-Status"] = "unavailable"
+            response["X-Assessment-Audio-Reason"] = exc.reason
             return response
     response = HttpResponse(bytes(audio.audio), content_type=audio.content_type)
     response["Cache-Control"] = "public, max-age=31536000, immutable"

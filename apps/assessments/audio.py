@@ -10,6 +10,7 @@ from apps.assessments.models import AssessmentAudioAsset
 
 DEFAULT_MODEL_ID = "eleven_multilingual_v2"
 DEFAULT_OUTPUT_FORMAT = "mp3_44100_128"
+DEFAULT_FALLBACK_VOICE_ID = "21m00Tcm4TlvDq8ikWAM"
 
 ASSESSMENT_AUDIO = {
     "intro": {
@@ -102,7 +103,10 @@ ASSESSMENT_AUDIO = {
 
 
 class AudioGenerationError(Exception):
-    pass
+    def __init__(self, message, *, status_code=None, reason="api_error"):
+        super().__init__(message)
+        self.status_code = status_code
+        self.reason = reason
 
 
 def get_elevenlabs_api_key():
@@ -138,9 +142,30 @@ def create_elevenlabs_speech(api_key, voice_id, model_id, output_format, text):
             return response.read()
     except HTTPError as exc:
         detail = exc.read().decode("utf-8", errors="replace")
-        raise AudioGenerationError(f"ElevenLabs returned HTTP {exc.code}: {detail}") from exc
+        raise AudioGenerationError(
+            f"ElevenLabs returned HTTP {exc.code}: {detail}",
+            status_code=exc.code,
+            reason=classify_elevenlabs_error(exc.code, detail),
+        ) from exc
     except URLError as exc:
-        raise AudioGenerationError(f"Could not connect to ElevenLabs: {exc.reason}") from exc
+        raise AudioGenerationError(f"Could not connect to ElevenLabs: {exc.reason}", reason="network_error") from exc
+
+
+def classify_elevenlabs_error(status_code, detail):
+    detail = (detail or "").lower()
+    if status_code == 429 or "quota" in detail or "rate limit" in detail:
+        return "quota_or_rate_limit"
+    if status_code == 401:
+        return "api_key_rejected"
+    if status_code in {400, 403, 404} and "voice" in detail:
+        return "voice_id_rejected"
+    if status_code == 403:
+        return "plan_or_voice_access_rejected"
+    return "api_error"
+
+
+def should_try_fallback_voice(error):
+    return error.reason in {"voice_id_rejected", "plan_or_voice_access_rejected"}
 
 
 def generate_audio_asset(key, *, voice_id=None, model_id=None, output_format=None, force=False):
@@ -161,13 +186,31 @@ def generate_audio_asset(key, *, voice_id=None, model_id=None, output_format=Non
     if not api_key:
         raise AudioGenerationError("Set ELEVENLABS_API_KEY before generating audio.")
 
-    audio = create_elevenlabs_speech(
-        api_key=api_key,
-        voice_id=voice_id,
-        model_id=model_id,
-        output_format=output_format,
-        text=item["text"],
-    )
+    fallback_for_voice_id = ""
+    try:
+        audio = create_elevenlabs_speech(
+            api_key=api_key,
+            voice_id=voice_id,
+            model_id=model_id,
+            output_format=output_format,
+            text=item["text"],
+        )
+    except AudioGenerationError as exc:
+        fallback_voice_id = os.getenv("ELEVENLABS_FALLBACK_VOICE_ID", DEFAULT_FALLBACK_VOICE_ID)
+        if not fallback_voice_id or fallback_voice_id == voice_id or not should_try_fallback_voice(exc):
+            raise
+        fallback_for_voice_id = voice_id
+        try:
+            audio = create_elevenlabs_speech(
+                api_key=api_key,
+                voice_id=fallback_voice_id,
+                model_id=model_id,
+                output_format=output_format,
+                text=item["text"],
+            )
+            voice_id = fallback_voice_id
+        except AudioGenerationError:
+            raise exc
     checksum = hashlib.sha256(audio).hexdigest()
     asset, _ = AssessmentAudioAsset.objects.update_or_create(
         key=key,
@@ -181,7 +224,7 @@ def generate_audio_asset(key, *, voice_id=None, model_id=None, output_format=Non
             "output_format": output_format,
             "byte_length": len(audio),
             "checksum": checksum,
-            "metadata": {"filename": item["filename"]},
+            "metadata": {"filename": item["filename"], "fallback_for_voice_id": fallback_for_voice_id},
         },
     )
     return asset, True
