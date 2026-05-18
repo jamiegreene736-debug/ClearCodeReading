@@ -109,12 +109,13 @@ class Command(BaseCommand):
     def add_arguments(self, parser):
         parser.add_argument("--force", action="store_true", help="Regenerate files even when they already exist.")
         parser.add_argument("--dry-run", action="store_true", help="Show what would be generated without calling ElevenLabs.")
+        parser.add_argument("--no-fail", action="store_true", help="Log ElevenLabs errors but exit successfully.")
         parser.add_argument("--voice-id", default=os.getenv("ELEVENLABS_VOICE_ID"), help="ElevenLabs voice id.")
         parser.add_argument("--model-id", default=os.getenv("ELEVENLABS_MODEL_ID", DEFAULT_MODEL_ID))
         parser.add_argument("--output-format", default=os.getenv("ELEVENLABS_OUTPUT_FORMAT", DEFAULT_OUTPUT_FORMAT))
 
     def handle(self, *args, **options):
-        api_key = os.getenv("ELEVENLABS_API_KEY")
+        api_key = os.getenv("ELEVENLABS_API_KEY") or os.getenv("XI_API_KEY")
         voice_id = options["voice_id"]
         if not voice_id:
             raise CommandError("Set ELEVENLABS_VOICE_ID or pass --voice-id.")
@@ -123,6 +124,7 @@ class Command(BaseCommand):
 
         generated = 0
         skipped = 0
+        errors = []
         for key, item in ASSESSMENT_AUDIO.items():
             if options["dry_run"]:
                 self.stdout.write(f"Would generate DB audio: {key} ({item['filename']})")
@@ -134,13 +136,21 @@ class Command(BaseCommand):
                 self.stdout.write(f"Skipping existing DB audio: {key}")
                 continue
 
-            audio = self._create_speech(
-                api_key=api_key,
-                voice_id=voice_id,
-                model_id=options["model_id"],
-                output_format=options["output_format"],
-                text=item["text"],
-            )
+            try:
+                audio = self._create_speech(
+                    api_key=api_key,
+                    voice_id=voice_id,
+                    model_id=options["model_id"],
+                    output_format=options["output_format"],
+                    text=item["text"],
+                )
+            except CommandError as exc:
+                errors.append(f"{key}: {exc}")
+                self.stderr.write(self.style.WARNING(f"Could not generate {key}: {exc}"))
+                if options["no_fail"]:
+                    continue
+                raise
+
             checksum = hashlib.sha256(audio).hexdigest()
             AssessmentAudioAsset.objects.update_or_create(
                 key=key,
@@ -160,7 +170,13 @@ class Command(BaseCommand):
             generated += 1
             self.stdout.write(self.style.SUCCESS(f"Generated DB audio: {key} ({len(audio)} bytes)"))
 
-        self.stdout.write(self.style.SUCCESS(f"Assessment audio complete. Generated {generated}; skipped {skipped}."))
+        summary = f"Assessment audio complete. Generated {generated}; skipped {skipped}; errors {len(errors)}."
+        if errors and not options["no_fail"]:
+            raise CommandError("\n".join(errors))
+        if errors:
+            self.stdout.write(self.style.WARNING(summary))
+        else:
+            self.stdout.write(self.style.SUCCESS(summary))
 
     def _create_speech(self, api_key, voice_id, model_id, output_format, text):
         query = urlencode({"output_format": output_format})

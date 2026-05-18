@@ -150,7 +150,7 @@ On Railway, set these variables on the web service:
 - `ELEVENLABS_API_KEY`
 - `ELEVENLABS_VOICE_ID`
 
-On the next deploy, `scripts/predeploy.sh` runs `python manage.py generate_assessment_audio` automatically. The command skips audio that already exists in the database, so future deploys should not spend credits again unless you intentionally delete records or run with `--force`.
+On the next deploy, `scripts/predeploy.sh` runs `python manage.py generate_assessment_audio --no-fail` automatically. The command skips audio that already exists in the database, so future deploys should not spend credits again unless you intentionally delete records or run with `--force`. If ElevenLabs rejects a key, voice id, or quota, deploy will continue and the logs will show which clips failed.
 
 For local/manual generation:
 
@@ -163,11 +163,18 @@ python manage.py generate_assessment_audio
 Useful options:
 
 - `--dry-run` shows the files that would be generated without calling ElevenLabs.
+- `--no-fail` logs ElevenLabs errors without failing deploy.
 - `--force` regenerates existing database audio. Avoid this on the free tier unless you intentionally want to spend credits again.
 - `--model-id` defaults to `eleven_multilingual_v2`.
 - `--output-format` defaults to `mp3_44100_128`.
 
 The frontend never calls ElevenLabs from the child’s browser. If database audio is missing, the assessment falls back to browser speech.
+
+Check whether the database has cached audio:
+
+```bash
+python manage.py check_assessment_audio
+```
 
 Reading Survey endpoints:
 
