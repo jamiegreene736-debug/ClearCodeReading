@@ -134,6 +134,93 @@
               <button class="focus-ring self-end rounded-full bg-tealWarm px-6 py-3 font-black text-white shadow-lg shadow-tealWarm/20 transition hover:-translate-y-0.5" type="submit">Assign</button>
             </form>
           </section>
+
+          <section class="rounded-[2rem] bg-white p-6 shadow-xl shadow-navySoft/8 ring-1 ring-navySoft/10">
+            <div class="flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
+              <div>
+                <p class="text-sm font-black uppercase tracking-[0.18em] text-tealWarm">CRM intake</p>
+                <h2 class="mt-2 text-3xl font-black">Website signups</h2>
+              </div>
+              <div class="flex gap-2 text-sm font-black">
+                <span class="rounded-full bg-mist px-4 py-2 text-tealWarm">{{ lead_count }} total</span>
+                <span class="rounded-full bg-blush px-4 py-2 text-coral">{{ new_lead_count }} new</span>
+              </div>
+            </div>
+            <div class="mt-5 grid gap-3">
+              {% for lead in recent_leads %}
+                <article class="rounded-3xl bg-cream p-5">
+                  <div class="flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
+                    <div>
+                      <div class="flex flex-wrap items-center gap-2">
+                        <h3 class="text-xl font-black">{{ lead.contact_name }}</h3>
+                        <span class="rounded-full bg-white px-3 py-1 text-xs font-black text-navySoft/60">{{ lead.get_audience_display }}</span>
+                        <span class="rounded-full bg-white px-3 py-1 text-xs font-black text-tealWarm">{{ lead.get_status_display }}</span>
+                      </div>
+                      <p class="mt-2 text-sm font-bold text-navySoft/65">{{ lead.contact_email }}{% if lead.contact_phone %} · {{ lead.contact_phone }}{% endif %}</p>
+                      <p class="mt-1 text-sm text-navySoft/60">{{ lead.organization_name|default:lead.school_name }}</p>
+                      {% if lead.notes %}
+                        <p class="mt-3 text-sm leading-6 text-navySoft/70">{{ lead.notes }}</p>
+                      {% endif %}
+                    </div>
+                    <div class="text-sm font-bold text-navySoft/55 md:text-right">
+                      <p>{{ lead.created_at|date:"M j, Y" }}</p>
+                      {% if lead.linked_user %}
+                        <p class="mt-1 text-tealWarm">Linked to {{ lead.linked_user.get_full_name|default:lead.linked_user.email }}</p>
+                      {% else %}
+                        <p class="mt-1 text-coral">No account yet</p>
+                      {% endif %}
+                    </div>
+                  </div>
+                </article>
+              {% empty %}
+                <p class="rounded-3xl bg-mist p-5 font-bold text-navySoft/70">No website signups yet.</p>
+              {% endfor %}
+            </div>
+          </section>
+
+          <section class="rounded-[2rem] bg-white p-6 shadow-xl shadow-navySoft/8 ring-1 ring-navySoft/10">
+            <div>
+              <p class="text-sm font-black uppercase tracking-[0.18em] text-coral">Account creation</p>
+              <h2 class="mt-2 text-3xl font-black">Create a parent or teacher login</h2>
+            </div>
+            <form class="mt-5 grid gap-4" method="post" action="{% url 'portal_create_user' %}">
+              {% csrf_token %}
+              <div class="grid gap-4 md:grid-cols-2">
+                <label class="block">
+                  <span class="text-sm font-black text-navySoft/65">First name</span>
+                  <input class="mt-2 w-full rounded-2xl border border-navySoft/15 px-4 py-3 font-bold focus:border-tealWarm focus:outline-none" name="first_name" autocomplete="given-name">
+                </label>
+                <label class="block">
+                  <span class="text-sm font-black text-navySoft/65">Last name</span>
+                  <input class="mt-2 w-full rounded-2xl border border-navySoft/15 px-4 py-3 font-bold focus:border-tealWarm focus:outline-none" name="last_name" autocomplete="family-name">
+                </label>
+              </div>
+              <div class="grid gap-4 md:grid-cols-2">
+                <label class="block">
+                  <span class="text-sm font-black text-navySoft/65">Email</span>
+                  <input class="mt-2 w-full rounded-2xl border border-navySoft/15 px-4 py-3 font-bold focus:border-tealWarm focus:outline-none" type="email" name="email" autocomplete="email" required>
+                </label>
+                <label class="block">
+                  <span class="text-sm font-black text-navySoft/65">Phone</span>
+                  <input class="mt-2 w-full rounded-2xl border border-navySoft/15 px-4 py-3 font-bold focus:border-tealWarm focus:outline-none" type="tel" name="phone_number" autocomplete="tel">
+                </label>
+              </div>
+              <div class="grid gap-4 md:grid-cols-[1fr_1fr_auto]">
+                <label class="block">
+                  <span class="text-sm font-black text-navySoft/65">Account type</span>
+                  <select class="mt-2 w-full rounded-2xl border border-navySoft/15 px-4 py-3 font-bold focus:border-tealWarm focus:outline-none" name="role" required>
+                    <option value="guardian">Parent</option>
+                    <option value="teacher">Teacher</option>
+                  </select>
+                </label>
+                <label class="block">
+                  <span class="text-sm font-black text-navySoft/65">Password</span>
+                  <input class="mt-2 w-full rounded-2xl border border-navySoft/15 px-4 py-3 font-bold focus:border-tealWarm focus:outline-none" name="password" autocomplete="new-password" placeholder="Auto-generate if blank">
+                </label>
+                <button class="focus-ring self-end rounded-full bg-coral px-6 py-3 font-black text-white shadow-lg shadow-coral/20 transition hover:-translate-y-0.5" type="submit">Create account</button>
+              </div>
+            </form>
+          </section>
         {% endif %}
 
         <section class="rounded-[2rem] bg-white p-6 shadow-xl shadow-navySoft/8 ring-1 ring-navySoft/10">

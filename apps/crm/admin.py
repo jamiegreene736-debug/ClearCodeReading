@@ -28,10 +28,21 @@ def mark_qualified(modeladmin, request, queryset):
 @admin.register(Lead)
 class LeadAdmin(admin.ModelAdmin):
     inlines = (OpportunityInline,)
-    list_display = ("school_name", "contact_name", "contact_email", "source", "status", "assigned_to", "estimated_students", "created_at")
-    list_filter = ("status", "source", "assigned_to", "is_deleted", "created_at")
-    search_fields = ("school_name", "contact_name", "contact_email", "contact_phone", "notes")
-    autocomplete_fields = ("assigned_to",)
+    list_display = (
+        "school_name",
+        "contact_name",
+        "contact_email",
+        "audience",
+        "source",
+        "status",
+        "linked_user",
+        "assigned_to",
+        "estimated_students",
+        "created_at",
+    )
+    list_filter = ("status", "audience", "source", "assigned_to", "linked_user", "is_deleted", "created_at")
+    search_fields = ("school_name", "organization_name", "contact_name", "contact_email", "contact_phone", "notes")
+    autocomplete_fields = ("assigned_to", "linked_user")
     readonly_fields = ("created_at", "updated_at", "deleted_at", "pipeline_link")
     actions = (mark_contacted, mark_qualified)
 

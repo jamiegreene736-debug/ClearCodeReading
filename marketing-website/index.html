@@ -76,6 +76,13 @@
     <section class="hero-pattern overflow-hidden pb-16 pt-28 sm:pb-24 sm:pt-32">
       <div class="mx-auto grid max-w-7xl items-center gap-12 px-4 sm:px-6 lg:grid-cols-[1.02fr_.98fr] lg:px-8">
         <div>
+          {% if messages %}
+            <div class="mb-5 space-y-2">
+              {% for message in messages %}
+                <p class="rounded-2xl bg-white px-4 py-3 text-sm font-black text-navySoft shadow-sm ring-1 ring-tealWarm/15">{{ message }}</p>
+              {% endfor %}
+            </div>
+          {% endif %}
           <p class="mb-5 inline-flex rounded-full bg-white px-4 py-2 text-sm font-extrabold text-tealWarm shadow-sm ring-1 ring-tealWarm/15">
             Human-guided reading growth for ages 4-10
           </p>
@@ -280,6 +287,7 @@
     </div>
   </footer>
 
+  <div id="signup" class="sr-only" aria-hidden="true"></div>
   <div id="signup-modal" class="fixed inset-0 z-[60] hidden items-center justify-center bg-navySoft/70 px-4 backdrop-blur-sm" role="dialog" aria-modal="true" aria-labelledby="signup-title">
     <div class="w-full max-w-lg rounded-[2rem] bg-white p-6 shadow-2xl">
       <div class="flex items-start justify-between gap-6">
@@ -289,25 +297,44 @@
         </div>
         <button id="close-modal" class="focus-ring rounded-full bg-navySoft/5 px-4 py-2 font-black text-navySoft transition hover:bg-coral hover:text-white" aria-label="Close signup form">×</button>
       </div>
-      <form class="mt-6 space-y-4">
+      <form class="mt-6 space-y-4" method="post" action="/crm/signup/">
+        {% csrf_token %}
         <label class="block">
           <span class="text-sm font-bold text-navySoft">Your name</span>
-          <input class="mt-2 w-full rounded-2xl border border-navySoft/15 px-4 py-3 focus:border-tealWarm focus:outline-none" type="text" name="name" autocomplete="name">
+          <input class="mt-2 w-full rounded-2xl border border-navySoft/15 px-4 py-3 focus:border-tealWarm focus:outline-none" type="text" name="name" autocomplete="name" required>
         </label>
         <label class="block">
           <span class="text-sm font-bold text-navySoft">Email</span>
-          <input class="mt-2 w-full rounded-2xl border border-navySoft/15 px-4 py-3 focus:border-tealWarm focus:outline-none" type="email" name="email" autocomplete="email">
+          <input class="mt-2 w-full rounded-2xl border border-navySoft/15 px-4 py-3 focus:border-tealWarm focus:outline-none" type="email" name="email" autocomplete="email" required>
         </label>
         <label class="block">
           <span class="text-sm font-bold text-navySoft">I am a...</span>
           <select class="mt-2 w-full rounded-2xl border border-navySoft/15 px-4 py-3 focus:border-tealWarm focus:outline-none" name="audience">
-            <option>Parent</option>
-            <option>Teacher</option>
-            <option>School or district leader</option>
+            <option value="parent">Parent</option>
+            <option value="teacher">Teacher</option>
+            <option value="school">School or district leader</option>
           </select>
         </label>
-        <button type="button" class="focus-ring w-full rounded-full bg-tealWarm px-6 py-4 font-black text-white transition hover:bg-[#00a699]">
-          Request Early Access
+        <label class="block">
+          <span class="text-sm font-bold text-navySoft">School or organization</span>
+          <input class="mt-2 w-full rounded-2xl border border-navySoft/15 px-4 py-3 focus:border-tealWarm focus:outline-none" type="text" name="organization_name" autocomplete="organization">
+        </label>
+        <div class="grid gap-4 sm:grid-cols-2">
+          <label class="block">
+            <span class="text-sm font-bold text-navySoft">Phone</span>
+            <input class="mt-2 w-full rounded-2xl border border-navySoft/15 px-4 py-3 focus:border-tealWarm focus:outline-none" type="tel" name="phone" autocomplete="tel">
+          </label>
+          <label class="block">
+            <span class="text-sm font-bold text-navySoft">Students</span>
+            <input class="mt-2 w-full rounded-2xl border border-navySoft/15 px-4 py-3 focus:border-tealWarm focus:outline-none" type="number" min="0" name="estimated_students" inputmode="numeric">
+          </label>
+        </div>
+        <label class="block">
+          <span class="text-sm font-bold text-navySoft">What can we help with?</span>
+          <textarea class="mt-2 min-h-24 w-full rounded-2xl border border-navySoft/15 px-4 py-3 focus:border-tealWarm focus:outline-none" name="notes"></textarea>
+        </label>
+        <button type="submit" class="focus-ring w-full rounded-full bg-tealWarm px-6 py-4 font-black text-white transition hover:bg-[#00a699]">
+          Request early access
         </button>
         <p class="text-center text-xs leading-5 text-navySoft/55">By requesting access, you agree to receive Clear Code Reading updates. Child assessment data requires verified guardian consent.</p>
       </form>

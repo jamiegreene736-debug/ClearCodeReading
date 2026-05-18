@@ -5,6 +5,7 @@ from apps.assessments.models import Assessment
 from apps.notifications.signals import handle_assessment_status_change
 from apps.users.management.commands.seed_demo_login import Command
 from apps.users.models import ConsentLog, CustomUser, GuardianRelationship
+from apps.users.portal_views import CreatePortalUserView
 from apps.users.serializers import CustomUserSerializer
 
 
@@ -42,3 +43,9 @@ class UsersTests(SimpleTestCase):
             receiver=handle_assessment_status_change,
             sender=Assessment,
         )
+
+    def test_portal_temporary_password_uses_clear_code_prefix(self):
+        password = CreatePortalUserView._temporary_password()
+
+        self.assertTrue(password.startswith("ClearCode-"))
+        self.assertTrue(password.endswith("!"))

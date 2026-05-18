@@ -25,6 +25,12 @@ class SoftDeleteModel(models.Model):
 
 
 class Lead(TimestampedModel, SoftDeleteModel):
+    class Audience(models.TextChoices):
+        PARENT = "parent", "Parent"
+        TEACHER = "teacher", "Teacher"
+        SCHOOL = "school", "School or District"
+        OTHER = "other", "Other"
+
     class Source(models.TextChoices):
         WEBSITE = "website", "Website"
         REFERRAL = "referral", "Referral"
@@ -43,9 +49,12 @@ class Lead(TimestampedModel, SoftDeleteModel):
     contact_name = models.CharField(max_length=255)
     contact_email = models.EmailField()
     contact_phone = models.CharField(max_length=32, blank=True)
+    audience = models.CharField(max_length=32, choices=Audience.choices, default=Audience.PARENT, db_index=True)
+    organization_name = models.CharField(max_length=255, blank=True)
     source = models.CharField(max_length=32, choices=Source.choices, default=Source.WEBSITE, db_index=True)
     status = models.CharField(max_length=32, choices=Status.choices, default=Status.NEW, db_index=True)
     assigned_to = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, blank=True, related_name="assigned_leads")
+    linked_user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, blank=True, related_name="crm_leads")
     estimated_students = models.PositiveIntegerField(null=True, blank=True)
     notes = models.TextField(blank=True)
     metadata = models.JSONField(default=dict, blank=True)
@@ -54,7 +63,9 @@ class Lead(TimestampedModel, SoftDeleteModel):
         ordering = ["-created_at"]
         indexes = [
             models.Index(fields=["contact_email"]),
+            models.Index(fields=["audience", "status"]),
             models.Index(fields=["source", "status"]),
+            models.Index(fields=["linked_user", "status"]),
             models.Index(fields=["assigned_to", "status"]),
             models.Index(fields=["is_deleted", "created_at"]),
         ]
