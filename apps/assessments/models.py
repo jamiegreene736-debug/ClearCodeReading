@@ -204,3 +204,27 @@ class AssessmentResult(TimestampedModel, SoftDeleteModel):
 
     def __str__(self):
         return f"Result for {self.assessment} - age {self.reading_age}"
+
+
+class AssessmentAudioAsset(TimestampedModel):
+    key = models.SlugField(max_length=80, unique=True)
+    text = models.TextField()
+    audio = models.BinaryField()
+    content_type = models.CharField(max_length=80, default="audio/mpeg")
+    provider = models.CharField(max_length=80, default="elevenlabs", db_index=True)
+    voice_id = models.CharField(max_length=120, blank=True)
+    model_id = models.CharField(max_length=120, blank=True)
+    output_format = models.CharField(max_length=80, blank=True)
+    byte_length = models.PositiveIntegerField(default=0)
+    checksum = models.CharField(max_length=64, blank=True, db_index=True)
+    metadata = models.JSONField(default=dict, blank=True)
+
+    class Meta:
+        ordering = ["key"]
+        indexes = [
+            models.Index(fields=["provider", "key"]),
+            models.Index(fields=["checksum"]),
+        ]
+
+    def __str__(self):
+        return f"{self.key} ({self.provider})"

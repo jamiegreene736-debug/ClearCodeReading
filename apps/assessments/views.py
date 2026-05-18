@@ -1,5 +1,6 @@
 from decimal import Decimal
 
+from django.http import Http404, HttpResponse
 from django.db import transaction
 from django.utils import timezone
 from rest_framework import serializers, status, viewsets
@@ -8,7 +9,7 @@ from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 
 from apps.api.permissions import COPPAConsentRequired, IsEvaluator, has_coppa_consent, is_parent_of_child, user_can_evaluate_child
-from apps.assessments.models import Assessment, AssessmentQuestion, ChildAssessmentResponse
+from apps.assessments.models import Assessment, AssessmentAudioAsset, AssessmentQuestion, ChildAssessmentResponse
 from apps.assessments.serializers import (
     AnswerSubmissionSerializer,
     AssessmentQuestionSerializer,
@@ -22,6 +23,16 @@ from apps.assessments.tasks import notify_assessment_review_completed
 from apps.notifications.tasks import notify_evaluator_assessment_human_review
 from apps.progress.models import Progress
 from apps.users.models import AuditLog
+
+
+def assessment_audio(request, key):
+    audio = AssessmentAudioAsset.objects.filter(key=key).first()
+    if audio is None:
+        raise Http404("Assessment audio not found.")
+    response = HttpResponse(bytes(audio.audio), content_type=audio.content_type)
+    response["Cache-Control"] = "public, max-age=31536000, immutable"
+    response["Content-Length"] = str(audio.byte_length)
+    return response
 
 
 class DigitalAssessmentSubmissionSerializer(serializers.Serializer):

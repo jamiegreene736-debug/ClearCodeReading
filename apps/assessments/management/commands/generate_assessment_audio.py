@@ -1,12 +1,13 @@
+import hashlib
 import json
 import os
-from pathlib import Path
 from urllib.error import HTTPError, URLError
 from urllib.parse import urlencode
 from urllib.request import Request, urlopen
 
-from django.conf import settings
 from django.core.management.base import BaseCommand, CommandError
+
+from apps.assessments.models import AssessmentAudioAsset
 
 
 DEFAULT_MODEL_ID = "eleven_multilingual_v2"
@@ -120,20 +121,17 @@ class Command(BaseCommand):
         if not api_key and not options["dry_run"]:
             raise CommandError("Set ELEVENLABS_API_KEY before generating audio.")
 
-        output_dir = settings.BASE_DIR / "marketing-website" / "assets" / "audio" / "assessment"
-        output_dir.mkdir(parents=True, exist_ok=True)
-
         generated = 0
         skipped = 0
         for key, item in ASSESSMENT_AUDIO.items():
-            output_path = output_dir / item["filename"]
-            if output_path.exists() and not options["force"]:
-                skipped += 1
-                self.stdout.write(f"Skipping existing audio: {output_path.relative_to(settings.BASE_DIR)}")
+            if options["dry_run"]:
+                self.stdout.write(f"Would generate DB audio: {key} ({item['filename']})")
                 continue
 
-            if options["dry_run"]:
-                self.stdout.write(f"Would generate {key}: {output_path.relative_to(settings.BASE_DIR)}")
+            existing = AssessmentAudioAsset.objects.filter(key=key).first()
+            if existing is not None and not options["force"]:
+                skipped += 1
+                self.stdout.write(f"Skipping existing DB audio: {key}")
                 continue
 
             audio = self._create_speech(
@@ -143,9 +141,24 @@ class Command(BaseCommand):
                 output_format=options["output_format"],
                 text=item["text"],
             )
-            output_path.write_bytes(audio)
+            checksum = hashlib.sha256(audio).hexdigest()
+            AssessmentAudioAsset.objects.update_or_create(
+                key=key,
+                defaults={
+                    "text": item["text"],
+                    "audio": audio,
+                    "content_type": "audio/mpeg",
+                    "provider": "elevenlabs",
+                    "voice_id": voice_id,
+                    "model_id": options["model_id"],
+                    "output_format": options["output_format"],
+                    "byte_length": len(audio),
+                    "checksum": checksum,
+                    "metadata": {"filename": item["filename"]},
+                },
+            )
             generated += 1
-            self.stdout.write(self.style.SUCCESS(f"Generated {output_path.relative_to(settings.BASE_DIR)}"))
+            self.stdout.write(self.style.SUCCESS(f"Generated DB audio: {key} ({len(audio)} bytes)"))
 
         self.stdout.write(self.style.SUCCESS(f"Assessment audio complete. Generated {generated}; skipped {skipped}."))
 
