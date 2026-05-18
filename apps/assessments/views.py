@@ -1,8 +1,9 @@
 import logging
+import os
 from decimal import Decimal
 
-from django.http import Http404, HttpResponse
 from django.db import transaction
+from django.http import Http404, HttpResponse, JsonResponse
 from django.utils import timezone
 from rest_framework import serializers, status, viewsets
 from rest_framework.decorators import action
@@ -10,7 +11,12 @@ from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 
 from apps.api.permissions import COPPAConsentRequired, IsEvaluator, has_coppa_consent, is_parent_of_child, user_can_evaluate_child
-from apps.assessments.audio import AudioGenerationError, generate_audio_asset
+from apps.assessments.audio import (
+    ASSESSMENT_AUDIO,
+    AudioGenerationError,
+    generate_audio_asset,
+    get_elevenlabs_api_key,
+)
 from apps.assessments.models import Assessment, AssessmentAudioAsset, AssessmentQuestion, ChildAssessmentResponse
 from apps.assessments.serializers import (
     AnswerSubmissionSerializer,
@@ -37,11 +43,30 @@ def assessment_audio(request, key):
             audio, _ = generate_audio_asset(key)
         except AudioGenerationError as exc:
             logger.warning("Assessment audio unavailable for %s: %s", key, exc)
-            raise Http404("Assessment audio not found.")
+            if key not in ASSESSMENT_AUDIO:
+                raise Http404("Assessment audio not found.")
+            response = HttpResponse("Assessment audio is not ready.", status=503, content_type="text/plain")
+            response["Cache-Control"] = "no-store"
+            response["X-Assessment-Audio-Status"] = "unavailable"
+            return response
     response = HttpResponse(bytes(audio.audio), content_type=audio.content_type)
     response["Cache-Control"] = "public, max-age=31536000, immutable"
     response["Content-Length"] = str(audio.byte_length)
     return response
+
+
+def assessment_audio_status(request):
+    cached = set(AssessmentAudioAsset.objects.filter(key__in=ASSESSMENT_AUDIO.keys()).values_list("key", flat=True))
+    missing = [key for key in ASSESSMENT_AUDIO if key not in cached]
+    configured = bool(get_elevenlabs_api_key()) and bool(os.getenv("ELEVENLABS_VOICE_ID"))
+    return JsonResponse(
+        {
+            "configured": configured,
+            "cached_count": len(cached),
+            "total_count": len(ASSESSMENT_AUDIO),
+            "missing": missing,
+        }
+    )
 
 
 class DigitalAssessmentSubmissionSerializer(serializers.Serializer):

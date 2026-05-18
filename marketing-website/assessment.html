@@ -387,6 +387,15 @@
       readButton.setAttribute('aria-pressed', 'false');
     }
 
+    function showAudioPreparingMessage() {
+      const existing = document.getElementById('audio-status-message');
+      if (existing) existing.remove();
+      body.insertAdjacentHTML(
+        'beforeend',
+        '<p id="audio-status-message" class="mt-4 rounded-2xl bg-blush px-4 py-3 text-sm font-black text-coral">The friendly reading voice is being prepared. Please try again in a moment.</p>'
+      );
+    }
+
     function cachedAudioForStep(step) {
       if (step.type === 'intro') return cachedAudioByStep.intro;
       if (step.type === 'result') return cachedAudioByStep.result;
@@ -409,12 +418,12 @@
       audio.addEventListener('error', () => {
         state.audioPlayer = null;
         resetReadButton();
-        speak(speechTextForStep(step));
+        showAudioPreparingMessage();
       }, { once: true });
       audio.play().catch(() => {
         state.audioPlayer = null;
         resetReadButton();
-        speak(speechTextForStep(step));
+        showAudioPreparingMessage();
       });
       return true;
     }
