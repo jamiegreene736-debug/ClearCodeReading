@@ -1,0 +1,190 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Dashboard | Clear Code Reading</title>
+  <meta name="description" content="Clear Code Reading parent and teacher dashboard.">
+  <link rel="icon" href="/assets/logo/clear-code-reading-icon.png" type="image/png">
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            tealWarm: '#00B8A9',
+            coral: '#FF6B6B',
+            navySoft: '#2C3E50',
+            sunny: '#FFD93D',
+            cream: '#FFF9EA',
+            mist: '#F0FFFC',
+            blush: '#FFF5F5'
+          },
+          fontFamily: {
+            sans: ['Inter', 'Avenir Next', 'Nunito Sans', 'ui-sans-serif', 'system-ui', 'sans-serif']
+          }
+        }
+      }
+    };
+  </script>
+  <style>
+    .focus-ring:focus-visible { outline: 4px solid rgba(255, 217, 61, .75); outline-offset: 3px; }
+    .page-bg {
+      background:
+        radial-gradient(circle at 12% 12%, rgba(255, 217, 61, .20), transparent 24%),
+        radial-gradient(circle at 86% 16%, rgba(255, 107, 107, .12), transparent 24%),
+        linear-gradient(135deg, #fffdf6 0%, #f0fffc 48%, #fff5f5 100%);
+    }
+    .logo-plate { background: linear-gradient(135deg, rgba(255,255,255,.96), rgba(255,249,234,.92)); }
+  </style>
+</head>
+<body class="page-bg min-h-screen text-navySoft antialiased">
+  <header class="sticky top-0 z-40 border-b border-tealWarm/10 bg-white/90 backdrop-blur-xl">
+    <nav class="mx-auto flex max-w-7xl items-center justify-between gap-4 px-4 py-3 sm:px-6 lg:px-8">
+      <a href="/dashboard/" class="focus-ring logo-plate rounded-2xl px-2 py-1 shadow-sm ring-1 ring-navySoft/5">
+        <img src="/assets/logo/clear-code-reading-logo.png" alt="Clear Code Reading" class="h-12 w-auto max-w-[230px] object-contain sm:max-w-[300px]">
+      </a>
+      <div class="flex items-center gap-3">
+        {% if request.user.is_staff %}
+          <a href="/admin/" class="hidden rounded-full px-4 py-2 text-sm font-black text-navySoft/70 transition hover:text-tealWarm sm:inline-flex">Admin</a>
+        {% endif %}
+        <form method="post" action="{% url 'logout' %}">
+          {% csrf_token %}
+          <button class="focus-ring rounded-full bg-coral px-5 py-3 text-sm font-extrabold text-white shadow-lg shadow-coral/25 transition hover:-translate-y-0.5 hover:bg-[#ff5757]" type="submit">Logout</button>
+        </form>
+      </div>
+    </nav>
+  </header>
+
+  <main class="mx-auto max-w-7xl px-4 py-10 sm:px-6 lg:px-8">
+    {% if messages %}
+      <div class="mb-6 space-y-2">
+        {% for message in messages %}
+          <p class="rounded-2xl bg-white px-4 py-3 text-sm font-bold text-navySoft shadow-sm ring-1 ring-tealWarm/10">{{ message }}</p>
+        {% endfor %}
+      </div>
+    {% endif %}
+
+    <section class="grid gap-6 lg:grid-cols-[.85fr_1.15fr] lg:items-start">
+      <aside class="rounded-[2rem] bg-white/90 p-6 shadow-2xl shadow-tealWarm/10 ring-1 ring-tealWarm/10 lg:sticky lg:top-28">
+        <p class="text-sm font-black uppercase tracking-[0.18em] text-coral">
+          {% if is_parent %}Parent workspace{% else %}Teacher workspace{% endif %}
+        </p>
+        <h1 class="mt-3 text-3xl font-black leading-tight sm:text-5xl">
+          Hi, {{ request.user.first_name|default:request.user.email }}.
+        </h1>
+        <p class="mt-5 text-lg leading-8 text-navySoft/70">
+          {% if is_parent %}
+            Track your child's reading age, strengths, growth areas, and next steps after human review.
+          {% else %}
+            Review student KPIs, completed surveys, and assessments waiting for human evaluator notes.
+          {% endif %}
+        </p>
+        <div class="mt-7 grid gap-3 sm:grid-cols-2 lg:grid-cols-1 xl:grid-cols-2">
+          <div class="rounded-3xl bg-mist p-5">
+            <p class="text-sm font-black text-tealWarm">Readers</p>
+            <p class="mt-2 text-4xl font-black">{{ child_count }}</p>
+          </div>
+          <div class="rounded-3xl bg-blush p-5">
+            <p class="text-sm font-black text-coral">Assessments</p>
+            <p class="mt-2 text-4xl font-black">{{ assessment_count }}</p>
+          </div>
+          <div class="rounded-3xl bg-cream p-5">
+            <p class="text-sm font-black text-navySoft/65">Avg. reading age</p>
+            <p class="mt-2 text-4xl font-black">{% if average_reading_age %}{{ average_reading_age|floatformat:1 }}{% else %}--{% endif %}</p>
+          </div>
+          <div class="rounded-3xl bg-white p-5 ring-1 ring-navySoft/10">
+            <p class="text-sm font-black text-navySoft/65">KPI areas</p>
+            <p class="mt-2 text-4xl font-black">{{ kpi_count }}</p>
+          </div>
+        </div>
+      </aside>
+
+      <section class="space-y-6">
+        {% if is_teacher %}
+          <section class="rounded-[2rem] bg-white p-6 shadow-xl shadow-navySoft/8 ring-1 ring-navySoft/10">
+            <div class="flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
+              <div>
+                <p class="text-sm font-black uppercase tracking-[0.18em] text-coral">Human review queue</p>
+                <h2 class="mt-2 text-3xl font-black">Assessments needing evaluator notes</h2>
+              </div>
+              <p class="rounded-full bg-blush px-4 py-2 text-sm font-black text-coral">{{ pending_review_count }} pending</p>
+            </div>
+            <div class="mt-5 grid gap-3">
+              {% for assessment in pending_reviews %}
+                <article class="rounded-3xl bg-cream p-5">
+                  <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                    <div>
+                      <h3 class="text-xl font-black">{{ assessment.child }}</h3>
+                      <p class="mt-1 text-sm font-bold text-navySoft/65">{{ assessment.title }}</p>
+                    </div>
+                    <div class="text-sm font-black text-tealWarm">
+                      Reading age {% if assessment.reading_age %}{{ assessment.reading_age }}{% else %}pending{% endif %}
+                    </div>
+                  </div>
+                </article>
+              {% empty %}
+                <p class="rounded-3xl bg-mist p-5 font-bold text-navySoft/70">No assessments are waiting for review right now.</p>
+              {% endfor %}
+            </div>
+          </section>
+        {% endif %}
+
+        <section class="rounded-[2rem] bg-white p-6 shadow-xl shadow-navySoft/8 ring-1 ring-navySoft/10">
+          <p class="text-sm font-black uppercase tracking-[0.18em] text-tealWarm">Reading results</p>
+          <h2 class="mt-2 text-3xl font-black">Latest KPI snapshots</h2>
+          <div class="mt-5 grid gap-4">
+            {% for result in latest_results %}
+              <article class="rounded-3xl bg-white p-5 shadow-sm ring-1 ring-navySoft/10">
+                <div class="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+                  <div>
+                    <h3 class="text-2xl font-black">{{ result.assessment.child }}</h3>
+                    <p class="mt-1 text-sm font-bold text-navySoft/60">{{ result.grade_equivalent }} placement estimate</p>
+                  </div>
+                  <div class="rounded-2xl bg-mist px-4 py-3 text-center">
+                    <p class="text-xs font-black uppercase tracking-[0.14em] text-tealWarm">Reading age</p>
+                    <p class="text-3xl font-black">{{ result.reading_age }}</p>
+                  </div>
+                </div>
+
+                <div class="mt-5 grid gap-3 md:grid-cols-2">
+                  <div class="rounded-2xl bg-cream p-4">
+                    <p class="font-black">Strengths</p>
+                    <p class="mt-2 text-sm leading-6 text-navySoft/70">{{ result.strengths|join:", " }}</p>
+                  </div>
+                  <div class="rounded-2xl bg-blush p-4">
+                    <p class="font-black">Growth areas</p>
+                    <p class="mt-2 text-sm leading-6 text-navySoft/70">{{ result.growth_areas|join:", " }}</p>
+                  </div>
+                </div>
+
+                <p class="mt-4 rounded-2xl bg-navySoft px-4 py-3 text-sm leading-6 text-white/85">{{ result.teacher_summary }}</p>
+              </article>
+            {% empty %}
+              <p class="rounded-3xl bg-cream p-5 font-bold text-navySoft/70">No reading results yet. Start with the free digital assessment.</p>
+            {% endfor %}
+          </div>
+        </section>
+
+        <section class="rounded-[2rem] bg-white p-6 shadow-xl shadow-navySoft/8 ring-1 ring-navySoft/10">
+          <p class="text-sm font-black uppercase tracking-[0.18em] text-coral">Next tasks</p>
+          <div class="mt-5 grid gap-3 md:grid-cols-3">
+            <a class="focus-ring rounded-3xl bg-mist p-5 transition hover:-translate-y-1 hover:shadow-xl" href="/assessment/">
+              <span class="block text-lg font-black">Start assessment</span>
+              <span class="mt-2 block text-sm leading-6 text-navySoft/65">Run the child-friendly reading survey.</span>
+            </a>
+            <div class="rounded-3xl bg-cream p-5">
+              <span class="block text-lg font-black">Review KPIs</span>
+              <span class="mt-2 block text-sm leading-6 text-navySoft/65">Compare phonics, fluency, vocabulary, and comprehension.</span>
+            </div>
+            <div class="rounded-3xl bg-blush p-5">
+              <span class="block text-lg font-black">Plan support</span>
+              <span class="mt-2 block text-sm leading-6 text-navySoft/65">Use growth areas to guide lessons and human follow-up.</span>
+            </div>
+          </div>
+        </section>
+      </section>
+    </section>
+  </main>
+</body>
+</html>

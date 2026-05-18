@@ -1,6 +1,7 @@
 from django.core.management.base import BaseCommand
 from django.utils import timezone
 
+from apps.assessments.models import Assessment, AssessmentResult
 from apps.users.models import ChildProfile, ConsentLog, CustomUser, GuardianRelationship
 
 
@@ -29,7 +30,7 @@ class Command(BaseCommand):
             first_name="Demo",
             last_name="Teacher",
             role=CustomUser.Role.TEACHER,
-            is_staff=True,
+            is_staff=False,
             is_superuser=False,
         )
         parent = self._upsert_user(
@@ -38,7 +39,7 @@ class Command(BaseCommand):
             first_name="Demo",
             last_name="Parent",
             role=CustomUser.Role.GUARDIAN,
-            is_staff=True,
+            is_staff=False,
             is_superuser=False,
         )
 
@@ -88,6 +89,121 @@ class Command(BaseCommand):
                     "metadata": {"demo": True, "seeded_at": timezone.now().isoformat()},
                 },
             )
+
+        completed_assessment, _ = Assessment.objects.update_or_create(
+            child=child,
+            title="Demo Reading Survey - Avery Reader",
+            defaults={
+                "assigned_by": teacher,
+                "assessment_type": Assessment.AssessmentType.DIAGNOSTIC,
+                "status": Assessment.Status.COMPLETED,
+                "started_at": timezone.now(),
+                "survey_completed_at": timezone.now(),
+                "completed_at": timezone.now(),
+                "overall_score": 76,
+                "reading_age": "8.2",
+                "raw_score": "7.60",
+                "max_score": "10.00",
+                "scoring": {
+                    "reading_survey": {
+                        "overall_score": 76,
+                        "reading_age": 8.2,
+                        "final_message": "You are reading at an 8.2-year-old level",
+                    }
+                },
+                "recommendations": ["Fluency", "Advanced decoding"],
+                "metadata": {"demo": True, "source": "seed_demo_login"},
+                "is_deleted": False,
+                "deleted_at": None,
+            },
+        )
+        AssessmentResult.objects.update_or_create(
+            assessment=completed_assessment,
+            defaults={
+                "reading_age": "8.2",
+                "grade_equivalent": "Grade 3",
+                "final_scores": {
+                    "overall_score": 76,
+                    "response_count": 10,
+                    "final_message": "You are reading at an 8.2-year-old level",
+                },
+                "category_breakdown": {
+                    "phonemic_awareness": {"label": "Phonemic awareness", "score": 100, "responses": 1},
+                    "letter_sound": {"label": "Letter sounds", "score": 100, "responses": 1},
+                    "phonics": {"label": "Phonics / decoding", "score": 82, "responses": 2},
+                    "sight_words": {"label": "Sight words", "score": 70, "responses": 1},
+                    "fluency": {"label": "Fluency", "score": 58, "responses": 1},
+                    "vocabulary": {"label": "Vocabulary", "score": 75, "responses": 1},
+                    "comprehension": {"label": "Comprehension", "score": 72, "responses": 1},
+                    "writing_readiness": {"label": "Writing readiness", "score": 80, "responses": 1},
+                    "confidence": {"label": "Reading confidence", "score": 65, "responses": 1},
+                },
+                "strengths": ["Phonemic awareness", "Letter sounds", "Phonics / decoding"],
+                "growth_areas": ["Fluency", "Reading confidence"],
+                "teacher_summary": (
+                    "Avery shows strong sound awareness and letter-sound knowledge. "
+                    "Next support should focus on smoother oral reading, confidence, and longer word decoding."
+                ),
+                "evaluator_notes": "Demo evaluator note: Avery benefits from warm prompts and short repeated-reading practice.",
+                "metadata": {"demo": True, "source": "seed_demo_login"},
+                "is_deleted": False,
+                "deleted_at": None,
+            },
+        )
+
+        review_assessment, _ = Assessment.objects.update_or_create(
+            child=child,
+            title="Demo Human Review Queue Item",
+            defaults={
+                "assigned_by": teacher,
+                "assessment_type": Assessment.AssessmentType.SCREENING,
+                "status": Assessment.Status.HUMAN_REVIEW,
+                "started_at": timezone.now(),
+                "survey_completed_at": timezone.now(),
+                "overall_score": 64,
+                "reading_age": "7.1",
+                "raw_score": "6.40",
+                "max_score": "10.00",
+                "scoring": {
+                    "reading_survey": {
+                        "overall_score": 64,
+                        "reading_age": 7.1,
+                        "final_message": "You are reading at a 7.1-year-old level",
+                    }
+                },
+                "recommendations": ["Comprehension", "Fluency"],
+                "metadata": {"demo": True, "source": "seed_demo_login", "needs_human_notes": True},
+                "is_deleted": False,
+                "deleted_at": None,
+            },
+        )
+        AssessmentResult.objects.update_or_create(
+            assessment=review_assessment,
+            defaults={
+                "reading_age": "7.1",
+                "grade_equivalent": "Grade 2",
+                "final_scores": {
+                    "overall_score": 64,
+                    "response_count": 10,
+                    "final_message": "You are reading at a 7.1-year-old level",
+                },
+                "category_breakdown": {
+                    "phonemic_awareness": {"label": "Phonemic awareness", "score": 86, "responses": 1},
+                    "letter_sound": {"label": "Letter sounds", "score": 78, "responses": 1},
+                    "phonics": {"label": "Phonics / decoding", "score": 68, "responses": 2},
+                    "fluency": {"label": "Fluency", "score": 45, "responses": 1},
+                    "comprehension": {"label": "Comprehension", "score": 50, "responses": 1},
+                    "confidence": {"label": "Reading confidence", "score": 55, "responses": 1},
+                },
+                "strengths": ["Phonemic awareness", "Letter sounds"],
+                "growth_areas": ["Fluency", "Comprehension"],
+                "teacher_summary": "Demo queue item: confirm oral reading fluency and comprehension before final placement.",
+                "evaluator_notes": "",
+                "metadata": {"demo": True, "source": "seed_demo_login"},
+                "is_deleted": False,
+                "deleted_at": None,
+            },
+        )
 
         self.stdout.write(self.style.SUCCESS("Created Clear Code Reading demo credentials:"))
         self.stdout.write(f"  Admin:   {admin.email} / {DEMO_PASSWORD}")

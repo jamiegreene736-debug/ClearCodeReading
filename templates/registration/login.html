@@ -1,0 +1,130 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Login | Clear Code Reading</title>
+  <meta name="description" content="Log in to the Clear Code Reading parent, teacher, and school dashboard.">
+  <link rel="icon" href="/assets/logo/clear-code-reading-icon.png" type="image/png">
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            tealWarm: '#00B8A9',
+            coral: '#FF6B6B',
+            navySoft: '#2C3E50',
+            sunny: '#FFD93D',
+            cream: '#FFF9EA',
+            mist: '#F0FFFC',
+            blush: '#FFF5F5'
+          },
+          fontFamily: {
+            sans: ['Inter', 'Avenir Next', 'Nunito Sans', 'ui-sans-serif', 'system-ui', 'sans-serif']
+          }
+        }
+      }
+    };
+  </script>
+  <style>
+    .focus-ring:focus-visible { outline: 4px solid rgba(255, 217, 61, .75); outline-offset: 3px; }
+    .page-bg {
+      background:
+        radial-gradient(circle at 16% 16%, rgba(255, 217, 61, .25), transparent 26%),
+        radial-gradient(circle at 84% 10%, rgba(255, 107, 107, .15), transparent 25%),
+        radial-gradient(circle at 55% 90%, rgba(0, 184, 169, .16), transparent 32%),
+        linear-gradient(135deg, #fffdf6 0%, #f0fffc 52%, #fff5f5 100%);
+    }
+    .logo-plate { background: linear-gradient(135deg, rgba(255,255,255,.96), rgba(255,249,234,.92)); }
+  </style>
+</head>
+<body class="page-bg min-h-screen text-navySoft antialiased">
+  <header class="border-b border-tealWarm/10 bg-white/90 backdrop-blur-xl">
+    <nav class="mx-auto flex max-w-7xl items-center justify-between gap-4 px-4 py-3 sm:px-6 lg:px-8">
+      <a href="/" class="focus-ring logo-plate rounded-2xl px-2 py-1 shadow-sm ring-1 ring-navySoft/5">
+        <img src="/assets/logo/clear-code-reading-logo.png" alt="Clear Code Reading" class="h-12 w-auto max-w-[230px] object-contain sm:max-w-[300px]">
+      </a>
+      <a href="/assessment/" class="focus-ring rounded-full bg-tealWarm px-5 py-3 text-sm font-black text-white shadow-lg shadow-tealWarm/20 transition hover:-translate-y-0.5">
+        Free Assessment
+      </a>
+    </nav>
+  </header>
+
+  <main class="mx-auto grid max-w-6xl gap-8 px-4 py-10 sm:px-6 lg:grid-cols-[.9fr_1.1fr] lg:px-8 lg:py-16">
+    <section class="rounded-[2rem] bg-white/88 p-7 shadow-2xl shadow-tealWarm/10 ring-1 ring-tealWarm/10">
+      <p class="text-sm font-black uppercase tracking-[0.18em] text-coral">Backend portal</p>
+      <h1 class="mt-3 text-4xl font-black leading-tight sm:text-5xl">Welcome back to Clear Code Reading.</h1>
+      <p class="mt-5 text-lg leading-8 text-navySoft/70">
+        Parents, teachers, evaluators, and school teams use this portal to review reading KPIs, assessment results, human-review tasks, and next-step learning plans.
+      </p>
+
+      <div class="mt-7 grid gap-3 sm:grid-cols-2">
+        <form method="post" action="{% url 'demo_login' 'parent' %}">
+          {% csrf_token %}
+          <button class="focus-ring w-full rounded-3xl bg-mist p-5 text-left shadow-sm ring-1 ring-tealWarm/15 transition hover:-translate-y-1 hover:shadow-xl" type="submit">
+            <span class="block text-sm font-black uppercase tracking-[0.16em] text-tealWarm">Demo Parent</span>
+            <span class="mt-2 block text-xl font-black">View Avery's reading snapshot</span>
+            <span class="mt-2 block text-sm leading-6 text-navySoft/65">Reading age, strengths, growth areas, and family next steps.</span>
+          </button>
+        </form>
+        <form method="post" action="{% url 'demo_login' 'teacher' %}">
+          {% csrf_token %}
+          <button class="focus-ring w-full rounded-3xl bg-blush p-5 text-left shadow-sm ring-1 ring-coral/15 transition hover:-translate-y-1 hover:shadow-xl" type="submit">
+            <span class="block text-sm font-black uppercase tracking-[0.16em] text-coral">Demo Teacher</span>
+            <span class="mt-2 block text-xl font-black">Review classroom KPIs</span>
+            <span class="mt-2 block text-sm leading-6 text-navySoft/65">Pending human reviews, skill gaps, and assessment evidence.</span>
+          </button>
+        </form>
+      </div>
+
+      <p class="mt-6 rounded-2xl bg-navySoft px-4 py-3 text-sm leading-6 text-white/80">
+        Demo logins use seeded sample data. Internal Django administration remains available at <a class="font-black text-sunny" href="/admin/">/admin/</a> for staff.
+      </p>
+    </section>
+
+    <section class="rounded-[2rem] bg-white p-6 shadow-2xl shadow-navySoft/10 ring-1 ring-navySoft/10 sm:p-8">
+      <h2 class="text-3xl font-black">Sign in</h2>
+
+      {% if messages %}
+        <div class="mt-5 space-y-2">
+          {% for message in messages %}
+            <p class="rounded-2xl bg-cream px-4 py-3 text-sm font-bold text-navySoft">{{ message }}</p>
+          {% endfor %}
+        </div>
+      {% endif %}
+
+      {% if form.errors %}
+        <p class="mt-5 rounded-2xl bg-blush px-4 py-3 text-sm font-bold text-coral">
+          That email and password did not match. Please try again or use a demo login.
+        </p>
+      {% endif %}
+
+      <form class="mt-6 space-y-5" method="post">
+        {% csrf_token %}
+        <input type="hidden" name="next" value="{{ next }}">
+        <label class="block">
+          <span class="text-sm font-black text-navySoft">Email</span>
+          <input class="mt-2 w-full rounded-2xl border border-navySoft/15 px-4 py-4 text-lg font-bold focus:border-tealWarm focus:outline-none" type="email" name="username" autocomplete="email" required>
+        </label>
+        <label class="block">
+          <span class="text-sm font-black text-navySoft">Password</span>
+          <input class="mt-2 w-full rounded-2xl border border-navySoft/15 px-4 py-4 text-lg font-bold focus:border-tealWarm focus:outline-none" type="password" name="password" autocomplete="current-password" required>
+        </label>
+        <button class="focus-ring w-full rounded-full bg-coral px-6 py-4 font-black text-white shadow-lg shadow-coral/25 transition hover:-translate-y-0.5 hover:bg-[#ff5757]" type="submit">
+          Login
+        </button>
+      </form>
+
+      <div class="mt-7 rounded-3xl bg-cream p-5">
+        <p class="text-sm font-black uppercase tracking-[0.16em] text-tealWarm">Sample credentials</p>
+        <div class="mt-3 grid gap-2 text-sm font-bold text-navySoft/70">
+          <p>Parent: parent@clearcodereading.com</p>
+          <p>Teacher: teacher@clearcodereading.com</p>
+          <p>Password: ClearCodeDemo!2026</p>
+        </div>
+      </div>
+    </section>
+  </main>
+</body>
+</html>
