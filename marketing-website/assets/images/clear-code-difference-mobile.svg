@@ -1,71 +1,96 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1254 1254" role="img" aria-labelledby="title desc">
   <title id="title">Clear Code Reading difference mobile comparison</title>
-  <desc id="desc">Four rounded illustrated tiles comparing app-only practice, human review, static worksheets, and adaptive curriculum.</desc>
+  <desc id="desc">Four rounded cartoon tiles comparing tech-only apps, human review, static worksheets, and adaptive curriculum.</desc>
   <defs>
     <filter id="shadow" x="-10%" y="-10%" width="120%" height="120%">
       <feDropShadow dx="0" dy="12" stdDeviation="13" flood-color="#2C3E50" flood-opacity=".13"/>
     </filter>
     <linearGradient id="outerBg" x1="0" x2="1" y1="0" y2="1">
-      <stop offset="0" stop-color="#FFF9EA"/><stop offset=".52" stop-color="#FFFFFF"/><stop offset="1" stop-color="#FFF5F5"/>
+      <stop offset="0" stop-color="#FFF9EA"/>
+      <stop offset=".52" stop-color="#FFFFFF"/>
+      <stop offset="1" stop-color="#FFF5F5"/>
     </linearGradient>
-    <linearGradient id="desk" x1="0" x2="0" y1="0" y2="1"><stop offset="0" stop-color="#F7C37B"/><stop offset="1" stop-color="#D99142"/></linearGradient>
-    <linearGradient id="tablet" x1="0" x2="1"><stop offset="0" stop-color="#243A48"/><stop offset="1" stop-color="#0F2534"/></linearGradient>
+    <clipPath id="tile1"><rect x="50" y="52" width="562" height="562" rx="36"/></clipPath>
+    <clipPath id="tile2"><rect x="642" y="52" width="562" height="562" rx="36"/></clipPath>
+    <clipPath id="tile3"><rect x="50" y="642" width="562" height="562" rx="36"/></clipPath>
+    <clipPath id="tile4"><rect x="642" y="642" width="562" height="562" rx="36"/></clipPath>
     <style>
-      .title{font-family:Inter,Avenir Next,Nunito Sans,Arial,sans-serif;font-weight:900;font-size:40px;fill:#2C3E50}
-      .copy{font-family:Inter,Avenir Next,Nunito Sans,Arial,sans-serif;font-weight:800;font-size:23px;fill:#2C3E50}
-      .small{font-family:Inter,Avenir Next,Nunito Sans,Arial,sans-serif;font-weight:900;font-size:20px;fill:#2C3E50}
+      .title{font-family:Inter,Avenir Next,Nunito Sans,Arial,sans-serif;font-weight:900;font-size:39px;fill:#2C3E50}
+      .copy{font-family:Inter,Avenir Next,Nunito Sans,Arial,sans-serif;font-weight:800;font-size:22px;fill:#2C3E50}
     </style>
   </defs>
   <rect width="1254" height="1254" fill="none"/>
   <g filter="url(#shadow)">
     <rect x="20" y="20" width="1214" height="1214" rx="58" fill="url(#outerBg)" stroke="#F0E2CF" stroke-width="3"/>
-    <g>
-      <rect x="50" y="52" width="562" height="562" rx="36" fill="#FFFDF6" stroke="#EADFD1" stroke-width="3"/>
-      <text class="title" x="94" y="116">Tech-only apps</text>
-      <text class="copy" x="94" y="168"><tspan x="94">Fast practice, but limited</tspan><tspan x="94" dy="31">context when a child</tspan><tspan x="94" dy="31">needs reassurance.</tspan></text>
-      <rect x="94" y="274" width="104" height="10" rx="5" fill="#00B8A9"/>
-      <rect x="74" y="430" width="516" height="150" rx="24" fill="url(#desk)"/>
-      <rect x="286" y="278" width="198" height="168" rx="20" fill="url(#tablet)" transform="rotate(-5 385 362)"/>
-      <rect x="304" y="294" width="162" height="126" rx="12" fill="#F2FFFD" transform="rotate(-5 385 362)"/>
-      <circle cx="358" cy="351" r="29" fill="#FFD93D"/><path d="M349 350c8 8 18 8 27 0" fill="none" stroke="#2C3E50" stroke-width="4" stroke-linecap="round"/>
-      <rect x="404" y="312" width="74" height="24" rx="12" fill="#DFF7F4"/><rect x="404" y="354" width="74" height="24" rx="12" fill="#E8F3FA"/><rect x="404" y="396" width="74" height="24" rx="12" fill="#E8F3FA"/>
-      <circle cx="206" cy="301" r="48" fill="#F2B27E"/><path d="M159 300c9-58 85-72 107-16-32-16-68-14-107 16z" fill="#7A4321"/>
-      <rect x="158" y="348" width="102" height="104" rx="34" fill="#00A99D"/><path d="M190 326c15 12 33 12 49 0" fill="none" stroke="#2C3E50" stroke-width="5" stroke-linecap="round"/>
-      <rect x="95" y="448" width="130" height="30" rx="6" fill="#007D78"/><rect x="95" y="479" width="145" height="30" rx="6" fill="#FF6B6B"/><rect x="95" y="510" width="120" height="30" rx="6" fill="#2C3E50"/>
+
+    <g clip-path="url(#tile1)">
+      <rect x="50" y="52" width="562" height="562" rx="36" fill="#FFFDF6"/>
+      <svg x="50" y="276" width="562" height="338" viewBox="285 105 483 430" preserveAspectRatio="xMidYMid slice">
+        <image href="clear-code-difference-comparison.png" width="1536" height="1024"/>
+      </svg>
+      <rect x="50" y="276" width="44" height="338" fill="#FFFDF6"/>
+      <rect x="548" y="276" width="64" height="338" fill="#FFFDF6"/>
+      <rect x="50" y="52" width="562" height="256" fill="#FFFFFF"/>
     </g>
-    <g>
-      <rect x="642" y="52" width="562" height="562" rx="36" fill="#FFF7F7" stroke="#FFD8D8" stroke-width="3"/>
-      <text x="686" y="116" font-family="Inter,Avenir Next,Nunito Sans,Arial,sans-serif" font-size="40" font-weight="900" fill="#FF6B6B">Human review</text>
-      <text class="copy" x="686" y="168"><tspan x="686">A real educator checks</tspan><tspan x="686" dy="31">the result and adds</tspan><tspan x="686" dy="31">warm context.</tspan></text>
-      <rect x="686" y="274" width="104" height="10" rx="5" fill="#FF6B6B"/>
-      <rect x="666" y="430" width="516" height="150" rx="24" fill="url(#desk)"/>
-      <circle cx="841" cy="286" r="48" fill="#F0B07A"/><path d="M791 289c14-72 95-80 115-12-26-20-67-23-115 12z" fill="#6D3B20"/>
-      <rect x="786" y="334" width="112" height="112" rx="38" fill="#F4775E"/>
-      <circle cx="1032" cy="314" r="43" fill="#F2B27E"/><path d="M990 314c18-57 85-57 100-2-22-15-63-16-100 2z" fill="#70401F"/><rect x="986" y="356" width="92" height="90" rx="30" fill="#F6BE4F"/>
-      <rect x="784" y="426" width="278" height="116" rx="18" fill="#FFF9EA" stroke="#E8D1B1" stroke-width="3"/>
-      <path d="M923 426v116" stroke="#E8D1B1" stroke-width="3"/><text class="small" x="825" y="486">cat</text><text class="small" x="952" y="486">ship</text><circle cx="948" cy="518" r="18" fill="#00B8A9"/><path d="M940 518l7 7 14-16" fill="none" stroke="white" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"/>
-      <rect x="1091" y="454" width="70" height="28" rx="5" fill="#007D78"/><rect x="1091" y="483" width="86" height="28" rx="5" fill="#FF6B6B"/><rect x="1091" y="512" width="76" height="28" rx="5" fill="#2C3E50"/>
+    <rect x="50" y="52" width="562" height="562" rx="36" fill="none" stroke="#EADFD1" stroke-width="3"/>
+    <text class="title" x="94" y="116">Tech-only apps</text>
+    <text class="copy" x="94" y="164">
+      <tspan x="94">Fast practice, but limited</tspan>
+      <tspan x="94" dy="30">context when a child</tspan>
+      <tspan x="94" dy="30">needs reassurance.</tspan>
+    </text>
+    <rect x="94" y="262" width="104" height="10" rx="5" fill="#00B8A9"/>
+
+    <g clip-path="url(#tile2)">
+      <rect x="642" y="52" width="562" height="562" rx="36" fill="#FFF7F7"/>
+      <svg x="642" y="276" width="562" height="338" viewBox="900 115 636 420" preserveAspectRatio="xMidYMid slice">
+        <image href="clear-code-difference-comparison.png" width="1536" height="1024"/>
+      </svg>
+      <rect x="642" y="276" width="166" height="338" fill="#FFF7F7"/>
+      <rect x="642" y="52" width="562" height="256" fill="#FFF9F9"/>
     </g>
-    <g>
-      <rect x="50" y="642" width="562" height="562" rx="36" fill="#F8FCFD" stroke="#DDECEF" stroke-width="3"/>
-      <text class="title" x="94" y="706">Static worksheets</text>
-      <text class="copy" x="94" y="758"><tspan x="94">Helpful practice, but</tspan><tspan x="94" dy="31">hard to personalize</tspan><tspan x="94" dy="31">or measure.</tspan></text>
-      <rect x="94" y="864" width="104" height="10" rx="5" fill="#AAB8BD"/>
-      <rect x="74" y="1020" width="516" height="150" rx="24" fill="url(#desk)"/>
-      <g transform="translate(232 826) rotate(8)"><rect x="0" y="0" width="250" height="310" rx="18" fill="#EFE9DF"/><rect x="-18" y="-14" width="250" height="310" rx="18" fill="#F8F5EF"/><rect x="-36" y="-28" width="250" height="310" rx="18" fill="#FFFFFF" stroke="#D8D0C5" stroke-width="3"/><text class="small" x="15" y="34">Read and Match</text><text class="small" x="18" y="88">1. cat</text><text class="small" x="18" y="132">2. bag</text><text class="small" x="18" y="176">3. sun</text><rect x="160" y="62" width="46" height="46" rx="8" fill="#E8EEF2"/><rect x="160" y="118" width="46" height="46" rx="8" fill="#E8EEF2"/><rect x="160" y="174" width="46" height="46" rx="8" fill="#E8EEF2"/></g>
-      <rect x="494" y="896" width="24" height="250" rx="12" fill="#FF8A3D" transform="rotate(18 506 1021)"/><rect x="492" y="878" width="28" height="34" rx="4" fill="#FFD6B8" transform="rotate(18 506 895)"/>
+    <rect x="642" y="52" width="562" height="562" rx="36" fill="none" stroke="#FFD8D8" stroke-width="3"/>
+    <text x="686" y="116" font-family="Inter,Avenir Next,Nunito Sans,Arial,sans-serif" font-size="39" font-weight="900" fill="#FF6B6B">Human review</text>
+    <text class="copy" x="686" y="164">
+      <tspan x="686">A real educator checks</tspan>
+      <tspan x="686" dy="30">the result and adds</tspan>
+      <tspan x="686" dy="30">warm context.</tspan>
+    </text>
+    <rect x="686" y="262" width="104" height="10" rx="5" fill="#FF6B6B"/>
+
+    <g clip-path="url(#tile3)">
+      <rect x="50" y="642" width="562" height="562" rx="36" fill="#F8FCFD"/>
+      <svg x="50" y="866" width="562" height="338" viewBox="410 650 358 374" preserveAspectRatio="xMidYMid slice">
+        <image href="clear-code-difference-comparison.png" width="1536" height="1024"/>
+      </svg>
+      <rect x="50" y="866" width="38" height="338" fill="#F8FCFD"/>
+      <rect x="548" y="866" width="64" height="338" fill="#F8FCFD"/>
+      <rect x="50" y="642" width="562" height="256" fill="#FFFFFF"/>
     </g>
-    <g>
-      <rect x="642" y="642" width="562" height="562" rx="36" fill="#FFF9EA" stroke="#FFE8A3" stroke-width="3"/>
-      <text x="686" y="706" font-family="Inter,Avenir Next,Nunito Sans,Arial,sans-serif" font-size="40" font-weight="900" fill="#E7A300">Adaptive curriculum</text>
-      <text class="copy" x="686" y="758"><tspan x="686">Lessons respond to</tspan><tspan x="686" dy="31">decoding and real</tspan><tspan x="686" dy="31">comprehension needs.</tspan></text>
-      <rect x="686" y="864" width="104" height="10" rx="5" fill="#FFD93D"/>
-      <rect x="666" y="1020" width="516" height="150" rx="24" fill="url(#desk)"/>
-      <circle cx="878" cy="878" r="48" fill="#F0B07A"/><path d="M828 881c14-72 95-80 115-12-26-20-67-23-115 12z" fill="#6D3B20"/><rect x="826" y="926" width="110" height="102" rx="36" fill="#F4775E"/>
-      <circle cx="1043" cy="907" r="43" fill="#F2B27E"/><path d="M1000 907c18-57 85-57 100-2-22-15-63-16-100 2z" fill="#70401F"/><rect x="998" y="949" width="92" height="82" rx="28" fill="#F6BE4F"/>
-      <rect x="730" y="1036" width="110" height="80" rx="14" fill="#FFF" transform="rotate(-9 785 1076)"/><text class="small" x="757" y="1083" fill="#00B8A9">abc</text>
-      <rect x="880" y="1050" width="112" height="82" rx="14" fill="#FFF" transform="rotate(7 936 1091)"/><text class="small" x="898" y="1088">Sight</text><text class="small" x="893" y="1115">Words</text>
-      <path d="M780 1140c108-82 235-87 345-20" fill="none" stroke="white" stroke-width="8" stroke-dasharray="18 15" stroke-linecap="round"/>
+    <rect x="50" y="642" width="562" height="562" rx="36" fill="none" stroke="#DDECEF" stroke-width="3"/>
+    <text class="title" x="94" y="706">Static worksheets</text>
+    <text class="copy" x="94" y="754">
+      <tspan x="94">Helpful practice, but</tspan>
+      <tspan x="94" dy="30">hard to personalize</tspan>
+      <tspan x="94" dy="30">or measure.</tspan>
+    </text>
+    <rect x="94" y="852" width="104" height="10" rx="5" fill="#AAB8BD"/>
+
+    <g clip-path="url(#tile4)">
+      <rect x="642" y="642" width="562" height="562" rx="36" fill="#FFF9EA"/>
+      <svg x="642" y="866" width="562" height="338" viewBox="850 560 686 464" preserveAspectRatio="xMidYMid slice">
+        <image href="clear-code-difference-comparison.png" width="1536" height="1024"/>
+      </svg>
+      <rect x="642" y="866" width="172" height="338" fill="#FFF9EA"/>
+      <rect x="642" y="642" width="562" height="256" fill="#FFF9EA"/>
     </g>
+    <rect x="642" y="642" width="562" height="562" rx="36" fill="none" stroke="#FFE8A3" stroke-width="3"/>
+    <text x="686" y="706" font-family="Inter,Avenir Next,Nunito Sans,Arial,sans-serif" font-size="39" font-weight="900" fill="#E7A300">Adaptive path</text>
+    <text class="copy" x="686" y="754">
+      <tspan x="686">Lessons respond to</tspan>
+      <tspan x="686" dy="30">decoding and real</tspan>
+      <tspan x="686" dy="30">comprehension needs.</tspan>
+    </text>
+    <rect x="686" y="852" width="104" height="10" rx="5" fill="#FFD93D"/>
   </g>
 </svg>
