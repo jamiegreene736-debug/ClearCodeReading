@@ -2,6 +2,7 @@ from django.db import models
 from django.db.models import Q
 from django.conf import settings
 from django.core.exceptions import ValidationError
+from django.core.validators import MaxValueValidator, MinValueValidator
 from django.utils import timezone
 
 
@@ -211,6 +212,92 @@ class CurriculumSequence(AuditedModel):
 
     def __str__(self):
         return f"{self.code} - {self.title}"
+
+
+class SkillCrosswalk(TimestampedModel, SoftDeleteModel):
+    """A versioned reporting map between methodologies or curriculum versions.
+
+    Crosswalks describe comparable instructional locations. They are deliberately
+    not connected to placement or sequence-plan execution.
+    """
+
+    class MappingType(models.TextChoices):
+        EQUIVALENT = "equivalent", "Equivalent"
+        A_PRECEDES_B = "a_precedes_b", "A precedes B"
+        B_PRECEDES_A = "b_precedes_a", "B precedes A"
+        OVERLAPS = "overlaps", "Overlaps"
+
+    center = models.ForeignKey(
+        "schools.School",
+        on_delete=models.CASCADE,
+        null=True,
+        blank=True,
+        related_name="skill_crosswalks",
+        help_text="Leave blank for a global crosswalk within the current tenant schema.",
+    )
+    skill_node_a = models.ForeignKey(
+        CurriculumSequence,
+        on_delete=models.PROTECT,
+        related_name="crosswalks_as_a",
+    )
+    skill_node_b = models.ForeignKey(
+        CurriculumSequence,
+        on_delete=models.PROTECT,
+        related_name="crosswalks_as_b",
+    )
+    mapping_type = models.CharField(max_length=24, choices=MappingType.choices, db_index=True)
+    equivalence = models.DecimalField(
+        max_digits=4,
+        decimal_places=3,
+        default=1,
+        validators=[MinValueValidator(0), MaxValueValidator(1)],
+        help_text="Reporting confidence from 0.000 to 1.000.",
+    )
+    notes = models.TextField(blank=True)
+    version = models.CharField(max_length=40, default="2026.1", db_index=True)
+
+    class Meta:
+        ordering = ["version", "skill_node_a__code", "skill_node_b__code"]
+        constraints = [
+            models.CheckConstraint(
+                condition=~Q(skill_node_a=models.F("skill_node_b")),
+                name="crosswalk_nodes_must_differ",
+            ),
+            models.UniqueConstraint(
+                fields=["center", "skill_node_a", "skill_node_b", "mapping_type", "version"],
+                condition=Q(center__isnull=False),
+                name="unique_center_skill_crosswalk",
+            ),
+            models.UniqueConstraint(
+                fields=["skill_node_a", "skill_node_b", "mapping_type", "version"],
+                condition=Q(center__isnull=True),
+                name="unique_global_skill_crosswalk",
+            ),
+        ]
+        indexes = [
+            models.Index(fields=["center", "version", "mapping_type"]),
+            models.Index(fields=["skill_node_a", "skill_node_b"]),
+            models.Index(fields=["is_deleted", "created_at"]),
+        ]
+
+    def clean(self):
+        super().clean()
+        errors = {}
+        if self.skill_node_a_id and self.skill_node_b_id:
+            if self.skill_node_a_id == self.skill_node_b_id:
+                errors["skill_node_b"] = "Crosswalk nodes must be different."
+            if self.skill_node_a.center_id != self.skill_node_b.center_id:
+                errors["skill_node_b"] = "Crosswalk nodes must belong to the same center."
+        if self.center_id:
+            if self.skill_node_a_id and self.skill_node_a.center_id != self.center_id:
+                errors["skill_node_a"] = "Node A must belong to the crosswalk center."
+            if self.skill_node_b_id and self.skill_node_b.center_id != self.center_id:
+                errors["skill_node_b"] = "Node B must belong to the crosswalk center."
+        if errors:
+            raise ValidationError(errors)
+
+    def __str__(self):
+        return f"{self.skill_node_a.code} {self.get_mapping_type_display()} {self.skill_node_b.code}"
 
 
 class StudentPlacement(AuditedModel):
@@ -560,6 +647,108 @@ class RecommendedSequencePosition(TimestampedModel):
 
     def __str__(self):
         return f"{self.recommendation_id}: {self.priority} - {self.position.code}"
+
+
+class SequencePlan(AuditedModel):
+    """A specialist's persistent working sequence for one placement."""
+
+    class Status(models.TextChoices):
+        DRAFT = "draft", "Draft"
+        ACTIVE = "active", "Active"
+        COMPLETED = "completed", "Completed"
+        ARCHIVED = "archived", "Archived"
+
+    placement = models.ForeignKey(
+        StudentPlacement,
+        on_delete=models.CASCADE,
+        related_name="sequence_plans",
+    )
+    status = models.CharField(max_length=20, choices=Status.choices, default=Status.ACTIVE, db_index=True)
+    created_from_recommendation = models.OneToOneField(
+        PlacementRecommendation,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="materialized_sequence_plan",
+    )
+    specialist_notes = models.TextField(blank=True)
+
+    class Meta:
+        ordering = ["-created_at"]
+        constraints = [
+            models.UniqueConstraint(
+                fields=["placement"],
+                condition=Q(status="active", is_deleted=False),
+                name="unique_active_sequence_plan_per_placement",
+            ),
+        ]
+        indexes = [
+            models.Index(fields=["center", "status", "created_at"]),
+            models.Index(fields=["placement", "status", "is_deleted"]),
+            models.Index(fields=["is_deleted", "created_at"]),
+        ]
+
+    def clean(self):
+        super().clean()
+        errors = {}
+        if self.placement_id and self.placement.center_id != self.center_id:
+            errors["center"] = "Sequence plan and placement must belong to the same center."
+        if self.created_from_recommendation_id:
+            recommendation = self.created_from_recommendation
+            if recommendation.center_id != self.center_id:
+                errors["created_from_recommendation"] = "Recommendation must belong to the plan center."
+            if recommendation.resulting_placement_id != self.placement_id:
+                errors["created_from_recommendation"] = "Recommendation must have produced this placement."
+        if errors:
+            raise ValidationError(errors)
+
+    def __str__(self):
+        return f"{self.placement} ({self.get_status_display()})"
+
+
+class SequencePlanItem(TimestampedModel):
+    """One ordered, status-bearing skill node in a sequence plan."""
+
+    class Status(models.TextChoices):
+        PENDING = "pending", "Pending"
+        IN_PROGRESS = "in_progress", "In progress"
+        MASTERED = "mastered", "Mastered"
+        SKIPPED = "skipped", "Skipped"
+
+    plan = models.ForeignKey(SequencePlan, on_delete=models.CASCADE, related_name="items")
+    position = models.ForeignKey(
+        CurriculumSequence,
+        on_delete=models.PROTECT,
+        related_name="sequence_plan_items",
+    )
+    order = models.PositiveIntegerField()
+    status = models.CharField(max_length=20, choices=Status.choices, default=Status.PENDING, db_index=True)
+    notes = models.TextField(blank=True)
+
+    class Meta:
+        ordering = ["plan", "order", "id"]
+        constraints = [
+            models.UniqueConstraint(fields=["plan", "order"], name="unique_sequence_plan_item_order"),
+            models.UniqueConstraint(fields=["plan", "position"], name="unique_sequence_plan_item_position"),
+        ]
+        indexes = [
+            models.Index(fields=["plan", "status", "order"]),
+            models.Index(fields=["position", "status"]),
+        ]
+
+    def clean(self):
+        super().clean()
+        if (
+            self.plan_id
+            and self.position_id
+            and self.position.curriculum_id != self.plan.placement.curriculum_id
+        ):
+            raise ValidationError(
+                {"position": "Plan items must use the placement's exact curriculum and methodology."}
+            )
+
+    def __str__(self):
+        return f"{self.plan_id}: {self.order} - {self.position.code}"
 
 
 class Lesson(TimestampedModel, SoftDeleteModel):

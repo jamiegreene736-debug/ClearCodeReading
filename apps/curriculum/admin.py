@@ -10,7 +10,10 @@ from apps.curriculum.models import (
     PlacementEvidence,
     PlacementRecommendation,
     RecommendedSequencePosition,
+    SequencePlan,
+    SequencePlanItem,
     Skill,
+    SkillCrosswalk,
     StudentPlacement,
     StudentPlacementOverride,
     TeacherLessonTemplate,
@@ -78,6 +81,30 @@ class CurriculumSequenceAdmin(admin.ModelAdmin):
     actions = (soft_delete_curriculum,)
 
 
+@admin.register(SkillCrosswalk)
+class SkillCrosswalkAdmin(admin.ModelAdmin):
+    list_display = (
+        "skill_node_a",
+        "mapping_type",
+        "skill_node_b",
+        "equivalence",
+        "version",
+        "center",
+        "is_deleted",
+    )
+    list_filter = ("mapping_type", "version", "center", "is_deleted")
+    search_fields = (
+        "skill_node_a__code",
+        "skill_node_a__title",
+        "skill_node_b__code",
+        "skill_node_b__title",
+        "notes",
+    )
+    autocomplete_fields = ("center", "skill_node_a", "skill_node_b")
+    readonly_fields = ("created_at", "updated_at", "deleted_at")
+    actions = (soft_delete_curriculum,)
+
+
 @admin.register(StudentPlacement)
 class StudentPlacementAdmin(admin.ModelAdmin):
     list_display = ("child", "curriculum", "current_position", "center", "placed_at", "is_active", "is_deleted")
@@ -120,6 +147,34 @@ class RecommendedSequencePositionInline(admin.TabularInline):
     can_delete = False
     fields = ("priority", "position", "gap_codes", "rationale")
     readonly_fields = fields
+
+
+class SequencePlanItemInline(admin.TabularInline):
+    model = SequencePlanItem
+    extra = 0
+    fields = ("order", "position", "status", "notes")
+    ordering = ("order",)
+
+
+@admin.register(SequencePlan)
+class SequencePlanAdmin(admin.ModelAdmin):
+    inlines = (SequencePlanItemInline,)
+    list_display = ("placement", "status", "center", "created_from_recommendation", "created_at")
+    list_filter = ("status", "center", "created_at", "is_deleted")
+    search_fields = (
+        "placement__child__first_name",
+        "placement__child__last_name",
+        "specialist_notes",
+    )
+    autocomplete_fields = (
+        "center",
+        "placement",
+        "created_from_recommendation",
+        "created_by",
+        "updated_by",
+    )
+    readonly_fields = ("revision", "created_at", "updated_at", "deleted_at")
+    actions = (soft_delete_curriculum,)
 
 
 @admin.register(PlacementEvidence)

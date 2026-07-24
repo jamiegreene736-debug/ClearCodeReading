@@ -10,7 +10,10 @@ from apps.curriculum.models import (
     PlacementEvidence,
     PlacementRecommendation,
     RecommendedSequencePosition,
+    SequencePlan,
+    SequencePlanItem,
     Skill,
+    SkillCrosswalk,
     StudentPlacement,
     StudentPlacementOverride,
     TeacherLessonTemplate,
@@ -243,6 +246,34 @@ class CurriculumSequenceSerializer(serializers.ModelSerializer):
         return list(obj.prerequisites.order_by("sequence_order").values_list("code", flat=True))
 
 
+class SkillCrosswalkSerializer(serializers.ModelSerializer):
+    skill_node_a_detail = CurriculumSequenceSerializer(source="skill_node_a", read_only=True)
+    skill_node_b_detail = CurriculumSequenceSerializer(source="skill_node_b", read_only=True)
+    scope = serializers.SerializerMethodField()
+
+    class Meta:
+        model = SkillCrosswalk
+        fields = [
+            "id",
+            "center",
+            "scope",
+            "skill_node_a",
+            "skill_node_a_detail",
+            "skill_node_b",
+            "skill_node_b_detail",
+            "mapping_type",
+            "equivalence",
+            "notes",
+            "version",
+            "created_at",
+            "updated_at",
+        ]
+        read_only_fields = fields
+
+    def get_scope(self, obj) -> str:
+        return "center" if obj.center_id else "global"
+
+
 class StudentPlacementOverrideSerializer(serializers.ModelSerializer):
     class Meta:
         model = StudentPlacementOverride
@@ -355,12 +386,51 @@ class RecommendedSequencePositionSerializer(serializers.ModelSerializer):
         read_only_fields = fields
 
 
+class SequencePlanItemSerializer(serializers.ModelSerializer):
+    position_detail = CurriculumSequenceSerializer(source="position", read_only=True)
+
+    class Meta:
+        model = SequencePlanItem
+        fields = ["id", "position", "position_detail", "order", "status", "notes", "created_at", "updated_at"]
+        read_only_fields = fields
+
+
+class SequencePlanSerializer(serializers.ModelSerializer):
+    items = SequencePlanItemSerializer(many=True, read_only=True)
+
+    class Meta:
+        model = SequencePlan
+        fields = [
+            "id",
+            "center",
+            "placement",
+            "status",
+            "created_from_recommendation",
+            "specialist_notes",
+            "items",
+            "created_at",
+            "updated_at",
+        ]
+        read_only_fields = fields
+
+
+class UpdateSequencePlanItemSerializer(serializers.Serializer):
+    status = serializers.ChoiceField(choices=SequencePlanItem.Status.choices, required=False)
+    notes = serializers.CharField(required=False, allow_blank=True)
+
+    def validate(self, attrs):
+        if not attrs:
+            raise serializers.ValidationError("Provide a status or specialist note to update.")
+        return attrs
+
+
 class PlacementRecommendationSerializer(serializers.ModelSerializer):
     evidence = PlacementEvidenceSerializer(read_only=True)
     recommended_position_detail = CurriculumSequenceSerializer(source="recommended_position", read_only=True)
     final_position_detail = CurriculumSequenceSerializer(source="final_position", read_only=True)
     recommended_sequence = RecommendedSequencePositionSerializer(many=True, read_only=True)
     resulting_placement = StudentPlacementSerializer(read_only=True)
+    materialized_sequence_plan = SequencePlanSerializer(read_only=True)
 
     class Meta:
         model = PlacementRecommendation
@@ -387,6 +457,7 @@ class PlacementRecommendationSerializer(serializers.ModelSerializer):
             "confirmed_by",
             "confirmed_at",
             "resulting_placement",
+            "materialized_sequence_plan",
             "created_at",
             "updated_at",
         ]
@@ -401,3 +472,4 @@ class ConfirmPlacementRecommendationSerializer(serializers.Serializer):
     )
     override_rationale = serializers.CharField(required=False, allow_blank=True)
     evidence_considered = serializers.DictField(required=False)
+    create_sequence_plan = serializers.BooleanField(required=False, default=True)

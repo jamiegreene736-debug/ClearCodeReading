@@ -6,7 +6,7 @@ from rest_framework.test import APIClient
 
 from apps.curriculum.models import Curriculum, CurriculumSequence, StudentPlacement
 from apps.scheduling.integrations import SchedulerError
-from apps.scheduling.models import ProviderAvailability, ScheduleBooking, ScheduleGroupProposal, WaitlistEntry
+from apps.scheduling.models import Group, ProviderAvailability, ScheduleBooking, ScheduleGroupProposal, WaitlistEntry
 from apps.scheduling.optimizer import generate_group_proposals
 from apps.scheduling.services import operations_metrics, ranked_group_suggestions, sync_booking
 from apps.schools.models import School, SchoolMembership
@@ -43,6 +43,7 @@ class SchedulingOptimizationTests(TestCase):
                 title=f"Lesson {order}",
                 position_type=CurriculumSequence.PositionType.PHONICS_CONCEPT,
             ))
+        cls.positions = positions
         cls.children = []
         for index, position in enumerate(positions):
             child = ChildProfile.objects.create(first_name=f"Reader {index}", school=cls.center, availability_windows=[WINDOW])
@@ -69,6 +70,122 @@ class SchedulingOptimizationTests(TestCase):
         self.assertEqual({item["child"] for item in suggestions[0]["students"]}, {child.id for child in self.children})
         self.assertTrue(suggestions[0]["approval_required"])
         self.assertEqual(suggestions[0]["pending_authorizations"][0]["child"], self.pending_child.id)
+        self.assertEqual(suggestions[0]["suggested_group"]["curriculum"], self.curriculum.id)
+        self.assertEqual(
+            set(suggestions[0]["suggested_group"]["students"]),
+            {child.id for child in self.children},
+        )
+
+    def test_ops_can_create_and_view_methodology_safe_group(self):
+        response = self.client.post(
+            "/api/v1/groups/",
+            {
+                "center": self.center.id,
+                "name": "PFR Adjacent Readers",
+                "curriculum": self.curriculum.id,
+                "skill_band": "Short vowels",
+                "sequence_start": self.positions[0].id,
+                "sequence_end": self.positions[1].id,
+                "students": [child.id for child in self.children],
+                "primary_specialist": self.specialist.id,
+                "notes": "Review after the next instructional cycle.",
+            },
+            format="json",
+        )
+
+        self.assertEqual(response.status_code, 201, response.data)
+        group = Group.objects.get(pk=response.data["id"])
+        self.assertEqual(group.methodology, Curriculum.Code.PFR)
+        self.assertEqual(set(group.students.values_list("id", flat=True)), {child.id for child in self.children})
+        detail_response = self.client.get(f"/api/v1/groups/{group.id}/")
+        self.assertEqual(detail_response.status_code, 200, detail_response.data)
+        self.assertEqual(detail_response.data["methodology"], Curriculum.Code.PFR)
+
+    def test_group_rejects_student_from_another_methodology(self):
+        og_curriculum = Curriculum.objects.create(
+            center=self.center,
+            code=Curriculum.Code.OG_PLUS,
+            name="OG+",
+        )
+        og_position = CurriculumSequence.objects.create(
+            center=self.center,
+            curriculum=og_curriculum,
+            code="OG-001",
+            sequence_order=1,
+            concept_number=1,
+            title="Concept 1",
+            position_type=CurriculumSequence.PositionType.PHONOLOGICAL_AWARENESS,
+        )
+        og_child = ChildProfile.objects.create(first_name="OG Reader", school=self.center)
+        StudentPlacement.objects.create(
+            center=self.center,
+            child=og_child,
+            curriculum=og_curriculum,
+            current_position=og_position,
+            methodology_rationale="Structured placement evidence.",
+        )
+
+        response = self.client.post(
+            "/api/v1/groups/",
+            {
+                "center": self.center.id,
+                "name": "Mixed Methodology Group",
+                "curriculum": self.curriculum.id,
+                "sequence_start": self.positions[0].id,
+                "sequence_end": self.positions[1].id,
+                "students": [self.children[0].id, og_child.id],
+                "primary_specialist": self.specialist.id,
+            },
+            format="json",
+        )
+
+        self.assertEqual(response.status_code, 400, response.data)
+        self.assertIn("exact curriculum and methodology", str(response.data))
+        self.assertFalse(Group.objects.filter(name="Mixed Methodology Group").exists())
+
+    def test_methodology_change_removes_incompatible_group_membership(self):
+        response = self.client.post(
+            "/api/v1/groups/",
+            {
+                "center": self.center.id,
+                "name": "Current PFR Group",
+                "curriculum": self.curriculum.id,
+                "sequence_start": self.positions[0].id,
+                "sequence_end": self.positions[1].id,
+                "students": [self.children[0].id],
+                "primary_specialist": self.specialist.id,
+            },
+            format="json",
+        )
+        self.assertEqual(response.status_code, 201, response.data)
+        group = Group.objects.get(pk=response.data["id"])
+
+        placement = self.children[0].curriculum_placements.get(is_active=True, is_deleted=False)
+        placement.is_active = False
+        placement.save(update_fields=["is_active", "updated_at"])
+        og_curriculum = Curriculum.objects.create(
+            center=self.center,
+            code=Curriculum.Code.OG_PLUS,
+            name="OG+",
+        )
+        og_position = CurriculumSequence.objects.create(
+            center=self.center,
+            curriculum=og_curriculum,
+            code="OG-001",
+            sequence_order=1,
+            concept_number=1,
+            title="Concept 1",
+            position_type=CurriculumSequence.PositionType.PHONOLOGICAL_AWARENESS,
+        )
+        StudentPlacement.objects.create(
+            center=self.center,
+            child=self.children[0],
+            curriculum=og_curriculum,
+            current_position=og_position,
+            methodology_rationale="Specialist-confirmed methodology transition.",
+        )
+
+        self.assertFalse(group.students.filter(pk=self.children[0].id).exists())
 
     def test_booking_rejects_pending_iep_authorization(self):
         now = timezone.now()

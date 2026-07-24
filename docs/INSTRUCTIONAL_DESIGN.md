@@ -370,6 +370,21 @@ connected-text transfer, attendance gaps, and methodology version by center and
 specialist. No additional session fields are required for those capabilities; later work
 adds calculations and presentation only.
 
+### 8.1 Technical Spec domain entities
+
+- **§5.2 — `SkillCrosswalk`:** versioned center or global mappings support common-scale
+  reporting and methodology-transition review. Crosswalks never populate or modify an
+  active placement, sequence plan, group, or session.
+- **§5.4 — `SequencePlan`:** confirmation may materialize the ranked
+  `RecommendedSequencePosition` rows into ordered `SequencePlanItem` records. The
+  recommendation remains the decision artifact; the plan is the specialist's working
+  artifact with pending, in-progress, mastered, and skipped item states. Every item must
+  use the placement's exact curriculum version.
+- **§5.6 — `Group`:** an instructional group belongs to one center and one exact
+  curriculum, has an approximate sequence range, and admits only students whose active
+  placement uses that curriculum and falls in that range. Optimizer output is advisory;
+  operations staff create or update the group explicitly.
+
 ## 9. Source governance
 
 - Curriculum Associates describes PFR as three levels with embedded placement and

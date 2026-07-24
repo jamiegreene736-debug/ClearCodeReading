@@ -6,7 +6,9 @@ from apps.curriculum.views import (
     LessonViewSet,
     PlacementEvidenceViewSet,
     PlacementRecommendationViewSet,
+    SequencePlanViewSet,
     SkillViewSet,
+    SkillCrosswalkViewSet,
     StudentPlacementViewSet,
     TeachingAidViewSet,
 )
@@ -19,8 +21,10 @@ router.register("lessons", LessonViewSet, basename="lesson")
 router.register("teaching-aids", TeachingAidViewSet, basename="teaching-aid")
 router.register("curricula", CurriculumViewSet, basename="curriculum")
 router.register("curriculum-positions", CurriculumSequenceViewSet, basename="curriculum-position")
+router.register("skill-crosswalks", SkillCrosswalkViewSet, basename="skill-crosswalk")
 router.register("placement-evidence", PlacementEvidenceViewSet, basename="placement-evidence")
 router.register("placement-recommendations", PlacementRecommendationViewSet, basename="placement-recommendation")
 router.register("student-placements", StudentPlacementViewSet, basename="student-placement")
+router.register("sequence-plans", SequencePlanViewSet, basename="sequence-plan")
 
 urlpatterns = router.urls

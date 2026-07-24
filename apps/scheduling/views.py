@@ -8,7 +8,7 @@ from rest_framework.response import Response
 
 from apps.api.permissions import IsEvaluator
 from apps.scheduling.integrations import SchedulerError, SchedulerNotConfigured, get_scheduler_adapter
-from apps.scheduling.models import ProviderAvailability, ScheduleBooking, ScheduleGroupProposal, WaitlistEntry
+from apps.scheduling.models import Group, ProviderAvailability, ScheduleBooking, ScheduleGroupProposal, WaitlistEntry
 from apps.scheduling.optimizer import (
     ProposalConflict,
     approve_group_proposal,
@@ -17,6 +17,7 @@ from apps.scheduling.optimizer import (
 )
 from apps.scheduling.serializers import (
     GenerateProposalsSerializer,
+    GroupSerializer,
     ProviderAvailabilitySerializer,
     ScheduleBookingSerializer,
     ScheduleGroupProposalSerializer,
@@ -80,6 +81,24 @@ class ProviderAvailabilityViewSet(CenterScopedMutationMixin, viewsets.ModelViewS
     def get_queryset(self):
         return ProviderAvailability.objects.filter(center_id__in=_center_ids(self.request.user)).select_related(
             "center", "specialist"
+        )
+
+
+class GroupViewSet(CenterScopedMutationMixin, viewsets.ModelViewSet):
+    serializer_class = GroupSerializer
+    permission_classes = [IsAuthenticated, IsEvaluator]
+
+    def get_queryset(self):
+        return (
+            Group.objects.filter(center_id__in=_center_ids(self.request.user))
+            .select_related(
+                "center",
+                "curriculum",
+                "sequence_start",
+                "sequence_end",
+                "primary_specialist",
+            )
+            .prefetch_related("students")
         )
 
 
