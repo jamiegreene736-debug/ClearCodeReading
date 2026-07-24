@@ -41,6 +41,7 @@ SHARED_APPS = [
     "apps.crm",
     "apps.curriculum",
     "apps.sessions.apps.InterventionSessionsConfig",
+    "apps.decision_support.apps.DecisionSupportConfig",
     "apps.scheduling.apps.SchedulingConfig",
     "apps.assessments",
     "apps.progress",
@@ -56,6 +57,7 @@ TENANT_APPS = [
     "guardian",
     "apps.curriculum",
     "apps.sessions.apps.InterventionSessionsConfig",
+    "apps.decision_support.apps.DecisionSupportConfig",
     "apps.scheduling.apps.SchedulingConfig",
     "apps.assessments",
     "apps.progress",
@@ -230,6 +232,15 @@ INSTRUCTIONAL_AI_SERVICE = os.getenv(
     "apps.ai.services.DisabledInstructionalAIService",
 )
 INSTRUCTIONAL_AI_ALLOW_NARRATIVE = os.getenv("INSTRUCTIONAL_AI_ALLOW_NARRATIVE", "0") == "1"
+DECISION_SUPPORT_ENGINE = os.getenv(
+    "DECISION_SUPPORT_ENGINE",
+    "apps.decision_support.engine.DeterministicDecisionSupportEngine",
+)
+DECISION_SUPPORT_LEADERSHIP_ROLES = [
+    role.strip()
+    for role in os.getenv("DECISION_SUPPORT_LEADERSHIP_ROLES", "owner,admin").split(",")
+    if role.strip()
+]
 
 SPECTACULAR_SETTINGS = {
     "TITLE": "Clear Code Reading API",

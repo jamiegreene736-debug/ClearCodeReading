@@ -359,6 +359,17 @@ Full flow test checklist:
 
 Clear Code Reading treats child learning data as consent-gated.
 
+### Cap 2 decision support
+
+`apps.decision_support` generates explainable, advisory low-growth flags and
+milestone predictions from existing session and placement data. Session
+completion runs the deterministic engine asynchronously; specialists can
+review and acknowledge center-scoped flags through the API or Django admin,
+and the parent dashboard uses the current prediction when one is available.
+
+See `docs/decision_support.md` for rule behavior, on-demand commands, endpoints,
+configuration, and example flag and prediction payloads.
+
 - Parent/guardian registration creates a child profile and guardian relationship.
 - Consent logs track consent type, status, version, source, IP, user agent, and expiry.
 - Assessment, progress, mastery, and personalized lesson flows enforce active COPPA consent.

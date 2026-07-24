@@ -156,7 +156,22 @@
               </div>
               <div class="mt-5 grid gap-4 md:grid-cols-2">
                 <article class="rounded-3xl border border-navySoft/10 p-5"><h3 class="font-black">Fluency (WCPM)</h3><div class="mt-3 flex flex-wrap gap-2">{% for point in dashboard.fluency_trend %}<span class="rounded-full bg-mist px-3 py-2 text-sm font-black">{{ point.date|date:"M j" }} · {{ point.wcpm }}</span>{% empty %}<span class="text-sm text-navySoft/60">Shown when WCPM is captured.</span>{% endfor %}</div></article>
-                <article class="rounded-3xl border border-navySoft/10 p-5"><h3 class="font-black">Next milestone</h3><p class="mt-2 text-sm leading-6">{{ dashboard.milestone.label }}{% if dashboard.milestone.estimated_date %}: around {{ dashboard.milestone.estimated_date|date:"M Y" }}{% endif %}</p><p class="mt-2 text-xs text-navySoft/50">{{ dashboard.milestone.disclaimer }}</p></article>
+                <article class="rounded-3xl border border-navySoft/10 p-5">
+                  <h3 class="font-black">Next milestone</h3>
+                  <p class="mt-2 text-sm leading-6">
+                    {% if dashboard.milestone.plain_language_timeline %}
+                      {{ dashboard.milestone.plain_language_timeline }}
+                    {% else %}
+                      {{ dashboard.milestone.label }}{% if dashboard.milestone.estimated_date %}: around {{ dashboard.milestone.estimated_date|date:"M Y" }}{% endif %}
+                    {% endif %}
+                  </p>
+                  {% if dashboard.milestone.predicted_sessions is not None %}
+                    <p class="mt-2 text-xs font-black text-tealWarm">
+                      About {{ dashboard.milestone.predicted_sessions }} sessions · {{ dashboard.milestone.confidence|title }} confidence
+                    </p>
+                  {% endif %}
+                  <p class="mt-2 text-xs text-navySoft/50">{{ dashboard.milestone.disclaimer }}</p>
+                </article>
               </div>
             </section>
           {% empty %}
