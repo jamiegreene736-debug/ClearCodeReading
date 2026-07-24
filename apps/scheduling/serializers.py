@@ -1,6 +1,16 @@
+from django.core.exceptions import ValidationError as DjangoValidationError
+from django.db import transaction
 from rest_framework import serializers
 
-from apps.scheduling.models import ProviderAvailability, ScheduleBooking, ScheduleGroupProposal, WaitlistEntry
+from apps.scheduling.models import (
+    Group,
+    GroupMembership,
+    ProviderAvailability,
+    ScheduleBooking,
+    ScheduleGroupProposal,
+    WaitlistEntry,
+)
+from apps.users.models import ChildProfile
 
 
 class ProviderAvailabilitySerializer(serializers.ModelSerializer):
@@ -20,6 +30,99 @@ class ProviderAvailabilitySerializer(serializers.ModelSerializer):
         ).exists() and not specialist.is_superuser:
             raise serializers.ValidationError({"specialist": "Provider must belong to this center."})
         return attrs
+
+
+class GroupSerializer(serializers.ModelSerializer):
+    students = serializers.PrimaryKeyRelatedField(
+        queryset=ChildProfile.objects.filter(is_deleted=False),
+        many=True,
+        required=False,
+    )
+    student_details = serializers.SerializerMethodField()
+    methodology = serializers.CharField(source="curriculum.code", read_only=True)
+    primary_specialist_name = serializers.CharField(source="primary_specialist.get_full_name", read_only=True)
+
+    class Meta:
+        model = Group
+        fields = [
+            "id",
+            "center",
+            "name",
+            "curriculum",
+            "methodology",
+            "skill_band",
+            "sequence_start",
+            "sequence_end",
+            "students",
+            "student_details",
+            "primary_specialist",
+            "primary_specialist_name",
+            "is_active",
+            "notes",
+            "created_at",
+            "updated_at",
+        ]
+        read_only_fields = ["id", "methodology", "student_details", "primary_specialist_name", "created_at", "updated_at"]
+
+    def get_student_details(self, obj):
+        return [
+            {"id": child.id, "display_name": str(child)}
+            for child in obj.students.filter(is_deleted=False).order_by("last_name", "first_name")
+        ]
+
+    def validate_students(self, students):
+        student_ids = [student.id for student in students]
+        if len(student_ids) != len(set(student_ids)):
+            raise serializers.ValidationError("A student can appear in a group only once.")
+        return students
+
+    @staticmethod
+    def _full_clean(instance):
+        try:
+            instance.full_clean()
+        except DjangoValidationError as error:
+            raise serializers.ValidationError(error.message_dict) from error
+
+    @classmethod
+    def _sync_students(cls, group, students):
+        requested_ids = {student.id for student in students}
+        group.memberships.exclude(child_id__in=requested_ids).delete()
+        existing_ids = set(group.memberships.values_list("child_id", flat=True))
+        for child in students:
+            if child.id in existing_ids:
+                continue
+            membership = GroupMembership(group=group, child=child)
+            cls._full_clean(membership)
+            membership.save()
+
+    @transaction.atomic
+    def create(self, validated_data):
+        students = validated_data.pop("students", [])
+        group = Group(**validated_data)
+        self._full_clean(group)
+        group.save()
+        self._sync_students(group, students)
+        return group
+
+    @transaction.atomic
+    def update(self, instance, validated_data):
+        students = validated_data.pop("students", None)
+        for field, value in validated_data.items():
+            setattr(instance, field, value)
+        self._full_clean(instance)
+        instance.save()
+        if students is not None:
+            self._sync_students(instance, students)
+        else:
+            for membership in instance.memberships.select_related(
+                "child",
+                "child__school",
+                "group__curriculum",
+                "group__sequence_start",
+                "group__sequence_end",
+            ):
+                self._full_clean(membership)
+        return instance
 
 
 class ScheduleBookingSerializer(serializers.ModelSerializer):

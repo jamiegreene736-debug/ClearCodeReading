@@ -132,7 +132,10 @@ class IsEvaluator(BasePermission):
 
     def has_object_permission(self, request, view, obj):
         child = get_child_from_obj(obj)
-        return user_can_evaluate_child(request.user, child)
+        if hasattr(child, "school"):
+            return user_can_evaluate_child(request.user, child)
+        center = getattr(obj, "center", None)
+        return has_school_membership(request.user, center)
 
 
 class IsSchoolAdmin(BasePermission):

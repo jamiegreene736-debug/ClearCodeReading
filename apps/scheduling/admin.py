@@ -1,7 +1,14 @@
 from django.contrib import admin
 
 from apps.scheduling.integrations import SchedulerNotConfigured, get_scheduler_adapter
-from apps.scheduling.models import ProviderAvailability, ScheduleBooking, ScheduleGroupProposal, WaitlistEntry
+from apps.scheduling.models import (
+    Group,
+    GroupMembership,
+    ProviderAvailability,
+    ScheduleBooking,
+    ScheduleGroupProposal,
+    WaitlistEntry,
+)
 from apps.scheduling.optimizer import ProposalConflict, approve_group_proposal
 from apps.scheduling.services import sync_booking
 
@@ -20,6 +27,36 @@ class ProviderAvailabilityAdmin(CenterScopedAdminMixin, admin.ModelAdmin):
     list_display = ("specialist", "center", "max_group_size", "is_active", "updated_at")
     list_filter = ("center", "is_active")
     search_fields = ("specialist__email", "specialist__first_name", "specialist__last_name")
+
+
+class GroupMembershipInline(admin.TabularInline):
+    model = GroupMembership
+    extra = 0
+    autocomplete_fields = ("child",)
+
+
+@admin.register(Group)
+class GroupAdmin(CenterScopedAdminMixin, admin.ModelAdmin):
+    inlines = (GroupMembershipInline,)
+    list_display = (
+        "name",
+        "center",
+        "curriculum",
+        "sequence_start",
+        "sequence_end",
+        "primary_specialist",
+        "is_active",
+    )
+    list_filter = ("center", "curriculum__code", "is_active")
+    search_fields = ("name", "skill_band", "notes", "primary_specialist__email")
+    autocomplete_fields = (
+        "center",
+        "curriculum",
+        "sequence_start",
+        "sequence_end",
+        "primary_specialist",
+    )
+    readonly_fields = ("created_at", "updated_at")
 
 
 @admin.register(ScheduleBooking)

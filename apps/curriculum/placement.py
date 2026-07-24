@@ -12,6 +12,8 @@ from apps.curriculum.models import (
     PlacementEvidence,
     PlacementRecommendation,
     RecommendedSequencePosition,
+    SequencePlan,
+    SequencePlanItem,
     StudentPlacement,
     StudentPlacementOverride,
 )
@@ -375,6 +377,69 @@ def generate_recommendation(evidence: PlacementEvidence) -> PlacementRecommendat
     return recommendation
 
 
+def materialize_sequence_plan(
+    recommendation: PlacementRecommendation,
+    placement: StudentPlacement,
+    specialist,
+) -> SequencePlan:
+    """Create an idempotent working plan from a confirmed recommendation."""
+
+    existing = SequencePlan.objects.filter(created_from_recommendation=recommendation).first()
+    if existing:
+        return existing
+
+    active_plans = SequencePlan.objects.select_for_update().filter(
+        placement=placement,
+        status=SequencePlan.Status.ACTIVE,
+        is_deleted=False,
+    )
+    for active_plan in active_plans:
+        active_plan.status = SequencePlan.Status.ARCHIVED
+        active_plan.updated_by = specialist
+        active_plan.save(update_fields=["status", "updated_by", "updated_at"])
+
+    plan = SequencePlan(
+        center=placement.center,
+        placement=placement,
+        status=SequencePlan.Status.ACTIVE,
+        created_from_recommendation=recommendation,
+        created_by=specialist,
+        updated_by=specialist,
+    )
+    plan.full_clean()
+    plan.save()
+
+    selected_position = recommendation.final_position
+    ranked_positions = (
+        recommendation.recommended_sequence.filter(
+            position__curriculum_id=placement.curriculum_id,
+            position__sequence_order__gte=selected_position.sequence_order,
+        )
+        .select_related("position")
+        .order_by("priority")
+    )
+    positions = [selected_position]
+    positions.extend(
+        ranked.position
+        for ranked in ranked_positions
+        if ranked.position_id != selected_position.id
+    )
+    for order, position in enumerate(positions, start=1):
+        item = SequencePlanItem(
+            plan=plan,
+            position=position,
+            order=order,
+            status=(
+                SequencePlanItem.Status.IN_PROGRESS
+                if order == 1
+                else SequencePlanItem.Status.PENDING
+            ),
+        )
+        item.full_clean()
+        item.save()
+    return plan
+
+
 @transaction.atomic
 def confirm_recommendation(
     recommendation: PlacementRecommendation,
@@ -382,6 +447,7 @@ def confirm_recommendation(
     final_position=None,
     override_rationale="",
     evidence_considered=None,
+    create_sequence_plan=True,
 ) -> StudentPlacement:
     recommendation = PlacementRecommendation.objects.select_for_update().select_related(
         "evidence__child", "recommended_curriculum"
@@ -474,4 +540,6 @@ def confirm_recommendation(
     recommendation.updated_by = specialist
     recommendation.full_clean()
     recommendation.save()
+    if create_sequence_plan:
+        materialize_sequence_plan(recommendation, placement, specialist)
     return placement

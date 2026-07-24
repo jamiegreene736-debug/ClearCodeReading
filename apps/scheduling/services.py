@@ -9,7 +9,7 @@ from django.utils import timezone
 
 from apps.curriculum.models import StudentPlacement
 from apps.scheduling.integrations import SchedulerAdapter, SchedulerError
-from apps.scheduling.models import ProviderAvailability, ScheduleBooking, WaitlistEntry
+from apps.scheduling.models import Group, ProviderAvailability, ScheduleBooking, WaitlistEntry
 from apps.sessions.models import Session
 
 
@@ -21,6 +21,15 @@ EXPANSION_THRESHOLDS = {
 }
 
 
+def _window_key(window):
+    return (
+        window.get("day_of_week"),
+        window.get("start_time"),
+        window.get("end_time"),
+        window.get("timezone", "UTC"),
+    )
+
+
 def ranked_group_suggestions(center, max_position_gap=1):
     """Read-only compatibility feed retained for the existing staff dashboard."""
     placements = list(
@@ -28,46 +37,72 @@ def ranked_group_suggestions(center, max_position_gap=1):
         .select_related("child", "curriculum", "current_position")
         .order_by("curriculum_id", "current_position__sequence_order")
     )
-    pending = [
-        {"child": placement.child_id, "display_name": str(placement.child), "reason": "IEP authorization pending"}
-        for placement in placements
-        if not placement.child.idea_services_authorized
-    ]
+    providers = list(ProviderAvailability.objects.filter(center=center, is_active=True).select_related("specialist"))
+    existing_groups = {
+        (group.curriculum_id, group.sequence_start_id, group.sequence_end_id, group.primary_specialist_id): group.id
+        for group in Group.objects.filter(center=center, is_active=True)
+    }
     suggestions = []
-    for curriculum_id in {placement.curriculum_id for placement in placements}:
-        candidates = [
-            placement
-            for placement in placements
-            if placement.curriculum_id == curriculum_id and placement.child.idea_services_authorized
-        ]
-        candidates.sort(key=lambda placement: placement.current_position.sequence_order)
-        for index, anchor in enumerate(candidates):
-            group = [
-                candidate
-                for candidate in candidates[index:]
-                if candidate.current_position.sequence_order - anchor.current_position.sequence_order <= max_position_gap
-            ]
-            if len(group) < 2:
-                continue
-            spread = group[-1].current_position.sequence_order - group[0].current_position.sequence_order
-            suggestions.append(
-                {
-                    "methodology": anchor.curriculum.code,
-                    "students": [
-                        {
-                            "child": placement.child_id,
-                            "display_name": str(placement.child),
-                            "position_code": placement.current_position.code,
-                        }
-                        for placement in group
-                    ],
-                    "score": max(0, 80 - spread * 10 + len(group) * 5),
-                    "approval_required": True,
-                    "pending_authorizations": pending,
-                }
-            )
-            break
-    return sorted(suggestions, key=lambda item: -item["score"])
+    for provider in providers:
+        provider_windows = {_window_key(window) for window in provider.windows}
+        for anchor in placements:
+            compatible = []
+            pending = []
+            for placement in placements:
+                if placement.curriculum_id != anchor.curriculum_id:
+                    continue
+                if abs(placement.current_position.sequence_order - anchor.current_position.sequence_order) > max_position_gap:
+                    continue
+                if not placement.child.idea_services_authorized:
+                    pending.append({"child": placement.child_id, "display_name": str(placement.child), "reason": "IEP authorization pending"})
+                    continue
+                overlap = provider_windows & {_window_key(window) for window in placement.child.availability_windows}
+                if overlap:
+                    compatible.append((placement, sorted(overlap)[0]))
+            for window in sorted({item[1] for item in compatible}):
+                members = [item[0] for item in compatible if item[1] == window][: provider.max_group_size]
+                if len(members) < 2:
+                    continue
+                spread = max(p.current_position.sequence_order for p in members) - min(p.current_position.sequence_order for p in members)
+                sequence_start = min(members, key=lambda placement: placement.current_position.sequence_order).current_position
+                sequence_end = max(members, key=lambda placement: placement.current_position.sequence_order).current_position
+                existing_group_id = existing_groups.get(
+                    (anchor.curriculum_id, sequence_start.id, sequence_end.id, provider.specialist_id)
+                )
+                suggestions.append(
+                    {
+                        "status": "proposed",
+                        "approval_required": True,
+                        "specialist": provider.specialist_id,
+                        "specialist_name": provider.specialist.get_full_name() or provider.specialist.email,
+                        "methodology": anchor.curriculum.code,
+                        "availability": {"day_of_week": window[0], "start_time": window[1], "end_time": window[2], "timezone": window[3]},
+                        "students": [{"child": p.child_id, "display_name": str(p.child), "position_code": p.current_position.code} for p in members],
+                        "score": 100 - (spread * 15),
+                        "rationale": "Same methodology, adjacent sequence positions, and shared student/provider availability.",
+                        "pending_authorizations": pending,
+                        "existing_group": existing_group_id,
+                        "suggested_group": {
+                            "center": center.id,
+                            "name": (
+                                f"{anchor.curriculum.get_code_display()} "
+                                f"{sequence_start.code}-{sequence_end.code}"
+                            ),
+                            "curriculum": anchor.curriculum_id,
+                            "sequence_start": sequence_start.id,
+                            "sequence_end": sequence_end.id,
+                            "students": [placement.child_id for placement in members],
+                            "primary_specialist": provider.specialist_id,
+                            "is_active": True,
+                            "notes": "Suggested from active placements at compatible sequence positions.",
+                        },
+                    }
+                )
+    unique = {}
+    for suggestion in suggestions:
+        key = (suggestion["specialist"], suggestion["methodology"], tuple(student["child"] for student in suggestion["students"]), tuple(suggestion["availability"].items()))
+        unique[key] = suggestion
+    return sorted(unique.values(), key=lambda item: (-item["score"], item["specialist_name"]))
 
 
 def _window_capacity_hours(windows: list[dict], start_date: date, end_date: date) -> float:

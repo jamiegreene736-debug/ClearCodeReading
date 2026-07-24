@@ -1,3 +1,4 @@
+from django.core.exceptions import ValidationError
 from django.test import TestCase
 from django.utils import timezone
 from rest_framework.test import APIClient
@@ -7,6 +8,10 @@ from apps.curriculum.models import (
     CurriculumSequence,
     PlacementEvidence,
     PlacementRecommendation,
+    RecommendedSequencePosition,
+    SequencePlan,
+    SequencePlanItem,
+    SkillCrosswalk,
     StudentPlacement,
 )
 from apps.schools.models import School, SchoolMembership
@@ -155,6 +160,86 @@ class PhaseOneWorkflowIntegrationTests(TestCase):
         self.assertEqual(override.source_recommendation, recommendation)
         self.assertEqual(override.evidence_considered["item_set_ids"], ["review-17"])
 
+    def test_confirmation_materializes_ranked_working_plan(self):
+        evidence = self._evidence()
+        recommendation = PlacementRecommendation.objects.create(
+            center=self.center,
+            evidence=evidence,
+            recommended_curriculum=self.curriculum,
+            recommended_position=self.position_one,
+            decision=PlacementRecommendation.Decision.PLACE,
+            rationale="Deterministic rule result.",
+            rule_trace={"rule": "test"},
+        )
+        for priority, position in enumerate([self.position_one, self.position_two], start=1):
+            RecommendedSequencePosition.objects.create(
+                recommendation=recommendation,
+                position=position,
+                priority=priority,
+            )
+
+        response = self.client.post(
+            f"/api/v1/placement-recommendations/{recommendation.id}/confirm/",
+            {},
+            format="json",
+        )
+
+        self.assertEqual(response.status_code, 200, response.data)
+        plan = SequencePlan.objects.get(created_from_recommendation=recommendation)
+        self.assertEqual(plan.status, SequencePlan.Status.ACTIVE)
+        self.assertEqual(
+            list(plan.items.values_list("position_id", "status")),
+            [
+                (self.position_one.id, SequencePlanItem.Status.IN_PROGRESS),
+                (self.position_two.id, SequencePlanItem.Status.PENDING),
+            ],
+        )
+        self.assertEqual(response.data["materialized_sequence_plan"]["id"], plan.id)
+
+        item = plan.items.get(position=self.position_one)
+        update_response = self.client.patch(
+            f"/api/v1/sequence-plans/{plan.id}/items/{item.id}/",
+            {"status": SequencePlanItem.Status.MASTERED, "notes": "Demonstrated independently."},
+            format="json",
+        )
+        self.assertEqual(update_response.status_code, 200, update_response.data)
+        item.refresh_from_db()
+        self.assertEqual(item.status, SequencePlanItem.Status.MASTERED)
+
+    def test_confirmation_can_decline_plan_materialization(self):
+        evidence = self._evidence()
+        recommendation = PlacementRecommendation.objects.create(
+            center=self.center,
+            evidence=evidence,
+            recommended_curriculum=self.curriculum,
+            recommended_position=self.position_one,
+            decision=PlacementRecommendation.Decision.PLACE,
+            rationale="Deterministic rule result.",
+            rule_trace={"rule": "test"},
+        )
+
+        response = self.client.post(
+            f"/api/v1/placement-recommendations/{recommendation.id}/confirm/",
+            {"create_sequence_plan": False},
+            format="json",
+        )
+
+        self.assertEqual(response.status_code, 200, response.data)
+        self.assertFalse(SequencePlan.objects.filter(created_from_recommendation=recommendation).exists())
+
+    def test_crosswalk_rejects_cross_center_nodes(self):
+        crosswalk = SkillCrosswalk(
+            center=self.center,
+            skill_node_a=self.position_one,
+            skill_node_b=self.other_position,
+            mapping_type=SkillCrosswalk.MappingType.OVERLAPS,
+            equivalence="0.750",
+            version="2026.1",
+        )
+
+        with self.assertRaises(ValidationError):
+            crosswalk.full_clean()
+
     def test_completed_structured_session_can_be_logged_through_api(self):
         StudentPlacement.objects.create(
             center=self.center,
@@ -261,3 +346,7 @@ class PhaseOneWorkflowIntegrationTests(TestCase):
         self.assertEqual(recommendation.status, PlacementRecommendation.Status.OVERRIDDEN)
         self.assertEqual(recommendation.final_curriculum, og_curriculum)
         self.assertEqual(recommendation.resulting_placement.curriculum, og_curriculum)
+        self.assertEqual(
+            list(recommendation.materialized_sequence_plan.items.values_list("position_id", flat=True)),
+            [og_position.id],
+        )

@@ -12,7 +12,9 @@ from apps.curriculum.models import (
     Lesson,
     PlacementEvidence,
     PlacementRecommendation,
+    SequencePlan,
     Skill,
+    SkillCrosswalk,
     StudentPlacement,
     TeachingAid,
 )
@@ -24,9 +26,12 @@ from apps.curriculum.serializers import (
     LessonSerializer,
     PlacementEvidenceSerializer,
     PlacementRecommendationSerializer,
+    SequencePlanSerializer,
     SkillSerializer,
+    SkillCrosswalkSerializer,
     StudentPlacementSerializer,
     TeachingAidSerializer,
+    UpdateSequencePlanItemSerializer,
 )
 from apps.progress.models import Progress
 from apps.users.models import AuditLog, ChildProfile, CustomUser
@@ -38,6 +43,18 @@ def _center_scope(user):
     if getattr(user, "is_superuser", False) or getattr(user, "role", None) == CustomUser.Role.SUPER_ADMIN:
         return Q()
     return Q(center__memberships__user=user, center__memberships__is_deleted=False)
+
+
+def _crosswalk_scope(user):
+    if getattr(user, "is_superuser", False) or getattr(user, "role", None) == CustomUser.Role.SUPER_ADMIN:
+        return Q()
+    membership = Q(center__memberships__user=user, center__memberships__is_deleted=False)
+    global_for_member_center = Q(
+        center__isnull=True,
+        skill_node_a__center__memberships__user=user,
+        skill_node_a__center__memberships__is_deleted=False,
+    )
+    return membership | global_for_member_center
 
 
 class SkillViewSet(viewsets.ModelViewSet):
@@ -129,6 +146,23 @@ class CurriculumSequenceViewSet(viewsets.ReadOnlyModelViewSet):
         return queryset
 
 
+class SkillCrosswalkViewSet(viewsets.ReadOnlyModelViewSet):
+    serializer_class = SkillCrosswalkSerializer
+    permission_classes = [IsAuthenticated]
+
+    def get_queryset(self):
+        return (
+            SkillCrosswalk.objects.filter(is_deleted=False)
+            .filter(_crosswalk_scope(self.request.user))
+            .select_related(
+                "center",
+                "skill_node_a__curriculum",
+                "skill_node_b__curriculum",
+            )
+            .distinct()
+        )
+
+
 class PlacementEvidenceViewSet(viewsets.ModelViewSet):
     serializer_class = PlacementEvidenceSerializer
     permission_classes = [IsAuthenticated, IsEvaluator]
@@ -216,6 +250,7 @@ class PlacementRecommendationViewSet(viewsets.ReadOnlyModelViewSet):
                 final_position=input_serializer.validated_data.get("final_position"),
                 override_rationale=input_serializer.validated_data.get("override_rationale", ""),
                 evidence_considered=input_serializer.validated_data.get("evidence_considered", {}),
+                create_sequence_plan=input_serializer.validated_data["create_sequence_plan"],
             )
         except DjangoValidationError as error:
             return Response({"detail": error.messages}, status=status.HTTP_400_BAD_REQUEST)
@@ -280,3 +315,38 @@ class StudentPlacementViewSet(viewsets.ReadOnlyModelViewSet):
             .prefetch_related("override_history")
             .distinct()
         )
+
+
+class SequencePlanViewSet(viewsets.ReadOnlyModelViewSet):
+    serializer_class = SequencePlanSerializer
+    permission_classes = [IsAuthenticated, IsEvaluator]
+
+    def get_queryset(self):
+        return (
+            SequencePlan.objects.filter(is_deleted=False)
+            .filter(_center_scope(self.request.user))
+            .select_related(
+                "center",
+                "placement__child",
+                "placement__curriculum",
+                "placement__current_position",
+                "created_from_recommendation",
+            )
+            .prefetch_related("items__position__curriculum")
+            .distinct()
+        )
+
+    @action(detail=True, methods=["patch"], url_path=r"items/(?P<item_id>[^/.]+)")
+    def update_item(self, request, pk=None, item_id=None):
+        plan = self.get_object()
+        item = plan.items.filter(pk=item_id).select_related("position", "plan__placement").first()
+        if item is None:
+            return Response({"detail": "Sequence plan item not found."}, status=status.HTTP_404_NOT_FOUND)
+        input_serializer = UpdateSequencePlanItemSerializer(data=request.data)
+        input_serializer.is_valid(raise_exception=True)
+        for field, value in input_serializer.validated_data.items():
+            setattr(item, field, value)
+        item.full_clean()
+        item.save(update_fields=[*input_serializer.validated_data.keys(), "updated_at"])
+        plan._prefetched_objects_cache.pop("items", None)
+        return Response(SequencePlanSerializer(plan, context=self.get_serializer_context()).data)
