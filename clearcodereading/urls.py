@@ -7,6 +7,7 @@ from django.views.static import serve
 
 from apps.assessments.views import assessment_audio, assessment_audio_status
 from apps.crm.views import WebsiteSignupView
+from apps.sessions.views import RapidSessionLogView
 from apps.users.portal_views import (
     AssignLessonTemplateToChildView,
     AssignTeacherView,
@@ -26,6 +27,7 @@ urlpatterns = [
     path("logout/", LogoutView.as_view(next_page="/"), name="logout"),
     path("dashboard/", PortalDashboardView.as_view(), name="portal_dashboard"),
     path("inbox/", PortalInboxView.as_view(), name="portal_inbox"),
+    path("portal/sessions/rapid-log/", RapidSessionLogView.as_view(), name="rapid_session_log"),
     path("crm/signup/", WebsiteSignupView.as_view(), name="crm_signup"),
     path("assign-teacher/", AssignTeacherView.as_view(), name="assign_teacher"),
     path("portal/templates/assign-teacher/", AssignTemplateToTeacherView.as_view(), name="portal_assign_template_to_teacher"),

@@ -1,0 +1,85 @@
+{% load static %}
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Rapid session log · Clear Code Reading</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    .chip input:checked + span { background:#00b8a9; border-color:#00b8a9; color:white; }
+    .focus-ring:focus-visible { outline:4px solid #ffd93d; outline-offset:3px; }
+  </style>
+</head>
+<body class="min-h-screen bg-gradient-to-br from-amber-50 via-teal-50 to-rose-50 text-slate-800">
+  <header class="border-b bg-white/90">
+    <nav class="mx-auto flex max-w-7xl items-center justify-between px-4 py-3">
+      <a href="/dashboard/" class="font-black">Clear Code Reading</a>
+      <a href="/dashboard/" class="focus-ring rounded-full px-4 py-3 font-bold">Dashboard</a>
+    </nav>
+  </header>
+  <main class="mx-auto grid max-w-7xl gap-6 px-4 py-6 lg:grid-cols-[minmax(0,1fr)_280px]">
+    <section class="min-w-0">
+      {% for message in messages %}<p class="mb-4 rounded-2xl bg-white p-4 font-bold">{{ message }}</p>{% endfor %}
+      {% if saved_session %}
+        <div class="rounded-[2rem] bg-white p-8 shadow-xl">
+          <p class="font-black uppercase tracking-widest text-teal-600">Session saved</p>
+          <h1 class="mt-2 text-3xl font-black">{{ saved_session.child }} · {{ saved_session.curriculum_position.code }}</h1>
+          <p class="mt-3">Accuracy {{ saved_session.accuracy_numerator }}/{{ saved_session.accuracy_denominator }} · Revision {{ saved_session.revision }}</p>
+          <div class="mt-6 flex flex-wrap gap-3">
+            <a class="rounded-full bg-teal-600 px-5 py-3 font-black text-white" href="?child={{ saved_session.child_id }}">Log another</a>
+            <a class="rounded-full bg-slate-800 px-5 py-3 font-black text-white" href="/dashboard/#reader-{{ saved_session.child_id }}">Back to {{ saved_session.child.first_name }}’s position</a>
+          </div>
+        </div>
+      {% else %}
+        <form method="post" class="rounded-[2rem] bg-white p-5 shadow-xl sm:p-8">
+          {% csrf_token %}
+          <p class="font-black uppercase tracking-widest text-teal-600">Specialist rapid entry</p>
+          <h1 class="mt-2 break-words text-3xl font-black sm:text-4xl">Finish the log in one screen.</h1>
+          {% if form_errors %}<div class="mt-4 rounded-2xl bg-rose-100 p-4 text-sm font-bold">{{ form_errors }}</div>{% endif %}
+          <label class="mt-6 block font-black" for="child_id">Reader</label>
+          <select id="child_id" name="child_id" onchange="location='?child='+this.value" class="focus-ring mt-2 w-full rounded-2xl border p-4 text-lg" required>
+            <option value="">Choose a reader</option>
+            {% for child in children %}<option value="{{ child.id }}" {% if selected_child.id == child.id %}selected{% endif %}>{{ child }}</option>{% endfor %}
+          </select>
+          {% if defaults %}
+            {% if selected_session %}<input type="hidden" name="session_id" value="{{ selected_session.id }}">{% endif %}
+            <div class="mt-6 flex flex-wrap items-start justify-between gap-3 rounded-3xl bg-slate-50 p-5">
+              <div class="min-w-0"><p class="font-bold text-teal-700">{{ defaults.curriculum_name }} · {{ defaults.position_code }}</p><h2 class="break-words text-2xl font-black">{{ defaults.position_title }}</h2></div>
+              <span class="rounded-full px-4 py-2 font-black {% if defaults.intervention_part == 'pfr_1a' %}bg-amber-200{% elif defaults.intervention_part == 'pfr_1b' %}bg-teal-200{% else %}bg-violet-200{% endif %}">{{ defaults.intervention_part_label }}</span>
+            </div>
+            <div class="mt-6 rounded-3xl bg-slate-800 p-5 text-white">
+              <h3 class="text-xl font-black">Correct out of attempted</h3>
+              <div class="mt-4 grid grid-cols-[1fr_auto_1fr] items-center gap-3">
+                <input aria-label="Correct responses" name="accuracy_numerator" value="{{ accuracy_numerator }}" type="number" min="0" class="focus-ring min-w-0 rounded-2xl p-4 text-center text-4xl font-black text-slate-900" required>
+                <span class="text-4xl font-black">/</span>
+                <input aria-label="Attempted responses" name="accuracy_denominator" value="{{ accuracy_denominator }}" type="number" min="1" class="focus-ring min-w-0 rounded-2xl p-4 text-center text-4xl font-black text-slate-900" required>
+              </div>
+            </div>
+            <h3 class="mt-6 font-black">Completed activities</h3>
+            <div class="mt-3 flex flex-wrap gap-2">
+              {% for activity in defaults.suggested_activities %}<label class="chip"><input class="sr-only" type="checkbox" name="activity_codes" value="{{ activity.code }}" {% if activity.code in selected_activity_codes %}checked{% endif %}><span class="block rounded-full border-2 px-4 py-3 font-bold">{{ activity.label }}</span></label>{% endfor %}
+            </div>
+            <details class="mt-6 rounded-3xl border p-5">
+              <summary class="cursor-pointer font-black">Add error patterns and observations (optional)</summary>
+              <h3 class="mt-5 font-black">Error patterns</h3>
+              <div class="mt-2 flex flex-wrap gap-2">{% for option in defaults.error_pattern_options %}<label class="chip"><input class="sr-only" type="checkbox" name="error_pattern_codes" value="{{ option.code }}" {% if option.code in selected_error_codes %}checked{% endif %}><span class="block rounded-full border-2 px-4 py-3 font-bold">{{ option.label }}</span></label>{% endfor %}</div>
+              <h3 class="mt-5 font-black">Observable behaviors</h3>
+              <div class="mt-2 flex flex-wrap gap-2">{% for option in defaults.behavioral_observation_options %}<label class="chip"><input class="sr-only" type="checkbox" name="behavioral_observation_codes" value="{{ option.code }}" {% if option.code in selected_behavior_codes %}checked{% endif %}><span class="block rounded-full border-2 px-4 py-3 font-bold">{{ option.label }}</span></label>{% endfor %}</div>
+              <select name="behavioral_rating" class="mt-4 rounded-xl border p-3">{% for option in defaults.behavioral_rating_options %}<option value="{{ option.code }}">{{ option.label }}</option>{% endfor %}</select>
+            </details>
+            <label class="mt-6 block font-black">Next session direction<textarea name="next_session_direction" class="mt-2 w-full rounded-2xl border p-4" rows="3">{{ next_session_direction }}</textarea></label>
+            <label class="mt-4 block font-black">Home-practice suggestion<textarea name="home_practice_suggestion" class="mt-2 w-full rounded-2xl border p-4" rows="3">{{ home_practice_suggestion }}</textarea></label>
+            <details class="mt-4"><summary class="cursor-pointer font-bold">Timing and supplemental notes</summary><label class="mt-3 block">Minutes<input name="duration_minutes" type="number" value="{{ duration_minutes }}" class="ml-2 rounded-xl border p-2"></label><textarea name="notes" class="mt-3 w-full rounded-2xl border p-4" placeholder="Optional notes">{{ notes }}</textarea></details>
+            <button class="focus-ring mt-6 w-full rounded-2xl bg-teal-600 px-6 py-5 text-xl font-black text-white">Complete session</button>
+          {% endif %}
+        </form>
+      {% endif %}
+    </section>
+    <aside class="rounded-[2rem] bg-white p-5 shadow-xl">
+      <p class="font-black uppercase tracking-widest text-teal-600">Today</p><h2 class="text-2xl font-black">Session queue</h2>
+      <div class="mt-4 space-y-3">{% for session in today_sessions %}<a href="?session={{ session.id }}" class="block rounded-2xl bg-slate-50 p-4"><strong>{{ session.child }}</strong><p>{{ session.scheduled_start|date:"g:i a" }} · {{ session.curriculum_position.code }}</p><p class="text-sm font-bold text-teal-700">{% if session.status == 'completed' %}Edit structured fields{% else %}Complete{% endif %}</p></a>{% empty %}<p>No sessions scheduled today.</p>{% endfor %}</div>
+    </aside>
+  </main>
+</body>
+</html>

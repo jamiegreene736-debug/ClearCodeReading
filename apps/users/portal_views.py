@@ -12,7 +12,7 @@ from django.views.generic import TemplateView, View
 
 from apps.assessments.models import Assessment, AssessmentResult
 from apps.crm.models import Lead
-from apps.api.permissions import has_coppa_consent, user_can_evaluate_child
+from apps.api.permissions import has_coppa_consent, user_can_evaluate_child, user_can_log_session
 from apps.curriculum.models import (
     ChildLessonAssignment,
     CurriculumSequence,
@@ -211,6 +211,7 @@ class PortalDashboardView(PortalAuthMixin, TemplateView):
                     "child": child,
                     "placement": placements.get(child.id),
                     "latest_session": latest_sessions.get(child.id),
+                    "can_log_session": user_can_log_session(user, child),
                 }
                 for child in children
             ]

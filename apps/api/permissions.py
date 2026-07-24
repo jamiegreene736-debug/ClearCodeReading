@@ -111,6 +111,25 @@ def user_can_evaluate_child(user, child):
     return False
 
 
+def user_can_log_session(user, child, session=None):
+    if not user or not user.is_authenticated or child is None:
+        return False
+    if user.is_superuser or getattr(user, "role", None) == CustomUser.Role.SUPER_ADMIN:
+        return True
+    membership = SchoolMembership.objects.filter(
+        user=user,
+        school=child.school,
+        is_deleted=False,
+    ).first()
+    if membership is None:
+        return False
+    if membership.role in {SchoolMembership.Role.OWNER, SchoolMembership.Role.ADMIN}:
+        return True
+    if membership.role != SchoolMembership.Role.SPECIALIST:
+        return False
+    return session is None or session.specialist_id == user.id
+
+
 class IsParentOfChild(BasePermission):
     message = "You must be an approved guardian for this child."
 

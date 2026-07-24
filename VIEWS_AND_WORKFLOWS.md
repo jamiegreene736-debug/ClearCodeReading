@@ -1,5 +1,14 @@
 # Clear Code Reading ViewSets and API Workflow Logic
 
+## Rapid specialist session logging
+
+- `GET /api/v1/sessions/defaults/?child=<id>` returns active-placement defaults, current position, PFR/OG+ part, unused item-set IDs, controlled chips, and editable drafts.
+- `POST /api/v1/sessions/rapid-log/` accepts `quick_complete` or `full_detail`. Both delegate persistence to the standard Session serializer and model validation.
+- `GET /api/v1/sessions/today/` returns the assigned specialist’s queue; leadership sees the center queue and `?low_accuracy=1` selects accuracy below 80%.
+- `GET|POST /portal/sessions/rapid-log/` provides the one-screen server-rendered flow, progressive disclosure, large accuracy controls, distinct methodology styling, and post-save actions.
+
+Session revisions remain synchronous. Notification and decision-support queue publication cannot roll back a valid log.
+
 ## Scheduling optimizer workflow
 
 1. Scheduling staff submit a center, inclusive date range, and optional specialist to

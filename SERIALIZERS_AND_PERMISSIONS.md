@@ -1,5 +1,11 @@
 # Clear Code Reading Serializers and Permissions
 
+## Rapid session logging
+
+`RapidSessionLogSerializer` supports `quick_complete` (reader plus accuracy counts or percentage and optional structured chips) and `full_detail` (the existing structured Session payload). Both use `SessionSerializer`, `Session.full_clean()`, template resolution, distinct-item-set checks, and immutable revision snapshots.
+
+Specialists may create logs for readers in their center and edit only sessions assigned to them. Center owners/admins and super admins may log within their scope. View-only memberships cannot log.
+
 ## `apps/api/permissions.py`
 ```python
 from django.utils import timezone

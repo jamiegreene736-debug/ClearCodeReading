@@ -5,6 +5,12 @@ Status: **Phase 0 authoritative**
 Schema version: **2026.1**
 Applies to: **PRD FR-0.1, FR-1.2, FR-2.1, FR-5.1**
 
+## Controlled rapid-log options
+
+Error-pattern codes: `phoneme_omission`, `phoneme_addition`, `phoneme_substitution`, `phoneme_reversal`, `short_vowel_confusion`, `long_vowel_confusion`, `consonant_confusion`, `blend_reduction`, `digraph_confusion`, `syllable_division`, `high_frequency_word`, `inflectional_ending`, `orthographic_rule`, `automaticity`, and `transfer_to_text`.
+
+Observable behavior codes remain `task_persistence`, `attention_to_print`, `response_latency`, `self_correction`, `requests_break`, `uses_strategy`, and `confidence_to_attempt`, with ratings `rare`, `emerging`, `inconsistent`, or `consistent`.
+
 This document freezes the instructional decisions and data contract used by placement,
 session capture, later decision support, and outcomes reporting. Publisher page numbers,
 word lists, and item identifiers are edition-specific licensed content. They belong in

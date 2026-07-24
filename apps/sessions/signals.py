@@ -72,7 +72,14 @@ def snapshot_session_revision(sender, instance, **kwargs):
 
     sync_skill_observations(instance)
     if instance.status == Session.Status.COMPLETED and getattr(instance, "_previous_status", None) != Session.Status.COMPLETED:
-        transaction.on_commit(lambda: send_progress_report_to_parents.delay(instance.child_id))
+        transaction.on_commit(
+            lambda: send_progress_report_to_parents.apply_async(
+                args=[instance.child_id],
+                ignore_result=True,
+                retry=False,
+            ),
+            robust=True,
+        )
 
 
 @receiver(m2m_changed, sender=Session.targeted_positions.through)

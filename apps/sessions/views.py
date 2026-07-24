@@ -1,16 +1,29 @@
+from urllib.parse import urlencode
+
+from django.contrib import messages
+from django.contrib.auth.mixins import LoginRequiredMixin
+from django.core.exceptions import ValidationError
 from django.db.models import F, Q
 from django.db.models.functions import TruncDate
+from django.shortcuts import redirect
+from django.urls import reverse
 from django.utils import timezone
+from django.views.generic import TemplateView
 from rest_framework import status, viewsets
 from rest_framework.decorators import action
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 
-from apps.api.permissions import IsEvaluator, user_can_evaluate_child
-from apps.curriculum.models import StudentPlacement
+from apps.api.permissions import IsEvaluator, user_can_log_session
+from apps.schools.models import SchoolMembership
 from apps.sessions.models import Session, SessionTemplate, SkillObservation
-from apps.sessions.serializers import SessionSerializer, SessionTemplateSerializer, SkillObservationSerializer
-from apps.sessions.services import capture_defaults, resolve_session_template
+from apps.sessions.rapid_logging import build_rapid_defaults
+from apps.sessions.serializers import (
+    RapidSessionLogSerializer,
+    SessionSerializer,
+    SessionTemplateSerializer,
+    SkillObservationSerializer,
+)
 from apps.users.models import ChildProfile, CustomUser
 
 
@@ -60,39 +73,42 @@ class SessionViewSet(viewsets.ModelViewSet):
         child = ChildProfile.objects.select_related("school").filter(pk=child_id, is_deleted=False).first()
         if child is None:
             return Response({"detail": "Child not found."}, status=status.HTTP_404_NOT_FOUND)
-        if not user_can_evaluate_child(request.user, child):
-            return Response({"detail": "You are not assigned to this child's center."}, status=status.HTTP_403_FORBIDDEN)
-        placement = (
-            StudentPlacement.objects.filter(child=child, is_active=True, is_deleted=False)
-            .select_related("curriculum", "current_position__curriculum")
+        if not user_can_log_session(request.user, child):
+            return Response({"detail": "You are not authorized to log sessions for this reader."}, status=403)
+        try:
+            return Response(build_rapid_defaults(child, request.user))
+        except ValidationError as error:
+            return Response({"detail": "; ".join(error.messages)}, status=409)
+
+    @action(detail=False, methods=["post"], url_path="rapid-log")
+    def rapid_log(self, request):
+        existing = (
+            Session.objects.filter(pk=request.data.get("session_id"), is_deleted=False)
+            .select_related("child__school", "specialist")
             .first()
+            if request.data.get("session_id")
+            else None
         )
-        if placement is None:
-            return Response({"detail": "This child does not have an active placement."}, status=status.HTTP_409_CONFLICT)
-        position = placement.current_position
-        intervention_part = SessionSerializer._default_intervention_part(child, position)
-        session_template = resolve_session_template(position, intervention_part)
-        return Response(
-            {
-                "child": child.id,
-                "center": placement.center_id,
-                "curriculum": placement.curriculum_id,
-                "methodology": placement.curriculum.code,
-                "curriculum_position": position.id,
-                "position_code": position.code,
-                "targeted_positions": [position.id],
-                "intervention_part": intervention_part,
-                "session_template": session_template.id if session_template else None,
-                "session_template_title": session_template.title if session_template else None,
-                "session_template_version": session_template.version if session_template else None,
-                "capture_fields": session_template.capture_fields if session_template else {},
-                "capture_defaults": capture_defaults(session_template),
-                "scheduled_start": timezone.now(),
-                "suggested_activity_codes": position.activities,
-                "item_set_schema": position.item_set_schema,
-                "mastery_criteria": position.mastery_criteria,
-            }
-        )
+        child_id = request.data.get("child") or request.data.get("child_id")
+        child = existing.child if existing else ChildProfile.objects.filter(
+            pk=child_id, is_deleted=False
+        ).select_related("school").first()
+        if child and not user_can_log_session(request.user, child, existing):
+            return Response({"detail": "You are not authorized to log sessions for this reader."}, status=403)
+        serializer = RapidSessionLogSerializer(data=request.data, context={"request": request})
+        serializer.is_valid(raise_exception=True)
+        saved = serializer.save()
+        response_status = status.HTTP_200_OK if existing else status.HTTP_201_CREATED
+        return Response(SessionSerializer(saved, context={"request": request}).data, status=response_status)
+
+    @action(detail=False, methods=["get"], url_path="today")
+    def today(self, request):
+        queryset = self.get_queryset().filter(scheduled_start__date=timezone.localdate())
+        if not _has_session_leadership(request.user):
+            queryset = queryset.filter(specialist=request.user)
+        if request.query_params.get("low_accuracy") in {"1", "true", "yes"}:
+            queryset = queryset.filter(accuracy_rate__lt=80)
+        return Response(SessionSerializer(queryset.order_by("scheduled_start"), many=True, context={"request": request}).data)
 
     @action(detail=False, methods=["get"], url_path="logging-metrics")
     def logging_metrics(self, request):
@@ -165,3 +181,135 @@ class SkillObservationViewSet(viewsets.ReadOnlyModelViewSet):
             if value:
                 queryset = queryset.filter(**{field_name: value})
         return queryset
+
+
+def _has_session_leadership(user):
+    if user.is_superuser or user.role in {CustomUser.Role.SUPER_ADMIN, CustomUser.Role.SCHOOL_ADMIN}:
+        return True
+    return user.school_memberships.filter(
+        role__in=[SchoolMembership.Role.OWNER, SchoolMembership.Role.ADMIN],
+        is_deleted=False,
+    ).exists()
+
+
+class RapidSessionLogView(LoginRequiredMixin, TemplateView):
+    template_name = "sessions/rapid_log.html"
+    login_url = "/login/"
+
+    def post(self, request, *args, **kwargs):
+        data = {
+            "mode": "quick_complete",
+            "child_id": request.POST.get("child_id"),
+            "accuracy_numerator": request.POST.get("accuracy_numerator"),
+            "accuracy_denominator": request.POST.get("accuracy_denominator"),
+            "duration_minutes": request.POST.get("duration_minutes") or 60,
+            "activity_codes": request.POST.getlist("activity_codes"),
+            "error_pattern_codes": request.POST.getlist("error_pattern_codes"),
+            "behavioral_observation_codes": request.POST.getlist("behavioral_observation_codes"),
+            "behavioral_rating": request.POST.get("behavioral_rating") or "consistent",
+            "next_session_direction": request.POST.get("next_session_direction", ""),
+            "home_practice_suggestion": request.POST.get("home_practice_suggestion", ""),
+            "notes": request.POST.get("notes", ""),
+        }
+        if request.POST.get("session_id"):
+            data["session_id"] = request.POST["session_id"]
+        session = self._session_from_id(data.get("session_id"))
+        child = session.child if session else ChildProfile.objects.filter(
+            pk=data.get("child_id"),
+            is_deleted=False,
+        ).select_related("school").first()
+        if child and user_can_log_session(request.user, child, session):
+            defaults = build_rapid_defaults(child, request.user, session)
+            for field in ("next_session_direction", "home_practice_suggestion"):
+                if data[field].strip() == defaults[field].strip():
+                    data[field] = ""
+        serializer = RapidSessionLogSerializer(data=data, context={"request": request})
+        if serializer.is_valid():
+            session = serializer.save()
+            messages.success(request, f"Session logged for {session.child}.")
+            return redirect(f"{reverse('rapid_session_log')}?{urlencode({'success': 1, 'session': session.id})}")
+        return self.render_to_response(self._context(request.POST, serializer.errors), status=400)
+
+    def get_context_data(self, **kwargs):
+        return self._context()
+
+    def _context(self, form_data=None, errors=None):
+        children = self._children()
+        session = self._selected_session()
+        child = session.child if session else next(
+            (item for item in children if str(item.id) == str(self.request.GET.get("child"))), None
+        )
+        defaults = build_rapid_defaults(child, self.request.user, session) if child else None
+        today = (
+            Session.objects.filter(scheduled_start__date=timezone.localdate(), is_deleted=False)
+            .filter(_accessible_center_filter(self.request.user))
+            .select_related("child", "curriculum_position")
+            .order_by("scheduled_start")
+            .distinct()
+        )
+        if not _has_session_leadership(self.request.user):
+            today = today.filter(specialist=self.request.user)
+        saved = None
+        if self.request.GET.get("success") and self.request.GET.get("session"):
+            saved = Session.objects.filter(pk=self.request.GET["session"], is_deleted=False).select_related(
+                "child__school", "curriculum_position"
+            ).first()
+            if saved and not user_can_log_session(self.request.user, saved.child, saved):
+                saved = None
+        return {
+            "children": children,
+            "selected_child": child,
+            "selected_session": session,
+            "defaults": defaults,
+            "today_sessions": today,
+            "saved_session": saved,
+            "form_errors": errors,
+            "selected_activity_codes": set(
+                form_data.getlist("activity_codes") if form_data else (defaults or {}).get("suggested_activity_codes", [])
+            ),
+            "selected_error_codes": set(form_data.getlist("error_pattern_codes") if form_data else []),
+            "selected_behavior_codes": set(form_data.getlist("behavioral_observation_codes") if form_data else []),
+            "accuracy_numerator": form_data.get("accuracy_numerator", "") if form_data else "",
+            "accuracy_denominator": form_data.get("accuracy_denominator", "10") if form_data else "10",
+            "duration_minutes": form_data.get("duration_minutes", "60") if form_data else "60",
+            "next_session_direction": form_data.get("next_session_direction", "") if form_data else (defaults or {}).get("next_session_direction", ""),
+            "home_practice_suggestion": form_data.get("home_practice_suggestion", "") if form_data else (defaults or {}).get("home_practice_suggestion", ""),
+            "notes": form_data.get("notes", "") if form_data else "",
+        }
+
+    def _children(self):
+        queryset = ChildProfile.objects.filter(
+            curriculum_placements__is_active=True,
+            curriculum_placements__is_deleted=False,
+            is_deleted=False,
+        )
+        if not self.request.user.is_superuser:
+            queryset = queryset.filter(
+                school__memberships__user=self.request.user,
+                school__memberships__is_deleted=False,
+            )
+        return [
+            child for child in queryset.select_related("school").distinct().order_by("last_name", "first_name")
+            if user_can_log_session(self.request.user, child)
+        ]
+
+    def _selected_session(self):
+        if not self.request.GET.get("session") or self.request.GET.get("success"):
+            return None
+        session = Session.objects.filter(pk=self.request.GET["session"], is_deleted=False).select_related(
+            "child__school", "specialist", "curriculum_position__curriculum"
+        ).first()
+        return session if session and user_can_log_session(self.request.user, session.child, session) else None
+
+    @staticmethod
+    def _session_from_id(session_id):
+        if not session_id:
+            return None
+        return Session.objects.filter(pk=session_id, is_deleted=False).select_related(
+            "child__school", "specialist", "curriculum_position__curriculum"
+        ).first()
+from urllib.parse import urlencode
+
+from django.contrib import messages
+from django.contrib.auth.mixins import LoginRequiredMixin
+from django.core.exceptions import ValidationError

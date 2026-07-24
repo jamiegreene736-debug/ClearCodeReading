@@ -2,11 +2,13 @@ from django.core.exceptions import ValidationError as DjangoValidationError
 from django.db import transaction
 from rest_framework import serializers
 
-from apps.api.permissions import user_can_evaluate_child
+from apps.api.permissions import user_can_log_session
 from apps.curriculum.models import CurriculumSequence, StudentPlacement
 from apps.sessions.models import Session, SessionRevision, SessionTemplate, SkillObservation
+from apps.sessions.options import BEHAVIORAL_OBSERVATION_OPTIONS, BEHAVIORAL_RATING_OPTIONS, ERROR_PATTERN_OPTIONS
+from apps.sessions.rapid_logging import default_intervention_part, expand_quick_complete
 from apps.sessions.services import apply_template_defaults, resolve_session_template
-from apps.users.models import CustomUser
+from apps.users.models import ChildProfile, CustomUser
 
 
 class SessionRevisionSerializer(serializers.ModelSerializer):
@@ -206,8 +208,8 @@ class SessionSerializer(serializers.ModelSerializer):
     def validate(self, attrs):
         request = self.context["request"]
         child = attrs.get("child", getattr(self.instance, "child", None))
-        if not user_can_evaluate_child(request.user, child):
-            raise serializers.ValidationError("You are not assigned to this child's center.")
+        if not user_can_log_session(request.user, child, session=self.instance):
+            raise serializers.ValidationError("You are not authorized to log sessions for this reader.")
 
         placement = (
             StudentPlacement.objects.filter(child=child, is_active=True, is_deleted=False)
@@ -326,21 +328,7 @@ class SessionSerializer(serializers.ModelSerializer):
 
     @staticmethod
     def _default_intervention_part(child, position):
-        if position.curriculum.code == "og_plus":
-            return Session.InterventionPart.OG_CONCEPT
-        latest = (
-            Session.objects.filter(
-                child=child,
-                curriculum_position=position,
-                status=Session.Status.COMPLETED,
-                is_deleted=False,
-            )
-            .order_by("-ended_at", "-created_at")
-            .first()
-        )
-        if latest and latest.intervention_part == Session.InterventionPart.PFR_1A:
-            return Session.InterventionPart.PFR_1B
-        return Session.InterventionPart.PFR_1A
+        return default_intervention_part(child, position)
 
     @transaction.atomic
     def create(self, validated_data):
@@ -378,3 +366,113 @@ class SessionSerializer(serializers.ModelSerializer):
             session.full_clean()
         except DjangoValidationError as error:
             raise serializers.ValidationError(error.message_dict) from error
+
+
+class RapidSessionLogSerializer(serializers.Serializer):
+    class Mode:
+        QUICK_COMPLETE = "quick_complete"
+        FULL_DETAIL = "full_detail"
+
+    mode = serializers.ChoiceField(
+        choices=[(Mode.QUICK_COMPLETE, "Quick complete"), (Mode.FULL_DETAIL, "Full detail")],
+        default=Mode.QUICK_COMPLETE,
+    )
+    child = serializers.PrimaryKeyRelatedField(
+        queryset=ChildProfile.objects.filter(is_deleted=False).select_related("school"),
+        required=False,
+    )
+    child_id = serializers.IntegerField(write_only=True, required=False)
+    session_id = serializers.IntegerField(required=False)
+    accuracy_numerator = serializers.IntegerField(min_value=0, required=False)
+    accuracy_denominator = serializers.IntegerField(min_value=1, required=False)
+    accuracy_percentage = serializers.DecimalField(
+        max_digits=5, decimal_places=2, min_value=0, max_value=100, required=False
+    )
+    duration_minutes = serializers.IntegerField(min_value=1, max_value=240, default=60)
+    scheduled_start = serializers.DateTimeField(required=False)
+    activity_codes = serializers.ListField(child=serializers.CharField(max_length=80), required=False)
+    error_pattern_codes = serializers.ListField(
+        child=serializers.ChoiceField(choices=ERROR_PATTERN_OPTIONS), required=False
+    )
+    behavioral_observation_codes = serializers.ListField(
+        child=serializers.ChoiceField(choices=BEHAVIORAL_OBSERVATION_OPTIONS), required=False
+    )
+    behavioral_rating = serializers.ChoiceField(
+        choices=BEHAVIORAL_RATING_OPTIONS, default="consistent"
+    )
+    next_session_direction = serializers.CharField(required=False, allow_blank=True)
+    home_practice_suggestion = serializers.CharField(required=False, allow_blank=True)
+    notes = serializers.CharField(required=False, allow_blank=True)
+    full_detail = serializers.JSONField(required=False)
+
+    def validate(self, attrs):
+        request = self.context["request"]
+        session = None
+        if attrs.get("session_id"):
+            session = (
+                Session.objects.filter(pk=attrs["session_id"], is_deleted=False)
+                .select_related("child__school", "specialist", "curriculum_position__curriculum")
+                .first()
+            )
+            if session is None:
+                raise serializers.ValidationError({"session_id": "Session not found."})
+        child = attrs.get("child")
+        if child is None and attrs.get("child_id"):
+            child = ChildProfile.objects.filter(pk=attrs["child_id"], is_deleted=False).first()
+        child = child or getattr(session, "child", None)
+        if child is None:
+            raise serializers.ValidationError({"child": "Select a reader."})
+        if session and session.child_id != child.id:
+            raise serializers.ValidationError({"child": "The selected reader does not match this session."})
+        if not user_can_log_session(request.user, child, session):
+            raise serializers.ValidationError("You are not authorized to log sessions for this reader.")
+        if attrs["mode"] == self.Mode.FULL_DETAIL:
+            payload = attrs.get("full_detail")
+            if not isinstance(payload, dict):
+                raise serializers.ValidationError({"full_detail": "Full-detail mode requires a session object."})
+            payload = {**payload, "child": child.id}
+        else:
+            numerator = attrs.get("accuracy_numerator")
+            denominator = attrs.get("accuracy_denominator")
+            percentage = attrs.get("accuracy_percentage")
+            if percentage is not None and numerator is None and denominator is None:
+                numerator, denominator = int(percentage.quantize(1)), 100
+            if numerator is None or denominator is None:
+                raise serializers.ValidationError(
+                    {"accuracy_numerator": "Enter correct and attempted counts, or an accuracy percentage."}
+                )
+            if numerator > denominator:
+                raise serializers.ValidationError(
+                    {"accuracy_numerator": "Correct responses cannot exceed attempted responses."}
+                )
+            try:
+                payload = expand_quick_complete(
+                    child=child,
+                    specialist=request.user,
+                    accuracy_numerator=numerator,
+                    accuracy_denominator=denominator,
+                    duration_minutes=attrs["duration_minutes"],
+                    scheduled_start=attrs.get("scheduled_start"),
+                    activity_codes=attrs.get("activity_codes"),
+                    error_pattern_codes=attrs.get("error_pattern_codes"),
+                    behavioral_observation_codes=attrs.get("behavioral_observation_codes"),
+                    behavioral_rating=attrs["behavioral_rating"],
+                    next_session_direction=attrs.get("next_session_direction", ""),
+                    home_practice_suggestion=attrs.get("home_practice_suggestion", ""),
+                    notes=attrs.get("notes", ""),
+                    session=session,
+                )
+            except DjangoValidationError as error:
+                detail = error.message_dict if hasattr(error, "message_dict") else {"detail": error.messages}
+                raise serializers.ValidationError(detail) from error
+        self._session_serializer = SessionSerializer(
+            instance=session,
+            data=payload,
+            partial=session is not None,
+            context=self.context,
+        )
+        self._session_serializer.is_valid(raise_exception=True)
+        return attrs
+
+    def create(self, validated_data):
+        return self._session_serializer.save()

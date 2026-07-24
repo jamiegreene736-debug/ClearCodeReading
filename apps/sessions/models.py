@@ -5,6 +5,7 @@ from django.db import models
 from django.db.models import Q
 from django.utils import timezone
 
+from apps.sessions.options import BEHAVIORAL_CODES, BEHAVIORAL_RATINGS, ERROR_PATTERN_CODES
 
 class TimestampedModel(models.Model):
     created_at = models.DateTimeField(auto_now_add=True, db_index=True)
@@ -224,27 +225,20 @@ class Session(AuditedModel):
                 errors["activities_completed"] = f"Activity {index + 1} has an unsupported status."
                 break
 
-        allowed_behavior_codes = {
-            "task_persistence",
-            "attention_to_print",
-            "response_latency",
-            "self_correction",
-            "requests_break",
-            "uses_strategy",
-            "confidence_to_attempt",
-        }
-        allowed_ratings = {"rare", "emerging", "inconsistent", "consistent"}
         for observation in self.behavioral_observations:
-            if not isinstance(observation, dict) or observation.get("code") not in allowed_behavior_codes:
+            if not isinstance(observation, dict) or observation.get("code") not in BEHAVIORAL_CODES:
                 errors["behavioral_observations"] = "Behavioral observations must use an allowed observable code."
                 break
-            if observation.get("rating") not in allowed_ratings:
+            if observation.get("rating") not in BEHAVIORAL_RATINGS:
                 errors["behavioral_observations"] = "Behavioral observations must use an allowed rating."
                 break
 
         for pattern in self.error_patterns:
             if not isinstance(pattern, dict) or not {"code", "count", "opportunities"}.issubset(pattern):
                 errors["error_patterns"] = "Each error pattern requires code, count, and opportunities."
+                break
+            if pattern.get("code") not in ERROR_PATTERN_CODES:
+                errors["error_patterns"] = "Error patterns must use an allowed instructional code."
                 break
 
         mastery_keys = {
