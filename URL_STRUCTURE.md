@@ -2,6 +2,15 @@
 
 ## Endpoint Map
 
+- `/`
+- `/how-it-works/`
+- `/families/`
+- `/approach/`
+- `/privacy/`
+- `/contact/`
+- `/assessment/`
+- `/login/`
+- `/crm/signup/`
 - `/admin/`
 - `/api/schema/`
 - `/api/docs/`
@@ -52,6 +61,19 @@
 - `/api/v1/leads/<id>/convert/`
 - `/api/v1/opportunities/`
 - `/api/v1/opportunities/<id>/advance/`
+
+## Public marketing routes
+
+| Route | Purpose |
+|---|---|
+| `/` | Intervention Intelligence Platform homepage |
+| `/how-it-works/` | Placement, sessions, parent dashboard, and decision-support flow |
+| `/families/` | Parent journey, dashboard visibility, and home-practice expectations |
+| `/approach/` | Structured-literacy, one-methodology, specialist-led, education-only stance |
+| `/privacy/` | Plain-language FERPA-oriented privacy and consent overview |
+| `/contact/` | Primary family consultation form |
+| `/assessment/` | Optional secondary reading survey |
+| `/crm/signup/` | POST-only CRM lead capture used by public inquiry forms |
 
 ## `clearcodereading/urls.py`
 ```python

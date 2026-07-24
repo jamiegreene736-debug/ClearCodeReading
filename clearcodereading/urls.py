@@ -22,6 +22,11 @@ from apps.users.portal_views import (
 
 urlpatterns = [
     path("", TemplateView.as_view(template_name="index.html"), name="marketing_home"),
+    path("how-it-works/", TemplateView.as_view(template_name="how-it-works.html"), name="marketing_how_it_works"),
+    path("families/", TemplateView.as_view(template_name="families.html"), name="marketing_families"),
+    path("contact/", TemplateView.as_view(template_name="contact.html"), name="marketing_contact"),
+    path("privacy/", TemplateView.as_view(template_name="privacy.html"), name="marketing_privacy"),
+    path("approach/", TemplateView.as_view(template_name="approach.html"), name="marketing_approach"),
     path("assessment/", TemplateView.as_view(template_name="assessment.html"), name="reading_assessment"),
     path("login/", PortalLoginView.as_view(), name="login"),
     path("logout/", LogoutView.as_view(next_page="/"), name="logout"),

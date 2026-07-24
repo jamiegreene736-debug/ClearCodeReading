@@ -25,11 +25,14 @@ class WebsiteSignupView(View):
 
         if not contact_name or not contact_email:
             messages.error(request, "Please add your name and email so we can follow up.")
-            return redirect("/?signup=missing#signup")
+            return redirect(self._redirect_target(request, "missing"))
 
         organization_name = request.POST.get("organization_name", "").strip()
         contact_phone = request.POST.get("phone", "").strip()
         notes = request.POST.get("notes", "").strip()
+        child_age_grade = request.POST.get("child_age_grade", "").strip()
+        if child_age_grade:
+            notes = "\n".join(part for part in [f"Child age or grade: {child_age_grade}", notes] if part)
         estimated_students = self._clean_positive_int(request.POST.get("estimated_students"))
         linked_user = CustomUser.objects.filter(email=contact_email, is_deleted=False).first()
         school_name = self._school_name_for_signup(audience, organization_name)
@@ -71,8 +74,14 @@ class WebsiteSignupView(View):
                 lead.status = Lead.Status.NEW
             lead.save()
 
-        messages.success(request, "Thanks. We saved your request and the Clear Code Reading team can see it in the admin portal.")
-        return redirect("/?signup=thanks#top")
+        messages.success(request, "Thanks. Your request is with the ClearCode Reading team, and we’ll follow up about next steps.")
+        return redirect(self._redirect_target(request, "thanks"))
+
+    @staticmethod
+    def _redirect_target(request, result):
+        if request.POST.get("redirect_to") == "/contact/":
+            return f"/contact/?signup={result}#consultation-form"
+        return f"/?signup={result}#top"
 
     @staticmethod
     def _clean_positive_int(value):

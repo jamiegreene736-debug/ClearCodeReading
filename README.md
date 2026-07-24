@@ -74,8 +74,10 @@ docker compose run --rm web python manage.py createsuperuser
 
 Useful URLs:
 
+- Marketing homepage: `http://localhost:8000/`
+- Family consultation: `http://localhost:8000/contact/`
 - Admin: `http://localhost:8000/admin/`
-- Browser survey demo: `http://localhost:8000/assessment/`
+- Optional browser survey: `http://localhost:8000/assessment/`
 - Swagger docs: `http://localhost:8000/api/docs/`
 - ReDoc: `http://localhost:8000/api/redoc/`
 - OpenAPI schema: `http://localhost:8000/api/schema/`
@@ -191,9 +193,16 @@ Celery tasks notify evaluators when human review is needed and send parent progr
 
 ## Reading Survey
 
-The Reading Survey is the child-friendly digital assessment that starts the Clear Code Reading placement flow. It creates an `Assessment`, serves progressive questions, saves answers as `ChildAssessmentResponse` records, computes a reading-age estimate, and moves the assessment into `human_review` so a real evaluator can add notes before final placement.
+The Reading Survey is a child-friendly, education-side snapshot across reading skills. It can
+create an `Assessment`, serve progressive questions, save answers as
+`ChildAssessmentResponse` records, compute a reading-age estimate, and move the assessment into
+`human_review`. It is supporting context only: methodology-specific evidence and specialist
+review determine PFR or OG+ placement.
 
-The current browser-based assessment experience is served at `/assessment/`. It is a standalone marketing/demo survey. The database-backed assessment workflow is available through the `/api/v1/assessments/` endpoints below.
+The browser experience at `/assessment/` is an optional, secondary marketing survey. The
+primary public journey is the specialist-intervention consultation at `/contact/`. The
+database-backed assessment workflow is available through the `/api/v1/assessments/` endpoints
+below.
 
 Seed the starter question bank:
 

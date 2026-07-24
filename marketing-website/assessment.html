@@ -3,8 +3,8 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Free Reading Survey | Clear Code Reading</title>
-  <meta name="description" content="Take the Clear Code Reading digital assessment to estimate reading age and key reading KPIs across phonics, sight words, fluency, vocabulary, and comprehension.">
+  <title>Optional Reading Survey | ClearCode Reading</title>
+  <meta name="description" content="Try an optional family reading survey across foundational skills. This education-side snapshot is not a diagnosis or structured-literacy placement.">
   <meta name="theme-color" content="#00B8A9">
   <link rel="icon" href="/assets/logo/clear-code-reading-icon.png" type="image/png">
   <script src="https://cdn.tailwindcss.com"></script>
@@ -57,10 +57,11 @@
         <img src="/assets/logo/clear-code-reading-logo.png" alt="Clear Code Reading" class="h-12 w-auto max-w-[220px] object-contain sm:max-w-[300px]">
       </a>
       <div class="flex items-center gap-2 sm:gap-3">
-        <a href="/#how" class="hidden rounded-full px-4 py-2 text-sm font-black text-navySoft/70 transition hover:text-tealWarm md:inline-flex">How it works</a>
-        <a href="/#families" class="hidden rounded-full px-4 py-2 text-sm font-black text-navySoft/70 transition hover:text-tealWarm lg:inline-flex">Families</a>
-        <a href="/#schools" class="hidden rounded-full px-4 py-2 text-sm font-black text-navySoft/70 transition hover:text-tealWarm lg:inline-flex">Schools</a>
-        <a href="/login/" class="focus-ring rounded-full bg-coral px-5 py-3 text-sm font-extrabold text-white shadow-lg shadow-coral/25 transition hover:-translate-y-0.5 hover:bg-[#ff5757]">Login</a>
+        <a href="/how-it-works/" class="hidden rounded-full px-4 py-2 text-sm font-black text-navySoft/70 transition hover:text-tealWarm md:inline-flex">How it works</a>
+        <a href="/families/" class="hidden rounded-full px-4 py-2 text-sm font-black text-navySoft/70 transition hover:text-tealWarm lg:inline-flex">For Families</a>
+        <a href="/approach/" class="hidden rounded-full px-4 py-2 text-sm font-black text-navySoft/70 transition hover:text-tealWarm lg:inline-flex">Our Approach</a>
+        <a href="/login/" class="hidden rounded-full px-4 py-2 text-sm font-black text-navySoft/70 transition hover:text-tealWarm sm:inline-flex">Login</a>
+        <a href="/contact/" class="focus-ring rounded-full bg-tealWarm px-4 py-3 text-sm font-extrabold text-white shadow-lg shadow-tealWarm/25 transition hover:-translate-y-0.5 hover:bg-[#00a699] sm:px-5">Consultation</a>
       </div>
     </nav>
   </header>
@@ -68,10 +69,10 @@
   <main class="mx-auto max-w-7xl px-4 py-10 sm:px-6 lg:px-8">
     <section class="grid gap-8 lg:grid-cols-[.9fr_1.1fr] lg:items-start">
       <aside class="order-2 rounded-[2rem] bg-white/88 p-6 shadow-2xl shadow-tealWarm/10 ring-1 ring-tealWarm/10 lg:order-1 lg:sticky lg:top-28">
-        <p class="text-sm font-black uppercase tracking-[0.18em] text-coral">Free digital assessment</p>
-        <h1 class="mt-3 text-3xl font-black leading-tight sm:text-5xl">Find your child’s reading age and skill map.</h1>
+        <p class="text-sm font-black uppercase tracking-[0.18em] text-coral">Optional family reading survey</p>
+        <h1 class="mt-3 text-3xl font-black leading-tight sm:text-5xl">Explore a snapshot of your child’s reading skills.</h1>
         <p class="mt-5 text-lg leading-8 text-navySoft/70">
-          This playful survey estimates reading level across the KPIs that matter: phonemic awareness, phonics, sight words, fluency, vocabulary, comprehension, writing readiness, and reading confidence.
+          This short survey explores phonemic awareness, phonics, sight words, fluency, vocabulary, comprehension, writing readiness, and reading confidence.
         </p>
         <div class="mt-6 grid gap-3 text-sm font-bold text-navySoft/70 sm:grid-cols-2 lg:grid-cols-1 xl:grid-cols-2">
           <span class="rounded-2xl bg-mist px-4 py-3">8-10 minutes</span>
@@ -80,7 +81,7 @@
           <span class="rounded-2xl bg-white px-4 py-3 ring-1 ring-navySoft/10">Human review ready</span>
         </div>
         <p class="mt-6 rounded-2xl bg-navySoft px-4 py-3 text-sm leading-6 text-white/85">
-          This is a screening estimate, not a diagnosis. Clear Code Reading pairs the digital result with a real human evaluator for final placement.
+          This is an education-side snapshot—not a diagnosis and not a PFR or OG+ placement instrument. A trained specialist uses methodology-specific evidence for placement.
         </p>
       </aside>
 
@@ -117,6 +118,22 @@
       </section>
     </section>
   </main>
+
+  <footer class="bg-navySoft px-4 py-10 text-white sm:px-6 lg:px-8">
+    <div class="mx-auto flex max-w-7xl flex-col gap-6 md:flex-row md:items-center md:justify-between">
+      <div>
+        <span class="logo-plate inline-flex rounded-2xl p-2"><img src="/assets/logo/clear-code-reading-logo.png" alt="ClearCode Reading" class="h-11 w-auto max-w-[220px] object-contain"></span>
+        <p class="mt-3 max-w-xl text-sm text-white/70">Specialist-led structured literacy intervention with clear parent visibility.</p>
+      </div>
+      <div class="flex flex-wrap gap-5 text-sm font-bold text-white/75">
+        <a href="/how-it-works/" class="hover:text-sunny">How it works</a>
+        <a href="/families/" class="hover:text-sunny">For Families</a>
+        <a href="/approach/" class="hover:text-sunny">Our Approach</a>
+        <a href="/privacy/" class="hover:text-sunny">Privacy</a>
+        <a href="/contact/" class="hover:text-sunny">Contact</a>
+      </div>
+    </div>
+  </footer>
 
   <template id="intro-template">
     <div class="grid gap-5">
@@ -568,9 +585,9 @@
           <input type="hidden" name="notes" value="${escapeAttribute(`Assessment follow-up requested for ${name}. Estimated reading age: ${levelText}. Best next step: ${growthList[0]}.`)}">
           <div class="flex flex-col gap-2 md:flex-row md:items-start md:justify-between">
             <div>
-              <p class="text-sm font-black uppercase tracking-[0.16em] text-coral">Human evaluator review</p>
-              <h4 class="mt-2 text-2xl font-black">Want a real evaluator to review this?</h4>
-              <p class="mt-2 text-sm leading-6 text-navySoft/65">Enter the parent or guardian contact info and a Clear Code Reading human evaluator can follow up.</p>
+              <p class="text-sm font-black uppercase tracking-[0.16em] text-coral">Specialist consultation</p>
+              <h4 class="mt-2 text-2xl font-black">Want to discuss this with a specialist?</h4>
+              <p class="mt-2 text-sm leading-6 text-navySoft/65">Enter the parent or guardian contact info and the ClearCode Reading team can follow up about a consultation.</p>
             </div>
             <span class="rounded-full bg-mist px-4 py-2 text-sm font-black text-tealWarm">Recommended</span>
           </div>
@@ -583,7 +600,7 @@
               <span class="text-sm font-black text-navySoft/65">Email address</span>
               <input class="mt-2 w-full rounded-2xl border border-navySoft/15 px-4 py-3 font-bold focus:border-tealWarm focus:outline-none" type="email" name="email" autocomplete="email" required>
             </label>
-            <button class="focus-ring self-end rounded-full bg-coral px-6 py-3 font-black text-white shadow-lg shadow-coral/20 transition hover:-translate-y-0.5 hover:bg-[#ff5757]" type="submit">Request review</button>
+            <button class="focus-ring self-end rounded-full bg-coral px-6 py-3 font-black text-white shadow-lg shadow-coral/20 transition hover:-translate-y-0.5 hover:bg-[#ff5757]" type="submit">Request consultation</button>
           </div>
         </form>
 
@@ -598,7 +615,7 @@
           </div>
           <div class="rounded-3xl bg-mist p-5">
             <p class="text-sm font-black text-navySoft/55">Review status</p>
-            <p class="mt-2 text-xl font-black text-tealWarm">Ready for human evaluator</p>
+            <p class="mt-2 text-xl font-black text-tealWarm">Ready to discuss</p>
           </div>
         </div>
 
@@ -622,7 +639,7 @@
 
           <div class="rounded-3xl bg-white p-5 shadow-sm ring-1 ring-navySoft/10">
             <h4 class="text-xl font-black">Personalized recommendation</h4>
-            <p class="mt-3 text-navySoft/70">Clear Code Reading would place ${name} into a lesson path that starts with:</p>
+            <p class="mt-3 text-navySoft/70">A specialist may explore these instructional priorities with ${name}:</p>
             <ul class="mt-4 space-y-3">
               ${growthList.map(item => `<li class="rounded-2xl bg-blush px-4 py-3 font-bold text-navySoft">${item}</li>`).join('')}
             </ul>
@@ -635,8 +652,8 @@
 
         <div class="mt-6 rounded-3xl bg-navySoft p-5 text-white">
           <h4 class="text-xl font-black">What happens next?</h4>
-          <p class="mt-3 leading-7 text-white/80">A human evaluator can review the responses, confirm the placement, and build the exact sequence of phonics, sight word, fluency, and comprehension lessons. This keeps technology helpful without removing the human touch.</p>
-          <a href="/" class="mt-5 inline-flex rounded-full bg-white px-6 py-3 font-black text-tealWarm transition hover:-translate-y-0.5">Return to Clear Code Reading</a>
+          <p class="mt-3 leading-7 text-white/80">A trained specialist can review the broader reading history and use methodology-specific evidence to determine whether PFR or OG+ placement is appropriate. This survey alone does not make that decision.</p>
+          <a href="/contact/" class="mt-5 inline-flex rounded-full bg-white px-6 py-3 font-black text-tealWarm transition hover:-translate-y-0.5">Schedule a consultation</a>
         </div>
       `;
     }
