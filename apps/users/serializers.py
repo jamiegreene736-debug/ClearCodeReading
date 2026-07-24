@@ -1,9 +1,18 @@
 from rest_framework import serializers
+from rest_framework.exceptions import PermissionDenied
 
 from apps.api.permissions import has_coppa_consent
 from apps.api.serializers import SchoolSummarySerializer, UserSummarySerializer
 from apps.schools.models import School
-from apps.users.models import AuditLog, ChildProfile, ConsentLog, CustomUser, GuardianRelationship, Profile
+from apps.users.models import (
+    AuditLog,
+    ChildProfile,
+    ConsentLog,
+    ConsentRecord,
+    CustomUser,
+    GuardianRelationship,
+    Profile,
+)
 
 
 class ProfileSerializer(serializers.ModelSerializer):
@@ -260,6 +269,73 @@ class ConsentLogSerializer(serializers.ModelSerializer):
         if not attrs.get("guardian") or not attrs.get("child"):
             raise serializers.ValidationError("Consent logs must be tied to a guardian relationship.")
         return attrs
+
+
+class ConsentRecordSerializer(serializers.ModelSerializer):
+    child_id = serializers.PrimaryKeyRelatedField(
+        queryset=ChildProfile.objects.filter(is_deleted=False),
+        source="child",
+    )
+    center_id = serializers.IntegerField(read_only=True)
+    granted_by_id = serializers.IntegerField(read_only=True)
+    created_by_id = serializers.IntegerField(read_only=True)
+    is_effective = serializers.BooleanField(read_only=True)
+
+    class Meta:
+        model = ConsentRecord
+        fields = [
+            "id",
+            "child_id",
+            "center_id",
+            "consent_type",
+            "status",
+            "version",
+            "granted_by_id",
+            "granted_at",
+            "expires_at",
+            "evidence_notes",
+            "source_document_ref",
+            "created_by_id",
+            "is_effective",
+            "created_at",
+            "updated_at",
+        ]
+        read_only_fields = [
+            "id",
+            "center_id",
+            "version",
+            "granted_by_id",
+            "granted_at",
+            "created_by_id",
+            "is_effective",
+            "created_at",
+            "updated_at",
+        ]
+
+    def validate(self, attrs):
+        child = attrs["child"]
+        if child.school_id is None:
+            raise serializers.ValidationError({"child_id": "The child must belong to a center."})
+        request = self.context["request"]
+        from apps.api.permissions import has_school_membership
+        from apps.schools.models import SchoolMembership
+
+        if not has_school_membership(
+            request.user,
+            child.school,
+            roles=[SchoolMembership.Role.OWNER, SchoolMembership.Role.ADMIN],
+        ):
+            raise PermissionDenied("You cannot manage consent for this center.")
+        return attrs
+
+    def create(self, validated_data):
+        request = self.context["request"]
+        child = validated_data["child"]
+        validated_data["center"] = child.school
+        validated_data["created_by"] = request.user
+        if validated_data["status"] == ConsentRecord.Status.GRANTED:
+            validated_data["granted_by"] = request.user
+        return super().create(validated_data)
 
 
 class AuditLogSerializer(serializers.ModelSerializer):

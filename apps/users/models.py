@@ -1,5 +1,7 @@
 from django.contrib.auth.models import AbstractUser
-from django.db import models
+from django.core.exceptions import ValidationError
+from django.db import models, transaction
+from django.db.models import Max
 from django.db.models.signals import post_save
 from django.dispatch import receiver
 from django.utils import timezone
@@ -155,12 +157,113 @@ class ChildProfile(TimestampedModel, SoftDeleteModel):
     def idea_services_authorized(self):
         if self.iep_status != self.IEPStatus.ACTIVE:
             return True
+        if self.pk:
+            consent_record = self.consent_records.filter(
+                consent_type=ConsentRecord.ConsentType.IDEA_IEP,
+                is_deleted=False,
+            ).order_by("-version", "-created_at").first()
+            if consent_record is not None:
+                return consent_record.is_effective
         return (
             self.idea_parent_consent_status == self.ApprovalStatus.APPROVED
             and self.idea_parent_consented_at is not None
             and self.iep_team_approval_status == self.ApprovalStatus.APPROVED
             and self.iep_team_approved_at is not None
         )
+
+
+class ConsentRecord(TimestampedModel, SoftDeleteModel):
+    """Append-only formal authorization history for center-scoped services."""
+
+    class ConsentType(models.TextChoices):
+        GENERAL = "general", "General"
+        IDEA_IEP = "idea_iep", "IDEA / IEP"
+        DATA_USE = "data_use", "Data Use"
+        OTHER = "other", "Other"
+
+    class Status(models.TextChoices):
+        GRANTED = "granted", "Granted"
+        DENIED = "denied", "Denied"
+        REVOKED = "revoked", "Revoked"
+        PENDING = "pending", "Pending"
+
+    child = models.ForeignKey(ChildProfile, on_delete=models.PROTECT, related_name="consent_records")
+    center = models.ForeignKey("schools.School", on_delete=models.PROTECT, related_name="consent_records")
+    consent_type = models.CharField(max_length=24, choices=ConsentType.choices, db_index=True)
+    status = models.CharField(max_length=16, choices=Status.choices, db_index=True)
+    version = models.PositiveIntegerField(editable=False)
+    granted_by = models.ForeignKey(
+        CustomUser,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="consent_records_granted",
+    )
+    granted_at = models.DateTimeField(null=True, blank=True)
+    expires_at = models.DateTimeField(null=True, blank=True)
+    evidence_notes = models.TextField(blank=True)
+    source_document_ref = models.CharField(max_length=255, blank=True)
+    created_by = models.ForeignKey(
+        CustomUser,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="consent_records_created",
+    )
+
+    class Meta:
+        ordering = ["-created_at", "-version"]
+        constraints = [
+            models.UniqueConstraint(
+                fields=["child", "consent_type", "version"],
+                name="unique_child_consent_type_version",
+            ),
+        ]
+        indexes = [
+            models.Index(fields=["center", "consent_type", "status"]),
+            models.Index(fields=["child", "consent_type", "-version"]),
+            models.Index(fields=["expires_at", "status"]),
+            models.Index(fields=["is_deleted", "created_at"]),
+        ]
+
+    @property
+    def is_effective(self):
+        if self.status != self.Status.GRANTED or self.granted_at is None or self.is_deleted:
+            return False
+        return self.expires_at is None or self.expires_at > timezone.now()
+
+    def clean(self):
+        errors = {}
+        if self.child_id and self.child.school_id != self.center_id:
+            errors["center"] = "Consent records must use the child's center."
+        if self.status == self.Status.GRANTED and self.granted_at is None:
+            errors["granted_at"] = "Granted consent requires a grant timestamp."
+        if self.expires_at and self.granted_at and self.expires_at <= self.granted_at:
+            errors["expires_at"] = "Consent expiration must be after the grant timestamp."
+        if errors:
+            raise ValidationError(errors)
+
+    def save(self, *args, **kwargs):
+        if self.pk:
+            raise ValueError("Consent records are append-only; create a new version.")
+        if self.status == self.Status.GRANTED and self.granted_at is None:
+            self.granted_at = timezone.now()
+        if not self.version:
+            with transaction.atomic():
+                ChildProfile.objects.select_for_update().get(pk=self.child_id)
+                latest_version = (
+                    type(self).objects.filter(child_id=self.child_id, consent_type=self.consent_type)
+                    .aggregate(value=Max("version"))["value"]
+                    or 0
+                )
+                self.version = latest_version + 1
+                self.full_clean()
+                return super().save(*args, **kwargs)
+        self.full_clean()
+        return super().save(*args, **kwargs)
+
+    def __str__(self):
+        return f"{self.child} {self.get_consent_type_display()} v{self.version}: {self.get_status_display()}"
 
 
 class GuardianRelationship(TimestampedModel, SoftDeleteModel):

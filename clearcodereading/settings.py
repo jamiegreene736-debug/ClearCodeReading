@@ -46,6 +46,7 @@ SHARED_APPS = [
     "apps.scheduling.apps.SchedulingConfig",
     "apps.assessments",
     "apps.progress",
+    "apps.outcomes",
     "apps.api",
 ]
 
@@ -62,6 +63,7 @@ TENANT_APPS = [
     "apps.scheduling.apps.SchedulingConfig",
     "apps.assessments",
     "apps.progress",
+    "apps.outcomes",
     "apps.api",
 ]
 
@@ -242,6 +244,7 @@ DECISION_SUPPORT_LEADERSHIP_ROLES = [
     for role in os.getenv("DECISION_SUPPORT_LEADERSHIP_ROLES", "owner,admin").split(",")
     if role.strip()
 ]
+OUTCOMES_MIN_COHORT_SIZE = max(2, int(os.getenv("OUTCOMES_MIN_COHORT_SIZE", "5")))
 SCHEDULER_ADAPTER = os.getenv("SCHEDULER_ADAPTER", "")
 ACUITY_USER_ID = os.getenv("ACUITY_USER_ID", "")
 ACUITY_API_KEY = os.getenv("ACUITY_API_KEY", "")

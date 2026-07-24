@@ -1,15 +1,17 @@
 from django.db import transaction
 from django.utils import timezone
-from rest_framework import serializers, status, viewsets
+from rest_framework import mixins, serializers, status, viewsets
 from rest_framework.decorators import action
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
 
-from apps.users.models import AuditLog, ChildProfile, ConsentLog, CustomUser, GuardianRelationship, Profile
+from apps.api.permissions import IsSchoolAdmin
+from apps.users.models import AuditLog, ChildProfile, ConsentLog, ConsentRecord, CustomUser, GuardianRelationship, Profile
 from apps.users.serializers import (
     AuditLogSerializer,
     ChildProfileSerializer,
     ConsentLogSerializer,
+    ConsentRecordSerializer,
     CustomUserSerializer,
     GuardianRelationshipSerializer,
     ProfileSerializer,
@@ -188,6 +190,42 @@ class ConsentLogViewSet(viewsets.ReadOnlyModelViewSet):
         if getattr(self.request.user, "role", None) == CustomUser.Role.GUARDIAN:
             queryset = queryset.filter(guardian=self.request.user)
         return queryset
+
+
+class ConsentRecordViewSet(
+    mixins.CreateModelMixin,
+    mixins.ListModelMixin,
+    mixins.RetrieveModelMixin,
+    viewsets.GenericViewSet,
+):
+    serializer_class = ConsentRecordSerializer
+    permission_classes = [IsAuthenticated, IsSchoolAdmin]
+
+    def get_queryset(self):
+        queryset = ConsentRecord.objects.filter(is_deleted=False).select_related("child", "center")
+        if self.request.user.is_superuser or self.request.user.role == CustomUser.Role.SUPER_ADMIN:
+            return queryset
+        return queryset.filter(
+            center__memberships__user=self.request.user,
+            center__memberships__is_deleted=False,
+            center__memberships__role__in=["owner", "admin"],
+        ).distinct()
+
+    def perform_create(self, serializer):
+        record = serializer.save()
+        AuditLog.objects.create(
+            actor=self.request.user,
+            action="consent_record.created",
+            entity_type="users.ConsentRecord",
+            entity_id=str(record.id),
+            after={
+                "child_id": record.child_id,
+                "center_id": record.center_id,
+                "consent_type": record.consent_type,
+                "status": record.status,
+                "version": record.version,
+            },
+        )
 
 
 class AuditLogViewSet(viewsets.ReadOnlyModelViewSet):

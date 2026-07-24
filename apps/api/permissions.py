@@ -169,7 +169,7 @@ class IsSchoolAdmin(BasePermission):
         )
 
     def has_object_permission(self, request, view, obj):
-        school = getattr(obj, "school", obj)
+        school = getattr(obj, "school", None) or getattr(obj, "center", obj)
         return has_school_membership(
             request.user,
             school,

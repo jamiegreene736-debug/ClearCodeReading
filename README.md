@@ -372,6 +372,24 @@ Full flow test checklist:
 
 Clear Code Reading treats child learning data as consent-gated.
 
+### Outcomes Data Asset
+
+Cap 5 outcome reporting lives in `apps.outcomes`. It aggregates existing
+sessions, placements, progress, and mastery records into immutable,
+de-identified `DeIdentifiedOutcomeSnapshot` rows by center key, methodology,
+grade band, and time window. The reporting API returns grouped snapshots only;
+it deliberately excludes child PII, guardian data, specialist names, specialist
+emails, and child-level rows.
+
+Run the first aggregation with:
+
+```bash
+.venv/bin/python manage.py aggregate_outcomes --window-type quarter --aggregate-version v1
+```
+
+See `docs/outcomes_data_asset.md` for the stored metrics, excluded data, API
+surface, and an example snapshot payload.
+
 ### Cap 2 decision support
 
 `apps.decision_support` generates explainable, advisory low-growth flags and
@@ -385,11 +403,16 @@ configuration, and example flag and prediction payloads.
 
 - Parent/guardian registration creates a child profile and guardian relationship.
 - Consent logs track consent type, status, version, source, IP, user agent, and expiry.
+- Formal `ConsentRecord` history is the IDEA/IEP authorization source of truth;
+  legacy child-profile approvals remain a fallback only when no record exists.
 - Assessment, progress, mastery, and personalized lesson flows enforce active COPPA consent.
 - Revoked or expired consent blocks sensitive child learning updates.
 - Audit logs capture consent and assessment-status events for compliance review.
 
 Production deployments should connect real email/SMS providers, keep `PUBLIC_APP_URL` accurate, store secrets outside git, and review data-retention rules with counsel.
+
+See `docs/consent_records.md` for the formal IDEA/IEP consent model, backfill,
+center-scoped API, and enforcement behavior.
 
 ## Async Workers
 

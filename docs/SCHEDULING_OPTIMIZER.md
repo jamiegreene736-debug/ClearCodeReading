@@ -75,6 +75,11 @@ ACUITY_APPOINTMENT_TYPE_ID=...
 ACUITY_CALENDAR_IDS={"44": 123456}
 ```
 
+Jane App can be added behind the same `SchedulerAdapter` contract without changing
+booking or optimizer code. Production scheduler credentials are configured through
+environment variables or the deployment secrets store; never commit them. No live
+Jane App or Acuity credential is required for local development or automated tests.
+
 Use `POST /api/v1/schedule-bookings/<id>/force-sync/` after approval.
 Failures persist as `sync_status=error`, `sync_error`, `sync_attempts`, and
 `last_sync_at` so operations can retry. Inbound reconciliation only updates a local
