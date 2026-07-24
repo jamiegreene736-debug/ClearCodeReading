@@ -1,7 +1,18 @@
 from django.contrib import admin
 from django.utils import timezone
 
-from apps.curriculum.models import ChildLessonAssignment, Lesson, LessonTemplate, Skill, TeacherLessonTemplate, TeachingAid
+from apps.curriculum.models import (
+    ChildLessonAssignment,
+    Curriculum,
+    CurriculumSequence,
+    Lesson,
+    LessonTemplate,
+    Skill,
+    StudentPlacement,
+    StudentPlacementOverride,
+    TeacherLessonTemplate,
+    TeachingAid,
+)
 
 
 class TeachingAidInline(admin.TabularInline):
@@ -31,6 +42,71 @@ class SkillAdmin(admin.ModelAdmin):
     list_filter = ("domain", "grade_band", "is_deleted", "created_at")
     search_fields = ("code", "name", "description")
     filter_horizontal = ("prerequisites",)
+    readonly_fields = ("created_at", "updated_at", "deleted_at")
+    actions = (soft_delete_curriculum,)
+
+
+@admin.register(Curriculum)
+class CurriculumAdmin(admin.ModelAdmin):
+    list_display = ("name", "code", "version", "center", "is_active", "revision", "is_deleted")
+    list_filter = ("code", "version", "is_active", "is_deleted", "center")
+    search_fields = ("name", "center__name")
+    autocomplete_fields = ("center", "created_by", "updated_by")
+    readonly_fields = ("created_at", "updated_at", "deleted_at")
+    actions = (soft_delete_curriculum,)
+
+
+@admin.register(CurriculumSequence)
+class CurriculumSequenceAdmin(admin.ModelAdmin):
+    list_display = (
+        "code",
+        "title",
+        "curriculum",
+        "level",
+        "lesson_number",
+        "concept_number",
+        "sequence_order",
+        "is_deleted",
+    )
+    list_filter = ("curriculum__code", "level", "position_type", "center", "is_deleted")
+    search_fields = ("code", "title", "description", "curriculum__name")
+    autocomplete_fields = ("center", "curriculum", "prerequisites", "created_by", "updated_by")
+    readonly_fields = ("created_at", "updated_at", "deleted_at")
+    actions = (soft_delete_curriculum,)
+
+
+@admin.register(StudentPlacement)
+class StudentPlacementAdmin(admin.ModelAdmin):
+    list_display = ("child", "curriculum", "current_position", "center", "placed_at", "is_active", "is_deleted")
+    list_filter = ("curriculum__code", "is_active", "center", "is_deleted")
+    search_fields = ("child__first_name", "child__last_name", "methodology_rationale")
+    autocomplete_fields = (
+        "center",
+        "child",
+        "curriculum",
+        "current_position",
+        "placed_by",
+        "created_by",
+        "updated_by",
+    )
+    readonly_fields = ("created_at", "updated_at", "deleted_at")
+    actions = (soft_delete_curriculum,)
+
+
+@admin.register(StudentPlacementOverride)
+class StudentPlacementOverrideAdmin(admin.ModelAdmin):
+    list_display = ("placement", "previous_position", "new_position", "specialist", "overridden_at", "center")
+    list_filter = ("center", "overridden_at", "is_deleted")
+    search_fields = ("placement__child__first_name", "placement__child__last_name", "rationale")
+    autocomplete_fields = (
+        "center",
+        "placement",
+        "previous_position",
+        "new_position",
+        "specialist",
+        "created_by",
+        "updated_by",
+    )
     readonly_fields = ("created_at", "updated_at", "deleted_at")
     actions = (soft_delete_curriculum,)
 

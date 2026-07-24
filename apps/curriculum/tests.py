@@ -1,6 +1,15 @@
 from django.test import SimpleTestCase
 
-from apps.curriculum.models import ChildLessonAssignment, LessonTemplate, Skill, TeachingAid
+from apps.curriculum.models import (
+    ChildLessonAssignment,
+    Curriculum,
+    CurriculumSequence,
+    LessonTemplate,
+    Skill,
+    StudentPlacement,
+    StudentPlacementOverride,
+    TeachingAid,
+)
 from apps.curriculum.serializers import ChildLessonAssignmentSerializer, LessonSerializer, LessonTemplateSerializer, SkillSerializer
 
 
@@ -27,3 +36,20 @@ class CurriculumTests(SimpleTestCase):
     def test_lesson_assignment_serializers_include_portal_fields(self):
         self.assertIn("activities", LessonTemplateSerializer().fields)
         self.assertIn("teacher_notes", ChildLessonAssignmentSerializer().fields)
+
+    def test_legacy_skill_remains_available(self):
+        self.assertEqual(Skill.__doc__, "Legacy generic skill taxonomy retained for existing API compatibility.")
+
+    def test_curriculum_choices_are_methodology_specific(self):
+        self.assertEqual(set(Curriculum.Code.values), {"pfr", "og_plus"})
+
+    def test_sequence_supports_pfr_and_og_coordinates(self):
+        field_names = {field.name for field in CurriculumSequence._meta.get_fields()}
+        self.assertTrue({"level", "lesson_number", "concept_number", "prerequisites"}.issubset(field_names))
+
+    def test_placement_has_explicit_override_history(self):
+        self.assertEqual(
+            StudentPlacementOverride._meta.get_field("placement").remote_field.related_name,
+            "override_history",
+        )
+        self.assertIn("methodology_rationale", {field.name for field in StudentPlacement._meta.get_fields()})
