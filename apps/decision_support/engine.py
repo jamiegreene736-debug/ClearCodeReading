@@ -339,6 +339,7 @@ class DeterministicDecisionSupportEngine:
             position=trigger_session.curriculum_position,
             flag_code=result.code,
             status=GrowthFlag.Status.OPEN,
+            is_deleted=False,
             defaults={
                 "trigger_session": trigger_session,
                 "severity": result.severity,
@@ -466,7 +467,11 @@ class DeterministicDecisionSupportEngine:
             "observed_weekly_session_rate": round(observed_weekly_rate, 2),
             "planning_weekly_session_rate": round(weekly_rate, 2),
         }
-        MilestonePrediction.objects.filter(child=placement.child, is_current=True).update(is_current=False)
+        MilestonePrediction.objects.filter(
+            child=placement.child,
+            is_current=True,
+            is_deleted=False,
+        ).update(is_current=False)
         return MilestonePrediction.objects.create(
             center=placement.center,
             child=placement.child,

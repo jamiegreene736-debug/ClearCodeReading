@@ -222,7 +222,7 @@ class NotificationService:
         flag = (
             GrowthFlag.objects.select_related("child", "position", "center")
             .prefetch_related("routed_to")
-            .filter(pk=flag_id, status=GrowthFlag.Status.OPEN)
+            .filter(pk=flag_id, status=GrowthFlag.Status.OPEN, is_deleted=False)
             .first()
         )
         if flag is None:

@@ -1,41 +1,115 @@
 from django.db import transaction
 from django.db.models import Q
 from django.utils import timezone
-from rest_framework import status, viewsets
+from rest_framework import status
 from rest_framework.decorators import action
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
+from rest_framework.viewsets import ReadOnlyModelViewSet
 
 from apps.api.permissions import IsEvaluator, user_can_evaluate_child
 from apps.decision_support.interfaces import get_decision_support_engine
-from apps.decision_support.models import GrowthFlag, MilestonePrediction
-from apps.decision_support.serializers import (
+from apps.sessions.models import Session
+from apps.users.models import AuditLog, ChildProfile, CustomUser
+
+from .models import (
+    Flag,
+    GrowthFlag,
+    Milestone,
+    MilestonePrediction,
+    OutcomeAggregate,
+    Prediction,
+)
+from .permissions import IsLeadership
+from .serializers import (
+    FlagSerializer,
     AcknowledgeFlagSerializer,
     EvaluateSessionSerializer,
     GeneratePredictionSerializer,
     GrowthFlagSerializer,
+    MilestoneSerializer,
     MilestonePredictionSerializer,
+    OutcomeAggregateSerializer,
+    PredictionSerializer,
     ResolveFlagSerializer,
 )
-from apps.sessions.models import Session
-from apps.users.models import AuditLog, ChildProfile, CustomUser
 
 
-def _center_scope(user):
+def _accessible_centers(user):
     if not getattr(user, "is_authenticated", False):
         return Q(pk__in=[])
-    if getattr(user, "is_superuser", False) or getattr(user, "role", None) == CustomUser.Role.SUPER_ADMIN:
+    if user.is_superuser or user.role == CustomUser.Role.SUPER_ADMIN:
         return Q()
     return Q(center__memberships__user=user, center__memberships__is_deleted=False)
 
 
-class GrowthFlagViewSet(viewsets.ReadOnlyModelViewSet):
+class FlagViewSet(ReadOnlyModelViewSet):
+    serializer_class = FlagSerializer
+    permission_classes = [IsAuthenticated, IsEvaluator]
+
+    def get_queryset(self):
+        return (
+            Flag.objects.filter(is_deleted=False)
+            .filter(_accessible_centers(self.request.user))
+            .select_related(
+                "center",
+                "child",
+                "related_session",
+                "curriculum_position",
+                "routed_to",
+                "acknowledged_by",
+            )
+            .distinct()
+        )
+
+
+class PredictionViewSet(ReadOnlyModelViewSet):
+    serializer_class = PredictionSerializer
+    permission_classes = [IsAuthenticated, IsEvaluator]
+
+    def get_queryset(self):
+        return (
+            Prediction.objects.filter(is_deleted=False)
+            .filter(_accessible_centers(self.request.user))
+            .select_related("center", "child", "target_milestone", "target_position")
+            .distinct()
+        )
+
+
+class MilestoneViewSet(ReadOnlyModelViewSet):
+    serializer_class = MilestoneSerializer
+    permission_classes = [IsAuthenticated, IsEvaluator]
+
+    def get_queryset(self):
+        return (
+            Milestone.objects.filter(is_deleted=False)
+            .filter(_accessible_centers(self.request.user))
+            .select_related("center", "child", "curriculum_position")
+            .distinct()
+        )
+
+
+class OutcomeAggregateViewSet(ReadOnlyModelViewSet):
+    serializer_class = OutcomeAggregateSerializer
+    permission_classes = [IsAuthenticated, IsLeadership]
+
+    def get_queryset(self):
+        return (
+            OutcomeAggregate.objects.filter(is_deleted=False)
+            .filter(_accessible_centers(self.request.user))
+            .select_related("center")
+            .distinct()
+        )
+
+
+class GrowthFlagViewSet(ReadOnlyModelViewSet):
     serializer_class = GrowthFlagSerializer
     permission_classes = [IsAuthenticated, IsEvaluator]
 
     def get_queryset(self):
         queryset = (
-            GrowthFlag.objects.filter(_center_scope(self.request.user))
+            GrowthFlag.objects.filter(is_deleted=False)
+            .filter(_accessible_centers(self.request.user))
             .select_related(
                 "center",
                 "child",
@@ -132,7 +206,7 @@ class GrowthFlagViewSet(viewsets.ReadOnlyModelViewSet):
                 status=Session.Status.COMPLETED,
                 is_deleted=False,
             )
-            .filter(_center_scope(request.user))
+            .filter(_accessible_centers(request.user))
             .select_related("child")
             .distinct()
             .first()
@@ -143,13 +217,14 @@ class GrowthFlagViewSet(viewsets.ReadOnlyModelViewSet):
         return Response(GrowthFlagSerializer(flags, many=True, context=self.get_serializer_context()).data)
 
 
-class MilestonePredictionViewSet(viewsets.ReadOnlyModelViewSet):
+class MilestonePredictionViewSet(ReadOnlyModelViewSet):
     serializer_class = MilestonePredictionSerializer
     permission_classes = [IsAuthenticated, IsEvaluator]
 
     def get_queryset(self):
         queryset = (
-            MilestonePrediction.objects.filter(_center_scope(self.request.user))
+            MilestonePrediction.objects.filter(is_deleted=False)
+            .filter(_accessible_centers(self.request.user))
             .select_related(
                 "center",
                 "child",

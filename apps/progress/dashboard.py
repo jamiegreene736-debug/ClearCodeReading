@@ -93,7 +93,7 @@ def build_parent_dashboard(child):
 
     milestone = {"status": "not_available", "label": "Milestone estimate will appear after placement."}
     prediction = (
-        MilestonePrediction.objects.filter(child=child, is_current=True)
+        MilestonePrediction.objects.filter(child=child, is_current=True, is_deleted=False)
         .select_related("placement__current_position", "target_position")
         .first()
     )
