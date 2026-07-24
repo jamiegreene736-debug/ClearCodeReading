@@ -1,6 +1,35 @@
 # Clear Code Reading
 
-Clear Code Reading is a tenant-aware Django 5.1 API for school-based reading assessment, human evaluator review, COPPA consent, curriculum recommendations, learner progress tracking, and CRM onboarding.
+Clear Code Reading is a tenant-aware Django 5.1 platform for private reading-intervention
+centers. It preserves the digital Reading Survey and existing school workflows while
+adding a versioned instructional foundation for specialist-led intervention.
+
+## Phase 0 instructional foundation
+
+The authoritative methodology, placement, mastery, low-growth, and session-capture rules
+are frozen in [`docs/INSTRUCTIONAL_DESIGN.md`](docs/INSTRUCTIONAL_DESIGN.md).
+
+- Supported methodologies are Phonics for Reading (PFR) and IMSE Comprehensive
+  Orton-Gillingham Plus (OG+).
+- A child is actively placed in exactly one methodology; methodologies are not blended.
+- `Curriculum` and `CurriculumSequence` provide center-scoped, versioned skill graphs.
+- `StudentPlacement` records the current graph position and rationale;
+  `StudentPlacementOverride` preserves specialist changes.
+- `apps/sessions` contains model-only structured intervention capture and immutable
+  revision snapshots. Session APIs and specialist UI are intentionally deferred.
+- The legacy generic `Skill` model and digital Reading Survey remain intact.
+
+After migrating a center schema, seed its initial graph positions:
+
+```bash
+docker compose run --rm web python manage.py seed_instructional_graphs --center-schema=center_schema
+```
+
+To seed all active centers:
+
+```bash
+docker compose run --rm web python manage.py seed_instructional_graphs --all-centers
+```
 
 ## Stack
 
@@ -29,6 +58,12 @@ Run shared tenant migrations:
 
 ```bash
 docker compose run --rm web python manage.py migrate_schemas --shared
+```
+
+Run tenant migrations after shared migrations:
+
+```bash
+docker compose run --rm web python manage.py migrate_schemas --tenant
 ```
 
 Create an admin user:
@@ -344,6 +379,7 @@ apps/
   core/
   crm/
   curriculum/
+  sessions/
   notifications/
   progress/
   schools/

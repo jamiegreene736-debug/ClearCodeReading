@@ -1,5 +1,49 @@
 # Clear Code Reading Project Setup
 
+## Phase 0: instructional design and schema foundation
+
+The current product direction is a multi-center private reading-intervention platform.
+Phase 0 supports two versioned methodologies—Phonics for Reading (`pfr`) and IMSE
+Comprehensive Orton-Gillingham Plus (`og_plus`)—with one active methodology per child.
+The frozen instructional contract is in `docs/INSTRUCTIONAL_DESIGN.md`.
+
+New curriculum models:
+
+- `Curriculum`: center-scoped methodology and edition/version.
+- `CurriculumSequence`: ordered PFR lesson or OG+ concept, prerequisites, structured
+  targets, item-set requirements, and mastery criteria.
+- `StudentPlacement`: the child's active methodology, current position, evidence, and
+  rationale.
+- `StudentPlacementOverride`: append-only specialist change history.
+
+`Skill` is retained as the legacy taxonomy for existing assessment, progress, and
+mastery endpoints.
+
+The new `apps/sessions` package uses the Django app label `intervention_sessions` to
+avoid colliding with `django.contrib.sessions`. Phase 0 adds models and basic admin only:
+
+- `Session`: structured activities, item sets, accuracy, timing, error patterns,
+  observations, next direction, and home practice.
+- `SessionRevision`: immutable model snapshots created for every session save.
+
+Every new record has explicit `School` center context and timestamp/revision audit
+metadata. Curriculum and session apps are installed in both shared and tenant app lists
+to match the project's current django-tenants pattern; operational data is created inside
+the target center's tenant context.
+
+Migration and seed commands:
+
+```bash
+python manage.py makemigrations curriculum intervention_sessions
+python manage.py migrate_schemas --shared
+python manage.py migrate_schemas --tenant
+python manage.py seed_instructional_graphs --center-schema=<schema_name>
+```
+
+The seed command is idempotent. Use `--all-centers` instead of `--center-schema` to seed
+every active center. It creates the first 20 PFR Level A lesson positions and the first
+20 OG+ concept positions for schema version `2026.1`.
+
 ## `manage.py`
 ```python
 #!/usr/bin/env python
