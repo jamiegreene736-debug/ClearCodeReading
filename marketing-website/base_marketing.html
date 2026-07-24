@@ -1,0 +1,133 @@
+<!doctype html>
+<html lang="en" class="scroll-smooth">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{% block title %}ClearCode Reading{% endblock %}</title>
+  <meta name="description" content="{% block meta_description %}Specialist-led structured literacy intervention with precise placement and clear parent visibility.{% endblock %}">
+  <meta name="theme-color" content="#00B8A9">
+  <meta property="og:title" content="{% block og_title %}ClearCode Reading{% endblock %}">
+  <meta property="og:description" content="{% block og_description %}Structured literacy intervention with clear, measurable progress.{% endblock %}">
+  <meta property="og:type" content="website">
+  <link rel="icon" href="/assets/logo/clear-code-reading-icon.png" type="image/png">
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            tealWarm: '#00B8A9',
+            coral: '#FF6B6B',
+            navySoft: '#2C3E50',
+            sunny: '#FFD93D',
+            cream: '#FFF9EA',
+            mist: '#F0FFFC',
+            blush: '#FFF5F5'
+          },
+          boxShadow: {
+            glow: '0 24px 80px rgba(0, 184, 169, 0.22)',
+            coralGlow: '0 22px 70px rgba(255, 107, 107, 0.18)'
+          },
+          fontFamily: {
+            sans: ['Inter', 'Avenir Next', 'Nunito Sans', 'ui-sans-serif', 'system-ui', 'sans-serif']
+          }
+        }
+      }
+    };
+  </script>
+  <style>
+    .focus-ring:focus-visible { outline: 4px solid rgba(255, 217, 61, .78); outline-offset: 3px; }
+    .hero-wash {
+      background:
+        radial-gradient(circle at 10% 12%, rgba(255, 217, 61, .27), transparent 23%),
+        radial-gradient(circle at 88% 18%, rgba(255, 107, 107, .16), transparent 25%),
+        radial-gradient(circle at 60% 100%, rgba(0, 184, 169, .14), transparent 32%),
+        linear-gradient(135deg, #fffdf6 0%, #f0fffc 50%, #fff5f5 100%);
+    }
+    .dot-grid {
+      background-image: radial-gradient(rgba(44, 62, 80, .11) 1px, transparent 1px);
+      background-size: 22px 22px;
+    }
+    .logo-plate { background: linear-gradient(135deg, rgba(255,255,255,.98), rgba(255,249,234,.94)); }
+    summary::-webkit-details-marker { display: none; }
+  </style>
+  {% block extra_head %}{% endblock %}
+</head>
+<body class="bg-white font-sans text-navySoft antialiased">
+  <a href="#main-content" class="focus-ring fixed left-4 top-3 z-[70] -translate-y-24 rounded-full bg-navySoft px-5 py-3 font-black text-white transition focus:translate-y-0">Skip to content</a>
+  <header class="sticky inset-x-0 top-0 z-50 border-b border-tealWarm/10 bg-white/92 backdrop-blur-xl">
+    <nav class="mx-auto flex max-w-7xl items-center justify-between gap-3 px-4 py-3 sm:px-6 lg:px-8" aria-label="Main navigation">
+      <a href="/" class="focus-ring logo-plate flex shrink-0 items-center rounded-2xl px-2 py-1 shadow-sm ring-1 ring-navySoft/5">
+        <img src="/assets/logo/clear-code-reading-logo.png" alt="ClearCode Reading home" class="h-11 w-auto max-w-[150px] object-contain sm:h-12 sm:max-w-[220px]">
+      </a>
+      <div class="hidden items-center gap-5 text-sm font-black text-navySoft/75 xl:flex">
+        <a class="focus-ring rounded-lg transition hover:text-tealWarm" href="/how-it-works/">How it works</a>
+        <a class="focus-ring rounded-lg transition hover:text-tealWarm" href="/families/">For Families</a>
+        <a class="focus-ring rounded-lg transition hover:text-tealWarm" href="/approach/">Our Approach</a>
+        <a class="focus-ring rounded-lg transition hover:text-tealWarm" href="/privacy/">Privacy</a>
+        <a class="focus-ring rounded-lg transition hover:text-tealWarm" href="/contact/">Contact</a>
+      </div>
+      <div class="hidden shrink-0 items-center gap-2 sm:flex">
+        <a href="/login/" class="focus-ring rounded-full px-4 py-3 text-sm font-black text-navySoft/75 transition hover:bg-mist hover:text-tealWarm">Login</a>
+        <a href="/contact/" class="focus-ring rounded-full bg-tealWarm px-5 py-3 text-sm font-black text-white shadow-lg shadow-tealWarm/20 transition hover:-translate-y-0.5 hover:bg-[#00a699]">Schedule a consultation</a>
+      </div>
+      <details class="relative sm:hidden">
+        <summary class="focus-ring cursor-pointer list-none rounded-full bg-navySoft px-4 py-3 text-sm font-black text-white">Menu</summary>
+        <div class="absolute right-0 top-14 w-72 rounded-[2rem] bg-white p-4 shadow-2xl ring-1 ring-navySoft/10">
+          <div class="grid gap-1 text-sm font-black">
+            <a class="focus-ring rounded-xl px-4 py-3 hover:bg-mist" href="/how-it-works/">How it works</a>
+            <a class="focus-ring rounded-xl px-4 py-3 hover:bg-mist" href="/families/">For Families</a>
+            <a class="focus-ring rounded-xl px-4 py-3 hover:bg-mist" href="/approach/">Our Approach</a>
+            <a class="focus-ring rounded-xl px-4 py-3 hover:bg-mist" href="/privacy/">Privacy</a>
+            <a class="focus-ring rounded-xl px-4 py-3 hover:bg-mist" href="/contact/">Contact</a>
+            <a class="focus-ring rounded-xl px-4 py-3 hover:bg-mist" href="/login/">Login</a>
+            <a class="focus-ring mt-2 rounded-full bg-tealWarm px-4 py-3 text-center text-white" href="/contact/">Schedule a consultation</a>
+          </div>
+        </div>
+      </details>
+    </nav>
+  </header>
+
+  {% if messages %}
+    <div class="mx-auto max-w-7xl space-y-2 px-4 pt-4 sm:px-6 lg:px-8" aria-live="polite">
+      {% for message in messages %}
+        <p class="rounded-2xl bg-cream px-5 py-4 text-sm font-black shadow-sm ring-1 ring-sunny/40">{{ message }}</p>
+      {% endfor %}
+    </div>
+  {% endif %}
+
+  <main id="main-content">
+    {% block content %}{% endblock %}
+  </main>
+
+  <footer class="bg-navySoft px-4 py-12 text-white sm:px-6 lg:px-8">
+    <div class="mx-auto grid max-w-7xl gap-10 lg:grid-cols-[1fr_auto] lg:items-start">
+      <div>
+        <span class="logo-plate inline-flex rounded-2xl p-2 shadow-sm">
+          <img src="/assets/logo/clear-code-reading-logo.png" alt="ClearCode Reading" class="h-12 w-auto max-w-[240px] object-contain">
+        </span>
+        <p class="mt-4 max-w-xl text-sm leading-6 text-white/70">Specialist-led structured literacy intervention with precise placement and live parent visibility.</p>
+        <p class="mt-2 text-sm font-bold text-sunny">Education-only. Clear instruction. Visible progress.</p>
+      </div>
+      <div class="grid grid-cols-2 gap-x-8 gap-y-4 text-sm font-bold text-white/75 sm:grid-cols-3">
+        <a href="/how-it-works/" class="focus-ring rounded hover:text-sunny">How it works</a>
+        <a href="/families/" class="focus-ring rounded hover:text-sunny">For Families</a>
+        <a href="/approach/" class="focus-ring rounded hover:text-sunny">Our Approach</a>
+        <a href="/privacy/" class="focus-ring rounded hover:text-sunny">Privacy</a>
+        <a href="/contact/" class="focus-ring rounded hover:text-sunny">Contact</a>
+        <a href="/assessment/" class="focus-ring rounded hover:text-sunny">Reading survey</a>
+        <a href="/login/" class="focus-ring rounded hover:text-sunny">Login</a>
+      </div>
+    </div>
+    <div class="mx-auto mt-9 max-w-7xl border-t border-white/10 pt-6 text-sm text-white/55">
+      © <span data-current-year>2026</span> ClearCode Reading. Built for clarity, confidence, and measurable reading growth.
+    </div>
+  </footer>
+  <script>
+    document.querySelectorAll('[data-current-year]').forEach((node) => {
+      node.textContent = new Date().getFullYear();
+    });
+  </script>
+  {% block scripts %}{% endblock %}
+</body>
+</html>

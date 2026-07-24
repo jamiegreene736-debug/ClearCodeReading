@@ -1,298 +1,169 @@
-<!doctype html>
-<html lang="en" class="scroll-smooth">
-<head>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Clear Code Reading | Structured-Literacy Intervention With Progress You Can See</title>
-  <meta name="description" content="Clear Code combines specialist-led structured-literacy intervention, precise placement, and live family progress visibility in one connected platform.">
-  <meta name="theme-color" content="#123A40">
-  <meta property="og:title" content="Clear Code Reading | Clear progress. Real specialists.">
-  <meta property="og:description" content="Private reading intervention powered by specialist expertise, precise placement, and progress families can see.">
-  <meta property="og:type" content="website">
-  <link rel="icon" href="./assets/logo/clear-code-reading-icon.png" type="image/png">
-  <script src="https://cdn.tailwindcss.com"></script>
-  <script>
-    tailwind.config = {
-      theme: {
-        extend: {
-          colors: {
-            tealWarm: '#00A99A',
-            tealDeep: '#123A40',
-            coral: '#F36F5D',
-            ink: '#17343A',
-            sunny: '#F6CD55',
-            cream: '#FFF9ED',
-            mist: '#EDF8F6',
-            blush: '#FFF1EE',
-            sage: '#CFE5DD'
-          },
-          boxShadow: {
-            soft: '0 24px 70px rgba(18, 58, 64, .12)',
-            lift: '0 16px 44px rgba(0, 169, 154, .16)'
-          },
-          fontFamily: {
-            sans: ['Inter', 'Avenir Next', 'Nunito Sans', 'ui-sans-serif', 'system-ui', 'sans-serif']
-          }
-        }
-      }
-    };
-  </script>
-  <style>
-    .focus-ring:focus-visible { outline: 4px solid rgba(246, 205, 85, .9); outline-offset: 3px; }
-    .hero-wash {
-      background:
-        radial-gradient(circle at 8% 15%, rgba(246,205,85,.28), transparent 22%),
-        radial-gradient(circle at 88% 4%, rgba(243,111,93,.16), transparent 24%),
-        linear-gradient(145deg, #fffaf0 0%, #edf8f6 58%, #fff 100%);
-    }
-    .grid-paper {
-      background-image: linear-gradient(rgba(18,58,64,.045) 1px, transparent 1px), linear-gradient(90deg, rgba(18,58,64,.045) 1px, transparent 1px);
-      background-size: 28px 28px;
-    }
-    .step-line::after { content:""; position:absolute; left:2.25rem; top:4.5rem; bottom:-2.5rem; width:2px; background:#cfe5dd; }
-    .step-line:last-child::after { display:none; }
-    @media (min-width: 1024px) {
-      .step-line::after { left:calc(50% + 2.25rem); top:2.25rem; right:-2.25rem; bottom:auto; width:auto; height:2px; }
-    }
-  </style>
-</head>
-<body class="bg-white text-ink antialiased">
-  <header class="fixed inset-x-0 top-0 z-50 border-b border-tealDeep/10 bg-white/90 backdrop-blur-xl">
-    <nav class="mx-auto flex max-w-7xl items-center justify-between gap-4 px-4 py-3 sm:px-6 lg:px-8" aria-label="Main navigation">
-      <a href="#top" class="focus-ring rounded-2xl bg-white px-2 py-1 shadow-sm ring-1 ring-tealDeep/5">
-        <img src="./assets/logo/clear-code-reading-logo.png" alt="Clear Code Reading" class="h-11 w-auto max-w-[164px] object-contain sm:max-w-[260px]">
-      </a>
-      <div class="hidden items-center gap-6 text-sm font-extrabold text-ink/75 2xl:flex">
-        <a class="hover:text-tealWarm" href="#how">How it works</a>
-        <a class="hover:text-tealWarm" href="#families">For families</a>
-        <a class="hover:text-tealWarm" href="#specialists">For specialists</a>
-        <a class="hover:text-tealWarm" href="#approach">Our approach</a>
-        <a class="hover:text-tealWarm" href="#trust">Privacy</a>
-      </div>
-      <div class="flex shrink-0 items-center gap-2">
-        <a href="/login/" class="focus-ring hidden rounded-full px-4 py-3 text-sm font-black sm:inline-flex">Login</a>
-        <button data-open-modal class="focus-ring rounded-full bg-tealDeep px-4 py-3 text-sm font-black text-white shadow-lg transition hover:-translate-y-0.5 hover:bg-[#0b2d32] sm:px-5">
-          <span class="sm:hidden">Consult</span><span class="hidden sm:inline">Schedule a consultation</span>
-        </button>
-      </div>
-    </nav>
-  </header>
+{% extends "base_marketing.html" %}
 
-  <main id="top">
-    <section class="hero-wash overflow-hidden pb-16 pt-28 sm:pb-24 sm:pt-36">
-      <div class="mx-auto grid max-w-7xl items-center gap-10 px-4 sm:px-6 lg:grid-cols-[.92fr_1.08fr] lg:px-8">
-        <div class="relative z-10">
-          {% if messages %}
-            <div class="mb-5 space-y-2">{% for message in messages %}<p class="rounded-2xl bg-white px-4 py-3 text-sm font-black shadow-sm ring-1 ring-tealWarm/15">{{ message }}</p>{% endfor %}</div>
-          {% endif %}
-          <p class="inline-flex items-center gap-2 rounded-full bg-white px-4 py-2 text-sm font-black text-tealDeep shadow-sm ring-1 ring-tealWarm/20">
-            <span class="h-2 w-2 rounded-full bg-tealWarm"></span>
-            Specialist-led structured literacy
-          </p>
-          <h1 class="mt-5 max-w-3xl text-4xl font-black leading-[1.04] tracking-[-.035em] sm:text-5xl">
-            Clear progress.<br><span class="text-tealWarm">Real specialists.</span><br>Reading that clicks.
-          </h1>
-          <p class="mt-6 max-w-xl text-lg leading-8 text-ink/70 sm:text-xl">
-            Clear Code connects precise placement, specialist-led intervention, and live family progress in one clear path—so every session builds on what your child is ready to learn next.
-          </p>
-          <div class="mt-8 flex flex-col gap-3 sm:flex-row">
-            <button data-open-modal class="focus-ring rounded-full bg-coral px-7 py-4 text-center font-black text-white shadow-lift transition hover:-translate-y-1 hover:bg-[#df5c4b]">Schedule a consultation</button>
-            <a href="#how" class="focus-ring rounded-full bg-white px-7 py-4 text-center font-black text-tealDeep ring-1 ring-tealDeep/15 transition hover:-translate-y-1 hover:ring-tealWarm">See how Clear Code works</a>
-          </div>
-          <a href="/assessment/" class="mt-5 inline-flex items-center gap-2 text-sm font-black text-ink/65 underline decoration-tealWarm decoration-2 underline-offset-4 hover:text-tealWarm">
-            Not ready to talk? Try the reading survey <span aria-hidden="true">→</span>
-          </a>
-          <div class="mt-8 flex flex-wrap gap-2 text-xs font-black uppercase tracking-[.08em] text-ink/60">
-            <span class="rounded-full bg-white/80 px-4 py-2">Education-only</span>
-            <span class="rounded-full bg-white/80 px-4 py-2">Family visibility</span>
-            <span class="rounded-full bg-white/80 px-4 py-2">Multi-center ready</span>
-          </div>
+{% block title %}ClearCode Reading | Structured Literacy Intervention with Clear Progress{% endblock %}
+{% block meta_description %}Specialist-led structured literacy intervention, precise placement, and live parent visibility so families can see what their child is mastering and what comes next.{% endblock %}
+{% block og_title %}ClearCode Reading | Reading intervention that shows clear progress{% endblock %}
+{% block og_description %}Specialist expertise, precise structured-literacy placement, and a live parent dashboard in one connected intervention experience.{% endblock %}
+
+{% block content %}
+  <section class="hero-wash overflow-hidden py-16 sm:py-24">
+    <div class="mx-auto grid max-w-7xl items-center gap-12 px-4 sm:px-6 lg:grid-cols-[1.05fr_.95fr] lg:px-8">
+      <div>
+        <p class="inline-flex rounded-full bg-white px-4 py-2 text-sm font-black uppercase tracking-[.14em] text-tealWarm shadow-sm ring-1 ring-tealWarm/15">Structured literacy intervention</p>
+        <h1 class="mt-6 max-w-3xl text-4xl font-black leading-[1.05] tracking-tight text-navySoft sm:text-6xl lg:text-7xl">Reading intervention that shows clear progress</h1>
+        <p class="mt-4 text-base font-black uppercase tracking-[.12em] text-coral">Clear progress. Real specialist guidance.</p>
+        <p class="mt-6 max-w-2xl text-lg leading-8 text-navySoft/75 sm:text-xl">ClearCode combines specialist expertise, precise placement into structured literacy, and a live parent dashboard so families always know where their child stands and what’s next.</p>
+        <div class="mt-8 flex flex-col gap-3 sm:flex-row">
+          <a href="/contact/" class="focus-ring rounded-full bg-tealWarm px-7 py-4 text-center font-black text-white shadow-glow transition hover:-translate-y-1 hover:bg-[#00a699]">Schedule a consultation</a>
+          <a href="/how-it-works/" class="focus-ring rounded-full bg-white px-7 py-4 text-center font-black text-navySoft shadow-lg ring-1 ring-navySoft/10 transition hover:-translate-y-1 hover:text-tealWarm">See how it works</a>
         </div>
-        <div class="relative">
-          <div class="absolute -inset-6 rounded-[3rem] bg-tealWarm/10 blur-2xl"></div>
-          <figure class="relative overflow-hidden rounded-[2.25rem] bg-white p-2 shadow-soft ring-1 ring-tealDeep/10">
-            <img src="./assets/images/hero-intervention-platform.jpg" alt="A reading specialist and child working with letter tiles and a decodable text while a parent follows progress nearby." class="aspect-[3/2] w-full rounded-[1.8rem] object-cover" fetchpriority="high">
-          </figure>
-          <div class="absolute -bottom-5 left-4 rounded-2xl bg-white p-4 shadow-xl ring-1 ring-tealDeep/10 sm:left-8">
-            <p class="text-xs font-black uppercase tracking-widest text-tealWarm">Today’s focus</p>
-            <p class="mt-1 font-black">Build accuracy → apply in text</p>
-          </div>
+        <div class="mt-8 flex flex-wrap gap-2 text-sm font-black text-navySoft/65">
+          <span class="rounded-full bg-white/85 px-4 py-2">Specialist-led</span>
+          <span class="rounded-full bg-white/85 px-4 py-2">Live parent dashboard</span>
+          <span class="rounded-full bg-white/85 px-4 py-2">Education-only</span>
+          <span class="rounded-full bg-white/85 px-4 py-2">FERPA-conscious</span>
         </div>
       </div>
-    </section>
 
-    <section class="border-y border-tealDeep/10 bg-white py-8">
-      <div class="mx-auto flex max-w-7xl flex-col gap-4 px-4 sm:px-6 lg:flex-row lg:items-center lg:justify-between lg:px-8">
-        <p class="max-w-2xl text-lg font-black">Private intervention should feel connected—not like a stack of assessments, paper notes, and disconnected updates.</p>
-        <div class="flex flex-wrap gap-2 text-sm font-bold text-ink/65">
-          <span class="rounded-full bg-mist px-4 py-2">Precise placement</span>
-          <span class="rounded-full bg-cream px-4 py-2">Consistent instruction</span>
-          <span class="rounded-full bg-blush px-4 py-2">Visible progress</span>
-        </div>
-      </div>
-    </section>
-
-    <section id="how" class="scroll-mt-24 bg-white py-20 sm:py-28">
-      <div class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-        <div class="max-w-3xl">
-          <p class="text-sm font-black uppercase tracking-[.2em] text-coral">How Clear Code works</p>
-          <h2 class="mt-3 text-3xl font-black tracking-tight sm:text-5xl">One connected path from assessment to mastery.</h2>
-          <p class="mt-5 text-lg leading-8 text-ink/65">Every decision is grounded in evidence, guided by a specialist, and translated into progress families can understand.</p>
-        </div>
-        <ol class="mt-12 grid gap-8 lg:grid-cols-5">
-          <li class="step-line relative pl-20 lg:pl-0">
-            <span class="absolute left-0 flex h-14 w-14 items-center justify-center rounded-2xl bg-tealDeep text-xl font-black text-white lg:relative">1</span>
-            <h3 class="font-black lg:mt-5">Understand</h3><p class="mt-2 text-sm leading-6 text-ink/65">Gather reading evidence and family context.</p>
-          </li>
-          <li class="step-line relative pl-20 lg:pl-0">
-            <span class="absolute left-0 flex h-14 w-14 items-center justify-center rounded-2xl bg-coral text-xl font-black text-white lg:relative">2</span>
-            <h3 class="font-black lg:mt-5">Place precisely</h3><p class="mt-2 text-sm leading-6 text-ink/65">Map the learner into one appropriate sequence.</p>
-          </li>
-          <li class="step-line relative pl-20 lg:pl-0">
-            <span class="absolute left-0 flex h-14 w-14 items-center justify-center rounded-2xl bg-sunny text-xl font-black text-tealDeep lg:relative">3</span>
-            <h3 class="font-black lg:mt-5">Teach</h3><p class="mt-2 text-sm leading-6 text-ink/65">Deliver focused sessions with a trained specialist.</p>
-          </li>
-          <li class="step-line relative pl-20 lg:pl-0">
-            <span class="absolute left-0 flex h-14 w-14 items-center justify-center rounded-2xl bg-tealWarm text-xl font-black text-white lg:relative">4</span>
-            <h3 class="font-black lg:mt-5">Capture</h3><p class="mt-2 text-sm leading-6 text-ink/65">Record accuracy, patterns, and next steps quickly.</p>
-          </li>
-          <li class="step-line relative pl-20 lg:pl-0">
-            <span class="absolute left-0 flex h-14 w-14 items-center justify-center rounded-2xl bg-tealDeep text-xl font-black text-white lg:relative">5</span>
-            <h3 class="font-black lg:mt-5">See growth</h3><p class="mt-2 text-sm leading-6 text-ink/65">Follow mastery, fluency, and what comes next.</p>
-          </li>
-        </ol>
-      </div>
-    </section>
-
-    <section id="families" class="scroll-mt-24 overflow-hidden bg-mist py-20 sm:py-28">
-      <div class="mx-auto grid max-w-7xl items-center gap-12 px-4 sm:px-6 lg:grid-cols-2 lg:px-8">
-        <div>
-          <p class="text-sm font-black uppercase tracking-[.2em] text-tealWarm">For families</p>
-          <h2 class="mt-3 text-3xl font-black tracking-tight sm:text-5xl">Know what your child is mastering—and what comes next.</h2>
-          <p class="mt-5 text-lg leading-8 text-ink/65">No waiting for a static report. Clear Code turns each completed session into a living, plain-language view of growth.</p>
-          <ul class="mt-8 space-y-4">
-            <li class="flex gap-3"><span class="mt-1 flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-tealWarm text-sm font-black text-white">✓</span><span><strong>Skill mastery:</strong> see progress across the exact sequence being taught.</span></li>
-            <li class="flex gap-3"><span class="mt-1 flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-tealWarm text-sm font-black text-white">✓</span><span><strong>Fluency trends:</strong> follow meaningful changes over time, not one isolated score.</span></li>
-            <li class="flex gap-3"><span class="mt-1 flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-tealWarm text-sm font-black text-white">✓</span><span><strong>Clear next steps:</strong> read specialist notes and realistic milestone guidance without jargon.</span></li>
-          </ul>
-        </div>
-        <div class="grid-paper rounded-[2.5rem] p-4 sm:p-7">
-          <div class="rounded-[2rem] bg-white p-5 shadow-soft ring-1 ring-tealDeep/10 sm:p-7">
-            <div class="flex items-center justify-between"><div><p class="text-xs font-black uppercase tracking-widest text-tealWarm">Family progress</p><h3 class="mt-1 text-2xl font-black">Avery’s reading path</h3></div><span class="rounded-full bg-mist px-3 py-2 text-xs font-black">Updated today</span></div>
-            <div class="mt-7 grid gap-3 sm:grid-cols-3">
-              <div class="rounded-2xl bg-cream p-4"><p class="text-xs font-bold text-ink/55">Latest accuracy</p><p class="mt-2 text-3xl font-black">88%</p></div>
-              <div class="rounded-2xl bg-blush p-4"><p class="text-xs font-bold text-ink/55">Sessions logged</p><p class="mt-2 text-3xl font-black">12</p></div>
-              <div class="rounded-2xl bg-mist p-4"><p class="text-xs font-bold text-ink/55">Current focus</p><p class="mt-2 font-black">Short vowels</p></div>
+      <div class="relative">
+        <div class="absolute -right-10 -top-8 h-36 w-36 rounded-full bg-sunny/45 blur-3xl"></div>
+        <figure class="relative overflow-hidden rounded-[2rem] bg-white p-2 shadow-2xl shadow-tealWarm/15 ring-1 ring-tealWarm/10 sm:p-3">
+          <img src="/assets/images/hero-intervention-platform.jpg" alt="A reading specialist works one-to-one with a child while a parent follows their progress." class="aspect-[4/3] w-full rounded-[1.55rem] object-cover" width="1200" height="900">
+        </figure>
+        <div class="relative mx-3 -mt-10 rounded-[1.6rem] bg-white p-5 shadow-xl ring-1 ring-tealWarm/10 sm:mx-8 sm:-mt-14" aria-label="Example parent progress dashboard">
+          <div class="flex items-center justify-between gap-4">
+            <div>
+              <p class="text-xs font-black uppercase tracking-[.18em] text-tealWarm">Live progress</p>
+              <h2 class="mt-1 text-xl font-black">Avery’s reading path</h2>
             </div>
-            <div class="mt-6"><div class="flex justify-between text-sm font-black"><span>Current sequence</span><span>Steady growth</span></div><div class="mt-3 h-3 rounded-full bg-sage"><div class="h-3 w-[68%] rounded-full bg-tealWarm"></div></div></div>
-            <div class="mt-6 rounded-2xl border border-tealDeep/10 p-4"><p class="text-xs font-black uppercase tracking-widest text-coral">From the specialist</p><p class="mt-2 text-sm leading-6">Accuracy is becoming more consistent. Next we’ll practice the same pattern in connected text.</p></div>
+            <span class="rounded-full bg-mist px-3 py-2 text-xs font-black text-tealWarm">Updated today</span>
+          </div>
+          <div class="mt-4 rounded-2xl bg-mist p-4">
+            <div class="flex items-center justify-between gap-4">
+              <p class="text-sm font-black">Mastery this month</p>
+              <p class="font-black text-tealWarm">7 of 9 skills</p>
+            </div>
+            <div class="mt-3 h-3 overflow-hidden rounded-full bg-white">
+              <div class="h-full w-[78%] rounded-full bg-tealWarm"></div>
+            </div>
           </div>
         </div>
       </div>
-    </section>
-
-    <section id="specialists" class="scroll-mt-24 bg-tealDeep py-20 text-white sm:py-28">
-      <div class="mx-auto grid max-w-7xl items-center gap-12 px-4 sm:px-6 lg:grid-cols-[.9fr_1.1fr] lg:px-8">
-        <div class="order-2 lg:order-1">
-          <div class="rounded-[2rem] bg-white p-5 text-ink shadow-2xl sm:p-7">
-            <div class="flex items-center justify-between"><div><p class="text-xs font-black uppercase tracking-widest text-tealWarm">Rapid session capture</p><h3 class="mt-1 text-xl font-black">PFR Session 1b</h3></div><span class="rounded-full bg-sunny px-3 py-2 text-xs font-black">Next set ready</span></div>
-            <div class="mt-6 rounded-2xl bg-tealDeep p-5 text-white"><p class="text-sm font-bold text-white/65">Correct out of attempted</p><p class="mt-2 text-4xl font-black">9 <span class="text-white/35">/</span> 10</p></div>
-            <div class="mt-4 flex flex-wrap gap-2"><span class="rounded-full bg-mist px-3 py-2 text-sm font-bold">Word reading</span><span class="rounded-full bg-mist px-3 py-2 text-sm font-bold">Connected text</span><span class="rounded-full bg-blush px-3 py-2 text-sm font-bold">Self-corrected</span></div>
-            <div class="mt-5 flex items-center justify-between border-t pt-5"><p class="text-sm font-bold text-ink/55">Structured fields prepared from placement</p><span class="rounded-full bg-tealWarm px-4 py-2 text-sm font-black text-white">Complete</span></div>
-          </div>
-        </div>
-        <div class="order-1 lg:order-2">
-          <p class="text-sm font-black uppercase tracking-[.2em] text-sunny">Built for specialists</p>
-          <h2 class="mt-3 text-3xl font-black tracking-tight sm:text-5xl">More time teaching. Less time rebuilding the plan.</h2>
-          <p class="mt-5 text-lg leading-8 text-white/70">Clear Code gives center teams a shared instructional system: placement, session capture, decision support, grouping, scheduling, and progress—all connected to the same skill evidence.</p>
-          <div class="mt-8 grid gap-4 sm:grid-cols-2">
-            <div class="rounded-2xl bg-white/8 p-5 ring-1 ring-white/10"><p class="font-black">Fast, structured logging</p><p class="mt-2 text-sm leading-6 text-white/65">Intelligent defaults reduce free text and keep evidence consistent.</p></div>
-            <div class="rounded-2xl bg-white/8 p-5 ring-1 ring-white/10"><p class="font-black">Instructional decision support</p><p class="mt-2 text-sm leading-6 text-white/65">See patterns and advisory next steps while specialists retain judgment.</p></div>
-            <div class="rounded-2xl bg-white/8 p-5 ring-1 ring-white/10"><p class="font-black">Skill-based operations</p><p class="mt-2 text-sm leading-6 text-white/65">Group and schedule learners around instructional fit.</p></div>
-            <div class="rounded-2xl bg-white/8 p-5 ring-1 ring-white/10"><p class="font-black">Evidence that compounds</p><p class="mt-2 text-sm leading-6 text-white/65">Each session strengthens a center’s longitudinal outcomes record.</p></div>
-          </div>
-        </div>
-      </div>
-    </section>
-
-    <section id="approach" class="scroll-mt-24 bg-white py-20 sm:py-28">
-      <div class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-        <div class="mx-auto max-w-3xl text-center"><p class="text-sm font-black uppercase tracking-[.2em] text-coral">Our approach</p><h2 class="mt-3 text-3xl font-black tracking-tight sm:text-5xl">Structured literacy, taught with focus.</h2><p class="mt-5 text-lg leading-8 text-ink/65">We align each learner to one coherent methodology at a time—so instruction is explicit, cumulative, and easier to evaluate.</p></div>
-        <div class="mt-12 grid gap-6 md:grid-cols-2">
-          <article class="rounded-[2rem] bg-cream p-8 ring-1 ring-tealDeep/10"><p class="text-xs font-black uppercase tracking-widest text-coral">Sequence option</p><h3 class="mt-3 text-2xl font-black">Phonics for Reading</h3><p class="mt-4 leading-7 text-ink/65">An explicit, systematic sequence designed to build accurate decoding and increasingly fluent application.</p></article>
-          <article class="rounded-[2rem] bg-mist p-8 ring-1 ring-tealDeep/10"><p class="text-xs font-black uppercase tracking-widest text-tealWarm">Sequence option</p><h3 class="mt-3 text-2xl font-black">IMSE Orton-Gillingham+</h3><p class="mt-4 leading-7 text-ink/65">A structured, multisensory pathway organized around cumulative phonics and orthographic concepts.</p></article>
-        </div>
-        <p class="mx-auto mt-7 max-w-3xl text-center text-sm leading-6 text-ink/55">Placement is educational and instructional. Clear Code does not diagnose medical conditions or present instructional estimates as clinical conclusions.</p>
-      </div>
-    </section>
-
-    <section id="trust" class="scroll-mt-24 bg-cream py-20">
-      <div class="mx-auto grid max-w-7xl gap-8 px-4 sm:px-6 lg:grid-cols-[.8fr_1.2fr] lg:px-8">
-        <div><p class="text-sm font-black uppercase tracking-[.2em] text-tealWarm">Privacy &amp; trust</p><h2 class="mt-3 text-3xl font-black tracking-tight sm:text-5xl">Built for education. Designed for responsible growth.</h2></div>
-        <div class="grid gap-4 sm:grid-cols-3">
-          <div class="rounded-2xl bg-white p-5 shadow-sm"><p class="font-black">FERPA-minded</p><p class="mt-2 text-sm leading-6 text-ink/60">Education records, role-based access, and center-scoped workflows.</p></div>
-          <div class="rounded-2xl bg-white p-5 shadow-sm"><p class="font-black">Consent-aware</p><p class="mt-2 text-sm leading-6 text-ink/60">Clear authorization practices before eligible services and data sharing.</p></div>
-          <div class="rounded-2xl bg-white p-5 shadow-sm"><p class="font-black">Human accountable</p><p class="mt-2 text-sm leading-6 text-ink/60">AI suggestions stay advisory, editable, and under specialist review.</p></div>
-        </div>
-      </div>
-    </section>
-
-    <section class="bg-gradient-to-br from-tealWarm to-[#08776f] py-20 text-white">
-      <div class="mx-auto max-w-4xl px-4 text-center sm:px-6">
-        <p class="text-sm font-black uppercase tracking-[.2em] text-sunny">A clearer next step</p>
-        <h2 class="mt-3 text-3xl font-black tracking-tight sm:text-5xl">Let’s understand what your reader needs next.</h2>
-        <p class="mx-auto mt-5 max-w-2xl text-lg leading-8 text-white/80">Talk with our team about your child’s reading history, current needs, and whether specialist-led structured-literacy intervention is a fit.</p>
-        <div class="mt-8 flex flex-col justify-center gap-3 sm:flex-row">
-          <button data-open-modal class="focus-ring rounded-full bg-white px-8 py-4 font-black text-tealDeep transition hover:-translate-y-1">Schedule a consultation</button>
-          <a href="/assessment/" class="focus-ring rounded-full bg-tealDeep px-8 py-4 font-black text-white transition hover:-translate-y-1">Try the reading survey</a>
-        </div>
-      </div>
-    </section>
-  </main>
-
-  <footer class="bg-tealDeep px-4 py-10 text-white sm:px-6 lg:px-8">
-    <div class="mx-auto flex max-w-7xl flex-col gap-6 md:flex-row md:items-center md:justify-between">
-      <div><span class="inline-flex rounded-2xl bg-white p-2"><img src="./assets/logo/clear-code-reading-logo.png" alt="Clear Code Reading" class="h-11 w-auto max-w-[240px] object-contain"></span><p class="mt-3 max-w-xl text-sm text-white/65">Specialist-led structured-literacy intervention with precise placement and progress families can see.</p></div>
-      <div class="flex flex-wrap gap-5 text-sm font-bold text-white/70"><a href="#how" class="hover:text-sunny">How it works</a><a href="#families" class="hover:text-sunny">Families</a><a href="#specialists" class="hover:text-sunny">Specialists</a><a href="#approach" class="hover:text-sunny">Approach</a><a href="#trust" class="hover:text-sunny">Privacy</a><a href="/login/" class="hover:text-sunny">Login</a></div>
     </div>
-    <div class="mx-auto mt-8 max-w-7xl border-t border-white/10 pt-6 text-sm text-white/50">© <span id="year"></span> Clear Code Reading. Education-only structured-literacy intervention.</div>
-  </footer>
+  </section>
 
-  <div id="consultation-modal" class="fixed inset-0 z-[60] hidden items-center justify-center overflow-y-auto bg-tealDeep/75 px-4 py-8 backdrop-blur-sm" role="dialog" aria-modal="true" aria-labelledby="consultation-title">
-    <div class="w-full max-w-lg rounded-[2rem] bg-white p-6 shadow-2xl sm:p-8">
-      <div class="flex items-start justify-between gap-5"><div><p class="text-sm font-black uppercase tracking-[.18em] text-tealWarm">Start a conversation</p><h2 id="consultation-title" class="mt-2 text-3xl font-black">Schedule a consultation.</h2><p class="mt-2 text-sm leading-6 text-ink/60">Tell us a little about your reader. Our team will follow up to find a time.</p></div><button id="close-modal" class="focus-ring rounded-full bg-ink/5 px-4 py-2 text-xl font-black" aria-label="Close consultation form">×</button></div>
-      <form class="mt-6 space-y-4" method="post" action="/crm/signup/">
-        {% csrf_token %}
-        <input type="hidden" name="audience" value="parent">
-        <label class="block"><span class="text-sm font-bold">Your name</span><input class="mt-2 w-full rounded-2xl border border-ink/15 px-4 py-3 focus:border-tealWarm focus:outline-none" name="name" autocomplete="name" required></label>
-        <label class="block"><span class="text-sm font-bold">Email</span><input class="mt-2 w-full rounded-2xl border border-ink/15 px-4 py-3 focus:border-tealWarm focus:outline-none" type="email" name="email" autocomplete="email" required></label>
-        <label class="block"><span class="text-sm font-bold">Phone <span class="font-normal text-ink/45">(optional)</span></span><input class="mt-2 w-full rounded-2xl border border-ink/15 px-4 py-3 focus:border-tealWarm focus:outline-none" type="tel" name="phone" autocomplete="tel"></label>
-        <label class="block"><span class="text-sm font-bold">What would you like us to know?</span><textarea class="mt-2 min-h-28 w-full rounded-2xl border border-ink/15 px-4 py-3 focus:border-tealWarm focus:outline-none" name="notes" placeholder="Your child’s age, reading history, or what prompted you to reach out"></textarea></label>
-        <button class="focus-ring w-full rounded-full bg-coral px-6 py-4 font-black text-white hover:bg-[#df5c4b]">Request a consultation</button>
-        <p class="text-center text-xs leading-5 text-ink/50">Please do not include sensitive student records in this form. We’ll handle consent before collecting educational data.</p>
-      </form>
+  <section class="bg-navySoft py-14 text-white">
+    <div class="mx-auto grid max-w-7xl gap-7 px-4 sm:px-6 lg:grid-cols-[.75fr_1.25fr] lg:items-center lg:px-8">
+      <div>
+        <p class="text-sm font-black uppercase tracking-[.18em] text-sunny">Why clarity matters</p>
+        <h2 class="mt-3 text-3xl font-black sm:text-4xl">Families should not have to wait for answers.</h2>
+      </div>
+      <div class="grid gap-4 sm:grid-cols-2">
+        <p class="rounded-3xl bg-white/8 p-6 text-lg leading-8 text-white/80 ring-1 ring-white/10">Most private reading support still runs on paper, static reports, and disconnected tools.</p>
+        <p class="rounded-3xl bg-white/8 p-6 text-lg leading-8 text-white/80 ring-1 ring-white/10">Families wait too long for clarity. Specialists spend too much time planning instead of teaching.</p>
+      </div>
     </div>
-  </div>
+  </section>
 
-  <script>
-    const modal = document.getElementById('consultation-modal');
-    const closeModal = document.getElementById('close-modal');
-    const openModal = () => {
-      modal.classList.remove('hidden');
-      modal.classList.add('flex');
-      document.body.classList.add('overflow-hidden');
-      closeModal.focus();
-    };
-    const hideModal = () => {
-      modal.classList.add('hidden');
-      modal.classList.remove('flex');
-      document.body.classList.remove('overflow-hidden');
-    };
-    document.getElementById('year').textContent = new Date().getFullYear();
-    document.querySelectorAll('[data-open-modal]').forEach((button) => button.addEventListener('click', openModal));
-    closeModal.addEventListener('click', hideModal);
-    modal.addEventListener('click', (event) => { if (event.target === modal) hideModal(); });
-    document.addEventListener('keydown', (event) => { if (event.key === 'Escape' && !modal.classList.contains('hidden')) hideModal(); });
-  </script>
-</body>
-</html>
+  <section class="bg-white py-20" id="how">
+    <div class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+      <div class="max-w-3xl">
+        <p class="text-sm font-black uppercase tracking-[.18em] text-coral">How ClearCode works</p>
+        <h2 class="mt-3 text-3xl font-black sm:text-5xl">One connected path from placement to progress.</h2>
+        <p class="mt-5 text-lg leading-8 text-navySoft/70">Every step gives specialists better instructional context and families a clearer view.</p>
+      </div>
+      <div class="mt-12 grid gap-5 md:grid-cols-2">
+        <article class="rounded-[2rem] bg-cream p-7 shadow-sm">
+          <span class="grid h-12 w-12 place-items-center rounded-2xl bg-sunny text-xl font-black">1</span>
+          <h3 class="mt-5 text-2xl font-black">Precise placement</h3>
+          <p class="mt-3 leading-7 text-navySoft/70">Evidence places each child into one structured-literacy sequence: Phonics for Reading or IMSE Orton-Gillingham+.</p>
+        </article>
+        <article class="rounded-[2rem] bg-mist p-7 shadow-sm">
+          <span class="grid h-12 w-12 place-items-center rounded-2xl bg-tealWarm text-xl font-black text-white">2</span>
+          <h3 class="mt-5 text-2xl font-black">Specialist-led sessions</h3>
+          <p class="mt-3 leading-7 text-navySoft/70">Trained specialists teach directly and capture accurate, structured session evidence in minutes.</p>
+        </article>
+        <article class="rounded-[2rem] bg-blush p-7 shadow-sm">
+          <span class="grid h-12 w-12 place-items-center rounded-2xl bg-coral text-xl font-black text-white">3</span>
+          <h3 class="mt-5 text-2xl font-black">Live parent dashboard</h3>
+          <p class="mt-3 leading-7 text-navySoft/70">Families see mastery, fluency trends, specialist notes, next steps, and matched home practice.</p>
+        </article>
+        <article class="rounded-[2rem] bg-navySoft p-7 text-white shadow-sm">
+          <span class="grid h-12 w-12 place-items-center rounded-2xl bg-white text-xl font-black text-navySoft">4</span>
+          <h3 class="mt-5 text-2xl font-black">Ongoing decision support</h3>
+          <p class="mt-3 leading-7 text-white/75">Clear instructional signals help the specialist keep pacing, grouping, and next steps on track.</p>
+        </article>
+      </div>
+      <a href="/how-it-works/" class="focus-ring mt-8 inline-flex rounded-full bg-navySoft px-6 py-3 font-black text-white transition hover:-translate-y-0.5 hover:bg-tealWarm">Explore the full process</a>
+    </div>
+  </section>
+
+  <section class="bg-cream py-20">
+    <div class="mx-auto grid max-w-7xl gap-12 px-4 sm:px-6 lg:grid-cols-2 lg:items-center lg:px-8">
+      <div>
+        <p class="text-sm font-black uppercase tracking-[.18em] text-tealWarm">For families</p>
+        <h2 class="mt-3 text-3xl font-black sm:text-5xl">Know exactly what your child is mastering.</h2>
+        <p class="mt-5 text-lg leading-8 text-navySoft/70">Progress should feel understandable, current, and connected to the work happening in every session.</p>
+        <a href="/families/" class="focus-ring mt-7 inline-flex rounded-full bg-tealWarm px-6 py-3 font-black text-white shadow-lg shadow-tealWarm/20 transition hover:-translate-y-0.5">See the family experience</a>
+      </div>
+      <ul class="grid gap-4">
+        <li class="rounded-3xl bg-white p-6 font-bold shadow-sm"><span class="mr-3 text-tealWarm">●</span>See fluency trends and specialist notes in plain language.</li>
+        <li class="rounded-3xl bg-white p-6 font-bold shadow-sm"><span class="mr-3 text-coral">●</span>Receive realistic timelines based on actual progress.</li>
+        <li class="rounded-3xl bg-white p-6 font-bold shadow-sm"><span class="mr-3 text-sunny">●</span>Use home practice that matches real intervention sessions.</li>
+        <li class="rounded-3xl bg-white p-6 font-bold shadow-sm"><span class="mr-3 text-navySoft">●</span>No more waiting for static monthly PDFs.</li>
+      </ul>
+    </div>
+  </section>
+
+  <section class="bg-mist py-20">
+    <div class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+      <div class="mx-auto max-w-3xl text-center">
+        <p class="text-sm font-black uppercase tracking-[.18em] text-coral">Built for specialists</p>
+        <h2 class="mt-3 text-3xl font-black sm:text-5xl">More time teaching. Better information between sessions.</h2>
+      </div>
+      <div class="mt-12 grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
+        <div class="rounded-[2rem] bg-white p-6 shadow-sm"><p class="text-3xl font-black text-tealWarm">&lt;5 min</p><p class="mt-3 font-bold leading-6">Session logging designed for speed.</p></div>
+        <div class="rounded-[2rem] bg-white p-6 shadow-sm"><p class="text-3xl font-black text-coral">Sequenced</p><p class="mt-3 font-bold leading-6">Assessment evidence becomes prioritized instruction.</p></div>
+        <div class="rounded-[2rem] bg-white p-6 shadow-sm"><p class="text-3xl font-black text-tealWarm">Grouped</p><p class="mt-3 font-bold leading-6">Skill-compatible grouping and scheduling support.</p></div>
+        <div class="rounded-[2rem] bg-white p-6 shadow-sm"><p class="text-3xl font-black text-coral">Connected</p><p class="mt-3 font-bold leading-6">One system for planning, documentation, and family communication.</p></div>
+      </div>
+    </div>
+  </section>
+
+  <section class="bg-white py-20">
+    <div class="mx-auto grid max-w-7xl gap-10 px-4 sm:px-6 lg:grid-cols-[.8fr_1.2fr] lg:items-center lg:px-8">
+      <div>
+        <p class="text-sm font-black uppercase tracking-[.18em] text-tealWarm">Our approach</p>
+        <h2 class="mt-3 text-3xl font-black sm:text-5xl">Structured, specialist-led, and measurable.</h2>
+      </div>
+      <div class="grid gap-4 sm:grid-cols-3">
+        <div class="rounded-[2rem] bg-cream p-6"><h3 class="font-black">One methodology at a time</h3><p class="mt-3 text-sm leading-6 text-navySoft/70">PFR or OG+, selected from evidence—not blended.</p></div>
+        <div class="rounded-[2rem] bg-blush p-6"><h3 class="font-black">Taught by trained specialists</h3><p class="mt-3 text-sm leading-6 text-navySoft/70">Technology supports professional judgment; it does not replace it.</p></div>
+        <div class="rounded-[2rem] bg-mist p-6"><h3 class="font-black">Education-only</h3><p class="mt-3 text-sm leading-6 text-navySoft/70">ClearCode provides reading instruction, not diagnosis, treatment, or therapy.</p></div>
+      </div>
+    </div>
+  </section>
+
+  <section class="border-y border-tealWarm/10 bg-navySoft py-12 text-white">
+    <div class="mx-auto flex max-w-7xl flex-col gap-6 px-4 sm:px-6 lg:flex-row lg:items-center lg:justify-between lg:px-8">
+      <div>
+        <p class="text-sm font-black uppercase tracking-[.18em] text-sunny">Privacy built into the relationship</p>
+        <h2 class="mt-2 text-2xl font-black">FERPA-oriented practices. Parental consent. No selling student data.</h2>
+      </div>
+      <a href="/privacy/" class="focus-ring shrink-0 rounded-full bg-white px-6 py-3 text-center font-black text-navySoft transition hover:-translate-y-0.5 hover:text-tealWarm">Read our privacy approach</a>
+    </div>
+  </section>
+
+  <section class="hero-wash py-20">
+    <div class="mx-auto max-w-4xl px-4 text-center sm:px-6 lg:px-8">
+      <p class="text-sm font-black uppercase tracking-[.18em] text-coral">Start with a conversation</p>
+      <h2 class="mt-3 text-3xl font-black sm:text-5xl">Ready to see what clear progress looks like?</h2>
+      <p class="mx-auto mt-5 max-w-2xl text-lg leading-8 text-navySoft/70">Tell us a little about your reader. We’ll explain the next step and whether ClearCode’s structured-literacy approach is a fit.</p>
+      <div class="mt-8 flex flex-col justify-center gap-3 sm:flex-row">
+        <a href="/contact/" class="focus-ring rounded-full bg-tealWarm px-8 py-4 font-black text-white shadow-glow transition hover:-translate-y-1">Schedule a consultation</a>
+        <a href="/contact/#consultation-form" class="focus-ring rounded-full bg-white px-8 py-4 font-black text-navySoft shadow-lg ring-1 ring-navySoft/10 transition hover:-translate-y-1">Join the interest list</a>
+      </div>
+      <a href="/assessment/" class="focus-ring mt-6 inline-block rounded-lg text-sm font-bold text-navySoft/60 underline decoration-tealWarm/40 underline-offset-4 hover:text-tealWarm">Or try the optional reading survey</a>
+    </div>
+  </section>
+{% endblock %}
