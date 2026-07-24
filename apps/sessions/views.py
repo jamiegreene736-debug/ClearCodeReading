@@ -8,8 +8,9 @@ from rest_framework.response import Response
 
 from apps.api.permissions import IsEvaluator, user_can_evaluate_child
 from apps.curriculum.models import StudentPlacement
-from apps.sessions.models import Session
-from apps.sessions.serializers import SessionSerializer
+from apps.sessions.models import Session, SessionTemplate, SkillObservation
+from apps.sessions.serializers import SessionSerializer, SessionTemplateSerializer, SkillObservationSerializer
+from apps.sessions.services import capture_defaults, resolve_session_template
 from apps.users.models import ChildProfile, CustomUser
 
 
@@ -21,6 +22,13 @@ def _accessible_center_filter(user):
     return Q(center__memberships__user=user, center__memberships__is_deleted=False)
 
 
+class IsSessionTemplateManager(IsEvaluator):
+    """Evaluator role plus the view's center-scoped object lookup."""
+
+    def has_object_permission(self, request, view, obj):
+        return True
+
+
 class SessionViewSet(viewsets.ModelViewSet):
     serializer_class = SessionSerializer
     permission_classes = [IsAuthenticated, IsEvaluator]
@@ -29,7 +37,13 @@ class SessionViewSet(viewsets.ModelViewSet):
         queryset = (
             Session.objects.filter(is_deleted=False)
             .filter(_accessible_center_filter(self.request.user))
-            .select_related("center", "child", "specialist", "curriculum_position__curriculum")
+            .select_related(
+                "center",
+                "child",
+                "specialist",
+                "curriculum_position__curriculum",
+                "session_template",
+            )
             .prefetch_related("targeted_positions", "revision_history")
             .distinct()
         )
@@ -57,6 +71,7 @@ class SessionViewSet(viewsets.ModelViewSet):
             return Response({"detail": "This child does not have an active placement."}, status=status.HTTP_409_CONFLICT)
         position = placement.current_position
         intervention_part = SessionSerializer._default_intervention_part(child, position)
+        session_template = resolve_session_template(position, intervention_part)
         return Response(
             {
                 "child": child.id,
@@ -67,6 +82,11 @@ class SessionViewSet(viewsets.ModelViewSet):
                 "position_code": position.code,
                 "targeted_positions": [position.id],
                 "intervention_part": intervention_part,
+                "session_template": session_template.id if session_template else None,
+                "session_template_title": session_template.title if session_template else None,
+                "session_template_version": session_template.version if session_template else None,
+                "capture_fields": session_template.capture_fields if session_template else {},
+                "capture_defaults": capture_defaults(session_template),
                 "scheduled_start": timezone.now(),
                 "suggested_activity_codes": position.activities,
                 "item_set_schema": position.item_set_schema,
@@ -92,3 +112,56 @@ class SessionViewSet(viewsets.ModelViewSet):
                 "target_rate": 95,
             }
         )
+
+
+class SessionTemplateViewSet(viewsets.ModelViewSet):
+    serializer_class = SessionTemplateSerializer
+    permission_classes = [IsAuthenticated, IsSessionTemplateManager]
+
+    def get_queryset(self):
+        queryset = (
+            SessionTemplate.objects.filter(is_deleted=False)
+            .filter(_accessible_center_filter(self.request.user))
+            .select_related("center", "curriculum", "curriculum_position")
+            .distinct()
+        )
+        filters = {
+            "curriculum_id": self.request.query_params.get("curriculum"),
+            "curriculum_position_id": self.request.query_params.get("curriculum_position"),
+            "session_part": self.request.query_params.get("session_part"),
+        }
+        for field_name, value in filters.items():
+            if value:
+                queryset = queryset.filter(**{field_name: value})
+        if self.request.query_params.get("active") == "true":
+            queryset = queryset.filter(is_active=True)
+        return queryset
+
+    def perform_destroy(self, instance):
+        instance.updated_by = self.request.user
+        instance.is_deleted = True
+        instance.deleted_at = timezone.now()
+        instance.save(update_fields=["updated_by", "is_deleted", "deleted_at", "updated_at"])
+
+
+class SkillObservationViewSet(viewsets.ReadOnlyModelViewSet):
+    serializer_class = SkillObservationSerializer
+    permission_classes = [IsAuthenticated, IsEvaluator]
+
+    def get_queryset(self):
+        queryset = (
+            SkillObservation.objects.filter(is_deleted=False)
+            .filter(_accessible_center_filter(self.request.user))
+            .select_related("center", "session", "child", "curriculum_position")
+            .distinct()
+        )
+        filters = {
+            "center_id": self.request.query_params.get("center"),
+            "child_id": self.request.query_params.get("child"),
+            "curriculum_position_id": self.request.query_params.get("curriculum_position"),
+            "session_id": self.request.query_params.get("session"),
+        }
+        for field_name, value in filters.items():
+            if value:
+                queryset = queryset.filter(**{field_name: value})
+        return queryset

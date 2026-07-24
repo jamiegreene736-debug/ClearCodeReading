@@ -13,6 +13,7 @@ SNAPSHOT_FIELDS = (
     "child_id",
     "specialist_id",
     "curriculum_position_id",
+    "session_template_id",
     "status",
     "intervention_part",
     "scheduled_start",
@@ -67,6 +68,9 @@ def snapshot_session_revision(sender, instance, **kwargs):
             "snapshot": snapshot,
         },
     )
+    from apps.sessions.services import sync_skill_observations
+
+    sync_skill_observations(instance)
     if instance.status == Session.Status.COMPLETED and getattr(instance, "_previous_status", None) != Session.Status.COMPLETED:
         transaction.on_commit(lambda: send_progress_report_to_parents.delay(instance.child_id))
 
@@ -83,3 +87,6 @@ def snapshot_targeted_positions(sender, instance, action, **kwargs):
         "targeted_position_ids": list(instance.targeted_positions.order_by("sequence_order").values_list("id", flat=True)),
     }
     revision.save(update_fields=["snapshot", "updated_at"])
+    from apps.sessions.services import sync_skill_observations
+
+    sync_skill_observations(instance)

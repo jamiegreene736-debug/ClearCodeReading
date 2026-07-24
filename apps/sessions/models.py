@@ -2,6 +2,7 @@ from django.conf import settings
 from django.core.exceptions import ValidationError
 from django.core.validators import MaxValueValidator, MinValueValidator
 from django.db import models
+from django.db.models import Q
 from django.utils import timezone
 
 
@@ -90,6 +91,13 @@ class Session(AuditedModel):
         on_delete=models.PROTECT,
         related_name="sessions",
     )
+    session_template = models.ForeignKey(
+        "SessionTemplate",
+        on_delete=models.PROTECT,
+        null=True,
+        blank=True,
+        related_name="sessions",
+    )
     targeted_positions = models.ManyToManyField(
         "curriculum.CurriculumSequence",
         blank=True,
@@ -151,6 +159,16 @@ class Session(AuditedModel):
             )
         if self.curriculum_position_id and self.center_id != self.curriculum_position.center_id:
             errors["curriculum_position"] = "Curriculum position must belong to the session center."
+        if self.session_template_id:
+            template = self.session_template
+            if self.center_id != template.center_id:
+                errors["session_template"] = "Session template must belong to the session center."
+            elif self.curriculum_position_id and template.curriculum_id != self.curriculum_position.curriculum_id:
+                errors["session_template"] = "Session template must use the session curriculum."
+            elif template.curriculum_position_id and template.curriculum_position_id != self.curriculum_position_id:
+                errors["session_template"] = "Session template must match the session curriculum position."
+            elif template.session_part != self.intervention_part:
+                errors["session_template"] = "Session template must match the intervention part."
         if self.started_at and self.ended_at and self.ended_at <= self.started_at:
             errors["ended_at"] = "End time must be after start time."
         if self.accuracy_denominator is not None:
@@ -187,6 +205,8 @@ class Session(AuditedModel):
                 if value is None or value == "" or value == [] or value == {}:
                     errors[field_name] = "Required when a session is completed."
             self._validate_structured_capture(errors)
+            if self.session_template_id:
+                self.session_template.validate_capture(self, errors)
         if errors:
             raise ValidationError(errors)
 
@@ -240,6 +260,212 @@ class Session(AuditedModel):
 
     def __str__(self):
         return f"{self.child} - {self.get_intervention_part_display()} on {self.scheduled_start:%Y-%m-%d}"
+
+
+class SessionTemplate(AuditedModel):
+    """Versioned, methodology-specific contract for specialist session capture."""
+
+    curriculum = models.ForeignKey(
+        "curriculum.Curriculum",
+        on_delete=models.PROTECT,
+        related_name="session_templates",
+    )
+    curriculum_position = models.ForeignKey(
+        "curriculum.CurriculumSequence",
+        on_delete=models.PROTECT,
+        null=True,
+        blank=True,
+        related_name="session_templates",
+        help_text="Optional lesson or concept this capture contract is specific to.",
+    )
+    session_part = models.CharField(max_length=20, choices=Session.InterventionPart.choices, db_index=True)
+    capture_fields = models.JSONField(
+        default=dict,
+        help_text="JSON schema for the structured fields shown and required by this session form.",
+    )
+    title = models.CharField(max_length=255)
+    is_active = models.BooleanField(default=True, db_index=True)
+    version = models.PositiveIntegerField(default=1)
+    metadata = models.JSONField(default=dict, blank=True)
+
+    class Meta:
+        ordering = ["curriculum", "session_part", "-version", "curriculum_position_id"]
+        constraints = [
+            models.UniqueConstraint(
+                fields=["center", "curriculum", "curriculum_position", "session_part", "version"],
+                condition=Q(curriculum_position__isnull=False),
+                name="unique_position_session_template_version",
+            ),
+            models.UniqueConstraint(
+                fields=["center", "curriculum", "session_part", "version"],
+                condition=Q(curriculum_position__isnull=True),
+                name="unique_generic_session_template_version",
+            ),
+        ]
+        indexes = [
+            models.Index(fields=["center", "curriculum", "session_part", "is_active"]),
+            models.Index(fields=["curriculum_position", "session_part", "is_active"]),
+            models.Index(fields=["is_deleted", "created_at"]),
+        ]
+
+    def clean(self):
+        super().clean()
+        errors = {}
+        if self.curriculum_id and self.center_id != self.curriculum.center_id:
+            errors["center"] = "Session template and curriculum must belong to the same center."
+        if self.curriculum_position_id:
+            if self.center_id != self.curriculum_position.center_id:
+                errors["curriculum_position"] = "Session template position must belong to the template center."
+            elif self.curriculum_id != self.curriculum_position.curriculum_id:
+                errors["curriculum_position"] = "Session template position must belong to the template curriculum."
+        if not isinstance(self.capture_fields, dict):
+            errors["capture_fields"] = "Capture fields must be a JSON object."
+        else:
+            required = self.capture_fields.get("required", [])
+            properties = self.capture_fields.get("properties", {})
+            session_field_names = {field.name for field in Session._meta.fields}
+            if not isinstance(required, list) or not all(isinstance(field, str) for field in required):
+                errors["capture_fields"] = "Capture field requirements must be a list of field names."
+            elif not isinstance(properties, dict):
+                errors["capture_fields"] = "Capture field properties must be a JSON object."
+            elif any(not isinstance(config, dict) for config in properties.values()):
+                errors["capture_fields"] = "Each capture field property must be a JSON object."
+            elif unknown_fields := (set(required) | set(properties)) - session_field_names:
+                errors["capture_fields"] = (
+                    f"Capture fields must use Session fields; unknown: {', '.join(sorted(unknown_fields))}."
+                )
+        if not isinstance(self.metadata, dict):
+            errors["metadata"] = "Metadata must be a JSON object."
+        if errors:
+            raise ValidationError(errors)
+
+    def validate_capture(self, session, errors):
+        """Add template-specific completion errors without replacing Session's contract."""
+        required = self.capture_fields.get("required", [])
+        properties = self.capture_fields.get("properties", {})
+        for field_name in required:
+            value = getattr(session, field_name, None)
+            if value is None or value == "" or value == [] or value == {}:
+                errors.setdefault(field_name, f"Required by session template {self.title!r}.")
+
+        expected_types = {"array": list, "object": dict, "string": str}
+        for field_name, config in properties.items():
+            value = getattr(session, field_name, None)
+            expected_type = expected_types.get(config.get("type"))
+            if value is not None and expected_type and not isinstance(value, expected_type):
+                errors.setdefault(field_name, f"Must match the {config['type']} capture field type.")
+                continue
+            required_keys = config.get("required_keys", [])
+            if isinstance(value, dict) and required_keys:
+                missing = [key for key in required_keys if key not in value]
+                if missing:
+                    errors.setdefault(
+                        field_name,
+                        f"Template requires structured sections: {', '.join(missing)}.",
+                    )
+
+        allowed_activity_codes = self.capture_fields.get("allowed_activity_codes")
+        if allowed_activity_codes and isinstance(session.activities_completed, list):
+            invalid_codes = sorted(
+                {
+                    activity.get("code")
+                    for activity in session.activities_completed
+                    if isinstance(activity, dict)
+                    and activity.get("code")
+                    and activity.get("code") not in allowed_activity_codes
+                }
+            )
+            if invalid_codes:
+                errors.setdefault(
+                    "activities_completed",
+                    f"Activities are not part of this session template: {', '.join(invalid_codes)}.",
+                )
+
+    def __str__(self):
+        position = f" - {self.curriculum_position.code}" if self.curriculum_position_id else ""
+        return f"{self.title}{position} (v{self.version})"
+
+
+class SkillObservation(AuditedModel):
+    """Queryable instructional evidence projected from a completed session."""
+
+    session = models.ForeignKey(Session, on_delete=models.CASCADE, related_name="skill_observations")
+    child = models.ForeignKey(
+        "users.ChildProfile",
+        on_delete=models.PROTECT,
+        related_name="skill_observations",
+    )
+    curriculum_position = models.ForeignKey(
+        "curriculum.CurriculumSequence",
+        on_delete=models.PROTECT,
+        related_name="skill_observations",
+    )
+    accuracy_rate = models.DecimalField(
+        max_digits=5,
+        decimal_places=2,
+        null=True,
+        blank=True,
+        validators=[MinValueValidator(0), MaxValueValidator(100)],
+    )
+    response_rating = models.PositiveSmallIntegerField(
+        null=True,
+        blank=True,
+        validators=[MinValueValidator(1), MaxValueValidator(5)],
+    )
+    error_pattern_tags = models.JSONField(default=list, blank=True)
+    time_signals = models.JSONField(default=dict, blank=True)
+    activities = models.JSONField(default=list, blank=True)
+    item_references = models.JSONField(default=list, blank=True)
+    source_session_revision = models.PositiveIntegerField()
+    metadata = models.JSONField(default=dict, blank=True)
+
+    class Meta:
+        ordering = ["-session__scheduled_start", "curriculum_position__sequence_order"]
+        constraints = [
+            models.UniqueConstraint(
+                fields=["session", "curriculum_position"],
+                name="unique_session_skill_observation",
+            ),
+        ]
+        indexes = [
+            models.Index(fields=["center", "child"]),
+            models.Index(fields=["child", "curriculum_position"]),
+            models.Index(fields=["session", "curriculum_position"]),
+            models.Index(fields=["center", "created_at"]),
+            models.Index(fields=["is_deleted", "created_at"]),
+        ]
+
+    def clean(self):
+        super().clean()
+        errors = {}
+        if self.session_id:
+            if self.center_id != self.session.center_id:
+                errors["center"] = "Skill observation and session must belong to the same center."
+            if self.child_id != self.session.child_id:
+                errors["child"] = "Skill observation must use the session child."
+        if self.curriculum_position_id:
+            if self.center_id != self.curriculum_position.center_id:
+                errors["curriculum_position"] = "Skill observation position must belong to the observation center."
+            elif (
+                self.session_id
+                and self.curriculum_position.curriculum_id != self.session.curriculum_position.curriculum_id
+            ):
+                errors["curriculum_position"] = "Skill observation position must use the session curriculum."
+        json_types = {
+            "error_pattern_tags": (self.error_pattern_tags, list),
+            "time_signals": (self.time_signals, dict),
+            "activities": (self.activities, list),
+            "item_references": (self.item_references, list),
+            "metadata": (self.metadata, dict),
+        }
+        for field_name, (value, expected_type) in json_types.items():
+            if not isinstance(value, expected_type):
+                errors[field_name] = f"Must be a structured {expected_type.__name__}."
+        if errors:
+            raise ValidationError(errors)
+
+    def __str__(self):
+        return f"{self.child} - {self.curriculum_position.code} in session {self.session_id}"
 
 
 class SessionRevision(TimestampedModel):
