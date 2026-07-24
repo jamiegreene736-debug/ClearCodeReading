@@ -1,4 +1,5 @@
 from django.test import SimpleTestCase
+from django.template.loader import render_to_string
 
 from apps.crm.models import Lead, Opportunity
 from apps.crm.serializers import OpportunitySerializer
@@ -29,3 +30,14 @@ class CrmTests(SimpleTestCase):
         self.assertEqual(WebsiteSignupView._clean_positive_int("24"), 24)
         self.assertIsNone(WebsiteSignupView._clean_positive_int("-1"))
         self.assertIsNone(WebsiteSignupView._clean_positive_int("many"))
+
+    def test_homepage_positions_clear_code_as_specialist_led_intervention(self):
+        homepage = render_to_string("index.html")
+
+        self.assertIn("Clear progress.", homepage)
+        self.assertIn("Specialist-led structured literacy", homepage)
+        self.assertIn("Schedule a consultation", homepage)
+        self.assertIn("Phonics for Reading", homepage)
+        self.assertIn("IMSE Orton-Gillingham+", homepage)
+        self.assertNotIn("4x more clarity", homepage)
+        self.assertNotIn("For schools &amp; teachers", homepage)
