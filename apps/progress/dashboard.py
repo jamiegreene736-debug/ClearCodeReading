@@ -4,6 +4,7 @@ from decimal import Decimal
 from django.utils import timezone
 
 from apps.curriculum.models import StudentPlacement
+from apps.decision_support.models import MilestonePrediction
 from apps.progress.models import MasteryRecord, Progress
 from apps.sessions.models import Session
 
@@ -91,7 +92,14 @@ def build_parent_dashboard(child):
     ]
 
     milestone = {"status": "not_available", "label": "Milestone estimate will appear after placement."}
-    if placement:
+    prediction = (
+        MilestonePrediction.objects.filter(child=child, is_current=True, is_deleted=False)
+        .select_related("placement__current_position", "target_position")
+        .first()
+    )
+    if prediction:
+        milestone = prediction.parent_payload()
+    elif placement:
         total = placement.curriculum.positions.filter(is_deleted=False).count()
         remaining = max(total - placement.current_position.sequence_order, 0)
         recent_cutoff = timezone.now() - timedelta(weeks=8)

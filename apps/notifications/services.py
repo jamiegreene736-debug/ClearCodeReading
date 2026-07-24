@@ -216,6 +216,41 @@ class NotificationService:
         results = [self.send_progress_report_to_parents(child_id) for child_id in child_ids]
         return {"status": "sent", "school_id": school_id, "children": len(results), "results": results}
 
+    def notify_growth_flag_opened(self, flag_id):
+        from apps.decision_support.models import GrowthFlag
+
+        flag = (
+            GrowthFlag.objects.select_related("child", "position", "center")
+            .prefetch_related("routed_to")
+            .filter(pk=flag_id, status=GrowthFlag.Status.OPEN, is_deleted=False)
+            .first()
+        )
+        if flag is None:
+            return {"status": "missing_or_closed", "flag_id": flag_id}
+        recipients = [user.email for user in flag.routed_to.all() if user.email and user.is_active]
+        subject = f"Instructional review flag: {flag.child} at {flag.position.code}"
+        message = (
+            f"Clear Code Reading opened a {flag.get_severity_display().lower()} instructional review flag "
+            f"for {flag.child} at {flag.position.code}.\n\n"
+            f"Why it opened: {flag.explanation}\n\n"
+            f"Advisory next step: {flag.advisory_recommendation}\n\n"
+            "This flag is advisory and does not change placement or instructional intensity."
+        )
+        result = self.send_email(subject, message, recipients)
+        AuditLog.objects.create(
+            action="notification.growth_flag_opened.sent",
+            entity_type="GrowthFlag",
+            entity_id=str(flag.id),
+            after={
+                "child_id": flag.child_id,
+                "flag_code": flag.flag_code,
+                "severity": flag.severity,
+                "recipient_count": result.get("sent", 0),
+            },
+            metadata=result,
+        )
+        return {"status": "sent", "flag_id": flag.id, "result": result}
+
     def _absolute_url(self, route_name, object_id):
         base_url = getattr(settings, "PUBLIC_APP_URL", "").rstrip("/")
         if route_name == "guardian-relationship-detail":

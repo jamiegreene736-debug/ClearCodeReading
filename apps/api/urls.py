@@ -17,8 +17,8 @@ urlpatterns = [
     path("v1/", include("apps.assessments.urls")),
     path("v1/", include("apps.curriculum.urls")),
     path("v1/", include("apps.sessions.urls")),
+    path("v1/", include("apps.decision_support.urls")),
     path("v1/", include("apps.scheduling.urls")),
     path("v1/", include("apps.progress.urls")),
-    path("v1/", include("apps.decision_support.urls")),
     path("v1/", include("apps.crm.urls")),
 ]

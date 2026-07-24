@@ -42,10 +42,10 @@ SHARED_APPS = [
     "apps.crm",
     "apps.curriculum",
     "apps.sessions.apps.InterventionSessionsConfig",
+    "apps.decision_support.apps.DecisionSupportConfig",
     "apps.scheduling.apps.SchedulingConfig",
     "apps.assessments",
     "apps.progress",
-    "apps.decision_support.apps.DecisionSupportConfig",
     "apps.api",
 ]
 
@@ -58,10 +58,10 @@ TENANT_APPS = [
     "guardian",
     "apps.curriculum",
     "apps.sessions.apps.InterventionSessionsConfig",
+    "apps.decision_support.apps.DecisionSupportConfig",
     "apps.scheduling.apps.SchedulingConfig",
     "apps.assessments",
     "apps.progress",
-    "apps.decision_support.apps.DecisionSupportConfig",
     "apps.api",
 ]
 
@@ -233,6 +233,15 @@ INSTRUCTIONAL_AI_SERVICE = os.getenv(
     "apps.ai.services.DisabledInstructionalAIService",
 )
 INSTRUCTIONAL_AI_ALLOW_NARRATIVE = os.getenv("INSTRUCTIONAL_AI_ALLOW_NARRATIVE", "0") == "1"
+DECISION_SUPPORT_ENGINE = os.getenv(
+    "DECISION_SUPPORT_ENGINE",
+    "apps.decision_support.engine.DeterministicDecisionSupportEngine",
+)
+DECISION_SUPPORT_LEADERSHIP_ROLES = [
+    role.strip()
+    for role in os.getenv("DECISION_SUPPORT_LEADERSHIP_ROLES", "owner,admin").split(",")
+    if role.strip()
+]
 SCHEDULER_ADAPTER = os.getenv("SCHEDULER_ADAPTER", "")
 ACUITY_USER_ID = os.getenv("ACUITY_USER_ID", "")
 ACUITY_API_KEY = os.getenv("ACUITY_API_KEY", "")
