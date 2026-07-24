@@ -3,11 +3,11 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Clear Code Reading | Human-Guided Reading Assessment and Lessons</title>
-  <meta name="description" content="Clear Code Reading blends playful digital reading assessment with real human evaluator review and personalized lessons for children ages 4-10.">
-  <meta name="theme-color" content="#00B8A9">
-  <meta property="og:title" content="Clear Code Reading">
-  <meta property="og:description" content="Where every child learns to read clearly — with smart technology and human touch.">
+  <title>Clear Code Reading | Structured-Literacy Intervention With Progress You Can See</title>
+  <meta name="description" content="Clear Code combines specialist-led structured-literacy intervention, precise placement, and live family progress visibility in one connected platform.">
+  <meta name="theme-color" content="#123A40">
+  <meta property="og:title" content="Clear Code Reading | Clear progress. Real specialists.">
+  <meta property="og:description" content="Private reading intervention powered by specialist expertise, precise placement, and progress families can see.">
   <meta property="og:type" content="website">
   <link rel="icon" href="./assets/logo/clear-code-reading-icon.png" type="image/png">
   <script src="https://cdn.tailwindcss.com"></script>
@@ -16,17 +16,19 @@
       theme: {
         extend: {
           colors: {
-            tealWarm: '#00B8A9',
-            coral: '#FF6B6B',
-            navySoft: '#2C3E50',
-            sunny: '#FFD93D',
-            cream: '#FFF9EA',
-            mist: '#F0FFFC',
-            blush: '#FFF5F5'
+            tealWarm: '#00A99A',
+            tealDeep: '#123A40',
+            coral: '#F36F5D',
+            ink: '#17343A',
+            sunny: '#F6CD55',
+            cream: '#FFF9ED',
+            mist: '#EDF8F6',
+            blush: '#FFF1EE',
+            sage: '#CFE5DD'
           },
           boxShadow: {
-            glow: '0 24px 80px rgba(0, 184, 169, 0.22)',
-            coralGlow: '0 22px 70px rgba(255, 107, 107, 0.18)'
+            soft: '0 24px 70px rgba(18, 58, 64, .12)',
+            lift: '0 16px 44px rgba(0, 169, 154, .16)'
           },
           fontFamily: {
             sans: ['Inter', 'Avenir Next', 'Nunito Sans', 'ui-sans-serif', 'system-ui', 'sans-serif']
@@ -36,475 +38,261 @@
     };
   </script>
   <style>
-    .focus-ring:focus-visible { outline: 4px solid rgba(255, 217, 61, .75); outline-offset: 3px; }
-    .hero-pattern {
+    .focus-ring:focus-visible { outline: 4px solid rgba(246, 205, 85, .9); outline-offset: 3px; }
+    .hero-wash {
       background:
-        radial-gradient(circle at 12% 18%, rgba(255, 217, 61, .28), transparent 24%),
-        radial-gradient(circle at 78% 8%, rgba(255, 107, 107, .17), transparent 24%),
-        radial-gradient(circle at 50% 92%, rgba(0, 184, 169, .14), transparent 30%),
-        linear-gradient(135deg, #fffdf6 0%, #f0fffc 48%, #fff5f5 100%);
+        radial-gradient(circle at 8% 15%, rgba(246,205,85,.28), transparent 22%),
+        radial-gradient(circle at 88% 4%, rgba(243,111,93,.16), transparent 24%),
+        linear-gradient(145deg, #fffaf0 0%, #edf8f6 58%, #fff 100%);
     }
-    .logo-plate {
-      background:
-        linear-gradient(135deg, rgba(255,255,255,.96), rgba(255,249,234,.92));
+    .grid-paper {
+      background-image: linear-gradient(rgba(18,58,64,.045) 1px, transparent 1px), linear-gradient(90deg, rgba(18,58,64,.045) 1px, transparent 1px);
+      background-size: 28px 28px;
+    }
+    .step-line::after { content:""; position:absolute; left:2.25rem; top:4.5rem; bottom:-2.5rem; width:2px; background:#cfe5dd; }
+    .step-line:last-child::after { display:none; }
+    @media (min-width: 1024px) {
+      .step-line::after { left:calc(50% + 2.25rem); top:2.25rem; right:-2.25rem; bottom:auto; width:auto; height:2px; }
     }
   </style>
 </head>
-<body class="bg-white text-navySoft antialiased">
-  <header class="fixed inset-x-0 top-0 z-50 border-b border-tealWarm/10 bg-white/90 backdrop-blur-xl">
+<body class="bg-white text-ink antialiased">
+  <header class="fixed inset-x-0 top-0 z-50 border-b border-tealDeep/10 bg-white/90 backdrop-blur-xl">
     <nav class="mx-auto flex max-w-7xl items-center justify-between gap-4 px-4 py-3 sm:px-6 lg:px-8" aria-label="Main navigation">
-      <a href="#top" class="focus-ring logo-plate flex items-center gap-3 rounded-2xl px-2 py-1 shadow-sm ring-1 ring-navySoft/5">
-        <img src="./assets/logo/clear-code-reading-logo.png" alt="Clear Code Reading" class="h-12 w-auto max-w-[150px] object-contain sm:max-w-[280px]">
+      <a href="#top" class="focus-ring rounded-2xl bg-white px-2 py-1 shadow-sm ring-1 ring-tealDeep/5">
+        <img src="./assets/logo/clear-code-reading-logo.png" alt="Clear Code Reading" class="h-11 w-auto max-w-[164px] object-contain sm:max-w-[260px]">
       </a>
-      <div class="hidden items-center gap-6 text-sm font-bold text-navySoft/80 lg:flex">
-        <a class="transition hover:text-tealWarm" href="#how">How it works</a>
-        <a class="transition hover:text-tealWarm" href="#difference">Human review</a>
-        <a class="transition hover:text-tealWarm" href="#families">Families</a>
-        <a class="transition hover:text-tealWarm" href="#schools">Schools</a>
-        <a class="transition hover:text-tealWarm" href="#results">Results</a>
+      <div class="hidden items-center gap-6 text-sm font-extrabold text-ink/75 2xl:flex">
+        <a class="hover:text-tealWarm" href="#how">How it works</a>
+        <a class="hover:text-tealWarm" href="#families">For families</a>
+        <a class="hover:text-tealWarm" href="#specialists">For specialists</a>
+        <a class="hover:text-tealWarm" href="#approach">Our approach</a>
+        <a class="hover:text-tealWarm" href="#trust">Privacy</a>
       </div>
-      <div class="flex shrink-0 items-center gap-2 sm:gap-3">
-        <a href="/assessment/" class="focus-ring inline-flex items-center justify-center rounded-full bg-tealWarm px-4 py-3 text-sm font-extrabold text-white shadow-lg shadow-tealWarm/20 transition hover:-translate-y-0.5 hover:bg-[#00a699] sm:px-5">
-          <span class="sm:hidden">Start</span>
-          <span class="hidden sm:inline">Start assessment</span>
-        </a>
-        <a href="/login/" class="focus-ring inline-flex items-center justify-center rounded-full bg-coral px-4 py-3 text-sm font-extrabold text-white shadow-lg shadow-coral/25 transition hover:-translate-y-0.5 hover:bg-[#ff5757] sm:px-5">
-          Login
-        </a>
+      <div class="flex shrink-0 items-center gap-2">
+        <a href="/login/" class="focus-ring hidden rounded-full px-4 py-3 text-sm font-black sm:inline-flex">Login</a>
+        <button data-open-modal class="focus-ring rounded-full bg-tealDeep px-4 py-3 text-sm font-black text-white shadow-lg transition hover:-translate-y-0.5 hover:bg-[#0b2d32] sm:px-5">
+          <span class="sm:hidden">Consult</span><span class="hidden sm:inline">Schedule a consultation</span>
+        </button>
       </div>
     </nav>
   </header>
 
   <main id="top">
-    <section class="hero-pattern overflow-hidden pb-10 pt-24 sm:pb-24 sm:pt-32">
-      <div class="mx-auto grid max-w-[1360px] items-center gap-6 px-4 sm:gap-12 sm:px-6 lg:grid-cols-[.96fr_1.04fr] lg:px-8">
-        <div>
+    <section class="hero-wash overflow-hidden pb-16 pt-28 sm:pb-24 sm:pt-36">
+      <div class="mx-auto grid max-w-7xl items-center gap-10 px-4 sm:px-6 lg:grid-cols-[.92fr_1.08fr] lg:px-8">
+        <div class="relative z-10">
           {% if messages %}
-            <div class="mb-5 space-y-2">
-              {% for message in messages %}
-                <p class="rounded-2xl bg-white px-4 py-3 text-sm font-black text-navySoft shadow-sm ring-1 ring-tealWarm/15">{{ message }}</p>
-              {% endfor %}
-            </div>
+            <div class="mb-5 space-y-2">{% for message in messages %}<p class="rounded-2xl bg-white px-4 py-3 text-sm font-black shadow-sm ring-1 ring-tealWarm/15">{{ message }}</p>{% endfor %}</div>
           {% endif %}
-          <p class="mb-3 inline-flex rounded-full bg-white px-4 py-2 text-sm font-extrabold text-tealWarm shadow-sm ring-1 ring-tealWarm/15 sm:mb-5">
-            Human-guided reading growth for ages 4-10
+          <p class="inline-flex items-center gap-2 rounded-full bg-white px-4 py-2 text-sm font-black text-tealDeep shadow-sm ring-1 ring-tealWarm/20">
+            <span class="h-2 w-2 rounded-full bg-tealWarm"></span>
+            Specialist-led structured literacy
           </p>
-          <h1 class="max-w-4xl text-3xl font-black leading-tight tracking-normal text-navySoft sm:text-6xl">
-            Where every child learns to read clearly.
+          <h1 class="mt-5 max-w-3xl text-4xl font-black leading-[1.04] tracking-[-.035em] sm:text-5xl">
+            Clear progress.<br><span class="text-tealWarm">Real specialists.</span><br>Reading that clicks.
           </h1>
-          <p class="mt-3 max-w-2xl text-base leading-6 text-navySoft/75 sm:mt-6 sm:text-xl sm:leading-8">
-            Clear Code Reading starts with a playful digital assessment, adds a real human evaluator, then builds a personalized path through phonics, sight words, fluency, and comprehension.
+          <p class="mt-6 max-w-xl text-lg leading-8 text-ink/70 sm:text-xl">
+            Clear Code connects precise placement, specialist-led intervention, and live family progress in one clear path—so every session builds on what your child is ready to learn next.
           </p>
-          <div class="mt-4 lg:hidden">
-            <div class="relative overflow-hidden rounded-[2rem] bg-white p-2 shadow-2xl shadow-tealWarm/15 ring-1 ring-tealWarm/10">
-              <img class="aspect-[3/2] w-full rounded-[1.5rem] object-cover object-center" src="./assets/images/hero-reading-assessment.png" alt="Illustrated teacher guiding a child through a reading workbook and tablet assessment with books, alphabet blocks, and a reading age estimate card.">
-            </div>
+          <div class="mt-8 flex flex-col gap-3 sm:flex-row">
+            <button data-open-modal class="focus-ring rounded-full bg-coral px-7 py-4 text-center font-black text-white shadow-lift transition hover:-translate-y-1 hover:bg-[#df5c4b]">Schedule a consultation</button>
+            <a href="#how" class="focus-ring rounded-full bg-white px-7 py-4 text-center font-black text-tealDeep ring-1 ring-tealDeep/15 transition hover:-translate-y-1 hover:ring-tealWarm">See how Clear Code works</a>
           </div>
-          <div class="mt-4 flex flex-col gap-3 sm:mt-8 sm:flex-row">
-            <a href="/assessment/" class="focus-ring rounded-full bg-tealWarm px-7 py-4 text-center text-base font-black text-white shadow-glow transition hover:-translate-y-1 hover:bg-[#00a699]">
-              Start free assessment
-            </a>
-            <button data-open-modal class="focus-ring rounded-full bg-[#FF8A3D] px-7 py-4 text-base font-black text-white shadow-lg shadow-[#FF8A3D]/25 ring-1 ring-[#F26F21]/20 transition hover:-translate-y-1 hover:bg-[#F26F21]">
-              For schools &amp; teachers
-            </button>
-          </div>
-          <div class="mt-6 flex flex-wrap gap-3 text-sm font-bold text-navySoft/65 sm:mt-8">
-            <span class="rounded-full bg-white/80 px-4 py-2">COPPA-conscious</span>
-            <span class="rounded-full bg-white/80 px-4 py-2">Human evaluator review</span>
-            <span class="rounded-full bg-white/80 px-4 py-2">Adaptive lessons</span>
+          <a href="/assessment/" class="mt-5 inline-flex items-center gap-2 text-sm font-black text-ink/65 underline decoration-tealWarm decoration-2 underline-offset-4 hover:text-tealWarm">
+            Not ready to talk? Try the reading survey <span aria-hidden="true">→</span>
+          </a>
+          <div class="mt-8 flex flex-wrap gap-2 text-xs font-black uppercase tracking-[.08em] text-ink/60">
+            <span class="rounded-full bg-white/80 px-4 py-2">Education-only</span>
+            <span class="rounded-full bg-white/80 px-4 py-2">Family visibility</span>
+            <span class="rounded-full bg-white/80 px-4 py-2">Multi-center ready</span>
           </div>
         </div>
-
-        <div class="relative hidden lg:block">
-          <div class="absolute -left-8 top-10 hidden h-20 w-20 rounded-[2rem] bg-sunny/70 blur-xl sm:block"></div>
-          <div class="relative overflow-hidden rounded-[2rem] bg-white p-2 shadow-2xl shadow-tealWarm/15 ring-1 ring-tealWarm/10">
-            <img class="aspect-[3/2] w-full rounded-[1.5rem] object-cover object-center" src="./assets/images/hero-reading-assessment.png" alt="Illustrated teacher guiding a child through a reading workbook and tablet assessment with books, alphabet blocks, and a reading age estimate card.">
+        <div class="relative">
+          <div class="absolute -inset-6 rounded-[3rem] bg-tealWarm/10 blur-2xl"></div>
+          <figure class="relative overflow-hidden rounded-[2.25rem] bg-white p-2 shadow-soft ring-1 ring-tealDeep/10">
+            <img src="./assets/images/hero-intervention-platform.jpg" alt="A reading specialist and child working with letter tiles and a decodable text while a parent follows progress nearby." class="aspect-[3/2] w-full rounded-[1.8rem] object-cover" fetchpriority="high">
+          </figure>
+          <div class="absolute -bottom-5 left-4 rounded-2xl bg-white p-4 shadow-xl ring-1 ring-tealDeep/10 sm:left-8">
+            <p class="text-xs font-black uppercase tracking-widest text-tealWarm">Today’s focus</p>
+            <p class="mt-1 font-black">Build accuracy → apply in text</p>
           </div>
         </div>
       </div>
     </section>
 
-    <section id="how" class="bg-white py-20">
+    <section class="border-y border-tealDeep/10 bg-white py-8">
+      <div class="mx-auto flex max-w-7xl flex-col gap-4 px-4 sm:px-6 lg:flex-row lg:items-center lg:justify-between lg:px-8">
+        <p class="max-w-2xl text-lg font-black">Private intervention should feel connected—not like a stack of assessments, paper notes, and disconnected updates.</p>
+        <div class="flex flex-wrap gap-2 text-sm font-bold text-ink/65">
+          <span class="rounded-full bg-mist px-4 py-2">Precise placement</span>
+          <span class="rounded-full bg-cream px-4 py-2">Consistent instruction</span>
+          <span class="rounded-full bg-blush px-4 py-2">Visible progress</span>
+        </div>
+      </div>
+    </section>
+
+    <section id="how" class="scroll-mt-24 bg-white py-20 sm:py-28">
       <div class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
         <div class="max-w-3xl">
-          <div class="flex flex-col items-start gap-3 sm:flex-row sm:items-center">
-            <p class="text-sm font-black uppercase tracking-[0.2em] text-coral">How it works</p>
-            <button
-              type="button"
-              class="focus-ring inline-flex items-center gap-2 rounded-full bg-white px-4 py-2 text-sm font-black text-navySoft shadow-lg shadow-tealWarm/15 ring-2 ring-tealWarm/25 transition hover:-translate-y-0.5 hover:bg-mist hover:ring-tealWarm/45"
-              data-section-audio="marketingHowItWorks"
-              data-idle-label="Listen to section"
-              data-playing-label="Pause audio"
-              data-paused-label="Resume audio"
-              aria-label="Play audio explanation for the How it works section"
-            >
-              <span class="flex h-8 w-8 items-center justify-center rounded-full bg-tealWarm text-white shadow-sm" aria-hidden="true">
-                <svg class="h-4 w-4 translate-x-px" viewBox="0 0 24 24" fill="currentColor">
-                  <path data-section-audio-icon d="M8 5.5v13l10-6.5-10-6.5Z"></path>
-                </svg>
-              </span>
-              <span class="flex items-center gap-1.5" data-section-audio-label>Listen to section</span>
-              <svg class="h-4 w-4 text-tealWarm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                <path d="M11 5 6 9H3v6h3l5 4V5Z"></path>
-                <path d="M15.5 8.5a5 5 0 0 1 0 7"></path>
-                <path d="M18.5 5.5a9 9 0 0 1 0 13"></path>
-              </svg>
-            </button>
-          </div>
-          <h2 class="mt-3 text-3xl font-black text-navySoft sm:text-5xl">A clear path from assessment to confident reading.</h2>
+          <p class="text-sm font-black uppercase tracking-[.2em] text-coral">How Clear Code works</p>
+          <h2 class="mt-3 text-3xl font-black tracking-tight sm:text-5xl">One connected path from assessment to mastery.</h2>
+          <p class="mt-5 text-lg leading-8 text-ink/65">Every decision is grounded in evidence, guided by a specialist, and translated into progress families can understand.</p>
         </div>
-        <div class="mt-12 flex justify-center">
-          <figure class="w-full max-w-[980px] overflow-hidden rounded-[2rem] bg-white shadow-2xl shadow-tealWarm/10 ring-1 ring-navySoft/10">
-            <img
-              src="./assets/images/how-it-works-cards.png"
-              srcset="./assets/images/how-it-works-cards.png 1254w, ./assets/images/how-it-works-cards@2x.png 2508w"
-              sizes="(min-width: 1280px) 980px, calc(100vw - 2rem)"
-              alt="Four illustrated Clear Code Reading cards: Digital Assessment, Human Evaluator Review, Personalized Lessons, and Real Progress."
-              class="w-full"
-              loading="lazy"
-            >
-          </figure>
+        <ol class="mt-12 grid gap-8 lg:grid-cols-5">
+          <li class="step-line relative pl-20 lg:pl-0">
+            <span class="absolute left-0 flex h-14 w-14 items-center justify-center rounded-2xl bg-tealDeep text-xl font-black text-white lg:relative">1</span>
+            <h3 class="font-black lg:mt-5">Understand</h3><p class="mt-2 text-sm leading-6 text-ink/65">Gather reading evidence and family context.</p>
+          </li>
+          <li class="step-line relative pl-20 lg:pl-0">
+            <span class="absolute left-0 flex h-14 w-14 items-center justify-center rounded-2xl bg-coral text-xl font-black text-white lg:relative">2</span>
+            <h3 class="font-black lg:mt-5">Place precisely</h3><p class="mt-2 text-sm leading-6 text-ink/65">Map the learner into one appropriate sequence.</p>
+          </li>
+          <li class="step-line relative pl-20 lg:pl-0">
+            <span class="absolute left-0 flex h-14 w-14 items-center justify-center rounded-2xl bg-sunny text-xl font-black text-tealDeep lg:relative">3</span>
+            <h3 class="font-black lg:mt-5">Teach</h3><p class="mt-2 text-sm leading-6 text-ink/65">Deliver focused sessions with a trained specialist.</p>
+          </li>
+          <li class="step-line relative pl-20 lg:pl-0">
+            <span class="absolute left-0 flex h-14 w-14 items-center justify-center rounded-2xl bg-tealWarm text-xl font-black text-white lg:relative">4</span>
+            <h3 class="font-black lg:mt-5">Capture</h3><p class="mt-2 text-sm leading-6 text-ink/65">Record accuracy, patterns, and next steps quickly.</p>
+          </li>
+          <li class="step-line relative pl-20 lg:pl-0">
+            <span class="absolute left-0 flex h-14 w-14 items-center justify-center rounded-2xl bg-tealDeep text-xl font-black text-white lg:relative">5</span>
+            <h3 class="font-black lg:mt-5">See growth</h3><p class="mt-2 text-sm leading-6 text-ink/65">Follow mastery, fluency, and what comes next.</p>
+          </li>
+        </ol>
+      </div>
+    </section>
+
+    <section id="families" class="scroll-mt-24 overflow-hidden bg-mist py-20 sm:py-28">
+      <div class="mx-auto grid max-w-7xl items-center gap-12 px-4 sm:px-6 lg:grid-cols-2 lg:px-8">
+        <div>
+          <p class="text-sm font-black uppercase tracking-[.2em] text-tealWarm">For families</p>
+          <h2 class="mt-3 text-3xl font-black tracking-tight sm:text-5xl">Know what your child is mastering—and what comes next.</h2>
+          <p class="mt-5 text-lg leading-8 text-ink/65">No waiting for a static report. Clear Code turns each completed session into a living, plain-language view of growth.</p>
+          <ul class="mt-8 space-y-4">
+            <li class="flex gap-3"><span class="mt-1 flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-tealWarm text-sm font-black text-white">✓</span><span><strong>Skill mastery:</strong> see progress across the exact sequence being taught.</span></li>
+            <li class="flex gap-3"><span class="mt-1 flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-tealWarm text-sm font-black text-white">✓</span><span><strong>Fluency trends:</strong> follow meaningful changes over time, not one isolated score.</span></li>
+            <li class="flex gap-3"><span class="mt-1 flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-tealWarm text-sm font-black text-white">✓</span><span><strong>Clear next steps:</strong> read specialist notes and realistic milestone guidance without jargon.</span></li>
+          </ul>
+        </div>
+        <div class="grid-paper rounded-[2.5rem] p-4 sm:p-7">
+          <div class="rounded-[2rem] bg-white p-5 shadow-soft ring-1 ring-tealDeep/10 sm:p-7">
+            <div class="flex items-center justify-between"><div><p class="text-xs font-black uppercase tracking-widest text-tealWarm">Family progress</p><h3 class="mt-1 text-2xl font-black">Avery’s reading path</h3></div><span class="rounded-full bg-mist px-3 py-2 text-xs font-black">Updated today</span></div>
+            <div class="mt-7 grid gap-3 sm:grid-cols-3">
+              <div class="rounded-2xl bg-cream p-4"><p class="text-xs font-bold text-ink/55">Latest accuracy</p><p class="mt-2 text-3xl font-black">88%</p></div>
+              <div class="rounded-2xl bg-blush p-4"><p class="text-xs font-bold text-ink/55">Sessions logged</p><p class="mt-2 text-3xl font-black">12</p></div>
+              <div class="rounded-2xl bg-mist p-4"><p class="text-xs font-bold text-ink/55">Current focus</p><p class="mt-2 font-black">Short vowels</p></div>
+            </div>
+            <div class="mt-6"><div class="flex justify-between text-sm font-black"><span>Current sequence</span><span>Steady growth</span></div><div class="mt-3 h-3 rounded-full bg-sage"><div class="h-3 w-[68%] rounded-full bg-tealWarm"></div></div></div>
+            <div class="mt-6 rounded-2xl border border-tealDeep/10 p-4"><p class="text-xs font-black uppercase tracking-widest text-coral">From the specialist</p><p class="mt-2 text-sm leading-6">Accuracy is becoming more consistent. Next we’ll practice the same pattern in connected text.</p></div>
+          </div>
         </div>
       </div>
     </section>
 
-    <section id="difference" class="bg-mist py-20">
-      <div class="mx-auto max-w-[1440px] px-4 sm:px-6 lg:px-8">
-        <div class="mx-auto max-w-3xl text-center">
-          <div class="flex flex-col items-center justify-center gap-3 sm:flex-row">
-            <p class="text-sm font-black uppercase tracking-[0.2em] text-tealWarm">The Clear Code Difference</p>
-            <button
-              type="button"
-              class="focus-ring inline-flex items-center gap-2 rounded-full bg-white px-4 py-2 text-sm font-black text-navySoft shadow-lg shadow-coral/15 ring-2 ring-coral/25 transition hover:-translate-y-0.5 hover:bg-blush hover:ring-coral/45"
-              data-section-audio="marketingDifference"
-              data-idle-label="Listen to section"
-              data-playing-label="Pause audio"
-              data-paused-label="Resume audio"
-              aria-label="Play audio explanation for the Clear Code Difference section"
-            >
-              <span class="flex h-8 w-8 items-center justify-center rounded-full bg-coral text-white shadow-sm" aria-hidden="true">
-                <svg class="h-4 w-4 translate-x-px" viewBox="0 0 24 24" fill="currentColor">
-                  <path data-section-audio-icon d="M8 5.5v13l10-6.5-10-6.5Z"></path>
-                </svg>
-              </span>
-              <span class="flex items-center gap-1.5" data-section-audio-label>Listen to section</span>
-              <svg class="h-4 w-4 text-coral" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                <path d="M11 5 6 9H3v6h3l5 4V5Z"></path>
-                <path d="M15.5 8.5a5 5 0 0 1 0 7"></path>
-                <path d="M18.5 5.5a9 9 0 0 1 0 13"></path>
-              </svg>
-            </button>
+    <section id="specialists" class="scroll-mt-24 bg-tealDeep py-20 text-white sm:py-28">
+      <div class="mx-auto grid max-w-7xl items-center gap-12 px-4 sm:px-6 lg:grid-cols-[.9fr_1.1fr] lg:px-8">
+        <div class="order-2 lg:order-1">
+          <div class="rounded-[2rem] bg-white p-5 text-ink shadow-2xl sm:p-7">
+            <div class="flex items-center justify-between"><div><p class="text-xs font-black uppercase tracking-widest text-tealWarm">Rapid session capture</p><h3 class="mt-1 text-xl font-black">PFR Session 1b</h3></div><span class="rounded-full bg-sunny px-3 py-2 text-xs font-black">Next set ready</span></div>
+            <div class="mt-6 rounded-2xl bg-tealDeep p-5 text-white"><p class="text-sm font-bold text-white/65">Correct out of attempted</p><p class="mt-2 text-4xl font-black">9 <span class="text-white/35">/</span> 10</p></div>
+            <div class="mt-4 flex flex-wrap gap-2"><span class="rounded-full bg-mist px-3 py-2 text-sm font-bold">Word reading</span><span class="rounded-full bg-mist px-3 py-2 text-sm font-bold">Connected text</span><span class="rounded-full bg-blush px-3 py-2 text-sm font-bold">Self-corrected</span></div>
+            <div class="mt-5 flex items-center justify-between border-t pt-5"><p class="text-sm font-bold text-ink/55">Structured fields prepared from placement</p><span class="rounded-full bg-tealWarm px-4 py-2 text-sm font-black text-white">Complete</span></div>
           </div>
-          <h2 class="mt-3 text-3xl font-black sm:text-5xl">Smart technology, checked by human wisdom.</h2>
-          <p class="mt-5 text-lg leading-8 text-navySoft/70">Reading is personal. We use technology to spot patterns quickly, then put real educators in the loop so every recommendation feels grounded, warm, and right for the child.</p>
         </div>
-        <div class="mt-10 flex justify-center md:hidden">
-          <img
-            src="./assets/images/clear-code-difference-mobile.png"
-            alt="Four rounded illustrated tiles comparing tech-only apps, static worksheets, Clear Code Reading, and adaptive curriculum."
-            class="w-full rounded-[1.75rem] shadow-2xl shadow-coral/10"
-            loading="lazy"
-          >
-        </div>
-        <div class="mt-12 hidden justify-center md:flex">
-          <figure class="w-full max-w-[1320px] overflow-hidden rounded-[2rem] bg-white shadow-2xl shadow-coral/10 ring-1 ring-navySoft/10">
-            <img
-              src="./assets/images/clear-code-difference-comparison.png"
-              srcset="./assets/images/clear-code-difference-comparison.png 1536w, ./assets/images/clear-code-difference-comparison@2x.png 3072w"
-              sizes="(min-width: 1440px) 1320px, (min-width: 1280px) calc(100vw - 4rem), calc(100vw - 2rem)"
-              alt="Illustrated comparison showing tech-only apps and static worksheets versus Clear Code Reading and adaptive curriculum."
-              class="w-full"
-              loading="lazy"
-            >
-          </figure>
+        <div class="order-1 lg:order-2">
+          <p class="text-sm font-black uppercase tracking-[.2em] text-sunny">Built for specialists</p>
+          <h2 class="mt-3 text-3xl font-black tracking-tight sm:text-5xl">More time teaching. Less time rebuilding the plan.</h2>
+          <p class="mt-5 text-lg leading-8 text-white/70">Clear Code gives center teams a shared instructional system: placement, session capture, decision support, grouping, scheduling, and progress—all connected to the same skill evidence.</p>
+          <div class="mt-8 grid gap-4 sm:grid-cols-2">
+            <div class="rounded-2xl bg-white/8 p-5 ring-1 ring-white/10"><p class="font-black">Fast, structured logging</p><p class="mt-2 text-sm leading-6 text-white/65">Intelligent defaults reduce free text and keep evidence consistent.</p></div>
+            <div class="rounded-2xl bg-white/8 p-5 ring-1 ring-white/10"><p class="font-black">Instructional decision support</p><p class="mt-2 text-sm leading-6 text-white/65">See patterns and advisory next steps while specialists retain judgment.</p></div>
+            <div class="rounded-2xl bg-white/8 p-5 ring-1 ring-white/10"><p class="font-black">Skill-based operations</p><p class="mt-2 text-sm leading-6 text-white/65">Group and schedule learners around instructional fit.</p></div>
+            <div class="rounded-2xl bg-white/8 p-5 ring-1 ring-white/10"><p class="font-black">Evidence that compounds</p><p class="mt-2 text-sm leading-6 text-white/65">Each session strengthens a center’s longitudinal outcomes record.</p></div>
+          </div>
         </div>
       </div>
     </section>
 
-    <section id="audiences" class="bg-white py-20">
+    <section id="approach" class="scroll-mt-24 bg-white py-20 sm:py-28">
       <div class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-        <div class="text-center">
-          <p class="text-sm font-black uppercase tracking-[0.2em] text-coral">Built for every reading team</p>
-          <h2 class="mt-3 text-3xl font-black sm:text-5xl">Parents, teachers, and schools all see the same clear picture.</h2>
+        <div class="mx-auto max-w-3xl text-center"><p class="text-sm font-black uppercase tracking-[.2em] text-coral">Our approach</p><h2 class="mt-3 text-3xl font-black tracking-tight sm:text-5xl">Structured literacy, taught with focus.</h2><p class="mt-5 text-lg leading-8 text-ink/65">We align each learner to one coherent methodology at a time—so instruction is explicit, cumulative, and easier to evaluate.</p></div>
+        <div class="mt-12 grid gap-6 md:grid-cols-2">
+          <article class="rounded-[2rem] bg-cream p-8 ring-1 ring-tealDeep/10"><p class="text-xs font-black uppercase tracking-widest text-coral">Sequence option</p><h3 class="mt-3 text-2xl font-black">Phonics for Reading</h3><p class="mt-4 leading-7 text-ink/65">An explicit, systematic sequence designed to build accurate decoding and increasingly fluent application.</p></article>
+          <article class="rounded-[2rem] bg-mist p-8 ring-1 ring-tealDeep/10"><p class="text-xs font-black uppercase tracking-widest text-tealWarm">Sequence option</p><h3 class="mt-3 text-2xl font-black">IMSE Orton-Gillingham+</h3><p class="mt-4 leading-7 text-ink/65">A structured, multisensory pathway organized around cumulative phonics and orthographic concepts.</p></article>
         </div>
-        <div class="mt-12 grid gap-6 lg:grid-cols-3">
-          <div id="families" class="scroll-mt-28 rounded-[2rem] bg-cream p-8 shadow-sm">
-            <h3 class="text-2xl font-black">For families</h3>
-            <ul class="mt-5 space-y-3 text-navySoft/75">
-              <li>Know exactly where your child is thriving or stuck.</li>
-              <li>Get friendly progress reports without jargon.</li>
-              <li>Practice at home with joyful, confidence-building lessons.</li>
-            </ul>
-          </div>
-          <div id="teachers" class="scroll-mt-28 rounded-[2rem] bg-mist p-8 shadow-sm ring-2 ring-tealWarm/20">
-            <h3 class="text-2xl font-black">For teachers</h3>
-            <ul class="mt-5 space-y-3 text-navySoft/75">
-              <li>See assessment evidence and human-reviewed recommendations.</li>
-              <li>Group students by skill needs quickly.</li>
-              <li>Support intervention with measurable mastery records.</li>
-            </ul>
-          </div>
-          <div id="schools" class="scroll-mt-28 rounded-[2rem] bg-blush p-8 shadow-sm">
-            <h3 class="text-2xl font-black">For schools</h3>
-            <ul class="mt-5 space-y-3 text-navySoft/75">
-              <li>Launch a COPPA-conscious reading workflow.</li>
-              <li>Blend virtual and in-person evaluator review.</li>
-              <li>Track progress across classrooms, programs, and districts.</li>
-            </ul>
-          </div>
+        <p class="mx-auto mt-7 max-w-3xl text-center text-sm leading-6 text-ink/55">Placement is educational and instructional. Clear Code does not diagnose medical conditions or present instructional estimates as clinical conclusions.</p>
+      </div>
+    </section>
+
+    <section id="trust" class="scroll-mt-24 bg-cream py-20">
+      <div class="mx-auto grid max-w-7xl gap-8 px-4 sm:px-6 lg:grid-cols-[.8fr_1.2fr] lg:px-8">
+        <div><p class="text-sm font-black uppercase tracking-[.2em] text-tealWarm">Privacy &amp; trust</p><h2 class="mt-3 text-3xl font-black tracking-tight sm:text-5xl">Built for education. Designed for responsible growth.</h2></div>
+        <div class="grid gap-4 sm:grid-cols-3">
+          <div class="rounded-2xl bg-white p-5 shadow-sm"><p class="font-black">FERPA-minded</p><p class="mt-2 text-sm leading-6 text-ink/60">Education records, role-based access, and center-scoped workflows.</p></div>
+          <div class="rounded-2xl bg-white p-5 shadow-sm"><p class="font-black">Consent-aware</p><p class="mt-2 text-sm leading-6 text-ink/60">Clear authorization practices before eligible services and data sharing.</p></div>
+          <div class="rounded-2xl bg-white p-5 shadow-sm"><p class="font-black">Human accountable</p><p class="mt-2 text-sm leading-6 text-ink/60">AI suggestions stay advisory, editable, and under specialist review.</p></div>
         </div>
       </div>
     </section>
 
-    <section class="bg-navySoft py-20 text-white">
-      <div class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-        <div class="grid gap-6 md:grid-cols-3">
-          <figure class="rounded-3xl bg-white/8 p-7 ring-1 ring-white/10">
-            <blockquote class="text-lg leading-8">“For the first time, I understood why my son was struggling. The human review made all the difference.”</blockquote>
-            <figcaption class="mt-5 font-black text-sunny">Maya R., parent</figcaption>
-          </figure>
-          <figure class="rounded-3xl bg-white/8 p-7 ring-1 ring-white/10">
-            <blockquote class="text-lg leading-8">“The assessment gives me data, but the evaluator notes give me context. That is what teachers need.”</blockquote>
-            <figcaption class="mt-5 font-black text-sunny">Elena P., reading specialist</figcaption>
-          </figure>
-          <figure class="rounded-3xl bg-white/8 p-7 ring-1 ring-white/10">
-            <blockquote class="text-lg leading-8">“Clear Code Reading helped us create a consistent reading support process across grade levels.”</blockquote>
-            <figcaption class="mt-5 font-black text-sunny">Marcus T., elementary principal</figcaption>
-          </figure>
-        </div>
-      </div>
-    </section>
-
-    <section id="results" class="bg-white py-20">
-      <div class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-        <div class="grid gap-6 md:grid-cols-4">
-          <div class="rounded-3xl bg-cream p-8 text-center">
-            <p class="text-5xl font-black text-tealWarm">4x</p>
-            <p class="mt-3 font-bold text-navySoft/70">more clarity than app-only practice</p>
-          </div>
-          <div class="rounded-3xl bg-cream p-8 text-center">
-            <p class="text-5xl font-black text-coral">24h</p>
-            <p class="mt-3 font-bold text-navySoft/70">typical human review turnaround</p>
-          </div>
-          <div class="rounded-3xl bg-cream p-8 text-center">
-            <p class="text-5xl font-black text-tealWarm">K-5</p>
-            <p class="mt-3 font-bold text-navySoft/70">phonics through comprehension support</p>
-          </div>
-          <div class="rounded-3xl bg-cream p-8 text-center">
-            <p class="text-5xl font-black text-coral">100%</p>
-            <p class="mt-3 font-bold text-navySoft/70">designed around child data privacy</p>
-          </div>
-        </div>
-      </div>
-    </section>
-
-    <section class="bg-gradient-to-br from-tealWarm to-[#007D78] py-20 text-white">
-      <div class="mx-auto max-w-4xl px-4 text-center sm:px-6 lg:px-8">
-        <h2 class="text-3xl font-black sm:text-5xl">Ready to unlock clear reading?</h2>
-        <p class="mx-auto mt-5 max-w-2xl text-lg leading-8 text-white/85">Start with a joyful assessment and end with a plan that feels personal, precise, and possible.</p>
+    <section class="bg-gradient-to-br from-tealWarm to-[#08776f] py-20 text-white">
+      <div class="mx-auto max-w-4xl px-4 text-center sm:px-6">
+        <p class="text-sm font-black uppercase tracking-[.2em] text-sunny">A clearer next step</p>
+        <h2 class="mt-3 text-3xl font-black tracking-tight sm:text-5xl">Let’s understand what your reader needs next.</h2>
+        <p class="mx-auto mt-5 max-w-2xl text-lg leading-8 text-white/80">Talk with our team about your child’s reading history, current needs, and whether specialist-led structured-literacy intervention is a fit.</p>
         <div class="mt-8 flex flex-col justify-center gap-3 sm:flex-row">
-          <a href="/assessment/" class="focus-ring rounded-full bg-white px-8 py-4 font-black text-tealWarm transition hover:-translate-y-1">
-            Start free assessment
-          </a>
-          <a href="/login/" class="focus-ring rounded-full bg-navySoft px-8 py-4 font-black text-white transition hover:-translate-y-1">
-            Login
-          </a>
+          <button data-open-modal class="focus-ring rounded-full bg-white px-8 py-4 font-black text-tealDeep transition hover:-translate-y-1">Schedule a consultation</button>
+          <a href="/assessment/" class="focus-ring rounded-full bg-tealDeep px-8 py-4 font-black text-white transition hover:-translate-y-1">Try the reading survey</a>
         </div>
       </div>
     </section>
   </main>
 
-  <footer class="bg-navySoft px-4 py-10 text-white sm:px-6 lg:px-8">
+  <footer class="bg-tealDeep px-4 py-10 text-white sm:px-6 lg:px-8">
     <div class="mx-auto flex max-w-7xl flex-col gap-6 md:flex-row md:items-center md:justify-between">
-      <div>
-        <span class="logo-plate inline-flex rounded-2xl p-2 shadow-sm">
-          <img src="./assets/logo/clear-code-reading-logo.png" alt="Clear Code Reading" class="h-12 w-auto max-w-[260px] object-contain">
-        </span>
-        <p class="mt-3 max-w-xl text-sm text-white/70">COPPA-conscious reading assessment and personalized curriculum with human evaluator review.</p>
-      </div>
-      <div class="flex flex-wrap gap-5 text-sm font-bold text-white/75">
-        <a href="#how" class="hover:text-sunny">How it works</a>
-        <a href="#difference" class="hover:text-sunny">Human review</a>
-        <a href="#families" class="hover:text-sunny">Families</a>
-        <a href="#teachers" class="hover:text-sunny">Teachers</a>
-        <a href="#schools" class="hover:text-sunny">Schools</a>
-        <a href="#results" class="hover:text-sunny">Results</a>
-        <a href="/login/" class="hover:text-sunny">Login</a>
-      </div>
+      <div><span class="inline-flex rounded-2xl bg-white p-2"><img src="./assets/logo/clear-code-reading-logo.png" alt="Clear Code Reading" class="h-11 w-auto max-w-[240px] object-contain"></span><p class="mt-3 max-w-xl text-sm text-white/65">Specialist-led structured-literacy intervention with precise placement and progress families can see.</p></div>
+      <div class="flex flex-wrap gap-5 text-sm font-bold text-white/70"><a href="#how" class="hover:text-sunny">How it works</a><a href="#families" class="hover:text-sunny">Families</a><a href="#specialists" class="hover:text-sunny">Specialists</a><a href="#approach" class="hover:text-sunny">Approach</a><a href="#trust" class="hover:text-sunny">Privacy</a><a href="/login/" class="hover:text-sunny">Login</a></div>
     </div>
-    <div class="mx-auto mt-8 max-w-7xl border-t border-white/10 pt-6 text-sm text-white/55">
-      © <span id="year"></span> Clear Code Reading. Built for clarity, confidence, and joy in reading.
-    </div>
+    <div class="mx-auto mt-8 max-w-7xl border-t border-white/10 pt-6 text-sm text-white/50">© <span id="year"></span> Clear Code Reading. Education-only structured-literacy intervention.</div>
   </footer>
 
-  <div id="signup" class="sr-only" aria-hidden="true"></div>
-  <div id="signup-modal" class="fixed inset-0 z-[60] hidden items-center justify-center bg-navySoft/70 px-4 backdrop-blur-sm" role="dialog" aria-modal="true" aria-labelledby="signup-title">
-    <div class="w-full max-w-lg rounded-[2rem] bg-white p-6 shadow-2xl">
-      <div class="flex items-start justify-between gap-6">
-        <div>
-          <p class="text-sm font-black uppercase tracking-[0.18em] text-tealWarm">Get started</p>
-          <h2 id="signup-title" class="mt-2 text-3xl font-black text-navySoft">Start your free reading assessment.</h2>
-        </div>
-        <button id="close-modal" class="focus-ring rounded-full bg-navySoft/5 px-4 py-2 font-black text-navySoft transition hover:bg-coral hover:text-white" aria-label="Close signup form">×</button>
-      </div>
+  <div id="consultation-modal" class="fixed inset-0 z-[60] hidden items-center justify-center overflow-y-auto bg-tealDeep/75 px-4 py-8 backdrop-blur-sm" role="dialog" aria-modal="true" aria-labelledby="consultation-title">
+    <div class="w-full max-w-lg rounded-[2rem] bg-white p-6 shadow-2xl sm:p-8">
+      <div class="flex items-start justify-between gap-5"><div><p class="text-sm font-black uppercase tracking-[.18em] text-tealWarm">Start a conversation</p><h2 id="consultation-title" class="mt-2 text-3xl font-black">Schedule a consultation.</h2><p class="mt-2 text-sm leading-6 text-ink/60">Tell us a little about your reader. Our team will follow up to find a time.</p></div><button id="close-modal" class="focus-ring rounded-full bg-ink/5 px-4 py-2 text-xl font-black" aria-label="Close consultation form">×</button></div>
       <form class="mt-6 space-y-4" method="post" action="/crm/signup/">
         {% csrf_token %}
-        <label class="block">
-          <span class="text-sm font-bold text-navySoft">Your name</span>
-          <input class="mt-2 w-full rounded-2xl border border-navySoft/15 px-4 py-3 focus:border-tealWarm focus:outline-none" type="text" name="name" autocomplete="name" required>
-        </label>
-        <label class="block">
-          <span class="text-sm font-bold text-navySoft">Email</span>
-          <input class="mt-2 w-full rounded-2xl border border-navySoft/15 px-4 py-3 focus:border-tealWarm focus:outline-none" type="email" name="email" autocomplete="email" required>
-        </label>
-        <label class="block">
-          <span class="text-sm font-bold text-navySoft">I am a...</span>
-          <select class="mt-2 w-full rounded-2xl border border-navySoft/15 px-4 py-3 focus:border-tealWarm focus:outline-none" name="audience">
-            <option value="parent">Parent</option>
-            <option value="teacher">Teacher</option>
-            <option value="school">School or district leader</option>
-          </select>
-        </label>
-        <label class="block">
-          <span class="text-sm font-bold text-navySoft">School or organization</span>
-          <input class="mt-2 w-full rounded-2xl border border-navySoft/15 px-4 py-3 focus:border-tealWarm focus:outline-none" type="text" name="organization_name" autocomplete="organization">
-        </label>
-        <div class="grid gap-4 sm:grid-cols-2">
-          <label class="block">
-            <span class="text-sm font-bold text-navySoft">Phone</span>
-            <input class="mt-2 w-full rounded-2xl border border-navySoft/15 px-4 py-3 focus:border-tealWarm focus:outline-none" type="tel" name="phone" autocomplete="tel">
-          </label>
-          <label class="block">
-            <span class="text-sm font-bold text-navySoft">Students</span>
-            <input class="mt-2 w-full rounded-2xl border border-navySoft/15 px-4 py-3 focus:border-tealWarm focus:outline-none" type="number" min="0" name="estimated_students" inputmode="numeric">
-          </label>
-        </div>
-        <label class="block">
-          <span class="text-sm font-bold text-navySoft">What can we help with?</span>
-          <textarea class="mt-2 min-h-24 w-full rounded-2xl border border-navySoft/15 px-4 py-3 focus:border-tealWarm focus:outline-none" name="notes"></textarea>
-        </label>
-        <button type="submit" class="focus-ring w-full rounded-full bg-tealWarm px-6 py-4 font-black text-white transition hover:bg-[#00a699]">
-          Request early access
-        </button>
-        <p class="text-center text-xs leading-5 text-navySoft/55">By requesting access, you agree to receive Clear Code Reading updates. Child assessment data requires verified guardian consent.</p>
+        <input type="hidden" name="audience" value="parent">
+        <label class="block"><span class="text-sm font-bold">Your name</span><input class="mt-2 w-full rounded-2xl border border-ink/15 px-4 py-3 focus:border-tealWarm focus:outline-none" name="name" autocomplete="name" required></label>
+        <label class="block"><span class="text-sm font-bold">Email</span><input class="mt-2 w-full rounded-2xl border border-ink/15 px-4 py-3 focus:border-tealWarm focus:outline-none" type="email" name="email" autocomplete="email" required></label>
+        <label class="block"><span class="text-sm font-bold">Phone <span class="font-normal text-ink/45">(optional)</span></span><input class="mt-2 w-full rounded-2xl border border-ink/15 px-4 py-3 focus:border-tealWarm focus:outline-none" type="tel" name="phone" autocomplete="tel"></label>
+        <label class="block"><span class="text-sm font-bold">What would you like us to know?</span><textarea class="mt-2 min-h-28 w-full rounded-2xl border border-ink/15 px-4 py-3 focus:border-tealWarm focus:outline-none" name="notes" placeholder="Your child’s age, reading history, or what prompted you to reach out"></textarea></label>
+        <button class="focus-ring w-full rounded-full bg-coral px-6 py-4 font-black text-white hover:bg-[#df5c4b]">Request a consultation</button>
+        <p class="text-center text-xs leading-5 text-ink/50">Please do not include sensitive student records in this form. We’ll handle consent before collecting educational data.</p>
       </form>
     </div>
   </div>
 
   <script>
-    const modal = document.getElementById('signup-modal');
+    const modal = document.getElementById('consultation-modal');
     const closeModal = document.getElementById('close-modal');
-    document.getElementById('year').textContent = new Date().getFullYear();
-    document.querySelectorAll('[data-open-modal]').forEach((button) => {
-      button.addEventListener('click', () => {
-        modal.classList.remove('hidden');
-        modal.classList.add('flex');
-      });
-    });
-    closeModal.addEventListener('click', () => {
+    const openModal = () => {
+      modal.classList.remove('hidden');
+      modal.classList.add('flex');
+      document.body.classList.add('overflow-hidden');
+      closeModal.focus();
+    };
+    const hideModal = () => {
       modal.classList.add('hidden');
       modal.classList.remove('flex');
-    });
-    modal.addEventListener('click', (event) => {
-      if (event.target === modal) {
-        modal.classList.add('hidden');
-        modal.classList.remove('flex');
-      }
-    });
-
-    let sectionAudioPlayer = null;
-    let activeSectionAudioButton = null;
-    const sectionAudioPlayIcon = 'M8 5.5v13l10-6.5-10-6.5Z';
-    const sectionAudioPauseIcon = 'M7 5h3v14H7V5Zm7 0h3v14h-3V5Z';
-
-    function setSectionAudioButtonState(button, state) {
-      if (!button) return;
-      const label = button.querySelector('[data-section-audio-label]');
-      const icon = button.querySelector('[data-section-audio-icon]');
-      if (state === 'playing') {
-        if (label) label.textContent = button.dataset.playingLabel || 'Pause audio';
-        if (icon) icon.setAttribute('d', sectionAudioPauseIcon);
-        button.setAttribute('aria-pressed', 'true');
-        button.setAttribute('aria-label', 'Pause section audio');
-        return;
-      }
-      if (state === 'paused') {
-        if (label) label.textContent = button.dataset.pausedLabel || 'Resume audio';
-        if (icon) icon.setAttribute('d', sectionAudioPlayIcon);
-        button.setAttribute('aria-pressed', 'false');
-        button.setAttribute('aria-label', 'Resume section audio');
-        return;
-      }
-      if (label) label.textContent = button.dataset.idleLabel || 'Listen to section';
-      if (icon) icon.setAttribute('d', sectionAudioPlayIcon);
-      button.removeAttribute('aria-pressed');
-    }
-
-    function resetSectionAudioButton(button) {
-      if (!button) return;
-      setSectionAudioButtonState(button, 'idle');
-    }
-
-    function showSectionAudioStatus(button, message) {
-      const section = button.closest('section');
-      const existing = section.querySelector('[data-section-audio-status]');
-      if (existing) existing.remove();
-      const status = document.createElement('p');
-      status.dataset.sectionAudioStatus = 'true';
-      status.className = 'mt-3 rounded-2xl bg-blush px-4 py-3 text-sm font-black text-coral';
-      status.textContent = message;
-      button.closest('div').insertAdjacentElement('afterend', status);
-      window.setTimeout(() => status.remove(), 4500);
-    }
-
-    document.querySelectorAll('[data-section-audio]').forEach((button) => {
-      button.addEventListener('click', () => {
-        const key = button.dataset.sectionAudio;
-        if (!key) return;
-
-        if (sectionAudioPlayer && activeSectionAudioButton === button) {
-          if (sectionAudioPlayer.paused) {
-            sectionAudioPlayer.play()
-              .then(() => setSectionAudioButtonState(button, 'playing'))
-              .catch(() => showSectionAudioStatus(button, 'Tap again to hear this section out loud.'));
-          } else {
-            sectionAudioPlayer.pause();
-            setSectionAudioButtonState(button, 'paused');
-          }
-          return;
-        }
-
-        if (sectionAudioPlayer) {
-          sectionAudioPlayer.pause();
-          sectionAudioPlayer.currentTime = 0;
-          sectionAudioPlayer = null;
-        }
-        resetSectionAudioButton(activeSectionAudioButton);
-
-        const audio = new Audio(`/assessment-audio/${key}.mp3`);
-        sectionAudioPlayer = audio;
-        activeSectionAudioButton = button;
-        setSectionAudioButtonState(button, 'playing');
-
-        audio.addEventListener('ended', () => {
-          resetSectionAudioButton(button);
-          sectionAudioPlayer = null;
-          activeSectionAudioButton = null;
-        }, { once: true });
-        audio.addEventListener('error', () => {
-          resetSectionAudioButton(button);
-          sectionAudioPlayer = null;
-          activeSectionAudioButton = null;
-          showSectionAudioStatus(button, 'The friendly voice is being prepared. Please try again in a moment.');
-        }, { once: true });
-        audio.play().catch(() => {
-          resetSectionAudioButton(button);
-          sectionAudioPlayer = null;
-          activeSectionAudioButton = null;
-          showSectionAudioStatus(button, 'Tap again to hear this section out loud.');
-        });
-      });
-    });
+      document.body.classList.remove('overflow-hidden');
+    };
+    document.getElementById('year').textContent = new Date().getFullYear();
+    document.querySelectorAll('[data-open-modal]').forEach((button) => button.addEventListener('click', openModal));
+    closeModal.addEventListener('click', hideModal);
+    modal.addEventListener('click', (event) => { if (event.target === modal) hideModal(); });
+    document.addEventListener('keydown', (event) => { if (event.key === 'Escape' && !modal.classList.contains('hidden')) hideModal(); });
   </script>
 </body>
 </html>
