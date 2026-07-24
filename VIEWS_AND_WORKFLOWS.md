@@ -690,6 +690,24 @@ class MasteryRecordViewSet(viewsets.ModelViewSet):
             queryset = queryset.filter(child_id=child_id)
         return queryset
 
+## Phase 2 family dashboard workflow
+
+`GET /api/v1/progress/dashboard/?child=<id>` resolves the requesting guardian relationship
+before aggregating any data. The response is built from `Session`, `Progress`, `MasteryRecord`,
+and `StudentPlacement`; it does not create a second specialist reporting workflow. Staff access
+is center-scoped and student access is self-only. The portal uses the same aggregation service.
+
+## Phase 2 scheduling workflow
+
+1. Staff records student and provider weekly availability.
+2. `schedule-bookings/recommendations` ranks compatible groups by methodology, adjacent sequence
+   positions, and exact overlapping windows. Unauthorized IEP-aligned students are shown as
+   pending rather than included.
+3. A booking starts as `proposed`; staff calls `approve` explicitly.
+4. `sync` pushes an approved booking to the configured bought scheduler.
+5. `reconcile-inbound` pulls remote changes and upserts by `(center, external_booking_id)`.
+6. `operations-metrics` reports utilization, waitlist, and submarket concentration triggers.
+
 ```
 
 ## `apps/crm/views.py`

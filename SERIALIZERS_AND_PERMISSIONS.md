@@ -875,6 +875,18 @@ class MasteryRecordSerializer(COPPAConsentMixin, serializers.ModelSerializer):
             raise serializers.ValidationError({"progress": "Progress record must track the same skill."})
         return attrs
 
+## Phase 2 aggregation and scheduling permissions
+
+- Parent dashboard data is read-only and requires the exact requesting guardian relationship,
+  active required consent logs, and guardian-level dashboard permission.
+- Progress and mastery querysets are scoped before serialization to prevent cross-family and
+  cross-center enumeration.
+- Scheduling serializers reject IEP-aligned bookings until both parent consent and IEP-team
+  approval are recorded.
+- Scheduling mutations validate center membership even when a foreign-key ID is supplied.
+- Booking status and external sync fields are read-only in ordinary CRUD. Only explicit approval,
+  outbound sync, and inbound reconciliation actions may advance them.
+
 ```
 
 ## `apps/crm/serializers.py`

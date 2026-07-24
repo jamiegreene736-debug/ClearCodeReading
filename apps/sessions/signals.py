@@ -1,9 +1,11 @@
 from decimal import Decimal
 
-from django.db.models.signals import m2m_changed, post_save
+from django.db import transaction
+from django.db.models.signals import m2m_changed, post_save, pre_save
 from django.dispatch import receiver
 
 from .models import Session, SessionRevision
+from apps.notifications.tasks import send_progress_report_to_parents
 
 
 SNAPSHOT_FIELDS = (
@@ -38,6 +40,15 @@ def _serialize_value(value):
     return str(value) if isinstance(value, Decimal) else value
 
 
+@receiver(pre_save, sender=Session)
+def cache_previous_session_status(sender, instance, **kwargs):
+    instance._previous_status = (
+        Session.objects.filter(pk=instance.pk).values_list("status", flat=True).first()
+        if instance.pk
+        else None
+    )
+
+
 @receiver(post_save, sender=Session)
 def snapshot_session_revision(sender, instance, **kwargs):
     snapshot = {
@@ -56,6 +67,8 @@ def snapshot_session_revision(sender, instance, **kwargs):
             "snapshot": snapshot,
         },
     )
+    if instance.status == Session.Status.COMPLETED and getattr(instance, "_previous_status", None) != Session.Status.COMPLETED:
+        transaction.on_commit(lambda: send_progress_report_to_parents.delay(instance.child_id))
 
 
 @receiver(m2m_changed, sender=Session.targeted_positions.through)

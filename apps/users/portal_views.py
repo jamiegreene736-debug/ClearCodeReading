@@ -12,7 +12,7 @@ from django.views.generic import TemplateView, View
 
 from apps.assessments.models import Assessment, AssessmentResult
 from apps.crm.models import Lead
-from apps.api.permissions import user_can_evaluate_child
+from apps.api.permissions import has_coppa_consent, user_can_evaluate_child
 from apps.curriculum.models import (
     ChildLessonAssignment,
     CurriculumSequence,
@@ -21,6 +21,10 @@ from apps.curriculum.models import (
     TeacherLessonTemplate,
 )
 from apps.curriculum.placement import confirm_recommendation
+from apps.curriculum.models import StudentPlacement
+from apps.progress.dashboard import build_parent_dashboard
+from apps.scheduling.services import operations_metrics, ranked_group_suggestions
+from apps.sessions.models import Session
 from apps.users.models import ChildProfile, CustomUser, GuardianRelationship
 
 
@@ -114,7 +118,13 @@ class PortalDashboardView(PortalAuthMixin, TemplateView):
         elif context["is_teacher"]:
             children = self._children_for_teacher(user)
         else:
-            children = list(ChildProfile.objects.filter(is_deleted=False).order_by("last_name", "first_name")[:12])
+            child_queryset = ChildProfile.objects.filter(is_deleted=False)
+            if not user.is_superuser and user.role != CustomUser.Role.SUPER_ADMIN:
+                child_queryset = child_queryset.filter(
+                    school__memberships__user=user,
+                    school__memberships__is_deleted=False,
+                )
+            children = list(child_queryset.distinct().order_by("last_name", "first_name")[:12])
 
         assessments = (
             Assessment.objects.filter(child__in=children, is_deleted=False)
@@ -161,6 +171,67 @@ class PortalDashboardView(PortalAuthMixin, TemplateView):
             .select_related("evidence__child", "recommended_curriculum", "recommended_position")
             .prefetch_related("recommended_sequence__position")
         )
+        parent_dashboards = []
+        if context["is_parent"]:
+            allowed_child_ids = {
+                relationship.child_id
+                for relationship in relationships
+                if relationship.consent_status == GuardianRelationship.ConsentStatus.GRANTED
+                and relationship.permissions.get("progress_dashboard") is not False
+                and has_coppa_consent(relationship.child)
+            }
+            parent_dashboards = [build_parent_dashboard(child) for child in children if child.id in allowed_child_ids]
+
+        upcoming_sessions = Session.objects.none()
+        student_snapshots = []
+        if context["is_teacher"] or context["is_admin"]:
+            upcoming_sessions = (
+                Session.objects.filter(
+                    child__in=children,
+                    status=Session.Status.SCHEDULED,
+                    scheduled_start__gte=timezone.now(),
+                    is_deleted=False,
+                )
+                .select_related("child", "specialist", "curriculum_position")
+                .order_by("scheduled_start")[:12]
+            )
+            placements = {
+                placement.child_id: placement
+                for placement in StudentPlacement.objects.filter(child__in=children, is_active=True, is_deleted=False)
+                .select_related("current_position", "curriculum")
+            }
+            latest_sessions = {
+                session.child_id: session
+                for session in Session.objects.filter(child__in=children, status=Session.Status.COMPLETED, is_deleted=False)
+                .select_related("child")
+                .order_by("child_id", "scheduled_start")
+            }
+            student_snapshots = [
+                {
+                    "child": child,
+                    "placement": placements.get(child.id),
+                    "latest_session": latest_sessions.get(child.id),
+                }
+                for child in children
+            ]
+
+        operations = None
+        grouping_suggestions = []
+        if context["is_admin"]:
+            center = next((child.school for child in children if child.school_id), None)
+            if center is None and not user.is_superuser:
+                membership = user.school_memberships.filter(is_deleted=False).select_related("school").first()
+                center = membership.school if membership else None
+            if center:
+                operations = operations_metrics(center)
+                grouping_suggestions = ranked_group_suggestions(center)[:8]
+
+        teachers = CustomUser.objects.filter(role=CustomUser.Role.TEACHER, is_active=True, is_deleted=False)
+        if context["is_admin"] and not user.is_superuser and user.role != CustomUser.Role.SUPER_ADMIN:
+            teachers = teachers.filter(
+                school_memberships__school__memberships__user=user,
+                school_memberships__school__memberships__is_deleted=False,
+            ).distinct()
 
         context.update(
             {
@@ -173,7 +244,7 @@ class PortalDashboardView(PortalAuthMixin, TemplateView):
                 "average_reading_age": latest_results.aggregate(value=Avg("reading_age"))["value"],
                 "child_count": len(children),
                 "kpi_count": self._kpi_count(latest_results.first()),
-                "teachers": CustomUser.objects.filter(role=CustomUser.Role.TEACHER, is_active=True, is_deleted=False),
+                "teachers": teachers,
                 "recent_leads": recent_leads,
                 "lead_count": lead_count,
                 "new_lead_count": new_lead_count,
@@ -183,6 +254,11 @@ class PortalDashboardView(PortalAuthMixin, TemplateView):
                 "teacher_template_assignments": teacher_template_assignments[:12],
                 "child_lesson_assignments": child_lesson_assignments[:12],
                 "placement_recommendations": placement_recommendations[:12],
+                "parent_dashboards": parent_dashboards,
+                "upcoming_sessions": upcoming_sessions,
+                "student_snapshots": student_snapshots,
+                "operations_metrics": operations,
+                "grouping_suggestions": grouping_suggestions,
             }
         )
         return context

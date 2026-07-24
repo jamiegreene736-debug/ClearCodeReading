@@ -141,6 +141,29 @@ Curriculum and progress:
 - `/api/v1/teaching-aids/`
 - `/api/v1/progress/`
 - `/api/v1/progress/dashboard/`
+- `/api/v1/schedule-bookings/recommendations/`
+- `/api/v1/schedule-bookings/operations-metrics/`
+- `/api/v1/schedule-bookings/<id>/approve/`
+- `/api/v1/schedule-bookings/<id>/sync/`
+- `/api/v1/schedule-bookings/reconcile-inbound/`
+
+## Phase 2: family progress and scheduling
+
+The parent dashboard is generated directly from completed intervention sessions, skill progress,
+mastery records, and active placement. It exposes foundational-skill mastery, accuracy and WCPM
+trends, decodable-text work, the latest specialist note, home practice, and a clearly labeled
+sequence-position milestone estimate. Guardians must have an active relationship, all required
+consents, and `permissions.progress_dashboard` must not be `false`.
+
+Scheduling remains advisory until staff approve a proposal. Group recommendations require the
+same methodology, adjacent sequence positions, overlapping student/provider availability, and
+completed IEP authorization when applicable. Approved bookings can be pushed through the
+configured `SCHEDULER_ADAPTER`; `reconcile-inbound` applies remote changes idempotently by external
+booking ID. Configure an adapter implementing `upsert_booking()` and `pull_bookings()` for Jane App
+or Acuity.
+
+Operations metrics surface the launch thresholds: 75% utilization, 25 active waitlist entries,
+and 40% demand from one submarket.
 - `/api/v1/mastery-records/`
 
 CRM:
