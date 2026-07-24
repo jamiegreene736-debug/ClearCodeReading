@@ -73,8 +73,26 @@ def soft_delete_children(modeladmin, request, queryset):
 @admin.register(ChildProfile)
 class ChildProfileAdmin(admin.ModelAdmin):
     inlines = (GuardianRelationshipInline, ConsentLogInline)
-    list_display = ("first_name", "last_name", "grade_level", "school", "student_identifier", "is_deleted", "created_at")
-    list_filter = ("grade_level", "school", "is_deleted", "created_at")
+    list_display = (
+        "first_name",
+        "last_name",
+        "grade_level",
+        "school",
+        "iep_status",
+        "idea_parent_consent_status",
+        "iep_team_approval_status",
+        "is_deleted",
+        "created_at",
+    )
+    list_filter = (
+        "grade_level",
+        "school",
+        "iep_status",
+        "idea_parent_consent_status",
+        "iep_team_approval_status",
+        "is_deleted",
+        "created_at",
+    )
     search_fields = ("first_name", "last_name", "student_identifier", "school__name", "user__email")
     autocomplete_fields = ("user", "school")
     readonly_fields = ("created_at", "updated_at", "deleted_at")

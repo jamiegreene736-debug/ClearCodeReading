@@ -1,6 +1,6 @@
 from decimal import Decimal
 
-from django.db.models.signals import post_save
+from django.db.models.signals import m2m_changed, post_save
 from django.dispatch import receiver
 
 from .models import Session, SessionRevision
@@ -19,6 +19,8 @@ SNAPSHOT_FIELDS = (
     "activities_completed",
     "item_sets",
     "accuracy_rate",
+    "accuracy_numerator",
+    "accuracy_denominator",
     "time_to_mastery_signals",
     "error_patterns",
     "behavioral_observations",
@@ -42,6 +44,9 @@ def snapshot_session_revision(sender, instance, **kwargs):
         field: _serialize_value(getattr(instance, field))
         for field in SNAPSHOT_FIELDS
     }
+    snapshot["targeted_position_ids"] = list(
+        instance.targeted_positions.order_by("sequence_order").values_list("id", flat=True)
+    )
     SessionRevision.objects.update_or_create(
         session=instance,
         revision=instance.revision,
@@ -51,3 +56,17 @@ def snapshot_session_revision(sender, instance, **kwargs):
             "snapshot": snapshot,
         },
     )
+
+
+@receiver(m2m_changed, sender=Session.targeted_positions.through)
+def snapshot_targeted_positions(sender, instance, action, **kwargs):
+    if action not in {"post_add", "post_remove", "post_clear"}:
+        return
+    revision = SessionRevision.objects.filter(session=instance, revision=instance.revision).first()
+    if revision is None:
+        return
+    revision.snapshot = {
+        **revision.snapshot,
+        "targeted_position_ids": list(instance.targeted_positions.order_by("sequence_order").values_list("id", flat=True)),
+    }
+    revision.save(update_fields=["snapshot", "updated_at"])

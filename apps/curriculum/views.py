@@ -1,13 +1,43 @@
-from rest_framework import viewsets
+from django.core.exceptions import ValidationError as DjangoValidationError
+from django.db.models import Q
+from rest_framework import status, viewsets
 from rest_framework.decorators import action
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 
-from apps.api.permissions import has_coppa_consent
-from apps.curriculum.models import Lesson, Skill, TeachingAid
-from apps.curriculum.serializers import LessonSerializer, SkillSerializer, TeachingAidSerializer
+from apps.api.permissions import IsEvaluator, has_coppa_consent, user_can_evaluate_child
+from apps.curriculum.models import (
+    Curriculum,
+    CurriculumSequence,
+    Lesson,
+    PlacementEvidence,
+    PlacementRecommendation,
+    Skill,
+    StudentPlacement,
+    TeachingAid,
+)
+from apps.curriculum.placement import confirm_recommendation, generate_recommendation
+from apps.curriculum.serializers import (
+    ConfirmPlacementRecommendationSerializer,
+    CurriculumSequenceSerializer,
+    CurriculumSerializer,
+    LessonSerializer,
+    PlacementEvidenceSerializer,
+    PlacementRecommendationSerializer,
+    SkillSerializer,
+    StudentPlacementSerializer,
+    TeachingAidSerializer,
+)
 from apps.progress.models import Progress
-from apps.users.models import ChildProfile
+from apps.users.models import AuditLog, ChildProfile, CustomUser
+
+
+def _center_scope(user):
+    if not getattr(user, "is_authenticated", False):
+        return Q(pk__in=[])
+    if getattr(user, "is_superuser", False) or getattr(user, "role", None) == CustomUser.Role.SUPER_ADMIN:
+        return Q()
+    return Q(center__memberships__user=user, center__memberships__is_deleted=False)
 
 
 class SkillViewSet(viewsets.ModelViewSet):
@@ -71,3 +101,182 @@ class TeachingAidViewSet(viewsets.ModelViewSet):
     serializer_class = TeachingAidSerializer
     permission_classes = [IsAuthenticated]
     queryset = TeachingAid.objects.filter(is_deleted=False).select_related("lesson", "skill")
+
+
+class CurriculumViewSet(viewsets.ReadOnlyModelViewSet):
+    serializer_class = CurriculumSerializer
+    permission_classes = [IsAuthenticated]
+
+    def get_queryset(self):
+        return Curriculum.objects.filter(is_deleted=False).filter(_center_scope(self.request.user)).distinct()
+
+
+class CurriculumSequenceViewSet(viewsets.ReadOnlyModelViewSet):
+    serializer_class = CurriculumSequenceSerializer
+    permission_classes = [IsAuthenticated]
+
+    def get_queryset(self):
+        queryset = (
+            CurriculumSequence.objects.filter(is_deleted=False)
+            .filter(_center_scope(self.request.user))
+            .select_related("center", "curriculum")
+            .prefetch_related("prerequisites")
+            .distinct()
+        )
+        curriculum_id = self.request.query_params.get("curriculum")
+        if curriculum_id:
+            queryset = queryset.filter(curriculum_id=curriculum_id)
+        return queryset
+
+
+class PlacementEvidenceViewSet(viewsets.ModelViewSet):
+    serializer_class = PlacementEvidenceSerializer
+    permission_classes = [IsAuthenticated, IsEvaluator]
+
+    def get_queryset(self):
+        return (
+            PlacementEvidence.objects.filter(is_deleted=False)
+            .filter(_center_scope(self.request.user))
+            .select_related("center", "child", "curriculum", "administered_by", "source_assessment")
+            .distinct()
+        )
+
+    @action(detail=True, methods=["post"], url_path="recommend")
+    def recommend(self, request, pk=None):
+        evidence = self.get_object()
+        if not user_can_evaluate_child(request.user, evidence.child):
+            return Response({"detail": "You are not assigned to this child's center."}, status=status.HTTP_403_FORBIDDEN)
+        if evidence.status != PlacementEvidence.Status.COMPLETED:
+            return Response(
+                {"detail": "Complete the structured placement evidence before generating a recommendation."},
+                status=status.HTTP_409_CONFLICT,
+            )
+        existing = getattr(evidence, "recommendation", None)
+        if existing and existing.status != PlacementRecommendation.Status.PENDING:
+            return Response(
+                {"detail": "A finalized specialist decision cannot be regenerated."},
+                status=status.HTTP_409_CONFLICT,
+            )
+        recommendation = generate_recommendation(evidence)
+        AuditLog.objects.create(
+            actor=request.user,
+            action="placement.recommendation_generated",
+            entity_type="PlacementRecommendation",
+            entity_id=str(recommendation.id),
+            after={
+                "child_id": evidence.child_id,
+                "decision": recommendation.decision,
+                "recommended_position_id": recommendation.recommended_position_id,
+            },
+        )
+        return Response(
+            PlacementRecommendationSerializer(recommendation, context=self.get_serializer_context()).data,
+            status=status.HTTP_201_CREATED,
+        )
+
+
+class PlacementRecommendationViewSet(viewsets.ReadOnlyModelViewSet):
+    serializer_class = PlacementRecommendationSerializer
+    permission_classes = [IsAuthenticated, IsEvaluator]
+
+    def get_queryset(self):
+        return (
+            PlacementRecommendation.objects.filter(is_deleted=False)
+            .filter(_center_scope(self.request.user))
+            .select_related(
+                "center",
+                "evidence__child",
+                "evidence__curriculum",
+                "recommended_curriculum",
+                "recommended_position",
+                "final_curriculum",
+                "final_position",
+                "resulting_placement__current_position",
+            )
+            .prefetch_related("recommended_sequence__position")
+            .distinct()
+        )
+
+    @action(detail=True, methods=["post"], url_path="confirm")
+    def confirm(self, request, pk=None):
+        recommendation = self.get_object()
+        if not user_can_evaluate_child(request.user, recommendation.evidence.child):
+            return Response({"detail": "You are not assigned to this child's center."}, status=status.HTTP_403_FORBIDDEN)
+        if recommendation.status != PlacementRecommendation.Status.PENDING:
+            return Response(
+                {"detail": "This recommendation already has a specialist decision."},
+                status=status.HTTP_409_CONFLICT,
+            )
+        input_serializer = ConfirmPlacementRecommendationSerializer(data=request.data)
+        input_serializer.is_valid(raise_exception=True)
+        try:
+            placement = confirm_recommendation(
+                recommendation,
+                request.user,
+                final_position=input_serializer.validated_data.get("final_position"),
+                override_rationale=input_serializer.validated_data.get("override_rationale", ""),
+                evidence_considered=input_serializer.validated_data.get("evidence_considered", {}),
+            )
+        except DjangoValidationError as error:
+            return Response({"detail": error.messages}, status=status.HTTP_400_BAD_REQUEST)
+        recommendation.refresh_from_db()
+        AuditLog.objects.create(
+            actor=request.user,
+            action=f"placement.recommendation_{recommendation.status}",
+            entity_type="PlacementRecommendation",
+            entity_id=str(recommendation.id),
+            after={
+                "child_id": recommendation.evidence.child_id,
+                "placement_id": placement.id,
+                "final_position_id": recommendation.final_position_id,
+                "override_labeled": recommendation.status == PlacementRecommendation.Status.OVERRIDDEN,
+            },
+        )
+        return Response(self.get_serializer(recommendation).data)
+
+    @action(detail=False, methods=["get"], url_path="grouping-suggestions")
+    def grouping_suggestions(self, request):
+        placements = (
+            StudentPlacement.objects.filter(is_active=True, is_deleted=False)
+            .filter(_center_scope(request.user))
+            .select_related("child", "curriculum", "current_position")
+            .distinct()
+            .order_by("curriculum__code", "current_position__sequence_order", "child__last_name")
+        )
+        groups = {}
+        for placement in placements:
+            key = f"{placement.curriculum.code}:{placement.current_position.code}"
+            group = groups.setdefault(
+                key,
+                {
+                    "methodology": placement.curriculum.code,
+                    "curriculum": placement.curriculum_id,
+                    "position": placement.current_position_id,
+                    "position_code": placement.current_position.code,
+                    "students": [],
+                },
+            )
+            child = placement.child
+            group["students"].append(
+                {
+                    "child": child.id,
+                    "display_name": str(child),
+                    "availability_windows": child.availability_windows,
+                    "services_authorized": child.idea_services_authorized,
+                }
+            )
+        return Response({"groups": list(groups.values())})
+
+
+class StudentPlacementViewSet(viewsets.ReadOnlyModelViewSet):
+    serializer_class = StudentPlacementSerializer
+    permission_classes = [IsAuthenticated, IsEvaluator]
+
+    def get_queryset(self):
+        return (
+            StudentPlacement.objects.filter(is_deleted=False)
+            .filter(_center_scope(self.request.user))
+            .select_related("center", "child", "curriculum", "current_position", "placed_by")
+            .prefetch_related("override_history")
+            .distinct()
+        )

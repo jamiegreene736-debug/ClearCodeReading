@@ -24,6 +24,8 @@ def get_child_from_obj(obj):
         return obj.child
     if hasattr(obj, "child_profile"):
         return obj.child_profile
+    if hasattr(obj, "evidence") and hasattr(obj.evidence, "child"):
+        return obj.evidence.child
     return obj
 
 
@@ -122,7 +124,11 @@ class IsEvaluator(BasePermission):
 
     def has_permission(self, request, view):
         user = request.user
-        return bool(user and user.is_authenticated and getattr(user, "role", None) in EVALUATOR_ROLES)
+        return bool(
+            user
+            and user.is_authenticated
+            and (user.is_superuser or getattr(user, "role", None) in EVALUATOR_ROLES)
+        )
 
     def has_object_permission(self, request, view, obj):
         child = get_child_from_obj(obj)
@@ -134,7 +140,11 @@ class IsSchoolAdmin(BasePermission):
 
     def has_permission(self, request, view):
         user = request.user
-        return bool(user and user.is_authenticated and getattr(user, "role", None) in SCHOOL_ADMIN_ROLES)
+        return bool(
+            user
+            and user.is_authenticated
+            and (user.is_superuser or getattr(user, "role", None) in SCHOOL_ADMIN_ROLES)
+        )
 
     def has_object_permission(self, request, view, obj):
         school = getattr(obj, "school", obj)

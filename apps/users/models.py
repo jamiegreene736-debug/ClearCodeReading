@@ -84,6 +84,19 @@ class ChildProfile(TimestampedModel, SoftDeleteModel):
         GRADE_5 = "grade_5", "Grade 5"
         OTHER = "other", "Other"
 
+    class IEPStatus(models.TextChoices):
+        NOT_REPORTED = "not_reported", "Not reported"
+        NO_IEP = "no_iep", "No IEP"
+        ACTIVE = "active", "Active IEP"
+        IN_REVIEW = "in_review", "IEP in review"
+
+    class ApprovalStatus(models.TextChoices):
+        NOT_REQUIRED = "not_required", "Not required"
+        PENDING = "pending", "Pending"
+        APPROVED = "approved", "Approved"
+        DECLINED = "declined", "Declined"
+        REVOKED = "revoked", "Revoked"
+
     user = models.OneToOneField(
         CustomUser,
         on_delete=models.SET_NULL,
@@ -100,17 +113,54 @@ class ChildProfile(TimestampedModel, SoftDeleteModel):
     student_identifier = models.CharField(max_length=120, blank=True)
     learning_profile = models.JSONField(default=dict, blank=True)
     accommodations = models.JSONField(default=list, blank=True)
+    availability_windows = models.JSONField(
+        default=list,
+        blank=True,
+        help_text="Guardian-provided weekly availability windows for future scheduling.",
+    )
+    iep_status = models.CharField(
+        max_length=20,
+        choices=IEPStatus.choices,
+        default=IEPStatus.NOT_REPORTED,
+        db_index=True,
+    )
+    idea_parent_consent_status = models.CharField(
+        max_length=20,
+        choices=ApprovalStatus.choices,
+        default=ApprovalStatus.NOT_REQUIRED,
+        db_index=True,
+    )
+    idea_parent_consented_at = models.DateTimeField(null=True, blank=True)
+    iep_team_approval_status = models.CharField(
+        max_length=20,
+        choices=ApprovalStatus.choices,
+        default=ApprovalStatus.NOT_REQUIRED,
+        db_index=True,
+    )
+    iep_team_approved_at = models.DateTimeField(null=True, blank=True)
 
     class Meta:
         ordering = ["last_name", "first_name"]
         indexes = [
             models.Index(fields=["school", "grade_level"]),
             models.Index(fields=["student_identifier"]),
+            models.Index(fields=["iep_status", "idea_parent_consent_status", "iep_team_approval_status"]),
             models.Index(fields=["is_deleted", "created_at"]),
         ]
 
     def __str__(self):
         return " ".join(part for part in [self.first_name, self.last_name] if part)
+
+    @property
+    def idea_services_authorized(self):
+        if self.iep_status != self.IEPStatus.ACTIVE:
+            return True
+        return (
+            self.idea_parent_consent_status == self.ApprovalStatus.APPROVED
+            and self.idea_parent_consented_at is not None
+            and self.iep_team_approval_status == self.ApprovalStatus.APPROVED
+            and self.iep_team_approved_at is not None
+        )
 
 
 class GuardianRelationship(TimestampedModel, SoftDeleteModel):

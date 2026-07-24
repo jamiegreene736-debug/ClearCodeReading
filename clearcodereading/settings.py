@@ -223,6 +223,11 @@ DEFAULT_FROM_EMAIL = os.getenv("DEFAULT_FROM_EMAIL", "Clear Code Reading <no-rep
 PUBLIC_APP_URL = os.getenv("PUBLIC_APP_URL", "http://localhost:8000")
 NOTIFICATIONS_FAIL_SILENTLY = os.getenv("NOTIFICATIONS_FAIL_SILENTLY", "1") == "1"
 SMS_PROVIDER = os.getenv("SMS_PROVIDER", "stub")
+INSTRUCTIONAL_AI_SERVICE = os.getenv(
+    "INSTRUCTIONAL_AI_SERVICE",
+    "apps.ai.services.DisabledInstructionalAIService",
+)
+INSTRUCTIONAL_AI_ALLOW_NARRATIVE = os.getenv("INSTRUCTIONAL_AI_ALLOW_NARRATIVE", "0") == "1"
 
 SPECTACULAR_SETTINGS = {
     "TITLE": "Clear Code Reading API",

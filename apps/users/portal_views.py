@@ -1,6 +1,7 @@
 from django.contrib import messages
 from django.contrib.auth import get_user_model, login
 from django.contrib.auth.views import LoginView
+from django.core.exceptions import ValidationError
 from django.db.models import Avg
 from django.shortcuts import redirect
 from django.urls import reverse_lazy
@@ -11,7 +12,15 @@ from django.views.generic import TemplateView, View
 
 from apps.assessments.models import Assessment, AssessmentResult
 from apps.crm.models import Lead
-from apps.curriculum.models import ChildLessonAssignment, LessonTemplate, TeacherLessonTemplate
+from apps.api.permissions import user_can_evaluate_child
+from apps.curriculum.models import (
+    ChildLessonAssignment,
+    CurriculumSequence,
+    LessonTemplate,
+    PlacementRecommendation,
+    TeacherLessonTemplate,
+)
+from apps.curriculum.placement import confirm_recommendation
 from apps.users.models import ChildProfile, CustomUser, GuardianRelationship
 
 
@@ -143,6 +152,15 @@ class PortalDashboardView(PortalAuthMixin, TemplateView):
             child__in=children,
             is_deleted=False,
         ).select_related("child", "template", "assigned_by")
+        placement_recommendations = (
+            PlacementRecommendation.objects.filter(
+                evidence__child__in=children,
+                status=PlacementRecommendation.Status.PENDING,
+                is_deleted=False,
+            )
+            .select_related("evidence__child", "recommended_curriculum", "recommended_position")
+            .prefetch_related("recommended_sequence__position")
+        )
 
         context.update(
             {
@@ -164,6 +182,7 @@ class PortalDashboardView(PortalAuthMixin, TemplateView):
                 "available_lesson_templates": available_lesson_templates,
                 "teacher_template_assignments": teacher_template_assignments[:12],
                 "child_lesson_assignments": child_lesson_assignments[:12],
+                "placement_recommendations": placement_recommendations[:12],
             }
         )
         return context
@@ -197,6 +216,48 @@ class PortalInboxView(PortalAuthMixin, TemplateView):
         context["is_parent"] = self.request.user.role == CustomUser.Role.GUARDIAN
         context["is_admin"] = self.request.user.role in {CustomUser.Role.SUPER_ADMIN, CustomUser.Role.SCHOOL_ADMIN}
         return context
+
+
+class ConfirmPlacementRecommendationView(PortalAuthMixin, View):
+    def post(self, request):
+        recommendation = (
+            PlacementRecommendation.objects.select_related(
+                "evidence__child", "recommended_curriculum", "recommended_position"
+            )
+            .filter(pk=request.POST.get("recommendation_id"), status=PlacementRecommendation.Status.PENDING)
+            .first()
+        )
+        if recommendation is None:
+            messages.error(request, "That placement recommendation is no longer pending.")
+            return redirect("portal_dashboard")
+        if not user_can_evaluate_child(request.user, recommendation.evidence.child):
+            messages.error(request, "You are not assigned to this reader's center.")
+            return redirect("portal_dashboard")
+
+        final_position = recommendation.recommended_position
+        final_position_id = request.POST.get("final_position_id")
+        if final_position_id:
+            final_position = CurriculumSequence.objects.filter(
+                pk=final_position_id,
+                curriculum=recommendation.recommended_curriculum,
+                is_deleted=False,
+            ).first()
+        if final_position is None:
+            messages.error(request, "Choose a valid final sequence position.")
+            return redirect("portal_dashboard")
+        try:
+            confirm_recommendation(
+                recommendation,
+                request.user,
+                final_position=final_position,
+                override_rationale=request.POST.get("override_rationale", "").strip(),
+                evidence_considered={"source": "specialist_portal"},
+            )
+        except ValidationError as error:
+            messages.error(request, "; ".join(getattr(error, "messages", [str(error)])))
+            return redirect("portal_dashboard")
+        messages.success(request, "Placement decision saved with its audit record.")
+        return redirect("portal_dashboard")
 
     def post(self, request, *args, **kwargs):
         body = request.POST.get("message", "").strip()

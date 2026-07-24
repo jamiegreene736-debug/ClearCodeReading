@@ -131,6 +131,12 @@ class ChildProfileSerializer(serializers.ModelSerializer):
             "student_identifier",
             "learning_profile",
             "accommodations",
+            "availability_windows",
+            "iep_status",
+            "idea_parent_consent_status",
+            "idea_parent_consented_at",
+            "iep_team_approval_status",
+            "iep_team_approved_at",
             "is_deleted",
             "deleted_at",
             "created_at",
@@ -145,9 +151,26 @@ class ChildProfileSerializer(serializers.ModelSerializer):
     def validate(self, attrs):
         instance = getattr(self, "instance", None)
         child = instance
-        sensitive_updates = {"learning_profile", "accommodations"} & set(attrs.keys())
+        sensitive_updates = {
+            "learning_profile",
+            "accommodations",
+            "availability_windows",
+            "iep_status",
+            "idea_parent_consent_status",
+            "iep_team_approval_status",
+        } & set(attrs.keys())
         if child is not None and sensitive_updates and not has_coppa_consent(child):
             raise serializers.ValidationError("COPPA consent is required before updating child learning data.")
+        windows = attrs.get("availability_windows")
+        if windows is not None:
+            required = {"day_of_week", "start_time", "end_time", "timezone"}
+            if not isinstance(windows, list) or any(
+                not isinstance(window, dict) or not required.issubset(window)
+                for window in windows
+            ):
+                raise serializers.ValidationError(
+                    {"availability_windows": "Each window requires day_of_week, start_time, end_time, and timezone."}
+                )
         return attrs
 
 

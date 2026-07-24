@@ -1,6 +1,21 @@
+from django.core.exceptions import ValidationError as DjangoValidationError
 from rest_framework import serializers
 
-from apps.curriculum.models import ChildLessonAssignment, Lesson, LessonTemplate, Skill, TeacherLessonTemplate, TeachingAid
+from apps.curriculum.models import (
+    ChildLessonAssignment,
+    Curriculum,
+    CurriculumSequence,
+    Lesson,
+    LessonTemplate,
+    PlacementEvidence,
+    PlacementRecommendation,
+    RecommendedSequencePosition,
+    Skill,
+    StudentPlacement,
+    StudentPlacementOverride,
+    TeacherLessonTemplate,
+    TeachingAid,
+)
 
 
 class SkillSerializer(serializers.ModelSerializer):
@@ -185,3 +200,204 @@ class ChildLessonAssignmentSerializer(serializers.ModelSerializer):
             "created_at",
             "updated_at",
         ]
+
+
+class CurriculumSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Curriculum
+        fields = ["id", "center", "code", "name", "version", "is_active", "metadata"]
+        read_only_fields = fields
+
+
+class CurriculumSequenceSerializer(serializers.ModelSerializer):
+    prerequisite_codes = serializers.SerializerMethodField()
+
+    class Meta:
+        model = CurriculumSequence
+        fields = [
+            "id",
+            "center",
+            "curriculum",
+            "code",
+            "sequence_order",
+            "level",
+            "lesson_number",
+            "concept_number",
+            "title",
+            "position_type",
+            "description",
+            "letter_sounds",
+            "word_types",
+            "syllable_types",
+            "high_frequency_words",
+            "red_words_spell_and_read",
+            "red_words_read_only",
+            "activities",
+            "item_set_schema",
+            "mastery_criteria",
+            "prerequisite_codes",
+        ]
+        read_only_fields = fields
+
+    def get_prerequisite_codes(self, obj) -> list[str]:
+        return list(obj.prerequisites.order_by("sequence_order").values_list("code", flat=True))
+
+
+class StudentPlacementOverrideSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = StudentPlacementOverride
+        fields = [
+            "id",
+            "previous_position",
+            "new_position",
+            "rationale",
+            "evidence_considered",
+            "source_recommendation",
+            "specialist",
+            "overridden_at",
+        ]
+        read_only_fields = fields
+
+
+class StudentPlacementSerializer(serializers.ModelSerializer):
+    current_position_detail = CurriculumSequenceSerializer(source="current_position", read_only=True)
+    override_history = StudentPlacementOverrideSerializer(many=True, read_only=True)
+
+    class Meta:
+        model = StudentPlacement
+        fields = [
+            "id",
+            "center",
+            "child",
+            "curriculum",
+            "current_position",
+            "current_position_detail",
+            "methodology_rationale",
+            "placement_evidence",
+            "placed_at",
+            "placed_by",
+            "is_active",
+            "override_history",
+        ]
+        read_only_fields = fields
+
+
+class PlacementEvidenceSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = PlacementEvidence
+        fields = [
+            "id",
+            "center",
+            "child",
+            "curriculum",
+            "source_assessment",
+            "instrument",
+            "source",
+            "status",
+            "assessment_version",
+            "administered_by",
+            "administered_at",
+            "instructional_grade_band",
+            "raw_results",
+            "supporting_context",
+            "revision",
+            "created_at",
+            "updated_at",
+        ]
+        read_only_fields = ["id", "center", "administered_by", "revision", "created_at", "updated_at"]
+
+    def validate(self, attrs):
+        instance = self.instance or PlacementEvidence()
+        for name, value in attrs.items():
+            setattr(instance, name, value)
+        child = attrs.get("child", getattr(instance, "child", None))
+        curriculum = attrs.get("curriculum", getattr(instance, "curriculum", None))
+        if child and curriculum and child.school_id and child.school_id != curriculum.center_id:
+            raise serializers.ValidationError("Child and curriculum must belong to the same center.")
+        return attrs
+
+    def _clean(self, instance):
+        try:
+            instance.full_clean()
+        except DjangoValidationError as error:
+            raise serializers.ValidationError(error.message_dict) from error
+
+    def create(self, validated_data):
+        request = self.context["request"]
+        child = validated_data["child"]
+        curriculum = validated_data["curriculum"]
+        instance = PlacementEvidence(
+            **validated_data,
+            center=child.school or curriculum.center,
+            administered_by=request.user,
+            created_by=request.user,
+            updated_by=request.user,
+        )
+        self._clean(instance)
+        instance.save()
+        return instance
+
+    def update(self, instance, validated_data):
+        for name, value in validated_data.items():
+            setattr(instance, name, value)
+        instance.updated_by = self.context["request"].user
+        self._clean(instance)
+        instance.save()
+        return instance
+
+
+class RecommendedSequencePositionSerializer(serializers.ModelSerializer):
+    position = CurriculumSequenceSerializer(read_only=True)
+
+    class Meta:
+        model = RecommendedSequencePosition
+        fields = ["priority", "position", "gap_codes", "rationale"]
+        read_only_fields = fields
+
+
+class PlacementRecommendationSerializer(serializers.ModelSerializer):
+    evidence = PlacementEvidenceSerializer(read_only=True)
+    recommended_position_detail = CurriculumSequenceSerializer(source="recommended_position", read_only=True)
+    final_position_detail = CurriculumSequenceSerializer(source="final_position", read_only=True)
+    recommended_sequence = RecommendedSequencePositionSerializer(many=True, read_only=True)
+    resulting_placement = StudentPlacementSerializer(read_only=True)
+
+    class Meta:
+        model = PlacementRecommendation
+        fields = [
+            "id",
+            "center",
+            "evidence",
+            "recommended_curriculum",
+            "recommended_position",
+            "recommended_position_detail",
+            "decision",
+            "status",
+            "deficit_profile",
+            "rule_trace",
+            "rationale",
+            "advisory_narrative",
+            "ai_metadata",
+            "recommended_sequence",
+            "final_position",
+            "final_curriculum",
+            "final_position_detail",
+            "override_rationale",
+            "evidence_considered",
+            "confirmed_by",
+            "confirmed_at",
+            "resulting_placement",
+            "created_at",
+            "updated_at",
+        ]
+        read_only_fields = fields
+
+
+class ConfirmPlacementRecommendationSerializer(serializers.Serializer):
+    final_position = serializers.PrimaryKeyRelatedField(
+        queryset=CurriculumSequence.objects.filter(is_deleted=False),
+        required=False,
+        allow_null=True,
+    )
+    override_rationale = serializers.CharField(required=False, allow_blank=True)
+    evidence_considered = serializers.DictField(required=False)

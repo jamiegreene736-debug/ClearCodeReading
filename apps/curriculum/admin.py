@@ -7,6 +7,9 @@ from apps.curriculum.models import (
     CurriculumSequence,
     Lesson,
     LessonTemplate,
+    PlacementEvidence,
+    PlacementRecommendation,
+    RecommendedSequencePosition,
     Skill,
     StudentPlacement,
     StudentPlacementOverride,
@@ -108,6 +111,72 @@ class StudentPlacementOverrideAdmin(admin.ModelAdmin):
         "updated_by",
     )
     readonly_fields = ("created_at", "updated_at", "deleted_at")
+    actions = (soft_delete_curriculum,)
+
+
+class RecommendedSequencePositionInline(admin.TabularInline):
+    model = RecommendedSequencePosition
+    extra = 0
+    can_delete = False
+    fields = ("priority", "position", "gap_codes", "rationale")
+    readonly_fields = fields
+
+
+@admin.register(PlacementEvidence)
+class PlacementEvidenceAdmin(admin.ModelAdmin):
+    list_display = ("child", "instrument", "curriculum", "administered_at", "status", "center", "revision")
+    list_filter = ("instrument", "source", "status", "center", "administered_at")
+    search_fields = ("child__first_name", "child__last_name", "assessment_version")
+    autocomplete_fields = (
+        "center",
+        "child",
+        "curriculum",
+        "source_assessment",
+        "administered_by",
+        "created_by",
+        "updated_by",
+    )
+    readonly_fields = ("revision", "created_at", "updated_at", "deleted_at")
+    actions = (soft_delete_curriculum,)
+
+
+@admin.register(PlacementRecommendation)
+class PlacementRecommendationAdmin(admin.ModelAdmin):
+    inlines = (RecommendedSequencePositionInline,)
+    list_display = (
+        "evidence",
+        "recommended_curriculum",
+        "recommended_position",
+        "decision",
+        "status",
+        "confirmed_by",
+        "confirmed_at",
+        "center",
+    )
+    list_filter = ("decision", "status", "recommended_curriculum__code", "center", "created_at")
+    search_fields = ("evidence__child__first_name", "evidence__child__last_name", "rationale")
+    autocomplete_fields = (
+        "center",
+        "evidence",
+        "recommended_curriculum",
+        "recommended_position",
+        "final_position",
+        "final_curriculum",
+        "confirmed_by",
+        "resulting_placement",
+        "created_by",
+        "updated_by",
+    )
+    readonly_fields = (
+        "deficit_profile",
+        "rule_trace",
+        "advisory_narrative",
+        "ai_metadata",
+        "revision",
+        "created_at",
+        "updated_at",
+        "deleted_at",
+    )
     actions = (soft_delete_curriculum,)
 
 

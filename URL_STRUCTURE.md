@@ -52,6 +52,29 @@ urlpatterns = [
 
 ```
 
+## Phase 1 routes
+
+All routes below are under `/api/v1/` and require an authenticated evaluator with access
+to the record's center.
+
+| Route | Methods | Purpose |
+|---|---|---|
+| `curricula/` | GET | Available center-scoped methodology versions |
+| `curriculum-positions/` | GET | Frozen graph positions; filter by `curriculum` |
+| `placement-evidence/` | GET, POST, PATCH | Structured placement entry/import |
+| `placement-evidence/<id>/recommend/` | POST | Generate/re-run deterministic mapping |
+| `placement-recommendations/` | GET | Pending and historical recommendations |
+| `placement-recommendations/<id>/confirm/` | POST | Confirm or label an override |
+| `placement-recommendations/grouping-suggestions/` | GET | Skill-based grouping feed |
+| `student-placements/` | GET | Active and historical placements |
+| `sessions/` | GET, POST, PATCH | Structured specialist session capture |
+| `sessions/defaults/?child=<id>` | GET | Active-placement logging defaults |
+| `sessions/logging-metrics/` | GET | Same-day logging rate |
+
+The specialist portal decision endpoint is
+`POST /portal/placements/confirm/`. Django admin remains available at `/admin/` for
+placement review, evidence entry, session logging, and revision inspection.
+
 ## `apps/api/urls.py`
 ```python
 from django.urls import include, path
