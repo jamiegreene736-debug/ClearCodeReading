@@ -34,11 +34,16 @@
 - `/api/v1/progress/`
 - `/api/v1/progress/dashboard/`
 - `/api/v1/provider-availability/`
+- `/api/v1/schedule-proposals/`
+- `/api/v1/schedule-proposals/generate/`
+- `/api/v1/schedule-proposals/<id>/approve/`
+- `/api/v1/schedule-proposals/<id>/reject/`
 - `/api/v1/schedule-bookings/`
 - `/api/v1/schedule-bookings/recommendations/?center=<id>`
 - `/api/v1/schedule-bookings/operations-metrics/?center=<id>`
 - `/api/v1/schedule-bookings/<id>/approve/`
 - `/api/v1/schedule-bookings/<id>/sync/`
+- `/api/v1/schedule-bookings/<id>/force-sync/`
 - `/api/v1/schedule-bookings/reconcile-inbound/`
 - `/api/v1/waitlist/`
 - `/api/v1/mastery-records/`
@@ -82,6 +87,22 @@ to the record's center.
 The specialist portal decision endpoint is
 `POST /portal/placements/confirm/`. Django admin remains available at `/admin/` for
 placement review, evidence entry, session logging, and revision inspection.
+
+## Scheduling optimizer routes
+
+All scheduling records are center-scoped. Proposal generation is available to center
+owners, admins, and specialists; approval, rejection, inbound reconciliation, and
+operations metrics require center owner/admin access.
+
+| Route | Methods | Purpose |
+|---|---|---|
+| `schedule-proposals/` | GET | Persistent advisory proposals visible within accessible centers |
+| `schedule-proposals/generate/` | POST | Generate date-range, skill-compatible proposals and proposed child bookings |
+| `schedule-proposals/<id>/approve/` | POST | Atomically revalidate consent/placement and approve the whole group |
+| `schedule-proposals/<id>/reject/` | POST | Reject the group and cancel its proposed bookings |
+| `schedule-bookings/<id>/force-sync/` | POST | Push or retry an approved booking through the configured adapter |
+| `schedule-bookings/reconcile-inbound/` | POST | Pull time/status/cancellation changes for known external IDs |
+| `schedule-bookings/operations-metrics/` | GET | Capacity, utilization, waitlist, concentration, and expansion signals |
 
 ## `apps/api/urls.py`
 ```python
