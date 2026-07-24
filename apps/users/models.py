@@ -56,6 +56,37 @@ class CustomUser(AbstractUser, TimestampedModel, SoftDeleteModel):
         return self.get_full_name() or self.email
 
 
+class MobileDevice(TimestampedModel):
+    class Environment(models.TextChoices):
+        SANDBOX = "sandbox", "Sandbox"
+        PRODUCTION = "production", "Production"
+
+    user = models.ForeignKey(CustomUser, on_delete=models.CASCADE, related_name="mobile_devices")
+    device_id = models.UUIDField()
+    push_token = models.CharField(max_length=255, blank=True)
+    environment = models.CharField(
+        max_length=16,
+        choices=Environment.choices,
+        default=Environment.SANDBOX,
+    )
+    app_version = models.CharField(max_length=32, blank=True)
+    is_active = models.BooleanField(default=True, db_index=True)
+    last_seen_at = models.DateTimeField(default=timezone.now, db_index=True)
+
+    class Meta:
+        ordering = ["-last_seen_at"]
+        constraints = [
+            models.UniqueConstraint(fields=["user", "device_id"], name="unique_user_mobile_device"),
+        ]
+        indexes = [
+            models.Index(fields=["user", "is_active"]),
+            models.Index(fields=["push_token", "environment"]),
+        ]
+
+    def __str__(self):
+        return f"{self.user} iOS device {self.device_id}"
+
+
 class Profile(TimestampedModel, SoftDeleteModel):
     user = models.OneToOneField(CustomUser, on_delete=models.CASCADE, related_name="profile")
     display_name = models.CharField(max_length=255, blank=True)

@@ -138,6 +138,7 @@ class SkillObservationSerializer(serializers.ModelSerializer):
 
 
 class SessionSerializer(serializers.ModelSerializer):
+    client_request_id = serializers.UUIDField(required=False)
     curriculum_position = serializers.PrimaryKeyRelatedField(
         queryset=CurriculumSequence.objects.filter(is_deleted=False),
         required=False,
@@ -156,6 +157,7 @@ class SessionSerializer(serializers.ModelSerializer):
         model = Session
         fields = [
             "id",
+            "client_request_id",
             "center",
             "child",
             "child_name",
@@ -383,6 +385,7 @@ class RapidSessionLogSerializer(serializers.Serializer):
     )
     child_id = serializers.IntegerField(write_only=True, required=False)
     session_id = serializers.IntegerField(required=False)
+    client_request_id = serializers.UUIDField(required=False)
     accuracy_numerator = serializers.IntegerField(min_value=0, required=False)
     accuracy_denominator = serializers.IntegerField(min_value=1, required=False)
     accuracy_percentage = serializers.DecimalField(
@@ -465,6 +468,8 @@ class RapidSessionLogSerializer(serializers.Serializer):
             except DjangoValidationError as error:
                 detail = error.message_dict if hasattr(error, "message_dict") else {"detail": error.messages}
                 raise serializers.ValidationError(detail) from error
+        if attrs.get("client_request_id") and session is None:
+            payload["client_request_id"] = attrs["client_request_id"]
         self._session_serializer = SessionSerializer(
             instance=session,
             data=payload,

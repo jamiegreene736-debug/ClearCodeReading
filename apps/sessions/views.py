@@ -3,6 +3,7 @@ from urllib.parse import urlencode
 from django.contrib import messages
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.core.exceptions import ValidationError
+from django.db import IntegrityError
 from django.db.models import F, Q
 from django.db.models.functions import TruncDate
 from django.shortcuts import redirect
@@ -82,6 +83,14 @@ class SessionViewSet(viewsets.ModelViewSet):
 
     @action(detail=False, methods=["post"], url_path="rapid-log")
     def rapid_log(self, request):
+        client_request_id = request.data.get("client_request_id")
+        if client_request_id:
+            duplicate = self.get_queryset().filter(client_request_id=client_request_id).first()
+            if duplicate is not None:
+                return Response(
+                    SessionSerializer(duplicate, context={"request": request}).data,
+                    status=status.HTTP_200_OK,
+                )
         existing = (
             Session.objects.filter(pk=request.data.get("session_id"), is_deleted=False)
             .select_related("child__school", "specialist")
@@ -97,7 +106,12 @@ class SessionViewSet(viewsets.ModelViewSet):
             return Response({"detail": "You are not authorized to log sessions for this reader."}, status=403)
         serializer = RapidSessionLogSerializer(data=request.data, context={"request": request})
         serializer.is_valid(raise_exception=True)
-        saved = serializer.save()
+        try:
+            saved = serializer.save()
+        except IntegrityError:
+            if not client_request_id:
+                raise
+            saved = self.get_queryset().get(client_request_id=client_request_id)
         response_status = status.HTTP_200_OK if existing else status.HTTP_201_CREATED
         return Response(SessionSerializer(saved, context={"request": request}).data, status=response_status)
 

@@ -1,3 +1,5 @@
+import uuid
+
 from django.conf import settings
 from django.core.exceptions import ValidationError
 from django.core.validators import MaxValueValidator, MinValueValidator
@@ -77,6 +79,12 @@ class Session(AuditedModel):
         PFR_1B = "pfr_1b", "PFR Session 1b"
         OG_CONCEPT = "og_concept", "OG+ Concept Session"
 
+    client_request_id = models.UUIDField(
+        default=uuid.uuid4,
+        unique=True,
+        editable=False,
+        help_text="Client-generated idempotency key for safe mobile retries.",
+    )
     child = models.ForeignKey(
         "users.ChildProfile",
         on_delete=models.PROTECT,

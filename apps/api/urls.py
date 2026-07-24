@@ -2,6 +2,8 @@ from django.urls import include, path
 from drf_spectacular.views import SpectacularAPIView, SpectacularRedocView, SpectacularSwaggerView
 from rest_framework_simplejwt.views import TokenObtainPairView, TokenRefreshView, TokenVerifyView
 
+from apps.api.mobile_views import MobileBootstrapView, MobileDeviceView, MobileLogoutView
+
 app_name = "api"
 
 urlpatterns = [
@@ -11,6 +13,9 @@ urlpatterns = [
     path("v1/auth/token/", TokenObtainPairView.as_view(), name="token_obtain_pair"),
     path("v1/auth/token/refresh/", TokenRefreshView.as_view(), name="token_refresh"),
     path("v1/auth/token/verify/", TokenVerifyView.as_view(), name="token_verify"),
+    path("v1/mobile/bootstrap/", MobileBootstrapView.as_view(), name="mobile_bootstrap"),
+    path("v1/mobile/devices/", MobileDeviceView.as_view(), name="mobile_devices"),
+    path("v1/mobile/logout/", MobileLogoutView.as_view(), name="mobile_logout"),
     path("v1/", include("apps.core.urls")),
     path("v1/", include("apps.users.urls")),
     path("v1/", include("apps.schools.urls")),
