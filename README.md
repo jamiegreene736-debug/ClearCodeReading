@@ -164,6 +164,10 @@ or Acuity.
 
 Operations metrics surface the launch thresholds: 75% utilization, 25 active waitlist entries,
 and 40% demand from one submarket.
+
+The persistent optimizer, proposal/approval payloads, Acuity configuration, consent safeguards,
+and capacity definitions are documented in
+[`docs/SCHEDULING_OPTIMIZER.md`](docs/SCHEDULING_OPTIMIZER.md).
 - `/api/v1/mastery-records/`
 
 CRM:
