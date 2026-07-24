@@ -33,6 +33,14 @@
 - `/api/v1/teaching-aids/`
 - `/api/v1/progress/`
 - `/api/v1/progress/dashboard/`
+- `/api/v1/provider-availability/`
+- `/api/v1/schedule-bookings/`
+- `/api/v1/schedule-bookings/recommendations/?center=<id>`
+- `/api/v1/schedule-bookings/operations-metrics/?center=<id>`
+- `/api/v1/schedule-bookings/<id>/approve/`
+- `/api/v1/schedule-bookings/<id>/sync/`
+- `/api/v1/schedule-bookings/reconcile-inbound/`
+- `/api/v1/waitlist/`
 - `/api/v1/mastery-records/`
 - `/api/v1/leads/`
 - `/api/v1/leads/<id>/qualify/`

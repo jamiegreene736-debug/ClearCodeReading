@@ -1,5 +1,6 @@
 from django.conf import settings
 from django.core.mail import send_mail
+from django.db.models import Q
 from django.urls import reverse
 from django.utils import timezone
 
@@ -158,6 +159,7 @@ class NotificationService:
 
     def send_progress_report_to_parents(self, child_id):
         from apps.users.models import ChildProfile
+        from apps.progress.dashboard import build_parent_dashboard
 
         child = ChildProfile.objects.filter(id=child_id, is_deleted=False).first()
         if child is None:
@@ -167,13 +169,22 @@ class NotificationService:
             child=child,
             is_deleted=False,
             consent_status=GuardianRelationship.ConsentStatus.GRANTED,
+        ).filter(
+            Q(consent_expires_at__isnull=True) | Q(consent_expires_at__gt=timezone.now())
+        ).exclude(
+            permissions__progress_dashboard=False
         ).select_related("guardian")
         recipients = [relationship.guardian.email for relationship in relationships]
         progress_records = Progress.objects.filter(child=child, is_deleted=False).select_related("skill")
         mastered = progress_records.filter(status=Progress.Status.MASTERED).count()
         developing = progress_records.filter(status__in=[Progress.Status.EMERGING, Progress.Status.DEVELOPING]).count()
+        dashboard = build_parent_dashboard(child)
         lines = [
-            f"Progress report for {child.first_name}",
+            f"A new Clear Code Reading session summary is ready for {child.first_name}",
+            "",
+            f"Latest accuracy: {dashboard['summary']['latest_accuracy'] or '--'}%",
+            f"Specialist note: {dashboard['specialist_note'] or 'Open the dashboard for the latest update.'}",
+            f"Home practice: {dashboard['home_practice'] or 'Your next suggestion will appear soon.'}",
             "",
             f"Total tracked skills: {progress_records.count()}",
             f"Mastered skills: {mastered}",
@@ -185,7 +196,7 @@ class NotificationService:
             lines.append(f"- {record.skill.name}: {record.get_status_display()}")
 
         result = self.send_email(
-            subject=f"{child.first_name}'s Clear Code Reading progress report",
+            subject=f"{child.first_name}'s new reading progress summary",
             message="\n".join(lines),
             recipients=recipients,
         )
