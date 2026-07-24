@@ -4,6 +4,7 @@ from django_tenants.utils import tenant_context
 
 from apps.curriculum.models import Curriculum, CurriculumSequence
 from apps.schools.models import School
+from apps.sessions.models import Session, SessionTemplate
 
 
 PFR_POSITIONS = [
@@ -107,6 +108,7 @@ class Command(BaseCommand):
                 )
                 self._seed_pfr(center, pfr)
                 self._seed_og_plus(center, og_plus)
+                self._seed_session_templates(center, pfr, og_plus)
                 count += 1
                 self.stdout.write(self.style.SUCCESS(f"Seeded instructional graphs for {center.name}."))
 
@@ -211,3 +213,80 @@ class Command(BaseCommand):
             )
             position.prerequisites.set([previous] if previous else [])
             previous = position
+
+    @staticmethod
+    def _seed_session_templates(center, pfr, og_plus):
+        definitions = [
+            {
+                "curriculum": pfr,
+                "position_code": "PFR-A-01",
+                "session_part": Session.InterventionPart.PFR_1A,
+                "title": "PFR Level A Lesson 1 - Session 1a",
+                "item_set_keys": ["sound_drill", "word_reading", "word_spelling"],
+                "activity_codes": ["phonemic_awareness", "sound_drill", "word_reading", "word_spelling"],
+            },
+            {
+                "curriculum": pfr,
+                "position_code": "PFR-A-01",
+                "session_part": Session.InterventionPart.PFR_1B,
+                "title": "PFR Level A Lesson 1 - Session 1b",
+                "item_set_keys": ["review", "high_frequency_words", "connected_text"],
+                "activity_codes": ["review", "high_frequency_words", "connected_text"],
+            },
+            {
+                "curriculum": og_plus,
+                "position_code": "OG-001",
+                "session_part": Session.InterventionPart.OG_CONCEPT,
+                "title": "OG+ Concept 1 - Phoneme awareness",
+                "item_set_keys": ["review_items", "new_concept_items", "encoding_items"],
+                "activity_codes": [
+                    "phonological_awareness",
+                    "three_part_drill",
+                    "concept_instruction",
+                    "word_reading",
+                    "encoding",
+                    "connected_text",
+                ],
+            },
+        ]
+        for definition in definitions:
+            curriculum = definition["curriculum"]
+            position = curriculum.positions.get(code=definition["position_code"])
+            SessionTemplate.objects.update_or_create(
+                center=center,
+                curriculum=curriculum,
+                curriculum_position=position,
+                session_part=definition["session_part"],
+                version=1,
+                defaults={
+                    "title": definition["title"],
+                    "capture_fields": {
+                        "required": [
+                            "activities_completed",
+                            "item_sets",
+                            "time_to_mastery_signals",
+                            "next_session_direction",
+                            "home_practice_suggestion",
+                        ],
+                        "properties": {
+                            "activities_completed": {"type": "array", "default": []},
+                            "item_sets": {
+                                "type": "object",
+                                "default": {},
+                                "sections": definition["item_set_keys"],
+                            },
+                            "time_to_mastery_signals": {"type": "object", "default": {}},
+                            "error_patterns": {"type": "array", "default": []},
+                            "behavioral_observations": {"type": "array", "default": []},
+                        },
+                        "activity_codes": definition["activity_codes"],
+                    },
+                    "is_active": True,
+                    "metadata": {
+                        "seed_key": f"{position.code}:{definition['session_part']}:v1",
+                        "technical_spec_sections": ["5.5", "6.1"],
+                    },
+                    "is_deleted": False,
+                    "deleted_at": None,
+                },
+            )

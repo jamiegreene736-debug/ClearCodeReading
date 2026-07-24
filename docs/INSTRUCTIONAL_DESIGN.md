@@ -252,8 +252,10 @@ Flags indicate a need for instructional review. They do not label a learner.
 
 ## 6. Session capture contract
 
-`Session` is the single source of truth. Structured fields are primary; `notes` is
-supplemental.
+`Session` remains the source capture record. Its structured fields are primary and
+`notes` is supplemental. `SessionTemplate` selects the intervention-specific capture
+contract, and `SkillObservation` is the canonical queryable projection of completed
+session evidence.
 
 ### 6.1 Common required fields
 
@@ -325,6 +327,29 @@ uses a new item-set ID.
 concept, three-part drill items, encoding items, red words by category, connected text,
 and dictation where used. Every item links to a `CurriculumSequence` concept so later
 prerequisite and error-pattern analysis requires no additional collection.
+
+### 6.4 Session templates and skill observations
+
+`SessionTemplate` closes the Technical Spec §5.5 gap. A versioned, center-scoped
+template belongs to one curriculum and may be narrowed to one `CurriculumSequence`
+lesson or concept. The session defaults endpoint resolves an exact-position template
+before a curriculum-wide fallback and returns its `capture_fields` schema and form
+defaults. Completed sessions validate against the pinned template version, so PFR
+Session 1a, PFR Session 1b, and OG+ concept capture do not share a universal form.
+Curricula without a configured template retain the existing session contract while
+templates are added.
+
+`SkillObservation` closes the Technical Spec §6.1 gap. On session completion, the
+structured activities, item references, accuracy, response rating when present, error
+pattern tags, and timing signals are synchronized into one center- and child-scoped
+record per observed `CurriculumSequence` position. Editing a completed session updates
+the same observation and records the source session revision; moving a session out of
+completed status makes its observations inactive. Existing Session JSON fields and API
+inputs remain in place for compatibility.
+
+The observation API can filter by center, child, session, or curriculum position.
+Prediction, instructional flagging, and outcome aggregation can therefore query stable
+rows without asking specialists or families to collect new information.
 
 ## 7. Language policy
 

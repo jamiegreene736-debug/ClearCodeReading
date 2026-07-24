@@ -4,13 +4,134 @@ from rest_framework import serializers
 
 from apps.api.permissions import user_can_evaluate_child
 from apps.curriculum.models import CurriculumSequence, StudentPlacement
-from apps.sessions.models import Session, SessionRevision
+from apps.sessions.models import Session, SessionRevision, SessionTemplate, SkillObservation
+from apps.sessions.services import apply_template_defaults, resolve_session_template
+from apps.users.models import CustomUser
 
 
 class SessionRevisionSerializer(serializers.ModelSerializer):
     class Meta:
         model = SessionRevision
         fields = ["id", "revision", "changed_by", "snapshot", "created_at"]
+        read_only_fields = fields
+
+
+class SessionTemplateSerializer(serializers.ModelSerializer):
+    curriculum_code = serializers.CharField(source="curriculum.code", read_only=True)
+    position_code = serializers.CharField(source="curriculum_position.code", read_only=True)
+
+    class Meta:
+        model = SessionTemplate
+        fields = [
+            "id",
+            "center",
+            "curriculum",
+            "curriculum_code",
+            "curriculum_position",
+            "position_code",
+            "session_part",
+            "capture_fields",
+            "title",
+            "is_active",
+            "version",
+            "metadata",
+            "revision",
+            "created_by",
+            "updated_by",
+            "created_at",
+            "updated_at",
+        ]
+        read_only_fields = [
+            "id",
+            "center",
+            "curriculum_code",
+            "position_code",
+            "revision",
+            "created_by",
+            "updated_by",
+            "created_at",
+            "updated_at",
+        ]
+
+    def validate(self, attrs):
+        request = self.context["request"]
+        curriculum = attrs.get("curriculum", getattr(self.instance, "curriculum", None))
+        position = attrs.get("curriculum_position", getattr(self.instance, "curriculum_position", None))
+        if curriculum is None:
+            raise serializers.ValidationError({"curriculum": "This field is required."})
+        user = request.user
+        can_manage_center = (
+            user.is_superuser
+            or getattr(user, "role", None) == CustomUser.Role.SUPER_ADMIN
+            or curriculum.center.memberships.filter(user=user, is_deleted=False).exists()
+        )
+        if not can_manage_center:
+            raise serializers.ValidationError("You are not assigned to this center.")
+        if position and position.curriculum_id != curriculum.id:
+            raise serializers.ValidationError(
+                {"curriculum_position": "The position must belong to the selected curriculum."}
+            )
+        return attrs
+
+    @transaction.atomic
+    def create(self, validated_data):
+        request = self.context["request"]
+        template = SessionTemplate(
+            **validated_data,
+            center=validated_data["curriculum"].center,
+            created_by=request.user,
+            updated_by=request.user,
+        )
+        self._full_clean(template)
+        template.save()
+        return template
+
+    @transaction.atomic
+    def update(self, instance, validated_data):
+        for name, value in validated_data.items():
+            setattr(instance, name, value)
+        instance.center = instance.curriculum.center
+        instance.updated_by = self.context["request"].user
+        self._full_clean(instance)
+        instance.save()
+        return instance
+
+    @staticmethod
+    def _full_clean(template):
+        try:
+            template.full_clean()
+        except DjangoValidationError as error:
+            raise serializers.ValidationError(error.message_dict) from error
+
+
+class SkillObservationSerializer(serializers.ModelSerializer):
+    child_name = serializers.CharField(source="child.__str__", read_only=True)
+    position_code = serializers.CharField(source="curriculum_position.code", read_only=True)
+
+    class Meta:
+        model = SkillObservation
+        fields = [
+            "id",
+            "center",
+            "session",
+            "child",
+            "child_name",
+            "curriculum_position",
+            "position_code",
+            "accuracy_rate",
+            "response_rating",
+            "error_pattern_tags",
+            "time_signals",
+            "activities",
+            "item_references",
+            "source_session_revision",
+            "metadata",
+            "revision",
+            "created_by",
+            "updated_by",
+            "created_at",
+            "updated_at",
+        ]
         read_only_fields = fields
 
 
@@ -40,6 +161,7 @@ class SessionSerializer(serializers.ModelSerializer):
             "specialist_name",
             "curriculum_position",
             "position_code",
+            "session_template",
             "targeted_positions",
             "status",
             "intervention_part",
@@ -71,6 +193,7 @@ class SessionSerializer(serializers.ModelSerializer):
             "specialist",
             "specialist_name",
             "position_code",
+            "session_template",
             "revision",
             "created_by",
             "updated_by",
@@ -107,6 +230,17 @@ class SessionSerializer(serializers.ModelSerializer):
 
         if "intervention_part" not in attrs and self.instance is None:
             attrs["intervention_part"] = self._default_intervention_part(child, position)
+        session_part = attrs.get("intervention_part", getattr(self.instance, "intervention_part", None))
+        position_changed = self.instance is not None and position.pk != self.instance.curriculum_position_id
+        part_changed = self.instance is not None and session_part != self.instance.intervention_part
+        if self.instance is None or position_changed or part_changed:
+            attrs["session_template"] = resolve_session_template(position, session_part)
+        elif self.instance.session_template_id:
+            attrs["session_template"] = self.instance.session_template
+        else:
+            attrs["session_template"] = resolve_session_template(position, session_part)
+        if self.instance is None:
+            apply_template_defaults(attrs, attrs["session_template"])
         if attrs.get("accuracy_rate") is None:
             numerator = attrs.get("accuracy_numerator")
             denominator = attrs.get("accuracy_denominator")
