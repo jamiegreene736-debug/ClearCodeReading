@@ -1,5 +1,29 @@
 # Clear Code Reading ViewSets and API Workflow Logic
 
+## Scheduling optimizer workflow
+
+1. Scheduling staff submit a center, inclusive date range, and optional specialist to
+   `POST schedule-proposals/generate/`.
+2. The optimizer excludes unauthorized IDEA services, isolates PFR from OG+, applies
+   sequence proximity, intersects recurring child/provider windows, observes provider
+   group size, and persists ranked advisory proposals.
+3. Center operations reviews the proposal and its explicit IEP-consent indicators.
+4. `POST schedule-proposals/<id>/approve/` locks the group and rechecks consent and
+   active placements. Every child booking is approved atomically; a changed member
+   blocks the whole proposal.
+5. Each approved child booking is pushed with `force-sync`. Adapter failures remain
+   visible in `sync_status`, `sync_error`, attempt count, and last-attempt time.
+6. Inbound reconciliation only applies remote changes to a booking already identified
+   by the same center, provider, and external booking ID. Remote cancellations become
+   local cancellations.
+7. COO/operations reads `operations-metrics` for exact date-range capacity,
+   confirmed/completed utilization, active waitlist, submarket concentration, and the
+   documented 75% / 25 / 40% expansion-review thresholds.
+
+The scheduler is never an instructional source of truth: it cannot create a child,
+placement, consent, or cross-center booking. `Session` and placement write flows are
+unchanged.
+
 ## `apps/assessments/views.py`
 ```python
 from django.db import transaction

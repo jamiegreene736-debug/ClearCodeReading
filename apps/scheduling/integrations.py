@@ -194,4 +194,9 @@ def get_scheduler_adapter() -> SchedulerAdapter:
     adapter_path = getattr(settings, "SCHEDULER_ADAPTER", "")
     if not adapter_path:
         raise SchedulerNotConfigured("Configure Jane App or Acuity before syncing approved schedules.")
-    return import_string(adapter_path)()
+    try:
+        return import_string(adapter_path)()
+    except SchedulerError:
+        raise
+    except (ImportError, AttributeError, TypeError) as error:
+        raise SchedulerNotConfigured("The configured scheduler adapter could not be loaded.") from error

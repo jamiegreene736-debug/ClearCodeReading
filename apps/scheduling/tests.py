@@ -248,6 +248,26 @@ class SchedulingOptimizationTests(TestCase):
             {ScheduleBooking.Status.PROPOSED},
         )
 
+    def test_reject_cancels_all_proposed_bookings(self):
+        result = generate_group_proposals(
+            center=self.center,
+            start_date=self._next_monday(),
+            end_date=self._next_monday(),
+            specialist=self.specialist,
+            created_by=self.admin,
+        )
+        proposal = result["proposals"][0]
+
+        response = self.client.post(f"/api/v1/schedule-proposals/{proposal.id}/reject/", {}, format="json")
+
+        self.assertEqual(response.status_code, 200, response.data)
+        proposal.refresh_from_db()
+        self.assertEqual(proposal.status, ScheduleGroupProposal.Status.REJECTED)
+        self.assertEqual(
+            set(proposal.bookings.values_list("status", flat=True)),
+            {ScheduleBooking.Status.CANCELED},
+        )
+
     def test_sync_adapter_error_is_persisted_for_operations(self):
         class FailingAdapter:
             provider = "failing-vendor"

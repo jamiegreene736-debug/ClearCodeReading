@@ -316,6 +316,32 @@ def approve_group_proposal(proposal: ScheduleGroupProposal, reviewed_by) -> Sche
     unauthorized = [str(child) for child in children if not child.idea_services_authorized]
     if unauthorized:
         raise ProposalConflict(f"IEP authorization is pending for: {', '.join(unauthorized)}.")
+    availability = ProviderAvailability.objects.filter(
+        center=proposal.center,
+        specialist=proposal.specialist,
+        is_active=True,
+    ).first()
+    if availability is None or len(children) > availability.max_group_size:
+        raise ProposalConflict("Provider availability or group capacity changed; regenerate this proposal.")
+    duration_minutes = int((proposal.ends_at - proposal.starts_at).total_seconds() / 60)
+    current_slots = _candidate_slots(
+        availability.windows,
+        proposal.starts_at.date() - timedelta(days=1),
+        proposal.starts_at.date() + timedelta(days=1),
+        duration_minutes,
+    )
+    proposal_slot = CandidateSlot(starts_at=proposal.starts_at, ends_at=proposal.ends_at)
+    if proposal_slot not in current_slots or any(not _child_is_available(child, proposal_slot) for child in children):
+        raise ProposalConflict("Provider or child availability changed; regenerate this proposal.")
+    if ScheduleBooking.objects.filter(
+        center=proposal.center,
+        status__in=[ScheduleBooking.Status.APPROVED, ScheduleBooking.Status.CONFIRMED],
+        starts_at__lt=proposal.ends_at,
+        ends_at__gt=proposal.starts_at,
+    ).exclude(proposal=proposal).filter(
+        Q(specialist=proposal.specialist) | Q(child__in=children)
+    ).exists():
+        raise ProposalConflict("A child or specialist was booked after generation; regenerate this proposal.")
     placements = list(
         StudentPlacement.objects.filter(
             center=proposal.center,

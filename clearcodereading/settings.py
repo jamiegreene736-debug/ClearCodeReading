@@ -1,6 +1,7 @@
 from datetime import timedelta
 from pathlib import Path
 from urllib.parse import parse_qs, urlparse
+import json
 import os
 
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -232,6 +233,14 @@ INSTRUCTIONAL_AI_SERVICE = os.getenv(
     "apps.ai.services.DisabledInstructionalAIService",
 )
 INSTRUCTIONAL_AI_ALLOW_NARRATIVE = os.getenv("INSTRUCTIONAL_AI_ALLOW_NARRATIVE", "0") == "1"
+SCHEDULER_ADAPTER = os.getenv("SCHEDULER_ADAPTER", "")
+ACUITY_USER_ID = os.getenv("ACUITY_USER_ID", "")
+ACUITY_API_KEY = os.getenv("ACUITY_API_KEY", "")
+ACUITY_APPOINTMENT_TYPE_ID = os.getenv("ACUITY_APPOINTMENT_TYPE_ID", "")
+try:
+    ACUITY_CALENDAR_IDS = json.loads(os.getenv("ACUITY_CALENDAR_IDS", "{}"))
+except json.JSONDecodeError:
+    ACUITY_CALENDAR_IDS = {}
 
 SPECTACULAR_SETTINGS = {
     "TITLE": "Clear Code Reading API",

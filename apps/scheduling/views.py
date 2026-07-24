@@ -49,7 +49,10 @@ def _has_center_role(user, center, roles):
 
 
 def _accessible_center(user, center_id, roles=None):
-    center = School.objects.filter(pk=center_id, pk__in=_center_ids(user), is_deleted=False).first()
+    try:
+        center = School.objects.filter(pk=center_id, pk__in=_center_ids(user), is_deleted=False).first()
+    except (TypeError, ValueError):
+        return None
     if center is None or (roles and not _has_center_role(user, center, roles)):
         return None
     return center
@@ -246,14 +249,19 @@ class ScheduleBookingViewSet(CenterScopedMutationMixin, viewsets.ModelViewSet):
             result = reconcile_remote_bookings(
                 center=center,
                 adapter=adapter,
-                start_date=parse_date(request.data.get("start_date", "")),
-                end_date=parse_date(request.data.get("end_date", "")),
-                updated_since=parse_datetime(request.data.get("updated_since", "")),
+                start_date=parse_date(request.data.get("start_date") or ""),
+                end_date=parse_date(request.data.get("end_date") or ""),
+                updated_since=parse_datetime(request.data.get("updated_since") or ""),
             )
         except SchedulerNotConfigured as error:
             return Response({"detail": str(error)}, status=status.HTTP_503_SERVICE_UNAVAILABLE)
         except SchedulerError as error:
             return Response({"detail": str(error)}, status=status.HTTP_502_BAD_GATEWAY)
+        except Exception:
+            return Response(
+                {"detail": "Unexpected scheduler adapter failure; no local booking identity was changed."},
+                status=status.HTTP_502_BAD_GATEWAY,
+            )
         return Response(result)
 
     @action(detail=False, methods=["get"], url_path="recommendations")
