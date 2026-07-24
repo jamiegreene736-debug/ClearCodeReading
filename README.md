@@ -369,17 +369,172 @@ docker compose run --rm web python manage.py test apps.users apps.schools apps.a
 
 The included tests cover model constants, serializer behavior, notification service helpers, and the assessment status workflow.
 
+## Phase 1: Intervention Intelligence
+
+Phase 1 adds center-scoped session capture and deterministic assessment-to-intervention mapping:
+
+- Curriculum-specific placement evidence for PFR and IMSE OG+ instruments
+- Reproducible PFR basal/ceiling and OG+ concept/error-pattern rules
+- Ranked recommended sequences with specialist confirmation or labeled override
+- Active placements and skill-based grouping suggestions
+- Fast session defaults from the active placement, structured capture, and immutable revisions
+- Guardian-provided availability plus IEP/IDEA approval gates
+- Provider-neutral advisory AI and purchased-scheduler integration boundaries
+
+The digital Reading Survey remains supporting context. It never selects a methodology or
+sequence position without curriculum-specific placement evidence.
+
+Seed each center after shared migrations:
+
+```bash
+python manage.py migrate_schemas --shared
+python manage.py seed_instructional_graphs --center-schema=<schema>
+```
+
+Generate a recommendation from an existing evidence record:
+
+```bash
+python manage.py generate_placement_recommendation --center-schema=<schema> --evidence-id=42
+```
+
+### Placement recommendation API example
+
+Create structured evidence:
+
+```http
+POST /api/v1/placement-evidence/
+Authorization: Bearer <specialist-token>
+Content-Type: application/json
+
+{
+  "child": 12,
+  "curriculum": 3,
+  "instrument": "pfr_placement",
+  "source": "manual",
+  "status": "completed",
+  "assessment_version": "2026.1",
+  "instructional_grade_band": "grade_2",
+  "raw_results": {
+    "starting_part": "PFR-A-01",
+    "parts": [
+      {
+        "position_code": "PFR-A-01",
+        "items": [
+          {"item_id": "w1", "correct": true, "latency_seconds": 3},
+          {"item_id": "w2", "correct": false, "latency_seconds": 4}
+        ]
+      }
+    ]
+  },
+  "supporting_context": {
+    "reading_survey_assessment_id": 88,
+    "external_reports": [{"type": "TOWRE-2", "received_at": "2026-07-20"}]
+  }
+}
+```
+
+Then generate and confirm or override:
+
+```http
+POST /api/v1/placement-evidence/42/recommend/
+
+POST /api/v1/placement-recommendations/17/confirm/
+Content-Type: application/json
+
+{
+  "final_position": 301,
+  "override_rationale": "Required only when the final position differs from the recommendation.",
+  "evidence_considered": {"item_set_ids": ["review-17"]}
+}
+```
+
+### Session logging API example
+
+Fetch intelligent defaults with `GET /api/v1/sessions/defaults/?child=12`, then submit:
+
+```http
+POST /api/v1/sessions/
+Authorization: Bearer <specialist-token>
+Content-Type: application/json
+
+{
+  "child": 12,
+  "status": "completed",
+  "scheduled_start": "2026-07-24T14:00:00Z",
+  "started_at": "2026-07-24T14:02:00Z",
+  "ended_at": "2026-07-24T14:57:00Z",
+  "activities_completed": [
+    {
+      "code": "word_reading",
+      "status": "completed",
+      "minutes": 12,
+      "item_set_id": "PFR-A-08-1A-WR-01"
+    }
+  ],
+  "item_sets": {
+    "word_reading": {
+      "item_set_id": "PFR-A-08-1A-WR-01",
+      "correct": 9,
+      "total": 10,
+      "items": [
+        {
+          "item_id": "w1",
+          "correct": true,
+          "latency_seconds": 3,
+          "mode": "decoding",
+          "prompt_level": "independent"
+        }
+      ]
+    }
+  },
+  "accuracy_numerator": 9,
+  "accuracy_denominator": 10,
+  "time_to_mastery_signals": {
+    "cumulative_sessions_at_position": 2,
+    "first_attempt_accuracy": 78,
+    "latest_accuracy": 90,
+    "prompts_per_10_items": 1,
+    "independent_transfer": true,
+    "reteach": false
+  },
+  "error_patterns": [
+    {"code": "short_vowel_confusion", "target": "a_to_e", "count": 1, "opportunities": 10}
+  ],
+  "behavioral_observations": [
+    {"code": "self_correction", "rating": "consistent", "activity_code": "word_reading"}
+  ],
+  "next_session_direction": "Complete PFR Session 1b with a distinct item set.",
+  "home_practice_suggestion": "Read the five assigned words once."
+}
+```
+
+The API defaults `center`, `specialist`, active position, targeted position, methodology
+part, and calculated accuracy. `GET /api/v1/sessions/logging-metrics/` reports same-day
+capture against the 95% operating target.
+
+### Specialist demo
+
+1. Open the specialist dashboard and select a pending placement recommendation.
+2. Review the deterministic rationale and the ranked five-position sequence.
+3. Confirm the suggested position, or select another position and record the evidence-based rationale.
+4. Start a session from `GET /api/v1/sessions/defaults/?child=<id>`.
+5. Enter activity/item-set results, observable participation, next direction, and home practice.
+6. Save the completed session and verify its revision snapshot in the API or Django admin.
+7. Open grouping suggestions at `GET /api/v1/placement-recommendations/grouping-suggestions/`.
+
 ## Project Layout
 
 ```text
 clearcodereading/
 apps/
+  ai/
   api/
   assessments/
   core/
   crm/
   curriculum/
   sessions/
+  scheduling/
   notifications/
   progress/
   schools/

@@ -174,6 +174,48 @@ class AssessmentViewSet(viewsets.ModelViewSet):
 
 ```
 
+## Phase 1 placement and session workflows
+
+### Assessment to intervention
+
+1. A specialist creates `PlacementEvidence` from a curriculum-embedded PFR or OG+
+   instrument. Raw item outcomes and the assessment version remain intact.
+2. `POST placement-evidence/<id>/recommend/` reruns the frozen rules and writes an
+   explainable `PlacementRecommendation` plus ranked `RecommendedSequencePosition` rows.
+3. The specialist reviews the recommendation in the portal or API.
+4. Confirmation creates or updates the one active `StudentPlacement`. Selecting a
+   different position requires rationale and writes both recommendation labels and a
+   `StudentPlacementOverride`.
+5. `grouping-suggestions` groups active students by methodology and current graph
+   position, including availability and IDEA authorization readiness for future scheduling.
+
+Changing methodologies closes the existing active placement and creates a new one.
+Moving within a methodology retains an explicit override history. The Reading Survey may
+be linked as context but cannot choose either methodology.
+
+### Fast specialist session capture
+
+1. `GET sessions/defaults/?child=<id>` returns the active position, target, activities,
+   item-set schema, mastery criteria, and the next PFR 1a/1b or OG+ part.
+2. The specialist submits structured outcomes to `POST sessions/`; server-derived center
+   and specialist values prevent cross-center assignment.
+3. A completed record requires timing, activities, item sets, accuracy counts,
+   time-to-mastery signals, next direction, and home practice.
+4. Every save creates an immutable `SessionRevision`; targeted-position changes update
+   the same revision snapshot.
+5. `logging-metrics` reports same-day completion capture against the 95% target.
+
+The dashboard presents pending recommendations with confirm/override controls. Django
+admin provides compact placement review and session capture fieldsets while a polished
+specialist UI remains future work.
+
+### Integration boundaries
+
+`apps.ai.services.InstructionalAIService` accepts minimized, de-identified instructional
+context and returns advisory text plus provider metadata. The safe default is disabled.
+`apps.scheduling.integrations.SchedulerAdapter` defines future Jane App/Acuity student
+and availability synchronization without implementing a scheduler or optimizer.
+
 ## `apps/users/views.py`
 ```python
 from django.db import transaction

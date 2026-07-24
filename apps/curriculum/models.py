@@ -286,6 +286,14 @@ class StudentPlacementOverride(AuditedModel):
         related_name="placement_overrides_to",
     )
     rationale = models.TextField()
+    evidence_considered = models.JSONField(default=dict, blank=True)
+    source_recommendation = models.ForeignKey(
+        "PlacementRecommendation",
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="placement_overrides",
+    )
     specialist = models.ForeignKey(
         settings.AUTH_USER_MODEL,
         on_delete=models.PROTECT,
@@ -317,6 +325,241 @@ class StudentPlacementOverride(AuditedModel):
 
     def __str__(self):
         return f"{self.placement}: {self.previous_position.code} to {self.new_position.code}"
+
+
+class PlacementEvidence(AuditedModel):
+    """Structured, reproducible input from a curriculum-embedded placement instrument."""
+
+    class Instrument(models.TextChoices):
+        PFR_PLACEMENT = "pfr_placement", "PFR Placement Test"
+        OG_PA_DIAGNOSTIC = "og_pa_diagnostic", "OG+ Phonological Awareness Diagnostic"
+        OG_BENCHMARK = "og_benchmark", "OG+ Benchmark Assessment"
+        OG_SPELLING_SURVEY = "og_spelling_survey", "OG+ Informal Spelling Survey"
+
+    class Source(models.TextChoices):
+        MANUAL = "manual", "Structured manual entry"
+        IMPORT = "import", "Structured import"
+        READING_SURVEY = "reading_survey", "Digital Reading Survey context"
+
+    class Status(models.TextChoices):
+        DRAFT = "draft", "Draft"
+        COMPLETED = "completed", "Completed"
+
+    child = models.ForeignKey(
+        "users.ChildProfile",
+        on_delete=models.PROTECT,
+        related_name="placement_evidence",
+    )
+    curriculum = models.ForeignKey(Curriculum, on_delete=models.PROTECT, related_name="placement_evidence")
+    source_assessment = models.ForeignKey(
+        "assessments.Assessment",
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="placement_evidence",
+    )
+    instrument = models.CharField(max_length=32, choices=Instrument.choices, db_index=True)
+    source = models.CharField(max_length=24, choices=Source.choices, default=Source.MANUAL, db_index=True)
+    status = models.CharField(max_length=20, choices=Status.choices, default=Status.COMPLETED, db_index=True)
+    assessment_version = models.CharField(max_length=80)
+    administered_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.PROTECT,
+        related_name="placement_evidence_administered",
+    )
+    administered_at = models.DateTimeField(default=timezone.now, db_index=True)
+    instructional_grade_band = models.CharField(max_length=32, blank=True, db_index=True)
+    raw_results = models.JSONField(default=dict)
+    supporting_context = models.JSONField(default=dict, blank=True)
+
+    class Meta:
+        ordering = ["-administered_at", "-created_at"]
+        indexes = [
+            models.Index(fields=["center", "child", "administered_at"]),
+            models.Index(fields=["center", "instrument", "status"]),
+            models.Index(fields=["curriculum", "administered_at"]),
+            models.Index(fields=["is_deleted", "created_at"]),
+        ]
+
+    def clean(self):
+        super().clean()
+        errors = {}
+        if self.child_id and self.child.school_id and self.center_id != self.child.school_id:
+            errors["center"] = "Placement evidence must use the child's center."
+        if self.curriculum_id and self.curriculum.center_id != self.center_id:
+            errors["curriculum"] = "Placement evidence and curriculum must belong to the same center."
+        expected_code = (
+            Curriculum.Code.PFR
+            if self.instrument == self.Instrument.PFR_PLACEMENT
+            else Curriculum.Code.OG_PLUS
+        )
+        if self.curriculum_id and self.curriculum.code != expected_code:
+            errors["curriculum"] = "The selected curriculum does not match the placement instrument."
+        if self.status == self.Status.COMPLETED and self.curriculum_id and self.curriculum.code == Curriculum.Code.OG_PLUS:
+            if not self.instructional_grade_band:
+                errors["instructional_grade_band"] = "OG+ placement requires the instructional grade band."
+            expected_instruments = {
+                "pre_k": {self.Instrument.OG_PA_DIAGNOSTIC},
+                "kindergarten": {self.Instrument.OG_PA_DIAGNOSTIC},
+                "grade_1": {self.Instrument.OG_BENCHMARK},
+                "grade_2": {self.Instrument.OG_BENCHMARK},
+                "grade_3": {self.Instrument.OG_SPELLING_SURVEY},
+                "grade_4": {self.Instrument.OG_SPELLING_SURVEY},
+                "grade_5": {self.Instrument.OG_SPELLING_SURVEY},
+                "other": {self.Instrument.OG_SPELLING_SURVEY},
+            }
+            allowed = expected_instruments.get(self.instructional_grade_band)
+            if allowed and self.instrument not in allowed:
+                errors["instrument"] = "The OG+ instrument does not match the instructional grade band."
+        if not isinstance(self.raw_results, dict):
+            errors["raw_results"] = "Placement results must be a structured object."
+        if not isinstance(self.supporting_context, dict):
+            errors["supporting_context"] = "Supporting context must be a structured object."
+        if errors:
+            raise ValidationError(errors)
+
+    def __str__(self):
+        return f"{self.get_instrument_display()} for {self.child}"
+
+
+class PlacementRecommendation(AuditedModel):
+    """Editable specialist decision generated from deterministic placement evidence."""
+
+    class Decision(models.TextChoices):
+        PLACE = "place", "Place at sequence position"
+        SPECIALIST_REVIEW = "specialist_review", "Specialist review required"
+        CURRICULUM_COMPLETE = "curriculum_complete", "Curriculum completion review"
+
+    class Status(models.TextChoices):
+        PENDING = "pending", "Pending specialist decision"
+        CONFIRMED = "confirmed", "Confirmed"
+        OVERRIDDEN = "overridden", "Overridden"
+
+    evidence = models.OneToOneField(
+        PlacementEvidence,
+        on_delete=models.PROTECT,
+        related_name="recommendation",
+    )
+    recommended_curriculum = models.ForeignKey(
+        Curriculum,
+        on_delete=models.PROTECT,
+        related_name="placement_recommendations",
+    )
+    recommended_position = models.ForeignKey(
+        CurriculumSequence,
+        on_delete=models.PROTECT,
+        null=True,
+        blank=True,
+        related_name="placement_recommendations",
+    )
+    decision = models.CharField(max_length=24, choices=Decision.choices, db_index=True)
+    status = models.CharField(max_length=20, choices=Status.choices, default=Status.PENDING, db_index=True)
+    deficit_profile = models.JSONField(default=list, blank=True)
+    rule_trace = models.JSONField(default=dict)
+    rationale = models.TextField()
+    advisory_narrative = models.TextField(blank=True)
+    ai_metadata = models.JSONField(default=dict, blank=True)
+    final_position = models.ForeignKey(
+        CurriculumSequence,
+        on_delete=models.PROTECT,
+        null=True,
+        blank=True,
+        related_name="finalized_placement_recommendations",
+    )
+    final_curriculum = models.ForeignKey(
+        Curriculum,
+        on_delete=models.PROTECT,
+        null=True,
+        blank=True,
+        related_name="finalized_placement_recommendations",
+    )
+    override_rationale = models.TextField(blank=True)
+    evidence_considered = models.JSONField(default=dict, blank=True)
+    confirmed_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.PROTECT,
+        null=True,
+        blank=True,
+        related_name="placement_recommendations_confirmed",
+    )
+    confirmed_at = models.DateTimeField(null=True, blank=True, db_index=True)
+    resulting_placement = models.ForeignKey(
+        StudentPlacement,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="source_recommendations",
+    )
+
+    class Meta:
+        ordering = ["-created_at"]
+        indexes = [
+            models.Index(fields=["center", "status", "created_at"]),
+            models.Index(fields=["recommended_curriculum", "recommended_position"]),
+            models.Index(fields=["confirmed_by", "confirmed_at"]),
+            models.Index(fields=["is_deleted", "created_at"]),
+        ]
+
+    def clean(self):
+        super().clean()
+        errors = {}
+        if self.evidence_id and self.evidence.center_id != self.center_id:
+            errors["center"] = "Recommendation and evidence must belong to the same center."
+        if self.recommended_curriculum_id and self.recommended_curriculum.center_id != self.center_id:
+            errors["recommended_curriculum"] = "Recommendation curriculum must belong to the same center."
+        if self.recommended_position_id and self.recommended_position.curriculum_id != self.recommended_curriculum_id:
+            errors["recommended_position"] = "Position must belong to the recommended curriculum."
+        if self.final_position_id:
+            final_curriculum_id = self.final_curriculum_id or self.recommended_curriculum_id
+            if self.final_position.curriculum_id != final_curriculum_id:
+                errors["final_position"] = "Final position must belong to the final curriculum."
+        if self.decision == self.Decision.PLACE and not self.recommended_position_id:
+            errors["recommended_position"] = "A placement recommendation requires a position."
+        if self.status == self.Status.OVERRIDDEN and not self.override_rationale.strip():
+            errors["override_rationale"] = "An override rationale is required."
+        if errors:
+            raise ValidationError(errors)
+
+    def __str__(self):
+        return f"Recommendation for {self.evidence.child} ({self.get_status_display()})"
+
+
+class RecommendedSequencePosition(TimestampedModel):
+    """Ranked, queryable sequence output used by specialists and future grouping."""
+
+    recommendation = models.ForeignKey(
+        PlacementRecommendation,
+        on_delete=models.CASCADE,
+        related_name="recommended_sequence",
+    )
+    position = models.ForeignKey(
+        CurriculumSequence,
+        on_delete=models.PROTECT,
+        related_name="ranked_recommendations",
+    )
+    priority = models.PositiveSmallIntegerField()
+    gap_codes = models.JSONField(default=list, blank=True)
+    rationale = models.CharField(max_length=500, blank=True)
+
+    class Meta:
+        ordering = ["recommendation", "priority"]
+        constraints = [
+            models.UniqueConstraint(
+                fields=["recommendation", "priority"],
+                name="unique_recommendation_priority",
+            ),
+            models.UniqueConstraint(
+                fields=["recommendation", "position"],
+                name="unique_recommendation_position",
+            ),
+        ]
+        indexes = [
+            models.Index(fields=["recommendation", "priority"]),
+            models.Index(fields=["position", "priority"]),
+        ]
+
+    def __str__(self):
+        return f"{self.recommendation_id}: {self.priority} - {self.position.code}"
 
 
 class Lesson(TimestampedModel, SoftDeleteModel):

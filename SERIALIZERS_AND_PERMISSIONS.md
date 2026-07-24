@@ -160,6 +160,32 @@ class COPPAConsentRequired(BasePermission):
 
 ```
 
+## Phase 1 serializers and permissions
+
+`PlacementEvidenceSerializer` accepts only structured, curriculum-specific evidence.
+The center and administrator are assigned from the child/curriculum and authenticated
+specialist; clients cannot spoof them. `PlacementRecommendationSerializer` is read-only
+because its methodology, rule trace, gap profile, and ranked sequence come from the
+deterministic service. `ConfirmPlacementRecommendationSerializer` is the sole decision
+input and labels a changed final position with rationale and evidence considered.
+
+`SessionSerializer` defaults the active curriculum position, target, specialist, center,
+and PFR/OG+ intervention part. Completed captures validate activity status, item-set
+counts, accuracy numerator/denominator, structured error patterns, allowed observable
+participation codes, next direction, and home practice. Model validation also blocks
+sessions for an active IEP until both recorded parent consent and IEP-team approval are
+approved.
+
+All Phase 1 querysets apply center membership filtering before object lookup. Creation
+and decision actions additionally call `user_can_evaluate_child`, preventing a valid
+specialist token from crossing center boundaries. Super administrators retain explicit
+global access. Recommendations and sessions expose immutable audit/revision data as
+read-only fields.
+
+External report references belong in `PlacementEvidence.supporting_context`; they do
+not enter the deterministic methodology or position calculation. Advisory narrative
+output is read-only, provider-labeled, and never auto-applied.
+
 ## `apps/api/serializers.py`
 ```python
 from rest_framework import serializers

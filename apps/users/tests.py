@@ -1,10 +1,11 @@
 from django.test import SimpleTestCase
+from django.utils import timezone
 from unittest.mock import Mock, patch
 
 from apps.assessments.models import Assessment
 from apps.notifications.signals import handle_assessment_status_change
 from apps.users.management.commands.seed_demo_login import Command
-from apps.users.models import ConsentLog, CustomUser, GuardianRelationship
+from apps.users.models import ChildProfile, ConsentLog, CustomUser, GuardianRelationship
 from apps.users.portal_views import CreatePortalUserView
 from apps.users.serializers import CustomUserSerializer
 
@@ -49,3 +50,16 @@ class UsersTests(SimpleTestCase):
 
         self.assertTrue(password.startswith("ClearCode-"))
         self.assertTrue(password.endswith("!"))
+
+    def test_active_iep_requires_both_idea_approvals(self):
+        child = ChildProfile(
+            first_name="Avery",
+            iep_status=ChildProfile.IEPStatus.ACTIVE,
+            idea_parent_consent_status=ChildProfile.ApprovalStatus.APPROVED,
+            iep_team_approval_status=ChildProfile.ApprovalStatus.PENDING,
+        )
+        self.assertFalse(child.idea_services_authorized)
+        child.iep_team_approval_status = ChildProfile.ApprovalStatus.APPROVED
+        child.idea_parent_consented_at = timezone.now()
+        child.iep_team_approved_at = timezone.now()
+        self.assertTrue(child.idea_services_authorized)

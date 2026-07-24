@@ -106,6 +106,51 @@
       </aside>
 
       <section class="space-y-6">
+        {% if is_teacher or is_admin %}
+          <section class="rounded-[2rem] bg-white p-6 shadow-xl shadow-navySoft/8 ring-1 ring-tealWarm/10">
+            <p class="text-sm font-black uppercase tracking-[0.18em] text-tealWarm">Intervention placement</p>
+            <h2 class="mt-2 text-3xl font-black">Review recommended sequences</h2>
+            <p class="mt-2 text-sm leading-6 text-navySoft/65">Recommendations are advisory until you confirm or override them.</p>
+            <div class="mt-5 grid gap-4">
+              {% for recommendation in placement_recommendations %}
+                <article class="rounded-3xl bg-mist p-5">
+                  <div class="flex flex-wrap items-start justify-between gap-3">
+                    <div>
+                      <h3 class="text-xl font-black">{{ recommendation.evidence.child }}</h3>
+                      <p class="mt-1 font-bold text-tealWarm">{{ recommendation.recommended_curriculum.get_code_display }}</p>
+                      <p class="mt-2 text-sm leading-6 text-navySoft/70">{{ recommendation.rationale }}</p>
+                    </div>
+                    <span class="rounded-full bg-white px-3 py-1 text-xs font-black">{{ recommendation.get_decision_display }}</span>
+                  </div>
+                  <ol class="mt-4 grid gap-2 sm:grid-cols-2">
+                    {% for step in recommendation.recommended_sequence.all %}
+                      <li class="rounded-2xl bg-white px-4 py-3 text-sm"><strong>{{ step.priority }}. {{ step.position.code }}</strong> · {{ step.position.title }}</li>
+                    {% endfor %}
+                  </ol>
+                  <form class="mt-4 grid gap-3 md:grid-cols-[1fr_2fr_auto]" method="post" action="{% url 'portal_confirm_placement' %}">
+                    {% csrf_token %}
+                    <input type="hidden" name="recommendation_id" value="{{ recommendation.id }}">
+                    <label>
+                      <span class="text-xs font-black text-navySoft/60">Final position</span>
+                      <select class="mt-1 w-full rounded-2xl border border-navySoft/15 px-3 py-2 font-bold" name="final_position_id" required>
+                        {% for step in recommendation.recommended_sequence.all %}
+                          <option value="{{ step.position.id }}" {% if step.position_id == recommendation.recommended_position_id %}selected{% endif %}>{{ step.position.code }}</option>
+                        {% endfor %}
+                      </select>
+                    </label>
+                    <label>
+                      <span class="text-xs font-black text-navySoft/60">Override rationale (required only if changed)</span>
+                      <input class="mt-1 w-full rounded-2xl border border-navySoft/15 px-3 py-2" name="override_rationale" placeholder="Instructional evidence supporting a different start">
+                    </label>
+                    <button class="focus-ring self-end rounded-full bg-tealWarm px-5 py-3 font-black text-white" type="submit">Save decision</button>
+                  </form>
+                </article>
+              {% empty %}
+                <p class="rounded-3xl bg-cream p-5 font-bold text-navySoft/70">No placement recommendations are awaiting review.</p>
+              {% endfor %}
+            </div>
+          </section>
+        {% endif %}
         {% if is_admin %}
           <section class="rounded-[2rem] bg-white p-6 shadow-xl shadow-navySoft/8 ring-1 ring-navySoft/10">
             <div class="flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">

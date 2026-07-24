@@ -109,6 +109,8 @@ class Session(AuditedModel):
         blank=True,
         validators=[MinValueValidator(0), MaxValueValidator(100)],
     )
+    accuracy_numerator = models.PositiveIntegerField(null=True, blank=True)
+    accuracy_denominator = models.PositiveIntegerField(null=True, blank=True)
     time_to_mastery_signals = models.JSONField(default=dict, blank=True)
     error_patterns = models.JSONField(default=list, blank=True)
     behavioral_observations = models.JSONField(default=list, blank=True)
@@ -143,10 +145,21 @@ class Session(AuditedModel):
 
         if self.child_id and self.child.school_id and self.center_id != self.child.school_id:
             errors["center"] = "Session must use the child's center."
+        if self.child_id and not self.child.idea_services_authorized:
+            errors["child"] = (
+                "Recorded parent consent and IEP-team approval are required before services can be scheduled."
+            )
         if self.curriculum_position_id and self.center_id != self.curriculum_position.center_id:
             errors["curriculum_position"] = "Curriculum position must belong to the session center."
         if self.started_at and self.ended_at and self.ended_at <= self.started_at:
             errors["ended_at"] = "End time must be after start time."
+        if self.accuracy_denominator is not None:
+            if self.accuracy_denominator == 0:
+                errors["accuracy_denominator"] = "Accuracy denominator must be greater than zero."
+            elif self.accuracy_numerator is not None and self.accuracy_numerator > self.accuracy_denominator:
+                errors["accuracy_numerator"] = "Accuracy numerator cannot exceed the denominator."
+        if (self.accuracy_numerator is None) != (self.accuracy_denominator is None):
+            errors["accuracy_numerator"] = "Accuracy numerator and denominator must be supplied together."
         if self.curriculum_position_id:
             curriculum_code = self.curriculum_position.curriculum.code
             is_pfr_part = self.intervention_part in {
@@ -164,6 +177,8 @@ class Session(AuditedModel):
                 "activities_completed": self.activities_completed,
                 "item_sets": self.item_sets,
                 "accuracy_rate": self.accuracy_rate,
+                "accuracy_numerator": self.accuracy_numerator,
+                "accuracy_denominator": self.accuracy_denominator,
                 "time_to_mastery_signals": self.time_to_mastery_signals,
                 "next_session_direction": self.next_session_direction.strip(),
                 "home_practice_suggestion": self.home_practice_suggestion.strip(),
@@ -171,8 +186,57 @@ class Session(AuditedModel):
             for field_name, value in required_values.items():
                 if value is None or value == "" or value == [] or value == {}:
                     errors[field_name] = "Required when a session is completed."
+            self._validate_structured_capture(errors)
         if errors:
             raise ValidationError(errors)
+
+    def _validate_structured_capture(self, errors):
+        activity_statuses = {"completed", "partial", "not_completed"}
+        for index, activity in enumerate(self.activities_completed):
+            if not isinstance(activity, dict):
+                errors["activities_completed"] = f"Activity {index + 1} must be an object."
+                break
+            required = {"code", "status", "minutes", "item_set_id"}
+            if not required.issubset(activity):
+                errors["activities_completed"] = f"Activity {index + 1} is missing required structured fields."
+                break
+            if activity.get("status") not in activity_statuses:
+                errors["activities_completed"] = f"Activity {index + 1} has an unsupported status."
+                break
+
+        allowed_behavior_codes = {
+            "task_persistence",
+            "attention_to_print",
+            "response_latency",
+            "self_correction",
+            "requests_break",
+            "uses_strategy",
+            "confidence_to_attempt",
+        }
+        allowed_ratings = {"rare", "emerging", "inconsistent", "consistent"}
+        for observation in self.behavioral_observations:
+            if not isinstance(observation, dict) or observation.get("code") not in allowed_behavior_codes:
+                errors["behavioral_observations"] = "Behavioral observations must use an allowed observable code."
+                break
+            if observation.get("rating") not in allowed_ratings:
+                errors["behavioral_observations"] = "Behavioral observations must use an allowed rating."
+                break
+
+        for pattern in self.error_patterns:
+            if not isinstance(pattern, dict) or not {"code", "count", "opportunities"}.issubset(pattern):
+                errors["error_patterns"] = "Each error pattern requires code, count, and opportunities."
+                break
+
+        mastery_keys = {
+            "cumulative_sessions_at_position",
+            "first_attempt_accuracy",
+            "latest_accuracy",
+            "prompts_per_10_items",
+            "independent_transfer",
+            "reteach",
+        }
+        if not mastery_keys.issubset(self.time_to_mastery_signals):
+            errors["time_to_mastery_signals"] = "Time-to-mastery signals are incomplete."
 
     def __str__(self):
         return f"{self.child} - {self.get_intervention_part_display()} on {self.scheduled_start:%Y-%m-%d}"

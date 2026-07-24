@@ -22,6 +22,8 @@ class SessionAdmin(admin.ModelAdmin):
         "scheduled_start",
         "status",
         "accuracy_rate",
+        "accuracy_numerator",
+        "accuracy_denominator",
         "revision",
     )
     list_filter = ("status", "intervention_part", "center", "is_deleted")
@@ -36,6 +38,40 @@ class SessionAdmin(admin.ModelAdmin):
         "updated_by",
     )
     readonly_fields = ("revision", "created_at", "updated_at", "deleted_at")
+    fieldsets = (
+        (
+            "Fast session capture",
+            {
+                "fields": (
+                    "center",
+                    "child",
+                    "specialist",
+                    "curriculum_position",
+                    "targeted_positions",
+                    "intervention_part",
+                    "status",
+                    "scheduled_start",
+                    ("started_at", "ended_at"),
+                    ("accuracy_numerator", "accuracy_denominator", "accuracy_rate"),
+                    "activities_completed",
+                    "item_sets",
+                    "time_to_mastery_signals",
+                    "error_patterns",
+                    "behavioral_observations",
+                    "next_session_direction",
+                    "home_practice_suggestion",
+                )
+            },
+        ),
+        ("Supplemental notes", {"fields": ("notes",), "classes": ("collapse",)}),
+        (
+            "Audit",
+            {
+                "fields": ("created_by", "updated_by", "revision", "created_at", "updated_at", "deleted_at"),
+                "classes": ("collapse",),
+            },
+        ),
+    )
 
 
 @admin.register(SessionRevision)
