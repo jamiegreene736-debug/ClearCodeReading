@@ -44,6 +44,7 @@ SHARED_APPS = [
     "apps.scheduling.apps.SchedulingConfig",
     "apps.assessments",
     "apps.progress",
+    "apps.decision_support.apps.DecisionSupportConfig",
     "apps.api",
 ]
 
@@ -59,6 +60,7 @@ TENANT_APPS = [
     "apps.scheduling.apps.SchedulingConfig",
     "apps.assessments",
     "apps.progress",
+    "apps.decision_support.apps.DecisionSupportConfig",
     "apps.api",
 ]
 
