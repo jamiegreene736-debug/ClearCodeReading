@@ -2,7 +2,7 @@ from django.contrib import admin
 from django.contrib.auth.admin import UserAdmin
 from django.utils import timezone
 
-from apps.users.models import AuditLog, ChildProfile, ConsentLog, CustomUser, GuardianRelationship, Profile
+from apps.users.models import AuditLog, ChildProfile, ConsentLog, ConsentRecord, CustomUser, GuardianRelationship, Profile
 
 
 class ProfileInline(admin.StackedInline):
@@ -126,6 +126,24 @@ class ConsentLogAdmin(admin.ModelAdmin):
     search_fields = ("guardian__email", "child__first_name", "child__last_name", "version", "source")
     autocomplete_fields = ("guardian_relationship", "guardian", "child")
     readonly_fields = ("created_at", "updated_at")
+
+
+@admin.register(ConsentRecord)
+class ConsentRecordAdmin(admin.ModelAdmin):
+    list_display = ("child", "center", "consent_type", "status", "version", "granted_by", "granted_at", "expires_at")
+    list_filter = ("center", "consent_type", "status", "created_at", "expires_at")
+    search_fields = ("child__first_name", "child__last_name", "source_document_ref")
+    autocomplete_fields = ("child", "center", "granted_by", "created_by")
+    readonly_fields = ("version", "created_at", "updated_at", "deleted_at")
+
+    def has_change_permission(self, request, obj=None):
+        return False
+
+    def save_model(self, request, obj, form, change):
+        obj.created_by = request.user
+        if obj.status == ConsentRecord.Status.GRANTED and obj.granted_by_id is None:
+            obj.granted_by = request.user
+        super().save_model(request, obj, form, change)
 
 
 @admin.register(AuditLog)
