@@ -14,10 +14,21 @@ class AdvisoryOutput:
     metadata: dict
 
 
+@dataclass(frozen=True)
+class SessionSuggestionOutput:
+    next_session_direction: str
+    home_practice_suggestion: str
+    provider: str
+    model: str
+
+
 class InstructionalAIService(Protocol):
     """Stable provider boundary. Output is advisory and never mutates records."""
 
     def placement_narrative(self, context: dict) -> AdvisoryOutput | None:
+        ...
+
+    def session_suggestions(self, context: dict) -> SessionSuggestionOutput | None:
         ...
 
 
@@ -29,6 +40,9 @@ class DisabledInstructionalAIService:
     """Safe default used until a reviewed external or in-house provider is configured."""
 
     def placement_narrative(self, context: dict) -> AdvisoryOutput | None:
+        return None
+
+    def session_suggestions(self, context: dict) -> SessionSuggestionOutput | None:
         return None
 
 

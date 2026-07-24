@@ -1,6 +1,25 @@
 from django.contrib import admin
+from django.urls import reverse
+from django.utils.html import format_html
 
 from .models import Session, SessionRevision, SessionTemplate, SkillObservation
+
+
+class LowAccuracyFilter(admin.SimpleListFilter):
+    title = "accuracy band"
+    parameter_name = "accuracy_band"
+
+    def lookups(self, request, model_admin):
+        return (("low", "Below 80%"), ("watch", "80–89%"), ("strong", "90%+"))
+
+    def queryset(self, request, queryset):
+        if self.value() == "low":
+            return queryset.filter(accuracy_rate__lt=80)
+        if self.value() == "watch":
+            return queryset.filter(accuracy_rate__gte=80, accuracy_rate__lt=90)
+        if self.value() == "strong":
+            return queryset.filter(accuracy_rate__gte=90)
+        return queryset
 
 
 class SessionRevisionInline(admin.TabularInline):
@@ -38,9 +57,11 @@ class SessionAdmin(admin.ModelAdmin):
         "accuracy_rate",
         "accuracy_numerator",
         "accuracy_denominator",
+        "rapid_action",
         "revision",
     )
-    list_filter = ("status", "intervention_part", "center", "is_deleted")
+    list_filter = ("center", "specialist", "status", "intervention_part", LowAccuracyFilter, "is_deleted")
+    date_hierarchy = "scheduled_start"
     search_fields = ("child__first_name", "child__last_name", "specialist__email", "notes")
     autocomplete_fields = (
         "center",
@@ -53,6 +74,12 @@ class SessionAdmin(admin.ModelAdmin):
         "updated_by",
     )
     readonly_fields = ("revision", "created_at", "updated_at", "deleted_at")
+
+    @admin.display(description="Rapid action")
+    def rapid_action(self, obj):
+        label = "Edit structured fields" if obj.status == Session.Status.COMPLETED else "Complete"
+        url = f"{reverse('rapid_session_log')}?session={obj.pk}"
+        return format_html('<a class="button" href="{}">{}</a>', url, label)
     fieldsets = (
         (
             "Fast session capture",

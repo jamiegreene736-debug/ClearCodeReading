@@ -580,3 +580,18 @@ apps/
   users/
 scripts/
 ```
+
+## Specialist Logging Checklist
+
+- Open **Rapid log** from the specialist dashboard or `/portal/sessions/rapid-log/`.
+- Confirm the reader, position, and PFR 1a / PFR 1b / OG+ session part.
+- Enter correct and attempted responses; activities and distinct item-set IDs are prefilled.
+- Add controlled error-pattern or observable-behavior chips only when they apply.
+- Review the editable instructional next-step and home-practice drafts, then complete the session.
+- Confirm the success state and use **Log another** or return to the reader’s position.
+
+Minimal API example:
+
+```json
+{"mode":"quick_complete","child":42,"accuracy_numerator":9,"accuracy_denominator":10}
+```

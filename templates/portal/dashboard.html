@@ -185,7 +185,7 @@
             <h2 class="mt-2 text-3xl font-black">Upcoming sessions and current instruction</h2>
             <div class="mt-5 grid gap-3 md:grid-cols-2">
               {% for snapshot in student_snapshots %}
-                <article class="rounded-3xl bg-mist p-5">
+                <article id="reader-{{ snapshot.child.id }}" class="rounded-3xl bg-mist p-5">
                   <h3 class="text-xl font-black">{{ snapshot.child }}</h3>
                   <p class="mt-1 text-sm font-bold text-tealWarm">{% if snapshot.placement %}{{ snapshot.placement.curriculum.get_code_display }} · {{ snapshot.placement.current_position.code }}{% else %}Placement pending{% endif %}</p>
                   {% if snapshot.latest_session %}
@@ -193,12 +193,15 @@
                     <p class="mt-2 text-sm"><strong>Error patterns:</strong> {{ snapshot.latest_session.error_patterns|default:"None recorded" }}</p>
                     <p class="mt-2 text-sm"><strong>Parent will see:</strong> {{ snapshot.latest_session.notes|default:snapshot.latest_session.next_session_direction }}</p>
                   {% endif %}
+                  {% if snapshot.placement and snapshot.can_log_session %}
+                    <a href="{% url 'rapid_session_log' %}?child={{ snapshot.child.id }}" class="mt-4 inline-flex rounded-full bg-navySoft px-4 py-3 text-sm font-black text-white">Rapid log</a>
+                  {% endif %}
                 </article>
               {% empty %}<p class="rounded-3xl bg-cream p-5">No assigned readers yet.</p>{% endfor %}
             </div>
             <div class="mt-5">
               <h3 class="font-black">Upcoming</h3>
-              <div class="mt-3 flex flex-wrap gap-2">{% for session in upcoming_sessions %}<span class="rounded-full bg-cream px-4 py-2 text-sm font-black">{{ session.scheduled_start|date:"M j, g:i a" }} · {{ session.child }} · {{ session.curriculum_position.code }}</span>{% empty %}<span class="text-sm text-navySoft/60">No upcoming sessions scheduled.</span>{% endfor %}</div>
+              <div class="mt-3 flex flex-wrap gap-2">{% for session in upcoming_sessions %}<a href="{% url 'rapid_session_log' %}?session={{ session.id }}" class="rounded-full bg-cream px-4 py-2 text-sm font-black">{{ session.scheduled_start|date:"M j, g:i a" }} · {{ session.child }} · {{ session.curriculum_position.code }}</a>{% empty %}<span class="text-sm text-navySoft/60">No upcoming sessions scheduled.</span>{% endfor %}</div>
             </div>
           </section>
         {% endif %}

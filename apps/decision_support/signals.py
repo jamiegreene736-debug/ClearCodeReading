@@ -10,4 +10,11 @@ from apps.sessions.models import Session
 def evaluate_newly_completed_session(sender, instance, **kwargs):
     previous_status = getattr(instance, "_previous_status", None)
     if instance.status == Session.Status.COMPLETED and previous_status != Session.Status.COMPLETED:
-        transaction.on_commit(lambda: evaluate_completed_session.delay(instance.id))
+        transaction.on_commit(
+            lambda: evaluate_completed_session.apply_async(
+                args=[instance.id],
+                ignore_result=True,
+                retry=False,
+            ),
+            robust=True,
+        )

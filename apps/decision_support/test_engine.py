@@ -315,11 +315,11 @@ class DecisionSupportEngineTests(TestCase):
         self.assertEqual(acknowledge_response.status_code, 200, acknowledge_response.data)
         self.assertEqual(acknowledge_response.data["status"], GrowthFlag.Status.ACKNOWLEDGED)
 
-    @patch("apps.sessions.signals.send_progress_report_to_parents.delay")
-    @patch("apps.decision_support.signals.evaluate_completed_session.delay")
-    def test_session_completion_schedules_decision_support(self, evaluate_delay, progress_delay):
+    @patch("apps.sessions.signals.send_progress_report_to_parents.apply_async")
+    @patch("apps.decision_support.signals.evaluate_completed_session.apply_async")
+    def test_session_completion_schedules_decision_support(self, evaluate_enqueue, progress_enqueue):
         with self.captureOnCommitCallbacks(execute=True):
             session = self._session(day=1)
 
-        evaluate_delay.assert_called_once_with(session.id)
-        progress_delay.assert_called_once_with(self.child.id)
+        evaluate_enqueue.assert_called_once_with(args=[session.id], ignore_result=True, retry=False)
+        progress_enqueue.assert_called_once_with(args=[self.child.id], ignore_result=True, retry=False)
