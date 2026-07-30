@@ -3,55 +3,60 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Dashboard | Clear Code Reading</title>
-  <meta name="description" content="Clear Code Reading parent and teacher dashboard.">
-  <link rel="icon" href="/assets/logo/clear-code-reading-icon.png" type="image/png">
+  <title>Dashboard | ClearCode Reading</title>
+  <meta name="description" content="ClearCode Reading parent and teacher dashboard.">
+  <link rel="icon" href="/assets/logo/cc-monogram-forest-euc.png" type="image/png">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:ital,wght@0,400;0,500;0,600;0,700;0,800;0,900;1,400;1,600;1,700&display=swap" rel="stylesheet">
   <script src="https://cdn.tailwindcss.com"></script>
   <script>
     tailwind.config = {
       theme: {
         extend: {
           colors: {
-            tealWarm: '#00B8A9',
-            coral: '#FF6B6B',
-            navySoft: '#2C3E50',
-            sunny: '#FFD93D',
-            cream: '#FFF9EA',
-            mist: '#F0FFFC',
-            blush: '#FFF5F5'
+            forest: '#2C4A45',
+            deepTeal: '#1A7A7A',
+            mediumTeal: '#2EB8B8',
+            eucalyptus: '#5A9E8F',
+            ink: '#0F2B35',
+            gold: '#F5A623',
+            linen: '#F7F2EA',
+            seafoam: '#A8CFC4',
+            sand: '#E8D5B0'
           },
           fontFamily: {
-            sans: ['Inter', 'Avenir Next', 'Nunito Sans', 'ui-sans-serif', 'system-ui', 'sans-serif']
+            sans: ['Barlow Condensed', 'Arial Narrow', 'ui-sans-serif', 'system-ui', 'sans-serif']
           }
         }
       }
     };
   </script>
   <style>
-    .focus-ring:focus-visible { outline: 4px solid rgba(255, 217, 61, .75); outline-offset: 3px; }
+    .focus-ring:focus-visible { outline: 4px solid rgba(245, 166, 35, .75); outline-offset: 3px; }
     .page-bg {
       background:
-        radial-gradient(circle at 12% 12%, rgba(255, 217, 61, .20), transparent 24%),
-        radial-gradient(circle at 86% 16%, rgba(255, 107, 107, .12), transparent 24%),
-        linear-gradient(135deg, #fffdf6 0%, #f0fffc 48%, #fff5f5 100%);
+        radial-gradient(circle at 12% 12%, rgba(245, 166, 35, .20), transparent 24%),
+        radial-gradient(circle at 86% 16%, rgba(46, 184, 184, .12), transparent 24%),
+        linear-gradient(135deg, #F7F2EA 0%, #A8CFC4 48%, #E8D5B0 100%);
     }
-    .logo-plate { background: linear-gradient(135deg, rgba(255,255,255,.96), rgba(255,249,234,.92)); }
+    .logo-plate { background: linear-gradient(135deg, rgba(247,242,234,.98), rgba(232,213,176,.45)); }
   </style>
 </head>
-<body class="page-bg min-h-screen text-navySoft antialiased">
-  <header class="sticky top-0 z-40 border-b border-tealWarm/10 bg-white/90 backdrop-blur-xl">
+<body class="page-bg min-h-screen font-sans text-ink antialiased">
+  <header class="sticky top-0 z-40 border-b border-deepTeal/10 bg-linen/95 backdrop-blur-xl">
     <nav class="mx-auto flex max-w-7xl items-center justify-between gap-4 px-4 py-3 sm:px-6 lg:px-8">
-      <a href="/dashboard/" class="focus-ring logo-plate rounded-2xl px-2 py-1 shadow-sm ring-1 ring-navySoft/5">
-        <img src="/assets/logo/clear-code-reading-logo.png" alt="Clear Code Reading" class="h-12 w-auto max-w-[230px] object-contain sm:max-w-[300px]">
+      <a href="/dashboard/" class="focus-ring logo-plate rounded-2xl px-2 py-1 shadow-sm ring-1 ring-ink/5">
+        <img src="/assets/logo/cc-lockup-linen-ui.png" alt="ClearCode Reading" class="h-12 w-auto max-w-[230px] object-contain sm:max-w-[300px]">
       </a>
       <div class="flex items-center gap-3">
-        <a href="/inbox/" class="hidden rounded-full px-4 py-2 text-sm font-black text-navySoft/70 transition hover:text-tealWarm sm:inline-flex">Inbox</a>
+        <a href="/inbox/" class="hidden rounded-full px-4 py-2 text-sm font-black text-ink/70 transition hover:text-deepTeal sm:inline-flex">Inbox</a>
         {% if request.user.is_staff %}
-          <a href="/admin/" class="hidden rounded-full px-4 py-2 text-sm font-black text-navySoft/70 transition hover:text-tealWarm sm:inline-flex">Admin</a>
+          <a href="/admin/" class="hidden rounded-full px-4 py-2 text-sm font-black text-ink/70 transition hover:text-deepTeal sm:inline-flex">Admin</a>
         {% endif %}
         <form method="post" action="{% url 'logout' %}">
           {% csrf_token %}
-          <button class="focus-ring rounded-full bg-coral px-5 py-3 text-sm font-extrabold text-white shadow-lg shadow-coral/25 transition hover:-translate-y-0.5 hover:bg-[#ff5757]" type="submit">Logout</button>
+          <button class="focus-ring rounded-full bg-mediumTeal px-5 py-3 text-sm font-extrabold text-white shadow-lg shadow-mediumTeal/25 transition hover:-translate-y-0.5 hover:bg-[#277f73]" type="submit">Logout</button>
         </form>
       </div>
     </nav>
@@ -61,20 +66,20 @@
     {% if messages %}
       <div class="mb-6 space-y-2">
         {% for message in messages %}
-          <p class="rounded-2xl bg-white px-4 py-3 text-sm font-bold text-navySoft shadow-sm ring-1 ring-tealWarm/10">{{ message }}</p>
+          <p class="rounded-2xl bg-white px-4 py-3 text-sm font-bold text-ink shadow-sm ring-1 ring-deepTeal/10">{{ message }}</p>
         {% endfor %}
       </div>
     {% endif %}
 
     <section class="grid gap-6 lg:grid-cols-[.85fr_1.15fr] lg:items-start">
-      <aside class="rounded-[2rem] bg-white/90 p-6 shadow-2xl shadow-tealWarm/10 ring-1 ring-tealWarm/10 lg:sticky lg:top-28">
-        <p class="text-sm font-black uppercase tracking-[0.18em] text-coral">
+      <aside class="rounded-[2rem] bg-white/90 p-6 shadow-2xl shadow-deepTeal/10 ring-1 ring-deepTeal/10 lg:sticky lg:top-28">
+        <p class="text-sm font-black uppercase tracking-[0.18em] text-mediumTeal">
           {% if is_admin %}Administrator workspace{% elif is_parent %}Parent workspace{% elif is_child %}Reader workspace{% else %}Teacher workspace{% endif %}
         </p>
         <h1 class="mt-3 text-3xl font-black leading-tight sm:text-5xl">
           Hi, {{ request.user.first_name|default:request.user.email }}.
         </h1>
-        <p class="mt-5 text-lg leading-8 text-navySoft/70">
+        <p class="mt-5 text-lg leading-8 text-ink/70">
           {% if is_parent %}
             Track your child's reading age, strengths, growth areas, and next steps after human review.
           {% elif is_child %}
@@ -86,20 +91,20 @@
           {% endif %}
         </p>
         <div class="mt-7 grid gap-3 sm:grid-cols-2 lg:grid-cols-1 xl:grid-cols-2">
-          <div class="rounded-3xl bg-mist p-5">
-            <p class="text-sm font-black text-tealWarm">Readers</p>
+          <div class="rounded-3xl bg-seafoam p-5">
+            <p class="text-sm font-black text-deepTeal">Readers</p>
             <p class="mt-2 text-4xl font-black">{{ child_count }}</p>
           </div>
-          <div class="rounded-3xl bg-blush p-5">
-            <p class="text-sm font-black text-coral">Assessments</p>
+          <div class="rounded-3xl bg-sand p-5">
+            <p class="text-sm font-black text-mediumTeal">Assessments</p>
             <p class="mt-2 text-4xl font-black">{{ assessment_count }}</p>
           </div>
-          <div class="rounded-3xl bg-cream p-5">
-            <p class="text-sm font-black text-navySoft/65">Avg. reading age</p>
+          <div class="rounded-3xl bg-linen p-5">
+            <p class="text-sm font-black text-ink/65">Avg. reading age</p>
             <p class="mt-2 text-4xl font-black">{% if average_reading_age %}{{ average_reading_age|floatformat:1 }}{% else %}--{% endif %}</p>
           </div>
-          <div class="rounded-3xl bg-white p-5 ring-1 ring-navySoft/10">
-            <p class="text-sm font-black text-navySoft/65">KPI areas</p>
+          <div class="rounded-3xl bg-white p-5 ring-1 ring-ink/10">
+            <p class="text-sm font-black text-ink/65">KPI areas</p>
             <p class="mt-2 text-4xl font-black">{{ kpi_count }}</p>
           </div>
         </div>
@@ -108,55 +113,55 @@
       <section class="space-y-6">
         {% if is_parent %}
           {% for dashboard in parent_dashboards %}
-            <section class="rounded-[2rem] bg-white p-5 shadow-xl shadow-tealWarm/10 ring-1 ring-tealWarm/10 sm:p-7">
-              <p class="text-sm font-black uppercase tracking-[0.18em] text-tealWarm">This week's reading growth</p>
+            <section class="rounded-[2rem] bg-white p-5 shadow-xl shadow-deepTeal/10 ring-1 ring-deepTeal/10 sm:p-7">
+              <p class="text-sm font-black uppercase tracking-[0.18em] text-deepTeal">This week's reading growth</p>
               <div class="mt-2 flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
                 <div>
                   <h2 class="text-3xl font-black">{{ dashboard.child.first_name }}'s live progress</h2>
-                  <p class="mt-1 text-sm text-navySoft/60">Updated automatically from completed sessions.</p>
+                  <p class="mt-1 text-sm text-ink/60">Updated automatically from completed sessions.</p>
                 </div>
-                <span class="rounded-full bg-mist px-4 py-2 text-sm font-black text-tealWarm">{{ dashboard.summary.mastered_skills }} skills mastered</span>
+                <span class="rounded-full bg-seafoam px-4 py-2 text-sm font-black text-deepTeal">{{ dashboard.summary.mastered_skills }} skills mastered</span>
               </div>
 
               <div class="mt-6 grid gap-4 sm:grid-cols-3">
-                <article class="rounded-3xl bg-mist p-5"><p class="text-xs font-black uppercase text-tealWarm">Latest accuracy</p><p class="mt-2 text-4xl font-black">{% if dashboard.summary.latest_accuracy != None %}{{ dashboard.summary.latest_accuracy|floatformat:0 }}%{% else %}--{% endif %}</p></article>
-                <article class="rounded-3xl bg-cream p-5"><p class="text-xs font-black uppercase text-navySoft/60">Tracked skills</p><p class="mt-2 text-4xl font-black">{{ dashboard.summary.tracked_skills }}</p></article>
-                <article class="rounded-3xl bg-blush p-5"><p class="text-xs font-black uppercase text-coral">Sessions complete</p><p class="mt-2 text-4xl font-black">{{ dashboard.summary.completed_sessions }}</p></article>
+                <article class="rounded-3xl bg-seafoam p-5"><p class="text-xs font-black uppercase text-deepTeal">Latest accuracy</p><p class="mt-2 text-4xl font-black">{% if dashboard.summary.latest_accuracy != None %}{{ dashboard.summary.latest_accuracy|floatformat:0 }}%{% else %}--{% endif %}</p></article>
+                <article class="rounded-3xl bg-linen p-5"><p class="text-xs font-black uppercase text-ink/60">Tracked skills</p><p class="mt-2 text-4xl font-black">{{ dashboard.summary.tracked_skills }}</p></article>
+                <article class="rounded-3xl bg-sand p-5"><p class="text-xs font-black uppercase text-mediumTeal">Sessions complete</p><p class="mt-2 text-4xl font-black">{{ dashboard.summary.completed_sessions }}</p></article>
               </div>
 
               <div class="mt-6 grid gap-5 lg:grid-cols-2">
-                <article class="rounded-3xl border border-navySoft/10 p-5">
+                <article class="rounded-3xl border border-ink/10 p-5">
                   <h3 class="text-xl font-black">Skill mastery</h3>
                   <div class="mt-4 space-y-3">
                     {% for skill in dashboard.skills %}
-                      <div class="flex items-center justify-between gap-3 rounded-2xl bg-cream px-4 py-3">
-                        <div><p class="font-black">{{ skill.name }}</p><p class="text-xs font-bold text-navySoft/50">{{ skill.domain|title }}</p></div>
-                        <span class="rounded-full bg-white px-3 py-1 text-xs font-black text-tealWarm">{{ skill.status|title }}</span>
+                      <div class="flex items-center justify-between gap-3 rounded-2xl bg-linen px-4 py-3">
+                        <div><p class="font-black">{{ skill.name }}</p><p class="text-xs font-bold text-ink/50">{{ skill.domain|title }}</p></div>
+                        <span class="rounded-full bg-white px-3 py-1 text-xs font-black text-deepTeal">{{ skill.status|title }}</span>
                       </div>
-                    {% empty %}<p class="text-sm text-navySoft/60">Skills will appear after the first completed session.</p>{% endfor %}
+                    {% empty %}<p class="text-sm text-ink/60">Skills will appear after the first completed session.</p>{% endfor %}
                   </div>
                 </article>
-                <article class="rounded-3xl border border-navySoft/10 p-5">
+                <article class="rounded-3xl border border-ink/10 p-5">
                   <h3 class="text-xl font-black">Progress over time</h3>
                   <div class="mt-5 flex h-40 items-end gap-2" role="img" aria-label="Session accuracy trend">
                     {% for point in dashboard.progress_over_time %}
                       <div class="flex min-w-0 flex-1 flex-col items-center justify-end gap-2">
                         <span class="text-[10px] font-black">{{ point.accuracy|default:"--" }}</span>
-                        <div class="w-full rounded-t-xl bg-tealWarm" style="height: {% if point.accuracy %}{{ point.accuracy }}{% else %}4{% endif %}%"></div>
-                        <span class="text-[9px] text-navySoft/50">{{ point.date|date:"M j" }}</span>
+                        <div class="w-full rounded-t-xl bg-deepTeal" style="height: {% if point.accuracy %}{{ point.accuracy }}{% else %}4{% endif %}%"></div>
+                        <span class="text-[9px] text-ink/50">{{ point.date|date:"M j" }}</span>
                       </div>
-                    {% empty %}<p class="self-center text-sm text-navySoft/60">A trend appears after completed sessions.</p>{% endfor %}
+                    {% empty %}<p class="self-center text-sm text-ink/60">A trend appears after completed sessions.</p>{% endfor %}
                   </div>
                 </article>
               </div>
 
               <div class="mt-5 grid gap-4 md:grid-cols-2">
-                <article class="rounded-3xl bg-mist p-5"><p class="text-xs font-black uppercase text-tealWarm">Specialist note</p><p class="mt-3 leading-7">{{ dashboard.specialist_note|default:"Your specialist's next summary will appear here." }}</p>{% if dashboard.specialist_name %}<p class="mt-3 text-sm font-black">— {{ dashboard.specialist_name }}</p>{% endif %}</article>
-                <article class="rounded-3xl bg-cream p-5"><p class="text-xs font-black uppercase text-coral">Practice at home</p><p class="mt-3 leading-7">{{ dashboard.home_practice|default:"A practice suggestion will appear after the next session." }}</p></article>
+                <article class="rounded-3xl bg-seafoam p-5"><p class="text-xs font-black uppercase text-deepTeal">Specialist note</p><p class="mt-3 leading-7">{{ dashboard.specialist_note|default:"Your specialist's next summary will appear here." }}</p>{% if dashboard.specialist_name %}<p class="mt-3 text-sm font-black">— {{ dashboard.specialist_name }}</p>{% endif %}</article>
+                <article class="rounded-3xl bg-linen p-5"><p class="text-xs font-black uppercase text-mediumTeal">Practice at home</p><p class="mt-3 leading-7">{{ dashboard.home_practice|default:"A practice suggestion will appear after the next session." }}</p></article>
               </div>
               <div class="mt-5 grid gap-4 md:grid-cols-2">
-                <article class="rounded-3xl border border-navySoft/10 p-5"><h3 class="font-black">Fluency (WCPM)</h3><div class="mt-3 flex flex-wrap gap-2">{% for point in dashboard.fluency_trend %}<span class="rounded-full bg-mist px-3 py-2 text-sm font-black">{{ point.date|date:"M j" }} · {{ point.wcpm }}</span>{% empty %}<span class="text-sm text-navySoft/60">Shown when WCPM is captured.</span>{% endfor %}</div></article>
-                <article class="rounded-3xl border border-navySoft/10 p-5">
+                <article class="rounded-3xl border border-ink/10 p-5"><h3 class="font-black">Fluency (WCPM)</h3><div class="mt-3 flex flex-wrap gap-2">{% for point in dashboard.fluency_trend %}<span class="rounded-full bg-seafoam px-3 py-2 text-sm font-black">{{ point.date|date:"M j" }} · {{ point.wcpm }}</span>{% empty %}<span class="text-sm text-ink/60">Shown when WCPM is captured.</span>{% endfor %}</div></article>
+                <article class="rounded-3xl border border-ink/10 p-5">
                   <h3 class="font-black">Next milestone</h3>
                   <p class="mt-2 text-sm leading-6">
                     {% if dashboard.milestone.plain_language_timeline %}
@@ -166,49 +171,49 @@
                     {% endif %}
                   </p>
                   {% if dashboard.milestone.predicted_sessions is not None %}
-                    <p class="mt-2 text-xs font-black text-tealWarm">
+                    <p class="mt-2 text-xs font-black text-deepTeal">
                       About {{ dashboard.milestone.predicted_sessions }} sessions · {{ dashboard.milestone.confidence|title }} confidence
                     </p>
                   {% endif %}
-                  <p class="mt-2 text-xs text-navySoft/50">{{ dashboard.milestone.disclaimer }}</p>
+                  <p class="mt-2 text-xs text-ink/50">{{ dashboard.milestone.disclaimer }}</p>
                 </article>
               </div>
             </section>
           {% empty %}
-            <section class="rounded-[2rem] bg-white p-6 shadow-xl ring-1 ring-coral/15"><h2 class="text-2xl font-black">Progress dashboard unavailable</h2><p class="mt-2 text-navySoft/65">Active guardian consent and dashboard access are required. Contact your center if this looks unexpected.</p></section>
+            <section class="rounded-[2rem] bg-white p-6 shadow-xl ring-1 ring-mediumTeal/15"><h2 class="text-2xl font-black">Progress dashboard unavailable</h2><p class="mt-2 text-ink/65">Active guardian consent and dashboard access are required. Contact your center if this looks unexpected.</p></section>
           {% endfor %}
         {% endif %}
 
         {% if is_teacher or is_admin %}
-          <section class="rounded-[2rem] bg-white p-6 shadow-xl ring-1 ring-tealWarm/10">
-            <p class="text-sm font-black uppercase tracking-[0.18em] text-tealWarm">Specialist launchpad</p>
+          <section class="rounded-[2rem] bg-white p-6 shadow-xl ring-1 ring-deepTeal/10">
+            <p class="text-sm font-black uppercase tracking-[0.18em] text-deepTeal">Specialist launchpad</p>
             <h2 class="mt-2 text-3xl font-black">Upcoming sessions and current instruction</h2>
             <div class="mt-5 grid gap-3 md:grid-cols-2">
               {% for snapshot in student_snapshots %}
-                <article id="reader-{{ snapshot.child.id }}" class="rounded-3xl bg-mist p-5">
+                <article id="reader-{{ snapshot.child.id }}" class="rounded-3xl bg-seafoam p-5">
                   <h3 class="text-xl font-black">{{ snapshot.child }}</h3>
-                  <p class="mt-1 text-sm font-bold text-tealWarm">{% if snapshot.placement %}{{ snapshot.placement.curriculum.get_code_display }} · {{ snapshot.placement.current_position.code }}{% else %}Placement pending{% endif %}</p>
+                  <p class="mt-1 text-sm font-bold text-deepTeal">{% if snapshot.placement %}{{ snapshot.placement.curriculum.get_code_display }} · {{ snapshot.placement.current_position.code }}{% else %}Placement pending{% endif %}</p>
                   {% if snapshot.latest_session %}
                     <p class="mt-3 text-sm"><strong>Recent accuracy:</strong> {{ snapshot.latest_session.accuracy_rate|default:"--" }}%</p>
                     <p class="mt-2 text-sm"><strong>Error patterns:</strong> {{ snapshot.latest_session.error_patterns|default:"None recorded" }}</p>
                     <p class="mt-2 text-sm"><strong>Parent will see:</strong> {{ snapshot.latest_session.notes|default:snapshot.latest_session.next_session_direction }}</p>
                   {% endif %}
                   {% if snapshot.placement and snapshot.can_log_session %}
-                    <a href="{% url 'rapid_session_log' %}?child={{ snapshot.child.id }}" class="mt-4 inline-flex rounded-full bg-navySoft px-4 py-3 text-sm font-black text-white">Rapid log</a>
+                    <a href="{% url 'rapid_session_log' %}?child={{ snapshot.child.id }}" class="mt-4 inline-flex rounded-full bg-ink px-4 py-3 text-sm font-black text-white">Rapid log</a>
                   {% endif %}
                 </article>
-              {% empty %}<p class="rounded-3xl bg-cream p-5">No assigned readers yet.</p>{% endfor %}
+              {% empty %}<p class="rounded-3xl bg-linen p-5">No assigned readers yet.</p>{% endfor %}
             </div>
             <div class="mt-5">
               <h3 class="font-black">Upcoming</h3>
-              <div class="mt-3 flex flex-wrap gap-2">{% for session in upcoming_sessions %}<a href="{% url 'rapid_session_log' %}?session={{ session.id }}" class="rounded-full bg-cream px-4 py-2 text-sm font-black">{{ session.scheduled_start|date:"M j, g:i a" }} · {{ session.child }} · {{ session.curriculum_position.code }}</a>{% empty %}<span class="text-sm text-navySoft/60">No upcoming sessions scheduled.</span>{% endfor %}</div>
+              <div class="mt-3 flex flex-wrap gap-2">{% for session in upcoming_sessions %}<a href="{% url 'rapid_session_log' %}?session={{ session.id }}" class="rounded-full bg-linen px-4 py-2 text-sm font-black">{{ session.scheduled_start|date:"M j, g:i a" }} · {{ session.child }} · {{ session.curriculum_position.code }}</a>{% empty %}<span class="text-sm text-ink/60">No upcoming sessions scheduled.</span>{% endfor %}</div>
             </div>
           </section>
         {% endif %}
 
         {% if is_admin and operations_metrics %}
-          <section class="rounded-[2rem] bg-navySoft p-6 text-white shadow-xl">
-            <p class="text-sm font-black uppercase tracking-[0.18em] text-sunny">Operations intelligence</p>
+          <section class="rounded-[2rem] bg-ink p-6 text-white shadow-xl">
+            <p class="text-sm font-black uppercase tracking-[0.18em] text-gold">Operations intelligence</p>
             <h2 class="mt-2 text-3xl font-black">Capacity and demand</h2>
             <div class="mt-5 grid gap-3 sm:grid-cols-3">
               <div class="rounded-3xl bg-white/10 p-5"><p class="text-sm font-bold">Utilization</p><p class="mt-2 text-4xl font-black">{{ operations_metrics.utilization_percent }}%</p><p class="text-xs">{% if operations_metrics.utilization_threshold_reached %}75% expansion trigger reached{% else %}Target trigger: 75%{% endif %}</p></div>
@@ -217,25 +222,25 @@
             </div>
             <div class="mt-5 grid gap-3">
               {% for group in grouping_suggestions %}
-                <article class="rounded-3xl bg-white/10 p-5"><div class="flex flex-wrap justify-between gap-2"><p class="font-black">{{ group.specialist_name }} · {{ group.methodology|upper }}</p><span class="rounded-full bg-sunny px-3 py-1 text-xs font-black text-navySoft">Staff approval required</span></div><p class="mt-2 text-sm">{{ group.availability.day_of_week|title }} {{ group.availability.start_time }}–{{ group.availability.end_time }} · Score {{ group.score }}</p><p class="mt-2 text-sm">{% for student in group.students %}{{ student.display_name }} ({{ student.position_code }}){% if not forloop.last %}, {% endif %}{% endfor %}</p></article>
+                <article class="rounded-3xl bg-white/10 p-5"><div class="flex flex-wrap justify-between gap-2"><p class="font-black">{{ group.specialist_name }} · {{ group.methodology|upper }}</p><span class="rounded-full bg-gold px-3 py-1 text-xs font-black text-ink">Staff approval required</span></div><p class="mt-2 text-sm">{{ group.availability.day_of_week|title }} {{ group.availability.start_time }}–{{ group.availability.end_time }} · Score {{ group.score }}</p><p class="mt-2 text-sm">{% for student in group.students %}{{ student.display_name }} ({{ student.position_code }}){% if not forloop.last %}, {% endif %}{% endfor %}</p></article>
               {% empty %}<p class="rounded-3xl bg-white/10 p-5">Add provider availability and at least two compatible students to generate recommendations.</p>{% endfor %}
             </div>
           </section>
         {% endif %}
 
         {% if is_teacher or is_admin %}
-          <section class="rounded-[2rem] bg-white p-6 shadow-xl shadow-navySoft/8 ring-1 ring-tealWarm/10">
-            <p class="text-sm font-black uppercase tracking-[0.18em] text-tealWarm">Intervention placement</p>
+          <section class="rounded-[2rem] bg-white p-6 shadow-xl shadow-ink/8 ring-1 ring-deepTeal/10">
+            <p class="text-sm font-black uppercase tracking-[0.18em] text-deepTeal">Intervention placement</p>
             <h2 class="mt-2 text-3xl font-black">Review recommended sequences</h2>
-            <p class="mt-2 text-sm leading-6 text-navySoft/65">Recommendations are advisory until you confirm or override them.</p>
+            <p class="mt-2 text-sm leading-6 text-ink/65">Recommendations are advisory until you confirm or override them.</p>
             <div class="mt-5 grid gap-4">
               {% for recommendation in placement_recommendations %}
-                <article class="rounded-3xl bg-mist p-5">
+                <article class="rounded-3xl bg-seafoam p-5">
                   <div class="flex flex-wrap items-start justify-between gap-3">
                     <div>
                       <h3 class="text-xl font-black">{{ recommendation.evidence.child }}</h3>
-                      <p class="mt-1 font-bold text-tealWarm">{{ recommendation.recommended_curriculum.get_code_display }}</p>
-                      <p class="mt-2 text-sm leading-6 text-navySoft/70">{{ recommendation.rationale }}</p>
+                      <p class="mt-1 font-bold text-deepTeal">{{ recommendation.recommended_curriculum.get_code_display }}</p>
+                      <p class="mt-2 text-sm leading-6 text-ink/70">{{ recommendation.rationale }}</p>
                     </div>
                     <span class="rounded-full bg-white px-3 py-1 text-xs font-black">{{ recommendation.get_decision_display }}</span>
                   </div>
@@ -248,233 +253,233 @@
                     {% csrf_token %}
                     <input type="hidden" name="recommendation_id" value="{{ recommendation.id }}">
                     <label>
-                      <span class="text-xs font-black text-navySoft/60">Final position</span>
-                      <select class="mt-1 w-full rounded-2xl border border-navySoft/15 px-3 py-2 font-bold" name="final_position_id" required>
+                      <span class="text-xs font-black text-ink/60">Final position</span>
+                      <select class="mt-1 w-full rounded-2xl border border-ink/15 px-3 py-2 font-bold" name="final_position_id" required>
                         {% for step in recommendation.recommended_sequence.all %}
                           <option value="{{ step.position.id }}" {% if step.position_id == recommendation.recommended_position_id %}selected{% endif %}>{{ step.position.code }}</option>
                         {% endfor %}
                       </select>
                     </label>
                     <label>
-                      <span class="text-xs font-black text-navySoft/60">Override rationale (required only if changed)</span>
-                      <input class="mt-1 w-full rounded-2xl border border-navySoft/15 px-3 py-2" name="override_rationale" placeholder="Instructional evidence supporting a different start">
+                      <span class="text-xs font-black text-ink/60">Override rationale (required only if changed)</span>
+                      <input class="mt-1 w-full rounded-2xl border border-ink/15 px-3 py-2" name="override_rationale" placeholder="Instructional evidence supporting a different start">
                     </label>
-                    <button class="focus-ring self-end rounded-full bg-tealWarm px-5 py-3 font-black text-white" type="submit">Save decision</button>
+                    <button class="focus-ring self-end rounded-full bg-deepTeal px-5 py-3 font-black text-white" type="submit">Save decision</button>
                   </form>
                 </article>
               {% empty %}
-                <p class="rounded-3xl bg-cream p-5 font-bold text-navySoft/70">No placement recommendations are awaiting review.</p>
+                <p class="rounded-3xl bg-linen p-5 font-bold text-ink/70">No placement recommendations are awaiting review.</p>
               {% endfor %}
             </div>
           </section>
         {% endif %}
         {% if is_admin %}
-          <section class="rounded-[2rem] bg-white p-6 shadow-xl shadow-navySoft/8 ring-1 ring-navySoft/10">
+          <section class="rounded-[2rem] bg-white p-6 shadow-xl shadow-ink/8 ring-1 ring-ink/10">
             <div class="flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
               <div>
-                <p class="text-sm font-black uppercase tracking-[0.18em] text-coral">Program administration</p>
+                <p class="text-sm font-black uppercase tracking-[0.18em] text-mediumTeal">Program administration</p>
                 <h2 class="mt-2 text-3xl font-black">Assign a teacher to a reader</h2>
               </div>
-              <a href="/admin/" class="focus-ring rounded-full bg-navySoft px-5 py-3 text-sm font-black text-white transition hover:-translate-y-0.5">Open Django admin</a>
+              <a href="/admin/" class="focus-ring rounded-full bg-ink px-5 py-3 text-sm font-black text-white transition hover:-translate-y-0.5">Open Django admin</a>
             </div>
             <form class="mt-5 grid gap-3 md:grid-cols-[1fr_1fr_auto]" method="post" action="{% url 'assign_teacher' %}">
               {% csrf_token %}
               <label class="block">
-                <span class="text-sm font-black text-navySoft/65">Reader</span>
-                <select class="mt-2 w-full rounded-2xl border border-navySoft/15 px-4 py-3 font-bold focus:border-tealWarm focus:outline-none" name="child_id" required>
+                <span class="text-sm font-black text-ink/65">Reader</span>
+                <select class="mt-2 w-full rounded-2xl border border-ink/15 px-4 py-3 font-bold focus:border-deepTeal focus:outline-none" name="child_id" required>
                   {% for child in children %}
                     <option value="{{ child.id }}">{{ child }}{% if child.learning_profile.assigned_teacher_name %} - {{ child.learning_profile.assigned_teacher_name }}{% endif %}</option>
                   {% endfor %}
                 </select>
               </label>
               <label class="block">
-                <span class="text-sm font-black text-navySoft/65">Teacher</span>
-                <select class="mt-2 w-full rounded-2xl border border-navySoft/15 px-4 py-3 font-bold focus:border-tealWarm focus:outline-none" name="teacher_id" required>
+                <span class="text-sm font-black text-ink/65">Teacher</span>
+                <select class="mt-2 w-full rounded-2xl border border-ink/15 px-4 py-3 font-bold focus:border-deepTeal focus:outline-none" name="teacher_id" required>
                   {% for teacher in teachers %}
                     <option value="{{ teacher.id }}">{{ teacher.get_full_name|default:teacher.email }}</option>
                   {% endfor %}
                 </select>
               </label>
-              <button class="focus-ring self-end rounded-full bg-tealWarm px-6 py-3 font-black text-white shadow-lg shadow-tealWarm/20 transition hover:-translate-y-0.5" type="submit">Assign</button>
+              <button class="focus-ring self-end rounded-full bg-deepTeal px-6 py-3 font-black text-white shadow-lg shadow-deepTeal/20 transition hover:-translate-y-0.5" type="submit">Assign</button>
             </form>
           </section>
 
-          <section class="rounded-[2rem] bg-white p-6 shadow-xl shadow-navySoft/8 ring-1 ring-navySoft/10">
+          <section class="rounded-[2rem] bg-white p-6 shadow-xl shadow-ink/8 ring-1 ring-ink/10">
             <div>
-              <p class="text-sm font-black uppercase tracking-[0.18em] text-tealWarm">Lesson library</p>
+              <p class="text-sm font-black uppercase tracking-[0.18em] text-deepTeal">Lesson library</p>
               <h2 class="mt-2 text-3xl font-black">Assign lesson templates to teachers</h2>
             </div>
             <form class="mt-5 grid gap-3 md:grid-cols-[1fr_1fr_auto]" method="post" action="{% url 'portal_assign_template_to_teacher' %}">
               {% csrf_token %}
               <label class="block">
-                <span class="text-sm font-black text-navySoft/65">Teacher</span>
-                <select class="mt-2 w-full rounded-2xl border border-navySoft/15 px-4 py-3 font-bold focus:border-tealWarm focus:outline-none" name="teacher_id" required>
+                <span class="text-sm font-black text-ink/65">Teacher</span>
+                <select class="mt-2 w-full rounded-2xl border border-ink/15 px-4 py-3 font-bold focus:border-deepTeal focus:outline-none" name="teacher_id" required>
                   {% for teacher in teachers %}
                     <option value="{{ teacher.id }}">{{ teacher.get_full_name|default:teacher.email }}</option>
                   {% endfor %}
                 </select>
               </label>
               <label class="block">
-                <span class="text-sm font-black text-navySoft/65">Template</span>
-                <select class="mt-2 w-full rounded-2xl border border-navySoft/15 px-4 py-3 font-bold focus:border-tealWarm focus:outline-none" name="template_id" required>
+                <span class="text-sm font-black text-ink/65">Template</span>
+                <select class="mt-2 w-full rounded-2xl border border-ink/15 px-4 py-3 font-bold focus:border-deepTeal focus:outline-none" name="template_id" required>
                   {% for template in lesson_templates %}
                     <option value="{{ template.id }}">{{ template.title }} · {{ template.grade_band|default:"All levels" }}</option>
                   {% endfor %}
                 </select>
               </label>
-              <button class="focus-ring self-end rounded-full bg-coral px-6 py-3 font-black text-white shadow-lg shadow-coral/20 transition hover:-translate-y-0.5" type="submit">Give access</button>
+              <button class="focus-ring self-end rounded-full bg-mediumTeal px-6 py-3 font-black text-white shadow-lg shadow-mediumTeal/20 transition hover:-translate-y-0.5" type="submit">Give access</button>
               <label class="block md:col-span-3">
-                <span class="text-sm font-black text-navySoft/65">Admin note</span>
-                <input class="mt-2 w-full rounded-2xl border border-navySoft/15 px-4 py-3 font-bold focus:border-tealWarm focus:outline-none" name="notes" placeholder="Optional: when this template is best used">
+                <span class="text-sm font-black text-ink/65">Admin note</span>
+                <input class="mt-2 w-full rounded-2xl border border-ink/15 px-4 py-3 font-bold focus:border-deepTeal focus:outline-none" name="notes" placeholder="Optional: when this template is best used">
               </label>
             </form>
             <div class="mt-5 grid gap-3 md:grid-cols-2">
               {% for assignment in teacher_template_assignments %}
-                <article class="rounded-3xl bg-mist p-5">
+                <article class="rounded-3xl bg-seafoam p-5">
                   <p class="font-black">{{ assignment.template.title }}</p>
-                  <p class="mt-1 text-sm font-bold text-navySoft/65">{{ assignment.teacher.get_full_name|default:assignment.teacher.email }}</p>
+                  <p class="mt-1 text-sm font-bold text-ink/65">{{ assignment.teacher.get_full_name|default:assignment.teacher.email }}</p>
                   {% if assignment.notes %}
-                    <p class="mt-3 text-sm leading-6 text-navySoft/65">{{ assignment.notes }}</p>
+                    <p class="mt-3 text-sm leading-6 text-ink/65">{{ assignment.notes }}</p>
                   {% endif %}
                 </article>
               {% empty %}
-                <p class="rounded-3xl bg-cream p-5 font-bold text-navySoft/70 md:col-span-2">No teacher template access has been assigned yet.</p>
+                <p class="rounded-3xl bg-linen p-5 font-bold text-ink/70 md:col-span-2">No teacher template access has been assigned yet.</p>
               {% endfor %}
             </div>
           </section>
 
-          <section class="rounded-[2rem] bg-white p-6 shadow-xl shadow-navySoft/8 ring-1 ring-navySoft/10">
+          <section class="rounded-[2rem] bg-white p-6 shadow-xl shadow-ink/8 ring-1 ring-ink/10">
             <div class="flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
               <div>
-                <p class="text-sm font-black uppercase tracking-[0.18em] text-tealWarm">CRM intake</p>
+                <p class="text-sm font-black uppercase tracking-[0.18em] text-deepTeal">CRM intake</p>
                 <h2 class="mt-2 text-3xl font-black">Website signups</h2>
               </div>
               <div class="flex gap-2 text-sm font-black">
-                <span class="rounded-full bg-mist px-4 py-2 text-tealWarm">{{ lead_count }} total</span>
-                <span class="rounded-full bg-blush px-4 py-2 text-coral">{{ new_lead_count }} new</span>
+                <span class="rounded-full bg-seafoam px-4 py-2 text-deepTeal">{{ lead_count }} total</span>
+                <span class="rounded-full bg-sand px-4 py-2 text-mediumTeal">{{ new_lead_count }} new</span>
               </div>
             </div>
             <div class="mt-5 grid gap-3">
               {% for lead in recent_leads %}
-                <article class="rounded-3xl bg-cream p-5">
+                <article class="rounded-3xl bg-linen p-5">
                   <div class="flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
                     <div>
                       <div class="flex flex-wrap items-center gap-2">
                         <h3 class="text-xl font-black">{{ lead.contact_name }}</h3>
-                        <span class="rounded-full bg-white px-3 py-1 text-xs font-black text-navySoft/60">{{ lead.get_audience_display }}</span>
-                        <span class="rounded-full bg-white px-3 py-1 text-xs font-black text-tealWarm">{{ lead.get_status_display }}</span>
+                        <span class="rounded-full bg-white px-3 py-1 text-xs font-black text-ink/60">{{ lead.get_audience_display }}</span>
+                        <span class="rounded-full bg-white px-3 py-1 text-xs font-black text-deepTeal">{{ lead.get_status_display }}</span>
                       </div>
-                      <p class="mt-2 text-sm font-bold text-navySoft/65">{{ lead.contact_email }}{% if lead.contact_phone %} · {{ lead.contact_phone }}{% endif %}</p>
-                      <p class="mt-1 text-sm text-navySoft/60">{{ lead.organization_name|default:lead.school_name }}</p>
+                      <p class="mt-2 text-sm font-bold text-ink/65">{{ lead.contact_email }}{% if lead.contact_phone %} · {{ lead.contact_phone }}{% endif %}</p>
+                      <p class="mt-1 text-sm text-ink/60">{{ lead.organization_name|default:lead.school_name }}</p>
                       {% if lead.notes %}
-                        <p class="mt-3 text-sm leading-6 text-navySoft/70">{{ lead.notes }}</p>
+                        <p class="mt-3 text-sm leading-6 text-ink/70">{{ lead.notes }}</p>
                       {% endif %}
                     </div>
-                    <div class="text-sm font-bold text-navySoft/55 md:text-right">
+                    <div class="text-sm font-bold text-ink/55 md:text-right">
                       <p>{{ lead.created_at|date:"M j, Y" }}</p>
                       {% if lead.linked_user %}
-                        <p class="mt-1 text-tealWarm">Linked to {{ lead.linked_user.get_full_name|default:lead.linked_user.email }}</p>
+                        <p class="mt-1 text-deepTeal">Linked to {{ lead.linked_user.get_full_name|default:lead.linked_user.email }}</p>
                       {% else %}
-                        <p class="mt-1 text-coral">No account yet</p>
+                        <p class="mt-1 text-mediumTeal">No account yet</p>
                       {% endif %}
                     </div>
                   </div>
                 </article>
               {% empty %}
-                <p class="rounded-3xl bg-mist p-5 font-bold text-navySoft/70">No website signups yet.</p>
+                <p class="rounded-3xl bg-seafoam p-5 font-bold text-ink/70">No website signups yet.</p>
               {% endfor %}
             </div>
           </section>
 
-          <section class="rounded-[2rem] bg-white p-6 shadow-xl shadow-navySoft/8 ring-1 ring-navySoft/10">
+          <section class="rounded-[2rem] bg-white p-6 shadow-xl shadow-ink/8 ring-1 ring-ink/10">
             <div>
-              <p class="text-sm font-black uppercase tracking-[0.18em] text-coral">Account creation</p>
+              <p class="text-sm font-black uppercase tracking-[0.18em] text-mediumTeal">Account creation</p>
               <h2 class="mt-2 text-3xl font-black">Create a parent or teacher login</h2>
             </div>
             <form class="mt-5 grid gap-4" method="post" action="{% url 'portal_create_user' %}">
               {% csrf_token %}
               <div class="grid gap-4 md:grid-cols-2">
                 <label class="block">
-                  <span class="text-sm font-black text-navySoft/65">First name</span>
-                  <input class="mt-2 w-full rounded-2xl border border-navySoft/15 px-4 py-3 font-bold focus:border-tealWarm focus:outline-none" name="first_name" autocomplete="given-name">
+                  <span class="text-sm font-black text-ink/65">First name</span>
+                  <input class="mt-2 w-full rounded-2xl border border-ink/15 px-4 py-3 font-bold focus:border-deepTeal focus:outline-none" name="first_name" autocomplete="given-name">
                 </label>
                 <label class="block">
-                  <span class="text-sm font-black text-navySoft/65">Last name</span>
-                  <input class="mt-2 w-full rounded-2xl border border-navySoft/15 px-4 py-3 font-bold focus:border-tealWarm focus:outline-none" name="last_name" autocomplete="family-name">
+                  <span class="text-sm font-black text-ink/65">Last name</span>
+                  <input class="mt-2 w-full rounded-2xl border border-ink/15 px-4 py-3 font-bold focus:border-deepTeal focus:outline-none" name="last_name" autocomplete="family-name">
                 </label>
               </div>
               <div class="grid gap-4 md:grid-cols-2">
                 <label class="block">
-                  <span class="text-sm font-black text-navySoft/65">Email</span>
-                  <input class="mt-2 w-full rounded-2xl border border-navySoft/15 px-4 py-3 font-bold focus:border-tealWarm focus:outline-none" type="email" name="email" autocomplete="email" required>
+                  <span class="text-sm font-black text-ink/65">Email</span>
+                  <input class="mt-2 w-full rounded-2xl border border-ink/15 px-4 py-3 font-bold focus:border-deepTeal focus:outline-none" type="email" name="email" autocomplete="email" required>
                 </label>
                 <label class="block">
-                  <span class="text-sm font-black text-navySoft/65">Phone</span>
-                  <input class="mt-2 w-full rounded-2xl border border-navySoft/15 px-4 py-3 font-bold focus:border-tealWarm focus:outline-none" type="tel" name="phone_number" autocomplete="tel">
+                  <span class="text-sm font-black text-ink/65">Phone</span>
+                  <input class="mt-2 w-full rounded-2xl border border-ink/15 px-4 py-3 font-bold focus:border-deepTeal focus:outline-none" type="tel" name="phone_number" autocomplete="tel">
                 </label>
               </div>
               <div class="grid gap-4 md:grid-cols-[1fr_1fr_auto]">
                 <label class="block">
-                  <span class="text-sm font-black text-navySoft/65">Account type</span>
-                  <select class="mt-2 w-full rounded-2xl border border-navySoft/15 px-4 py-3 font-bold focus:border-tealWarm focus:outline-none" name="role" required>
+                  <span class="text-sm font-black text-ink/65">Account type</span>
+                  <select class="mt-2 w-full rounded-2xl border border-ink/15 px-4 py-3 font-bold focus:border-deepTeal focus:outline-none" name="role" required>
                     <option value="guardian">Parent</option>
                     <option value="teacher">Teacher</option>
                   </select>
                 </label>
                 <label class="block">
-                  <span class="text-sm font-black text-navySoft/65">Password</span>
-                  <input class="mt-2 w-full rounded-2xl border border-navySoft/15 px-4 py-3 font-bold focus:border-tealWarm focus:outline-none" name="password" autocomplete="new-password" placeholder="Auto-generate if blank">
+                  <span class="text-sm font-black text-ink/65">Password</span>
+                  <input class="mt-2 w-full rounded-2xl border border-ink/15 px-4 py-3 font-bold focus:border-deepTeal focus:outline-none" name="password" autocomplete="new-password" placeholder="Auto-generate if blank">
                 </label>
-                <button class="focus-ring self-end rounded-full bg-coral px-6 py-3 font-black text-white shadow-lg shadow-coral/20 transition hover:-translate-y-0.5" type="submit">Create account</button>
+                <button class="focus-ring self-end rounded-full bg-mediumTeal px-6 py-3 font-black text-white shadow-lg shadow-mediumTeal/20 transition hover:-translate-y-0.5" type="submit">Create account</button>
               </div>
             </form>
           </section>
         {% endif %}
 
-        <section class="rounded-[2rem] bg-white p-6 shadow-xl shadow-navySoft/8 ring-1 ring-navySoft/10">
+        <section class="rounded-[2rem] bg-white p-6 shadow-xl shadow-ink/8 ring-1 ring-ink/10">
           <div class="flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
             <div>
-              <p class="text-sm font-black uppercase tracking-[0.18em] text-tealWarm">Family-teacher inbox</p>
+              <p class="text-sm font-black uppercase tracking-[0.18em] text-deepTeal">Family-teacher inbox</p>
               <h2 class="mt-2 text-3xl font-black">Avery Reader support thread</h2>
             </div>
-            <a href="/inbox/" class="focus-ring rounded-full bg-coral px-5 py-3 text-sm font-black text-white shadow-lg shadow-coral/20 transition hover:-translate-y-0.5">Open inbox</a>
+            <a href="/inbox/" class="focus-ring rounded-full bg-mediumTeal px-5 py-3 text-sm font-black text-white shadow-lg shadow-mediumTeal/20 transition hover:-translate-y-0.5">Open inbox</a>
           </div>
           <div class="mt-5 grid gap-3">
             {% for message in inbox_messages %}
-              <article class="rounded-3xl {% if message.audience == request.user.role %}bg-mist{% else %}bg-cream{% endif %} p-5">
+              <article class="rounded-3xl {% if message.audience == request.user.role %}bg-seafoam{% else %}bg-linen{% endif %} p-5">
                 <div class="flex items-center justify-between gap-3">
                   <p class="font-black">{{ message.sender }}</p>
-                  <p class="text-xs font-bold text-navySoft/50">{{ message.sent_at }}</p>
+                  <p class="text-xs font-bold text-ink/50">{{ message.sent_at }}</p>
                 </div>
-                <p class="mt-2 text-sm leading-6 text-navySoft/70">{{ message.body }}</p>
+                <p class="mt-2 text-sm leading-6 text-ink/70">{{ message.body }}</p>
               </article>
             {% endfor %}
           </div>
         </section>
 
         {% if is_teacher %}
-          <section class="rounded-[2rem] bg-white p-6 shadow-xl shadow-navySoft/8 ring-1 ring-navySoft/10">
+          <section class="rounded-[2rem] bg-white p-6 shadow-xl shadow-ink/8 ring-1 ring-ink/10">
             <div class="flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
               <div>
-                <p class="text-sm font-black uppercase tracking-[0.18em] text-tealWarm">Assigned students</p>
+                <p class="text-sm font-black uppercase tracking-[0.18em] text-deepTeal">Assigned students</p>
                 <h2 class="mt-2 text-3xl font-black">Assign lessons from your templates</h2>
               </div>
-              <p class="rounded-full bg-mist px-4 py-2 text-sm font-black text-tealWarm">{{ child_count }} readers</p>
+              <p class="rounded-full bg-seafoam px-4 py-2 text-sm font-black text-deepTeal">{{ child_count }} readers</p>
             </div>
             <form class="mt-5 grid gap-4" method="post" action="{% url 'portal_assign_lesson_to_child' %}">
               {% csrf_token %}
               <div class="grid gap-4 md:grid-cols-2">
                 <label class="block">
-                  <span class="text-sm font-black text-navySoft/65">Student</span>
-                  <select class="mt-2 w-full rounded-2xl border border-navySoft/15 px-4 py-3 font-bold focus:border-tealWarm focus:outline-none" name="child_id" required>
+                  <span class="text-sm font-black text-ink/65">Student</span>
+                  <select class="mt-2 w-full rounded-2xl border border-ink/15 px-4 py-3 font-bold focus:border-deepTeal focus:outline-none" name="child_id" required>
                     {% for child in children %}
                       <option value="{{ child.id }}">{{ child }}</option>
                     {% endfor %}
                   </select>
                 </label>
                 <label class="block">
-                  <span class="text-sm font-black text-navySoft/65">Lesson template</span>
-                  <select class="mt-2 w-full rounded-2xl border border-navySoft/15 px-4 py-3 font-bold focus:border-tealWarm focus:outline-none" name="template_id" required>
+                  <span class="text-sm font-black text-ink/65">Lesson template</span>
+                  <select class="mt-2 w-full rounded-2xl border border-ink/15 px-4 py-3 font-bold focus:border-deepTeal focus:outline-none" name="template_id" required>
                     {% for template in available_lesson_templates %}
                       <option value="{{ template.id }}">{{ template.title }} · {{ template.recommended_minutes }} min</option>
                     {% endfor %}
@@ -483,151 +488,151 @@
               </div>
               <div class="grid gap-4 md:grid-cols-[1fr_2fr_auto]">
                 <label class="block">
-                  <span class="text-sm font-black text-navySoft/65">Due date</span>
-                  <input class="mt-2 w-full rounded-2xl border border-navySoft/15 px-4 py-3 font-bold focus:border-tealWarm focus:outline-none" type="date" name="due_date">
+                  <span class="text-sm font-black text-ink/65">Due date</span>
+                  <input class="mt-2 w-full rounded-2xl border border-ink/15 px-4 py-3 font-bold focus:border-deepTeal focus:outline-none" type="date" name="due_date">
                 </label>
                 <label class="block">
-                  <span class="text-sm font-black text-navySoft/65">Teacher note</span>
-                  <input class="mt-2 w-full rounded-2xl border border-navySoft/15 px-4 py-3 font-bold focus:border-tealWarm focus:outline-none" name="teacher_notes" placeholder="Example: Practice this before our next review">
+                  <span class="text-sm font-black text-ink/65">Teacher note</span>
+                  <input class="mt-2 w-full rounded-2xl border border-ink/15 px-4 py-3 font-bold focus:border-deepTeal focus:outline-none" name="teacher_notes" placeholder="Example: Practice this before our next review">
                 </label>
-                <button class="focus-ring self-end rounded-full bg-tealWarm px-6 py-3 font-black text-white shadow-lg shadow-tealWarm/20 transition hover:-translate-y-0.5" type="submit">Assign lesson</button>
+                <button class="focus-ring self-end rounded-full bg-deepTeal px-6 py-3 font-black text-white shadow-lg shadow-deepTeal/20 transition hover:-translate-y-0.5" type="submit">Assign lesson</button>
               </div>
             </form>
             <div class="mt-5 grid gap-3">
               {% for assignment in child_lesson_assignments %}
-                <article class="rounded-3xl bg-cream p-5">
+                <article class="rounded-3xl bg-linen p-5">
                   <div class="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
                     <div>
                       <h3 class="text-xl font-black">{{ assignment.template.title }}</h3>
-                      <p class="mt-1 text-sm font-bold text-navySoft/65">{{ assignment.child }} · {{ assignment.template.goal }}</p>
+                      <p class="mt-1 text-sm font-bold text-ink/65">{{ assignment.child }} · {{ assignment.template.goal }}</p>
                       {% if assignment.teacher_notes %}
-                        <p class="mt-3 text-sm leading-6 text-navySoft/70">{{ assignment.teacher_notes }}</p>
+                        <p class="mt-3 text-sm leading-6 text-ink/70">{{ assignment.teacher_notes }}</p>
                       {% endif %}
                     </div>
                     <div class="flex flex-wrap gap-2 text-xs font-black sm:justify-end">
-                      <span class="rounded-full bg-white px-3 py-2 text-tealWarm">{{ assignment.get_status_display }}</span>
+                      <span class="rounded-full bg-white px-3 py-2 text-deepTeal">{{ assignment.get_status_display }}</span>
                       {% if assignment.due_date %}
-                        <span class="rounded-full bg-white px-3 py-2 text-navySoft/60">Due {{ assignment.due_date|date:"M j" }}</span>
+                        <span class="rounded-full bg-white px-3 py-2 text-ink/60">Due {{ assignment.due_date|date:"M j" }}</span>
                       {% endif %}
                     </div>
                   </div>
                 </article>
               {% empty %}
-                <p class="rounded-3xl bg-mist p-5 font-bold text-navySoft/70">No lessons assigned yet. Choose a student and template to get started.</p>
+                <p class="rounded-3xl bg-seafoam p-5 font-bold text-ink/70">No lessons assigned yet. Choose a student and template to get started.</p>
               {% endfor %}
             </div>
           </section>
 
-          <section class="rounded-[2rem] bg-white p-6 shadow-xl shadow-navySoft/8 ring-1 ring-navySoft/10">
+          <section class="rounded-[2rem] bg-white p-6 shadow-xl shadow-ink/8 ring-1 ring-ink/10">
             <div class="flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
               <div>
-                <p class="text-sm font-black uppercase tracking-[0.18em] text-coral">Human review queue</p>
+                <p class="text-sm font-black uppercase tracking-[0.18em] text-mediumTeal">Human review queue</p>
                 <h2 class="mt-2 text-3xl font-black">Assessments needing evaluator notes</h2>
               </div>
-              <p class="rounded-full bg-blush px-4 py-2 text-sm font-black text-coral">{{ pending_review_count }} pending</p>
+              <p class="rounded-full bg-sand px-4 py-2 text-sm font-black text-mediumTeal">{{ pending_review_count }} pending</p>
             </div>
             <div class="mt-5 grid gap-3">
               {% for assessment in pending_reviews %}
-                <article class="rounded-3xl bg-cream p-5">
+                <article class="rounded-3xl bg-linen p-5">
                   <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                     <div>
                       <h3 class="text-xl font-black">{{ assessment.child }}</h3>
-                      <p class="mt-1 text-sm font-bold text-navySoft/65">{{ assessment.title }}</p>
+                      <p class="mt-1 text-sm font-bold text-ink/65">{{ assessment.title }}</p>
                     </div>
-                    <div class="text-sm font-black text-tealWarm">
+                    <div class="text-sm font-black text-deepTeal">
                       Reading age {% if assessment.reading_age %}{{ assessment.reading_age }}{% else %}pending{% endif %}
                     </div>
                   </div>
                 </article>
               {% empty %}
-                <p class="rounded-3xl bg-mist p-5 font-bold text-navySoft/70">No assessments are waiting for review right now.</p>
+                <p class="rounded-3xl bg-seafoam p-5 font-bold text-ink/70">No assessments are waiting for review right now.</p>
               {% endfor %}
             </div>
           </section>
         {% endif %}
 
         {% if is_parent or is_child %}
-          <section class="rounded-[2rem] bg-white p-6 shadow-xl shadow-navySoft/8 ring-1 ring-navySoft/10">
-            <p class="text-sm font-black uppercase tracking-[0.18em] text-tealWarm">Assigned lessons</p>
+          <section class="rounded-[2rem] bg-white p-6 shadow-xl shadow-ink/8 ring-1 ring-ink/10">
+            <p class="text-sm font-black uppercase tracking-[0.18em] text-deepTeal">Assigned lessons</p>
             <h2 class="mt-2 text-3xl font-black">Your child's teacher plan</h2>
             <div class="mt-5 grid gap-3">
               {% for assignment in child_lesson_assignments %}
-                <article class="rounded-3xl bg-cream p-5">
+                <article class="rounded-3xl bg-linen p-5">
                   <div class="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
                     <div>
                       <h3 class="text-xl font-black">{{ assignment.template.title }}</h3>
-                      <p class="mt-1 text-sm font-bold text-navySoft/65">{{ assignment.child }} · {{ assignment.template.goal }}</p>
-                      <p class="mt-3 text-sm leading-6 text-navySoft/70">{{ assignment.template.description }}</p>
+                      <p class="mt-1 text-sm font-bold text-ink/65">{{ assignment.child }} · {{ assignment.template.goal }}</p>
+                      <p class="mt-3 text-sm leading-6 text-ink/70">{{ assignment.template.description }}</p>
                       {% if assignment.teacher_notes %}
-                        <p class="mt-3 rounded-2xl bg-white px-4 py-3 text-sm leading-6 text-navySoft/70">{{ assignment.teacher_notes }}</p>
+                        <p class="mt-3 rounded-2xl bg-white px-4 py-3 text-sm leading-6 text-ink/70">{{ assignment.teacher_notes }}</p>
                       {% endif %}
                     </div>
                     <div class="flex flex-wrap gap-2 text-xs font-black sm:justify-end">
-                      <span class="rounded-full bg-white px-3 py-2 text-tealWarm">{{ assignment.get_status_display }}</span>
-                      <span class="rounded-full bg-white px-3 py-2 text-navySoft/60">{{ assignment.template.recommended_minutes }} min</span>
+                      <span class="rounded-full bg-white px-3 py-2 text-deepTeal">{{ assignment.get_status_display }}</span>
+                      <span class="rounded-full bg-white px-3 py-2 text-ink/60">{{ assignment.template.recommended_minutes }} min</span>
                       {% if assignment.due_date %}
-                        <span class="rounded-full bg-white px-3 py-2 text-coral">Due {{ assignment.due_date|date:"M j" }}</span>
+                        <span class="rounded-full bg-white px-3 py-2 text-mediumTeal">Due {{ assignment.due_date|date:"M j" }}</span>
                       {% endif %}
                     </div>
                   </div>
                 </article>
               {% empty %}
-                <p class="rounded-3xl bg-mist p-5 font-bold text-navySoft/70">No teacher-assigned lessons yet. They will appear here after your evaluator assigns them.</p>
+                <p class="rounded-3xl bg-seafoam p-5 font-bold text-ink/70">No teacher-assigned lessons yet. They will appear here after your evaluator assigns them.</p>
               {% endfor %}
             </div>
           </section>
         {% endif %}
 
-        <section class="rounded-[2rem] bg-white p-6 shadow-xl shadow-navySoft/8 ring-1 ring-navySoft/10">
-          <p class="text-sm font-black uppercase tracking-[0.18em] text-tealWarm">Reading results</p>
+        <section class="rounded-[2rem] bg-white p-6 shadow-xl shadow-ink/8 ring-1 ring-ink/10">
+          <p class="text-sm font-black uppercase tracking-[0.18em] text-deepTeal">Reading results</p>
           <h2 class="mt-2 text-3xl font-black">Latest KPI snapshots</h2>
           <div class="mt-5 grid gap-4">
             {% for result in latest_results %}
-              <article class="rounded-3xl bg-white p-5 shadow-sm ring-1 ring-navySoft/10">
+              <article class="rounded-3xl bg-white p-5 shadow-sm ring-1 ring-ink/10">
                 <div class="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
                   <div>
                     <h3 class="text-2xl font-black">{{ result.assessment.child }}</h3>
-                    <p class="mt-1 text-sm font-bold text-navySoft/60">{{ result.grade_equivalent }} placement estimate</p>
+                    <p class="mt-1 text-sm font-bold text-ink/60">{{ result.grade_equivalent }} placement estimate</p>
                   </div>
-                  <div class="rounded-2xl bg-mist px-4 py-3 text-center">
-                    <p class="text-xs font-black uppercase tracking-[0.14em] text-tealWarm">Reading age</p>
+                  <div class="rounded-2xl bg-seafoam px-4 py-3 text-center">
+                    <p class="text-xs font-black uppercase tracking-[0.14em] text-deepTeal">Reading age</p>
                     <p class="text-3xl font-black">{{ result.reading_age }}</p>
                   </div>
                 </div>
 
                 <div class="mt-5 grid gap-3 md:grid-cols-2">
-                  <div class="rounded-2xl bg-cream p-4">
+                  <div class="rounded-2xl bg-linen p-4">
                     <p class="font-black">Strengths</p>
-                    <p class="mt-2 text-sm leading-6 text-navySoft/70">{{ result.strengths|join:", " }}</p>
+                    <p class="mt-2 text-sm leading-6 text-ink/70">{{ result.strengths|join:", " }}</p>
                   </div>
-                  <div class="rounded-2xl bg-blush p-4">
+                  <div class="rounded-2xl bg-sand p-4">
                     <p class="font-black">Growth areas</p>
-                    <p class="mt-2 text-sm leading-6 text-navySoft/70">{{ result.growth_areas|join:", " }}</p>
+                    <p class="mt-2 text-sm leading-6 text-ink/70">{{ result.growth_areas|join:", " }}</p>
                   </div>
                 </div>
 
-                <p class="mt-4 rounded-2xl bg-navySoft px-4 py-3 text-sm leading-6 text-white/85">{{ result.teacher_summary }}</p>
+                <p class="mt-4 rounded-2xl bg-ink px-4 py-3 text-sm leading-6 text-white/85">{{ result.teacher_summary }}</p>
               </article>
             {% empty %}
-              <p class="rounded-3xl bg-cream p-5 font-bold text-navySoft/70">No reading results yet. Start with the free digital assessment.</p>
+              <p class="rounded-3xl bg-linen p-5 font-bold text-ink/70">No reading results yet. Start with the free digital assessment.</p>
             {% endfor %}
           </div>
         </section>
 
-        <section class="rounded-[2rem] bg-white p-6 shadow-xl shadow-navySoft/8 ring-1 ring-navySoft/10">
-          <p class="text-sm font-black uppercase tracking-[0.18em] text-coral">Next tasks</p>
+        <section class="rounded-[2rem] bg-white p-6 shadow-xl shadow-ink/8 ring-1 ring-ink/10">
+          <p class="text-sm font-black uppercase tracking-[0.18em] text-mediumTeal">Next tasks</p>
           <div class="mt-5 grid gap-3 md:grid-cols-3">
-            <a class="focus-ring rounded-3xl bg-mist p-5 transition hover:-translate-y-1 hover:shadow-xl" href="/assessment/">
+            <a class="focus-ring rounded-3xl bg-seafoam p-5 transition hover:-translate-y-1 hover:shadow-xl" href="/assessment/">
               <span class="block text-lg font-black">Start assessment</span>
-              <span class="mt-2 block text-sm leading-6 text-navySoft/65">Run the child-friendly reading survey.</span>
+              <span class="mt-2 block text-sm leading-6 text-ink/65">Run the child-friendly reading survey.</span>
             </a>
-            <div class="rounded-3xl bg-cream p-5">
+            <div class="rounded-3xl bg-linen p-5">
               <span class="block text-lg font-black">Review KPIs</span>
-              <span class="mt-2 block text-sm leading-6 text-navySoft/65">Compare phonics, fluency, vocabulary, and comprehension.</span>
+              <span class="mt-2 block text-sm leading-6 text-ink/65">Compare phonics, fluency, vocabulary, and comprehension.</span>
             </div>
-            <div class="rounded-3xl bg-blush p-5">
+            <div class="rounded-3xl bg-sand p-5">
               <span class="block text-lg font-black">Plan support</span>
-              <span class="mt-2 block text-sm leading-6 text-navySoft/65">Use growth areas to guide lessons and human follow-up.</span>
+              <span class="mt-2 block text-sm leading-6 text-ink/65">Use growth areas to guide lessons and human follow-up.</span>
             </div>
           </div>
         </section>

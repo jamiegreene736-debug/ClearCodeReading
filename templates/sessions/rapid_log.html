@@ -4,17 +4,49 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1">
-  <title>Rapid session log · Clear Code Reading</title>
+  <title>Rapid session log · ClearCode Reading</title>
+  <link rel="icon" href="/assets/logo/cc-monogram-forest-euc.png" type="image/png">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:ital,wght@0,400;0,500;0,600;0,700;0,800;0,900;1,400;1,600;1,700&display=swap" rel="stylesheet">
   <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            ink: '#0F2B35',
+            forest: '#2C4A45',
+            deepTeal: '#1A7A7A',
+            mediumTeal: '#2EB8B8',
+            eucalyptus: '#5A9E8F',
+            seafoam: '#A8CFC4',
+            linen: '#F7F2EA',
+            sand: '#E8D5B0',
+            gold: '#F5A623'
+          },
+          fontFamily: {
+            sans: ['Barlow Condensed', 'Arial Narrow', 'ui-sans-serif', 'system-ui', 'sans-serif']
+          }
+        }
+      }
+    };
+  </script>
   <style>
-    .chip input:checked + span { background:#00b8a9; border-color:#00b8a9; color:white; }
-    .focus-ring:focus-visible { outline:4px solid #ffd93d; outline-offset:3px; }
+    .chip input:checked + span { background:#1a7a7a; border-color:#1a7a7a; color:white; }
+    .focus-ring:focus-visible { outline:4px solid #f5a623; outline-offset:3px; }
+    .page-bg {
+      background:
+        radial-gradient(circle at 10% 10%, rgba(245, 166, 35, .18), transparent 24%),
+        radial-gradient(circle at 90% 12%, rgba(46, 184, 184, .14), transparent 26%),
+        linear-gradient(135deg, #F7F2EA 0%, #A8CFC4 55%, #E8D5B0 100%);
+    }
   </style>
 </head>
-<body class="min-h-screen bg-gradient-to-br from-amber-50 via-teal-50 to-rose-50 text-slate-800">
-  <header class="border-b bg-white/90">
+<body class="page-bg min-h-screen font-sans text-ink">
+  <header class="border-b border-deepTeal/10 bg-linen/95 backdrop-blur-xl">
     <nav class="mx-auto flex max-w-7xl items-center justify-between px-4 py-3">
-      <a href="/dashboard/" class="font-black">Clear Code Reading</a>
+      <a href="/dashboard/" class="rounded-2xl bg-linen px-2 py-1 shadow-sm ring-1 ring-ink/5"><img src="/assets/logo/cc-lockup-linen-ui.png" alt="ClearCode Reading" class="h-11 w-auto max-w-[220px] object-contain"></a>
       <a href="/dashboard/" class="focus-ring rounded-full px-4 py-3 font-bold">Dashboard</a>
     </nav>
   </header>
@@ -23,20 +55,20 @@
       {% for message in messages %}<p class="mb-4 rounded-2xl bg-white p-4 font-bold">{{ message }}</p>{% endfor %}
       {% if saved_session %}
         <div class="rounded-[2rem] bg-white p-8 shadow-xl">
-          <p class="font-black uppercase tracking-widest text-teal-600">Session saved</p>
+          <p class="font-black uppercase tracking-widest text-deepTeal">Session saved</p>
           <h1 class="mt-2 text-3xl font-black">{{ saved_session.child }} · {{ saved_session.curriculum_position.code }}</h1>
           <p class="mt-3">Accuracy {{ saved_session.accuracy_numerator }}/{{ saved_session.accuracy_denominator }} · Revision {{ saved_session.revision }}</p>
           <div class="mt-6 flex flex-wrap gap-3">
-            <a class="rounded-full bg-teal-600 px-5 py-3 font-black text-white" href="?child={{ saved_session.child_id }}">Log another</a>
-            <a class="rounded-full bg-slate-800 px-5 py-3 font-black text-white" href="/dashboard/#reader-{{ saved_session.child_id }}">Back to {{ saved_session.child.first_name }}’s position</a>
+            <a class="rounded-full bg-deepTeal px-5 py-3 font-black text-white" href="?child={{ saved_session.child_id }}">Log another</a>
+            <a class="rounded-full bg-ink px-5 py-3 font-black text-white" href="/dashboard/#reader-{{ saved_session.child_id }}">Back to {{ saved_session.child.first_name }}’s position</a>
           </div>
         </div>
       {% else %}
         <form method="post" class="rounded-[2rem] bg-white p-5 shadow-xl sm:p-8">
           {% csrf_token %}
-          <p class="font-black uppercase tracking-widest text-teal-600">Specialist rapid entry</p>
+          <p class="font-black uppercase tracking-widest text-deepTeal">Specialist rapid entry</p>
           <h1 class="mt-2 break-words text-3xl font-black sm:text-4xl">Finish the log in one screen.</h1>
-          {% if form_errors %}<div class="mt-4 rounded-2xl bg-rose-100 p-4 text-sm font-bold">{{ form_errors }}</div>{% endif %}
+          {% if form_errors %}<div class="mt-4 rounded-2xl bg-sand p-4 text-sm font-bold ring-1 ring-gold/40">{{ form_errors }}</div>{% endif %}
           <label class="mt-6 block font-black" for="child_id">Reader</label>
           <select id="child_id" name="child_id" onchange="location='?child='+this.value" class="focus-ring mt-2 w-full rounded-2xl border p-4 text-lg" required>
             <option value="">Choose a reader</option>
@@ -44,16 +76,16 @@
           </select>
           {% if defaults %}
             {% if selected_session %}<input type="hidden" name="session_id" value="{{ selected_session.id }}">{% endif %}
-            <div class="mt-6 flex flex-wrap items-start justify-between gap-3 rounded-3xl bg-slate-50 p-5">
-              <div class="min-w-0"><p class="font-bold text-teal-700">{{ defaults.curriculum_name }} · {{ defaults.position_code }}</p><h2 class="break-words text-2xl font-black">{{ defaults.position_title }}</h2></div>
-              <span class="rounded-full px-4 py-2 font-black {% if defaults.intervention_part == 'pfr_1a' %}bg-amber-200{% elif defaults.intervention_part == 'pfr_1b' %}bg-teal-200{% else %}bg-violet-200{% endif %}">{{ defaults.intervention_part_label }}</span>
+            <div class="mt-6 flex flex-wrap items-start justify-between gap-3 rounded-3xl bg-linen p-5">
+              <div class="min-w-0"><p class="font-bold text-deepTeal">{{ defaults.curriculum_name }} · {{ defaults.position_code }}</p><h2 class="break-words text-2xl font-black">{{ defaults.position_title }}</h2></div>
+              <span class="rounded-full px-4 py-2 font-black {% if defaults.intervention_part == 'pfr_1a' %}bg-sand{% elif defaults.intervention_part == 'pfr_1b' %}bg-seafoam{% else %}bg-gold/30{% endif %}">{{ defaults.intervention_part_label }}</span>
             </div>
-            <div class="mt-6 rounded-3xl bg-slate-800 p-5 text-white">
+            <div class="mt-6 rounded-3xl bg-ink p-5 text-white">
               <h3 class="text-xl font-black">Correct out of attempted</h3>
               <div class="mt-4 grid grid-cols-[1fr_auto_1fr] items-center gap-3">
-                <input aria-label="Correct responses" name="accuracy_numerator" value="{{ accuracy_numerator }}" type="number" min="0" class="focus-ring min-w-0 rounded-2xl p-4 text-center text-4xl font-black text-slate-900" required>
+                <input aria-label="Correct responses" name="accuracy_numerator" value="{{ accuracy_numerator }}" type="number" min="0" class="focus-ring min-w-0 rounded-2xl p-4 text-center text-4xl font-black text-ink" required>
                 <span class="text-4xl font-black">/</span>
-                <input aria-label="Attempted responses" name="accuracy_denominator" value="{{ accuracy_denominator }}" type="number" min="1" class="focus-ring min-w-0 rounded-2xl p-4 text-center text-4xl font-black text-slate-900" required>
+                <input aria-label="Attempted responses" name="accuracy_denominator" value="{{ accuracy_denominator }}" type="number" min="1" class="focus-ring min-w-0 rounded-2xl p-4 text-center text-4xl font-black text-ink" required>
               </div>
             </div>
             <h3 class="mt-6 font-black">Completed activities</h3>
@@ -71,14 +103,14 @@
             <label class="mt-6 block font-black">Next session direction<textarea name="next_session_direction" class="mt-2 w-full rounded-2xl border p-4" rows="3">{{ next_session_direction }}</textarea></label>
             <label class="mt-4 block font-black">Home-practice suggestion<textarea name="home_practice_suggestion" class="mt-2 w-full rounded-2xl border p-4" rows="3">{{ home_practice_suggestion }}</textarea></label>
             <details class="mt-4"><summary class="cursor-pointer font-bold">Timing and supplemental notes</summary><label class="mt-3 block">Minutes<input name="duration_minutes" type="number" value="{{ duration_minutes }}" class="ml-2 rounded-xl border p-2"></label><textarea name="notes" class="mt-3 w-full rounded-2xl border p-4" placeholder="Optional notes">{{ notes }}</textarea></details>
-            <button class="focus-ring mt-6 w-full rounded-2xl bg-teal-600 px-6 py-5 text-xl font-black text-white">Complete session</button>
+            <button class="focus-ring mt-6 w-full rounded-2xl bg-deepTeal px-6 py-5 text-xl font-black text-white shadow-lg shadow-deepTeal/20">Complete session</button>
           {% endif %}
         </form>
       {% endif %}
     </section>
     <aside class="rounded-[2rem] bg-white p-5 shadow-xl">
-      <p class="font-black uppercase tracking-widest text-teal-600">Today</p><h2 class="text-2xl font-black">Session queue</h2>
-      <div class="mt-4 space-y-3">{% for session in today_sessions %}<a href="?session={{ session.id }}" class="block rounded-2xl bg-slate-50 p-4"><strong>{{ session.child }}</strong><p>{{ session.scheduled_start|date:"g:i a" }} · {{ session.curriculum_position.code }}</p><p class="text-sm font-bold text-teal-700">{% if session.status == 'completed' %}Edit structured fields{% else %}Complete{% endif %}</p></a>{% empty %}<p>No sessions scheduled today.</p>{% endfor %}</div>
+      <p class="font-black uppercase tracking-widest text-deepTeal">Today</p><h2 class="text-2xl font-black">Session queue</h2>
+      <div class="mt-4 space-y-3">{% for session in today_sessions %}<a href="?session={{ session.id }}" class="block rounded-2xl bg-linen p-4"><strong>{{ session.child }}</strong><p>{{ session.scheduled_start|date:"g:i a" }} · {{ session.curriculum_position.code }}</p><p class="text-sm font-bold text-deepTeal">{% if session.status == 'completed' %}Edit structured fields{% else %}Complete{% endif %}</p></a>{% empty %}<p>No sessions scheduled today.</p>{% endfor %}</div>
     </aside>
   </main>
 </body>
