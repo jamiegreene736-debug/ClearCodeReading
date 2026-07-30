@@ -22,6 +22,15 @@ from apps.users.portal_views import (
 
 urlpatterns = [
     path("", TemplateView.as_view(template_name="index.html"), name="marketing_home"),
+    path(
+        "favicon.ico",
+        serve,
+        {
+            "path": "logo/favicon.ico",
+            "document_root": settings.BASE_DIR / "marketing-website" / "assets",
+        },
+        name="favicon",
+    ),
     path("how-it-works/", TemplateView.as_view(template_name="how-it-works.html"), name="marketing_how_it_works"),
     path("families/", TemplateView.as_view(template_name="families.html"), name="marketing_families"),
     path("contact/", TemplateView.as_view(template_name="contact.html"), name="marketing_contact"),

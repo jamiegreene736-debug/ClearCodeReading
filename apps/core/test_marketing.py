@@ -113,7 +113,8 @@ class MarketingPageTests(SimpleTestCase):
             with self.subTest(route_name=route_name):
                 self.assertIn("Barlow+Condensed", content)
                 self.assertIn("/assets/logo/cc-lockup-linen-ui.png", content)
-                self.assertIn("/assets/logo/cc-monogram-forest-euc.png", content)
+                self.assertIn("/assets/logo/cc-favicon-gold-teal-32.png", content)
+                self.assertIn("/assets/logo/cc-apple-touch-icon-gold-teal-180.png", content)
                 self.assertNotIn("clear-code-reading-logo", content)
                 self.assertNotIn("clear-code-reading-icon", content)
 
@@ -148,9 +149,18 @@ class MarketingPageTests(SimpleTestCase):
             content = (Path(settings.BASE_DIR) / relative_path).read_text()
             with self.subTest(template=relative_path):
                 self.assertIn("Barlow+Condensed", content)
-                self.assertIn("cc-monogram-forest-euc.png", content)
+                self.assertIn("cc-favicon-gold-teal-32.png", content)
+                self.assertIn("cc-apple-touch-icon-gold-teal-180.png", content)
                 self.assertIn("#0F2B35", content)
                 self.assertIn("#F7F2EA", content)
+
+    def test_root_favicon_uses_the_branded_icon(self):
+        route = resolve("/favicon.ico")
+        favicon_path = route.kwargs["document_root"] / route.kwargs["path"]
+
+        self.assertEqual(route.url_name, "favicon")
+        self.assertEqual(route.kwargs["path"], "logo/favicon.ico")
+        self.assertTrue(favicon_path.is_file())
 
 
 class ConsultationFormTests(TestCase):
