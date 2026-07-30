@@ -3,52 +3,57 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Inbox | Clear Code Reading</title>
-  <meta name="description" content="Clear Code Reading parent and teacher inbox.">
-  <link rel="icon" href="/assets/logo/clear-code-reading-icon.png" type="image/png">
+  <title>Inbox | ClearCode Reading</title>
+  <meta name="description" content="ClearCode Reading parent and teacher inbox.">
+  <link rel="icon" href="/assets/logo/cc-monogram-forest-euc.png" type="image/png">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:ital,wght@0,400;0,500;0,600;0,700;0,800;0,900;1,400;1,600;1,700&display=swap" rel="stylesheet">
   <script src="https://cdn.tailwindcss.com"></script>
   <script>
     tailwind.config = {
       theme: {
         extend: {
           colors: {
-            tealWarm: '#00B8A9',
-            coral: '#FF6B6B',
-            navySoft: '#2C3E50',
-            sunny: '#FFD93D',
-            cream: '#FFF9EA',
-            mist: '#F0FFFC',
-            blush: '#FFF5F5'
+            forest: '#2C4A45',
+            deepTeal: '#1A7A7A',
+            mediumTeal: '#2EB8B8',
+            eucalyptus: '#5A9E8F',
+            ink: '#0F2B35',
+            gold: '#F5A623',
+            linen: '#F7F2EA',
+            seafoam: '#A8CFC4',
+            sand: '#E8D5B0'
           },
           fontFamily: {
-            sans: ['Inter', 'Avenir Next', 'Nunito Sans', 'ui-sans-serif', 'system-ui', 'sans-serif']
+            sans: ['Barlow Condensed', 'Arial Narrow', 'ui-sans-serif', 'system-ui', 'sans-serif']
           }
         }
       }
     };
   </script>
   <style>
-    .focus-ring:focus-visible { outline: 4px solid rgba(255, 217, 61, .75); outline-offset: 3px; }
+    .focus-ring:focus-visible { outline: 4px solid rgba(245, 166, 35, .75); outline-offset: 3px; }
     .page-bg {
       background:
-        radial-gradient(circle at 12% 12%, rgba(255, 217, 61, .20), transparent 24%),
-        radial-gradient(circle at 86% 16%, rgba(255, 107, 107, .12), transparent 24%),
-        linear-gradient(135deg, #fffdf6 0%, #f0fffc 48%, #fff5f5 100%);
+        radial-gradient(circle at 12% 12%, rgba(245, 166, 35, .20), transparent 24%),
+        radial-gradient(circle at 86% 16%, rgba(46, 184, 184, .12), transparent 24%),
+        linear-gradient(135deg, #F7F2EA 0%, #A8CFC4 48%, #E8D5B0 100%);
     }
-    .logo-plate { background: linear-gradient(135deg, rgba(255,255,255,.96), rgba(255,249,234,.92)); }
+    .logo-plate { background: linear-gradient(135deg, rgba(247,242,234,.98), rgba(232,213,176,.45)); }
   </style>
 </head>
-<body class="page-bg min-h-screen text-navySoft antialiased">
-  <header class="sticky top-0 z-40 border-b border-tealWarm/10 bg-white/90 backdrop-blur-xl">
+<body class="page-bg min-h-screen font-sans text-ink antialiased">
+  <header class="sticky top-0 z-40 border-b border-deepTeal/10 bg-linen/95 backdrop-blur-xl">
     <nav class="mx-auto flex max-w-7xl items-center justify-between gap-4 px-4 py-3 sm:px-6 lg:px-8">
-      <a href="/dashboard/" class="focus-ring logo-plate rounded-2xl px-2 py-1 shadow-sm ring-1 ring-navySoft/5">
-        <img src="/assets/logo/clear-code-reading-logo.png" alt="Clear Code Reading" class="h-12 w-auto max-w-[230px] object-contain sm:max-w-[300px]">
+      <a href="/dashboard/" class="focus-ring logo-plate rounded-2xl px-2 py-1 shadow-sm ring-1 ring-ink/5">
+        <img src="/assets/logo/cc-lockup-linen-ui.png" alt="ClearCode Reading" class="h-12 w-auto max-w-[230px] object-contain sm:max-w-[300px]">
       </a>
       <div class="flex items-center gap-3">
-        <a href="/dashboard/" class="rounded-full px-4 py-2 text-sm font-black text-navySoft/70 transition hover:text-tealWarm">Dashboard</a>
+        <a href="/dashboard/" class="rounded-full px-4 py-2 text-sm font-black text-ink/70 transition hover:text-deepTeal">Dashboard</a>
         <form method="post" action="{% url 'logout' %}">
           {% csrf_token %}
-          <button class="focus-ring rounded-full bg-coral px-5 py-3 text-sm font-extrabold text-white shadow-lg shadow-coral/25 transition hover:-translate-y-0.5 hover:bg-[#ff5757]" type="submit">Logout</button>
+          <button class="focus-ring rounded-full bg-mediumTeal px-5 py-3 text-sm font-extrabold text-white shadow-lg shadow-mediumTeal/25 transition hover:-translate-y-0.5 hover:bg-[#277f73]" type="submit">Logout</button>
         </form>
       </div>
     </nav>
@@ -58,40 +63,40 @@
     {% if messages %}
       <div class="mb-6 space-y-2">
         {% for message in thread_messages %}
-          <p class="rounded-2xl bg-white px-4 py-3 text-sm font-bold text-navySoft shadow-sm ring-1 ring-tealWarm/10">{{ message }}</p>
+          <p class="rounded-2xl bg-white px-4 py-3 text-sm font-bold text-ink shadow-sm ring-1 ring-deepTeal/10">{{ message }}</p>
         {% endfor %}
       </div>
     {% endif %}
 
-    <section class="rounded-[2rem] bg-white p-6 shadow-2xl shadow-navySoft/10 ring-1 ring-navySoft/10 sm:p-8">
-      <p class="text-sm font-black uppercase tracking-[0.18em] text-tealWarm">
+    <section class="rounded-[2rem] bg-white p-6 shadow-2xl shadow-ink/10 ring-1 ring-ink/10 sm:p-8">
+      <p class="text-sm font-black uppercase tracking-[0.18em] text-deepTeal">
         {% if is_parent %}Parent to teacher{% elif is_teacher %}Teacher to parent{% else %}Program inbox{% endif %}
       </p>
       <h1 class="mt-2 text-3xl font-black sm:text-5xl">{{ thread_title }}</h1>
-      <p class="mt-4 max-w-3xl text-lg leading-8 text-navySoft/70">
+      <p class="mt-4 max-w-3xl text-lg leading-8 text-ink/70">
         Use this thread to coordinate reading practice, human-review notes, questions, and the child’s next steps.
       </p>
 
       <div class="mt-8 space-y-4">
         {% for message in messages %}
-          <article class="max-w-3xl rounded-3xl p-5 {% if message.audience == request.user.role %}ml-auto bg-mist ring-1 ring-tealWarm/15{% else %}bg-cream ring-1 ring-sunny/20{% endif %}">
+          <article class="max-w-3xl rounded-3xl p-5 {% if message.audience == request.user.role %}ml-auto bg-seafoam ring-1 ring-deepTeal/15{% else %}bg-linen ring-1 ring-gold/20{% endif %}">
             <div class="flex items-center justify-between gap-3">
               <p class="font-black">{{ message.sender }}</p>
-              <p class="text-xs font-bold text-navySoft/50">{{ message.sent_at }}</p>
+              <p class="text-xs font-bold text-ink/50">{{ message.sent_at }}</p>
             </div>
-            <p class="mt-2 leading-7 text-navySoft/75">{{ message.body }}</p>
+            <p class="mt-2 leading-7 text-ink/75">{{ message.body }}</p>
           </article>
         {% endfor %}
       </div>
 
-      <form class="mt-8 rounded-3xl bg-navySoft p-5" method="post">
+      <form class="mt-8 rounded-3xl bg-ink p-5" method="post">
         {% csrf_token %}
         <label class="block">
-          <span class="text-sm font-black uppercase tracking-[0.16em] text-sunny">New message</span>
-          <textarea class="mt-3 min-h-32 w-full rounded-2xl border-0 px-4 py-4 text-base font-bold text-navySoft focus:outline-none focus:ring-4 focus:ring-sunny/50" name="message" placeholder="Write a note about Avery's reading progress..." required></textarea>
+          <span class="text-sm font-black uppercase tracking-[0.16em] text-gold">New message</span>
+          <textarea class="mt-3 min-h-32 w-full rounded-2xl border-0 px-4 py-4 text-base font-bold text-ink focus:outline-none focus:ring-4 focus:ring-gold/50" name="message" placeholder="Write a note about Avery's reading progress..." required></textarea>
         </label>
         <div class="mt-4 flex justify-end">
-          <button class="focus-ring rounded-full bg-coral px-6 py-3 font-black text-white shadow-lg shadow-coral/25 transition hover:-translate-y-0.5" type="submit">Send message</button>
+          <button class="focus-ring rounded-full bg-mediumTeal px-6 py-3 font-black text-white shadow-lg shadow-mediumTeal/25 transition hover:-translate-y-0.5" type="submit">Send message</button>
         </div>
       </form>
     </section>

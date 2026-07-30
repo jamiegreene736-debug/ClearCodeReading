@@ -19,6 +19,31 @@ PUBLIC_PAGES = {
     "reading_assessment": "assessment.html",
 }
 
+BRAND_COLORS = {
+    "#0F2B35",
+    "#2C4A45",
+    "#1A7A7A",
+    "#2EB8B8",
+    "#5A9E8F",
+    "#A8CFC4",
+    "#F7F2EA",
+    "#E8D5B0",
+    "#F5A623",
+}
+
+BRAND_KIT_FILES = {
+    "cc-lockup-ink-flagship.png",
+    "cc-lockup-linen.png",
+    "cc-lockup-seafoam.png",
+    "cc-lockup-white (1).png",
+    "cc-monogram-forest-euc.png",
+    "cc-monogram-gold-teal.png",
+    "cc-monogram-ink.png",
+    "cc-monogram-linen.png",
+    "cc-wordmark-dark.png",
+    "cc-wordmark-light.png",
+}
+
 
 class MarketingPageTests(SimpleTestCase):
     def setUp(self):
@@ -81,6 +106,51 @@ class MarketingPageTests(SimpleTestCase):
         self.assertIn("Optional family reading survey", content)
         self.assertIn("not a PFR or OG+ placement instrument", content)
         self.assertIn('href="/contact/"', content)
+
+    def test_public_pages_use_the_clearcode_brand_system(self):
+        for route_name in PUBLIC_PAGES:
+            content = self._render(route_name)
+            with self.subTest(route_name=route_name):
+                self.assertIn("Barlow+Condensed", content)
+                self.assertIn("/assets/logo/cc-lockup-linen-ui.png", content)
+                self.assertIn("/assets/logo/cc-monogram-forest-euc.png", content)
+                self.assertNotIn("clear-code-reading-logo", content)
+                self.assertNotIn("clear-code-reading-icon", content)
+
+        homepage = self._render("marketing_home")
+        for color in BRAND_COLORS:
+            with self.subTest(color=color):
+                self.assertIn(color, homepage)
+
+    def test_supplied_brand_kit_is_retained(self):
+        brand_kit = (
+            Path(settings.BASE_DIR)
+            / "marketing-website"
+            / "assets"
+            / "logo"
+            / "brand-kit"
+        )
+
+        self.assertEqual(
+            {asset.name for asset in brand_kit.iterdir() if asset.is_file()},
+            BRAND_KIT_FILES,
+        )
+
+    def test_authenticated_templates_share_the_brand_identity(self):
+        template_paths = [
+            "templates/registration/login.html",
+            "templates/portal/dashboard.html",
+            "templates/portal/inbox.html",
+            "templates/sessions/rapid_log.html",
+        ]
+
+        for relative_path in template_paths:
+            content = (Path(settings.BASE_DIR) / relative_path).read_text()
+            with self.subTest(template=relative_path):
+                self.assertIn("Barlow+Condensed", content)
+                self.assertIn("cc-monogram-forest-euc.png", content)
+                self.assertIn("#0F2B35", content)
+                self.assertIn("#F7F2EA", content)
 
 
 class ConsultationFormTests(TestCase):

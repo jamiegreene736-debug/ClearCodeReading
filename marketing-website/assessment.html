@@ -5,132 +5,137 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Optional Reading Survey | ClearCode Reading</title>
   <meta name="description" content="Try an optional family reading survey across foundational skills. This education-side snapshot is not a diagnosis or structured-literacy placement.">
-  <meta name="theme-color" content="#00B8A9">
-  <link rel="icon" href="/assets/logo/clear-code-reading-icon.png" type="image/png">
+  <meta name="theme-color" content="#1A7A7A">
+  <link rel="icon" href="/assets/logo/cc-monogram-forest-euc.png" type="image/png">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:ital,wght@0,400;0,500;0,600;0,700;0,800;0,900;1,400;1,600;1,700&display=swap" rel="stylesheet">
   <script src="https://cdn.tailwindcss.com"></script>
   <script>
     tailwind.config = {
       theme: {
         extend: {
           colors: {
-            tealWarm: '#00B8A9',
-            coral: '#FF6B6B',
-            navySoft: '#2C3E50',
-            sunny: '#FFD93D',
-            cream: '#FFF9EA',
-            mist: '#F0FFFC',
-            blush: '#FFF5F5'
+            forest: '#2C4A45',
+            deepTeal: '#1A7A7A',
+            mediumTeal: '#2EB8B8',
+            eucalyptus: '#5A9E8F',
+            ink: '#0F2B35',
+            gold: '#F5A623',
+            linen: '#F7F2EA',
+            seafoam: '#A8CFC4',
+            sand: '#E8D5B0'
           },
           boxShadow: {
-            glow: '0 24px 80px rgba(0, 184, 169, 0.22)',
-            coralGlow: '0 22px 70px rgba(255, 107, 107, 0.18)'
+            glow: '0 24px 80px rgba(26, 122, 122, 0.22)',
+            mediumTealGlow: '0 22px 70px rgba(46, 184, 184, 0.18)'
           },
           fontFamily: {
-            sans: ['Inter', 'Avenir Next', 'Nunito Sans', 'ui-sans-serif', 'system-ui', 'sans-serif']
+            sans: ['Barlow Condensed', 'Arial Narrow', 'ui-sans-serif', 'system-ui', 'sans-serif']
           }
         }
       }
     };
   </script>
   <style>
-    .focus-ring:focus-visible { outline: 4px solid rgba(255, 217, 61, .75); outline-offset: 3px; }
+    .focus-ring:focus-visible { outline: 4px solid rgba(245, 166, 35, .75); outline-offset: 3px; }
     .page-bg {
       background:
-        radial-gradient(circle at 14% 12%, rgba(255, 217, 61, .26), transparent 26%),
-        radial-gradient(circle at 82% 18%, rgba(255, 107, 107, .15), transparent 25%),
-        radial-gradient(circle at 50% 88%, rgba(0, 184, 169, .16), transparent 32%),
-        linear-gradient(135deg, #fffdf6 0%, #f0fffc 52%, #fff5f5 100%);
+        radial-gradient(circle at 14% 12%, rgba(245, 166, 35, .23), transparent 26%),
+        radial-gradient(circle at 82% 18%, rgba(46, 184, 184, .15), transparent 25%),
+        radial-gradient(circle at 50% 88%, rgba(26, 122, 122, .16), transparent 32%),
+        linear-gradient(135deg, #F7F2EA 0%, #A8CFC4 52%, #E8D5B0 100%);
     }
-    .logo-plate { background: linear-gradient(135deg, rgba(255,255,255,.96), rgba(255,249,234,.92)); }
+    .logo-plate { background: linear-gradient(135deg, rgba(247,242,234,.98), rgba(232,213,176,.45)); }
     .answer-card[aria-pressed="true"] {
-      border-color: #00B8A9;
-      background: #F0FFFC;
-      box-shadow: 0 18px 50px rgba(0, 184, 169, .14);
+      border-color: #1A7A7A;
+      background: #A8CFC4;
+      box-shadow: 0 18px 50px rgba(26, 122, 122, .14);
       transform: translateY(-2px);
     }
   </style>
 </head>
-<body class="page-bg min-h-screen text-navySoft antialiased">
-  <header class="sticky top-0 z-40 border-b border-tealWarm/10 bg-white/90 backdrop-blur-xl">
+<body class="page-bg min-h-screen font-sans text-ink antialiased">
+  <header class="sticky top-0 z-40 border-b border-deepTeal/10 bg-linen/95 backdrop-blur-xl">
     <nav class="mx-auto flex max-w-7xl items-center justify-between gap-4 px-4 py-3 sm:px-6 lg:px-8">
-      <a href="/" class="focus-ring logo-plate rounded-2xl px-2 py-1 shadow-sm ring-1 ring-navySoft/5">
-        <img src="/assets/logo/clear-code-reading-logo.png" alt="Clear Code Reading" class="h-12 w-auto max-w-[220px] object-contain sm:max-w-[300px]">
+      <a href="/" class="focus-ring logo-plate rounded-2xl px-2 py-1 shadow-sm ring-1 ring-ink/5">
+        <img src="/assets/logo/cc-lockup-linen-ui.png" alt="ClearCode Reading" class="h-12 w-auto max-w-[220px] object-contain sm:max-w-[300px]">
       </a>
       <div class="flex items-center gap-2 sm:gap-3">
-        <a href="/how-it-works/" class="hidden rounded-full px-4 py-2 text-sm font-black text-navySoft/70 transition hover:text-tealWarm md:inline-flex">How it works</a>
-        <a href="/families/" class="hidden rounded-full px-4 py-2 text-sm font-black text-navySoft/70 transition hover:text-tealWarm lg:inline-flex">For Families</a>
-        <a href="/approach/" class="hidden rounded-full px-4 py-2 text-sm font-black text-navySoft/70 transition hover:text-tealWarm lg:inline-flex">Our Approach</a>
-        <a href="/login/" class="hidden rounded-full px-4 py-2 text-sm font-black text-navySoft/70 transition hover:text-tealWarm sm:inline-flex">Login</a>
-        <a href="/contact/" class="focus-ring rounded-full bg-tealWarm px-4 py-3 text-sm font-extrabold text-white shadow-lg shadow-tealWarm/25 transition hover:-translate-y-0.5 hover:bg-[#00a699] sm:px-5">Consultation</a>
+        <a href="/how-it-works/" class="hidden rounded-full px-4 py-2 text-sm font-black text-ink/70 transition hover:text-deepTeal md:inline-flex">How it works</a>
+        <a href="/families/" class="hidden rounded-full px-4 py-2 text-sm font-black text-ink/70 transition hover:text-deepTeal lg:inline-flex">For Families</a>
+        <a href="/approach/" class="hidden rounded-full px-4 py-2 text-sm font-black text-ink/70 transition hover:text-deepTeal lg:inline-flex">Our Approach</a>
+        <a href="/login/" class="hidden rounded-full px-4 py-2 text-sm font-black text-ink/70 transition hover:text-deepTeal sm:inline-flex">Login</a>
+        <a href="/contact/" class="focus-ring rounded-full bg-deepTeal px-4 py-3 text-sm font-extrabold text-white shadow-lg shadow-deepTeal/25 transition hover:-translate-y-0.5 hover:bg-[#176a6a] sm:px-5">Consultation</a>
       </div>
     </nav>
   </header>
 
   <main class="mx-auto max-w-7xl px-4 py-10 sm:px-6 lg:px-8">
     <section class="grid gap-8 lg:grid-cols-[.9fr_1.1fr] lg:items-start">
-      <aside class="order-2 rounded-[2rem] bg-white/88 p-6 shadow-2xl shadow-tealWarm/10 ring-1 ring-tealWarm/10 lg:order-1 lg:sticky lg:top-28">
-        <p class="text-sm font-black uppercase tracking-[0.18em] text-coral">Optional family reading survey</p>
+      <aside class="order-2 rounded-[2rem] bg-white/88 p-6 shadow-2xl shadow-deepTeal/10 ring-1 ring-deepTeal/10 lg:order-1 lg:sticky lg:top-28">
+        <p class="text-sm font-black uppercase tracking-[0.18em] text-mediumTeal">Optional family reading survey</p>
         <h1 class="mt-3 text-3xl font-black leading-tight sm:text-5xl">Explore a snapshot of your child’s reading skills.</h1>
-        <p class="mt-5 text-lg leading-8 text-navySoft/70">
+        <p class="mt-5 text-lg leading-8 text-ink/70">
           This short survey explores phonemic awareness, phonics, sight words, fluency, vocabulary, comprehension, writing readiness, and reading confidence.
         </p>
-        <div class="mt-6 grid gap-3 text-sm font-bold text-navySoft/70 sm:grid-cols-2 lg:grid-cols-1 xl:grid-cols-2">
-          <span class="rounded-2xl bg-mist px-4 py-3">8-10 minutes</span>
-          <span class="rounded-2xl bg-blush px-4 py-3">Ages 4-10</span>
-          <span class="rounded-2xl bg-cream px-4 py-3">Parent-friendly result</span>
-          <span class="rounded-2xl bg-white px-4 py-3 ring-1 ring-navySoft/10">Human review ready</span>
+        <div class="mt-6 grid gap-3 text-sm font-bold text-ink/70 sm:grid-cols-2 lg:grid-cols-1 xl:grid-cols-2">
+          <span class="rounded-2xl bg-seafoam px-4 py-3">8-10 minutes</span>
+          <span class="rounded-2xl bg-sand px-4 py-3">Ages 4-10</span>
+          <span class="rounded-2xl bg-linen px-4 py-3">Parent-friendly result</span>
+          <span class="rounded-2xl bg-white px-4 py-3 ring-1 ring-ink/10">Human review ready</span>
         </div>
-        <p class="mt-6 rounded-2xl bg-navySoft px-4 py-3 text-sm leading-6 text-white/85">
+        <p class="mt-6 rounded-2xl bg-ink px-4 py-3 text-sm leading-6 text-white/85">
           This is an education-side snapshot—not a diagnosis and not a PFR or OG+ placement instrument. A trained specialist uses methodology-specific evidence for placement.
         </p>
       </aside>
 
-      <section class="order-1 rounded-[2rem] bg-white p-5 shadow-2xl shadow-navySoft/10 ring-1 ring-navySoft/10 sm:p-8 lg:order-2">
+      <section class="order-1 rounded-[2rem] bg-white p-5 shadow-2xl shadow-ink/10 ring-1 ring-ink/10 sm:p-8 lg:order-2">
         <div id="assessment-app">
           <div class="mb-6">
             <div class="flex items-center justify-between gap-4">
               <div>
-                <p id="step-eyebrow" class="text-sm font-black uppercase tracking-[0.18em] text-tealWarm">Step 1 of 12</p>
+                <p id="step-eyebrow" class="text-sm font-black uppercase tracking-[0.18em] text-deepTeal">Step 1 of 12</p>
                 <h2 id="step-title" class="mt-2 text-2xl font-black sm:text-4xl">Let’s meet your reader.</h2>
-                <button id="read-current-button" class="focus-ring group mt-4 inline-flex min-h-14 items-center gap-3 rounded-full bg-tealWarm px-5 py-3 text-base font-black text-white shadow-lg shadow-tealWarm/25 ring-2 ring-white transition hover:-translate-y-0.5 hover:bg-[#00a699]" type="button" aria-label="Tap to hear this question read aloud">
-                  <span class="grid h-9 w-9 place-items-center rounded-full bg-white text-xl text-tealWarm shadow-sm transition group-hover:scale-105" aria-hidden="true">▶</span>
+                <button id="read-current-button" class="focus-ring group mt-4 inline-flex min-h-14 items-center gap-3 rounded-full bg-deepTeal px-5 py-3 text-base font-black text-white shadow-lg shadow-deepTeal/25 ring-2 ring-white transition hover:-translate-y-0.5 hover:bg-[#176a6a]" type="button" aria-label="Tap to hear this question read aloud">
+                  <span class="grid h-9 w-9 place-items-center rounded-full bg-white text-xl text-deepTeal shadow-sm transition group-hover:scale-105" aria-hidden="true">▶</span>
                   <span id="read-current-label">Tap to hear</span>
                   <span class="hidden text-xl sm:inline" aria-hidden="true">🔊</span>
                 </button>
-                <p class="mt-2 text-sm font-bold text-navySoft/55">Press the speaker to hear the question.</p>
+                <p class="mt-2 text-sm font-bold text-ink/55">Press the speaker to hear the question.</p>
               </div>
-              <div class="hidden h-20 w-20 place-items-center overflow-hidden rounded-3xl bg-white shadow-md ring-1 ring-tealWarm/15 sm:grid">
-                <img src="/assets/logo/clear-code-reading-icon.png" alt="" class="h-20 w-20 object-cover">
+              <div class="hidden h-20 w-20 place-items-center overflow-hidden rounded-3xl bg-white shadow-md ring-1 ring-deepTeal/15 sm:grid">
+                <img src="/assets/logo/cc-monogram-forest-euc.png" alt="" class="h-20 w-20 object-cover">
               </div>
             </div>
-            <div class="mt-6 h-3 overflow-hidden rounded-full bg-navySoft/10">
-              <div id="progress-bar" class="h-full w-[8%] rounded-full bg-gradient-to-r from-tealWarm via-sunny to-coral transition-all duration-500"></div>
+            <div class="mt-6 h-3 overflow-hidden rounded-full bg-ink/10">
+              <div id="progress-bar" class="h-full w-[8%] rounded-full bg-gradient-to-r from-deepTeal via-gold to-mediumTeal transition-all duration-500"></div>
             </div>
           </div>
 
           <div id="step-body"></div>
 
           <div class="mt-8 flex flex-col-reverse gap-3 sm:flex-row sm:justify-between">
-            <button id="back-button" class="focus-ring rounded-full bg-navySoft/5 px-6 py-4 font-black text-navySoft transition hover:bg-navySoft/10" type="button">Back</button>
-            <button id="next-button" class="focus-ring rounded-full bg-tealWarm px-7 py-4 font-black text-white shadow-glow transition hover:-translate-y-0.5 hover:bg-[#00a699]" type="button">Next</button>
+            <button id="back-button" class="focus-ring rounded-full bg-ink/5 px-6 py-4 font-black text-ink transition hover:bg-ink/10" type="button">Back</button>
+            <button id="next-button" class="focus-ring rounded-full bg-deepTeal px-7 py-4 font-black text-white shadow-glow transition hover:-translate-y-0.5 hover:bg-[#176a6a]" type="button">Next</button>
           </div>
         </div>
       </section>
     </section>
   </main>
 
-  <footer class="bg-navySoft px-4 py-10 text-white sm:px-6 lg:px-8">
+  <footer class="bg-ink px-4 py-10 text-white sm:px-6 lg:px-8">
     <div class="mx-auto flex max-w-7xl flex-col gap-6 md:flex-row md:items-center md:justify-between">
       <div>
-        <span class="logo-plate inline-flex rounded-2xl p-2"><img src="/assets/logo/clear-code-reading-logo.png" alt="ClearCode Reading" class="h-11 w-auto max-w-[220px] object-contain"></span>
+        <span class="logo-plate inline-flex rounded-2xl p-2"><img src="/assets/logo/cc-lockup-linen-ui.png" alt="ClearCode Reading" class="h-11 w-auto max-w-[220px] object-contain"></span>
         <p class="mt-3 max-w-xl text-sm text-white/70">Specialist-led structured literacy intervention with clear parent visibility.</p>
       </div>
       <div class="flex flex-wrap gap-5 text-sm font-bold text-white/75">
-        <a href="/how-it-works/" class="hover:text-sunny">How it works</a>
-        <a href="/families/" class="hover:text-sunny">For Families</a>
-        <a href="/approach/" class="hover:text-sunny">Our Approach</a>
-        <a href="/privacy/" class="hover:text-sunny">Privacy</a>
-        <a href="/contact/" class="hover:text-sunny">Contact</a>
+        <a href="/how-it-works/" class="hover:text-gold">How it works</a>
+        <a href="/families/" class="hover:text-gold">For Families</a>
+        <a href="/approach/" class="hover:text-gold">Our Approach</a>
+        <a href="/privacy/" class="hover:text-gold">Privacy</a>
+        <a href="/contact/" class="hover:text-gold">Contact</a>
       </div>
     </div>
   </footer>
@@ -138,12 +143,12 @@
   <template id="intro-template">
     <div class="grid gap-5">
       <label class="block">
-        <span class="text-sm font-black text-navySoft">Child first name</span>
-        <input id="child-name" class="mt-2 w-full rounded-2xl border border-navySoft/15 px-4 py-4 text-lg font-bold focus:border-tealWarm focus:outline-none" placeholder="Avery" autocomplete="off">
+        <span class="text-sm font-black text-ink">Child first name</span>
+        <input id="child-name" class="mt-2 w-full rounded-2xl border border-ink/15 px-4 py-4 text-lg font-bold focus:border-deepTeal focus:outline-none" placeholder="Avery" autocomplete="off">
       </label>
       <label class="block">
-        <span class="text-sm font-black text-navySoft">Child age</span>
-        <select id="child-age" class="mt-2 w-full rounded-2xl border border-navySoft/15 px-4 py-4 text-lg font-bold focus:border-tealWarm focus:outline-none">
+        <span class="text-sm font-black text-ink">Child age</span>
+        <select id="child-age" class="mt-2 w-full rounded-2xl border border-ink/15 px-4 py-4 text-lg font-bold focus:border-deepTeal focus:outline-none">
           <option value="">Choose age</option>
           <option value="4">4</option>
           <option value="5">5</option>
@@ -154,9 +159,9 @@
           <option value="10">10</option>
         </select>
       </label>
-      <div class="rounded-3xl bg-cream p-5">
+      <div class="rounded-3xl bg-linen p-5">
         <h3 class="text-lg font-black">How to answer</h3>
-        <p class="mt-2 text-navySoft/70">Sit with your child. Let them answer the reading questions. For fluency, listen for smoothness, accuracy, and confidence.</p>
+        <p class="mt-2 text-ink/70">Sit with your child. Let them answer the reading questions. For fluency, listen for smoothness, accuracy, and confidence.</p>
       </div>
     </div>
   </template>
@@ -380,7 +385,7 @@
 
     function speak(parts) {
       if (!('speechSynthesis' in window)) {
-        body.insertAdjacentHTML('beforeend', '<p class="mt-4 rounded-2xl bg-blush px-4 py-3 text-sm font-black text-coral">Read aloud is not available in this browser.</p>');
+        body.insertAdjacentHTML('beforeend', '<p class="mt-4 rounded-2xl bg-sand px-4 py-3 text-sm font-black text-mediumTeal">Read aloud is not available in this browser.</p>');
         return;
       }
       window.speechSynthesis.cancel();
@@ -419,7 +424,7 @@
       if (existing) existing.remove();
       body.insertAdjacentHTML(
         'beforeend',
-        '<p id="audio-status-message" class="mt-4 rounded-2xl bg-blush px-4 py-3 text-sm font-black text-coral">The ElevenLabs voice is not connected yet, so I am using this device voice for now.</p>'
+        '<p id="audio-status-message" class="mt-4 rounded-2xl bg-sand px-4 py-3 text-sm font-black text-mediumTeal">The ElevenLabs voice is not connected yet, so I am using this device voice for now.</p>'
       );
     }
 
@@ -460,7 +465,7 @@
     function speechTextForStep(step) {
       if (step.type === 'intro') {
         return [
-          { text: 'Hi there. Welcome to Clear Code Reading.', rate: 0.82, pitch: 1.06, pause: 350 },
+          { text: 'Hi there. Welcome to ClearCode Reading.', rate: 0.82, pitch: 1.06, pause: 350 },
           { text: 'First, type your child’s name and choose their age.', rate: 0.8, pause: 300 },
           { text: 'Then sit together and let your child answer the reading questions.', rate: 0.8 }
         ];
@@ -515,14 +520,14 @@
 
     function renderQuestion(step) {
       body.innerHTML = `
-        <div class="rounded-3xl bg-cream p-5">
-          <p class="text-sm font-black uppercase tracking-[0.16em] text-coral">${kpiLabels[step.kpi]}</p>
+        <div class="rounded-3xl bg-linen p-5">
+          <p class="text-sm font-black uppercase tracking-[0.16em] text-mediumTeal">${kpiLabels[step.kpi]}</p>
           <p class="mt-3 text-2xl font-black leading-snug">${step.prompt}</p>
-          <p class="mt-3 text-sm leading-6 text-navySoft/65">${step.why}</p>
+          <p class="mt-3 text-sm leading-6 text-ink/65">${step.why}</p>
         </div>
         <div class="mt-5 grid gap-3 sm:grid-cols-2">
           ${step.options.map((option, index) => `
-            <button type="button" class="answer-card focus-ring rounded-3xl border-2 border-navySoft/10 bg-white p-5 text-left font-black text-navySoft shadow-sm transition hover:-translate-y-0.5 hover:border-tealWarm/70" data-answer="${index}" aria-pressed="${state.answers[step.kpi] === index}">
+            <button type="button" class="answer-card focus-ring rounded-3xl border-2 border-ink/10 bg-white p-5 text-left font-black text-ink shadow-sm transition hover:-translate-y-0.5 hover:border-deepTeal/70" data-answer="${index}" aria-pressed="${state.answers[step.kpi] === index}">
               ${option.label}
             </button>
           `).join('')}
@@ -571,13 +576,13 @@
             : `${name} is reading close to the selected age band.`;
 
       body.innerHTML = `
-        <div class="rounded-[2rem] bg-gradient-to-br from-tealWarm to-[#007D78] p-7 text-white shadow-glow">
-          <p class="text-sm font-black uppercase tracking-[0.18em] text-sunny">Digital reading estimate</p>
+        <div class="rounded-[2rem] bg-gradient-to-br from-deepTeal to-[#007D78] p-7 text-white shadow-glow">
+          <p class="text-sm font-black uppercase tracking-[0.18em] text-gold">Digital reading estimate</p>
           <h3 class="mt-3 text-4xl font-black sm:text-6xl">You are reading at a ${levelText}</h3>
           <p class="mt-4 text-lg leading-8 text-white/85">${gapCopy}</p>
         </div>
 
-        <form class="mt-6 rounded-[2rem] bg-white p-5 shadow-xl shadow-tealWarm/10 ring-2 ring-tealWarm/15" method="post" action="/crm/signup/">
+        <form class="mt-6 rounded-[2rem] bg-white p-5 shadow-xl shadow-deepTeal/10 ring-2 ring-deepTeal/15" method="post" action="/crm/signup/">
           <input type="hidden" name="csrfmiddlewaretoken" value="${getCookie('csrftoken')}">
           <input type="hidden" name="audience" value="parent">
           <input type="hidden" name="organization_name" value="Reading assessment follow-up">
@@ -585,42 +590,42 @@
           <input type="hidden" name="notes" value="${escapeAttribute(`Assessment follow-up requested for ${name}. Estimated reading age: ${levelText}. Best next step: ${growthList[0]}.`)}">
           <div class="flex flex-col gap-2 md:flex-row md:items-start md:justify-between">
             <div>
-              <p class="text-sm font-black uppercase tracking-[0.16em] text-coral">Specialist consultation</p>
+              <p class="text-sm font-black uppercase tracking-[0.16em] text-mediumTeal">Specialist consultation</p>
               <h4 class="mt-2 text-2xl font-black">Want to discuss this with a specialist?</h4>
-              <p class="mt-2 text-sm leading-6 text-navySoft/65">Enter the parent or guardian contact info and the ClearCode Reading team can follow up about a consultation.</p>
+              <p class="mt-2 text-sm leading-6 text-ink/65">Enter the parent or guardian contact info and the ClearCode Reading team can follow up about a consultation.</p>
             </div>
-            <span class="rounded-full bg-mist px-4 py-2 text-sm font-black text-tealWarm">Recommended</span>
+            <span class="rounded-full bg-seafoam px-4 py-2 text-sm font-black text-deepTeal">Recommended</span>
           </div>
           <div class="mt-5 grid gap-3 md:grid-cols-[1fr_1fr_auto]">
             <label class="block">
-              <span class="text-sm font-black text-navySoft/65">Your name</span>
-              <input class="mt-2 w-full rounded-2xl border border-navySoft/15 px-4 py-3 font-bold focus:border-tealWarm focus:outline-none" type="text" name="name" autocomplete="name" required>
+              <span class="text-sm font-black text-ink/65">Your name</span>
+              <input class="mt-2 w-full rounded-2xl border border-ink/15 px-4 py-3 font-bold focus:border-deepTeal focus:outline-none" type="text" name="name" autocomplete="name" required>
             </label>
             <label class="block">
-              <span class="text-sm font-black text-navySoft/65">Email address</span>
-              <input class="mt-2 w-full rounded-2xl border border-navySoft/15 px-4 py-3 font-bold focus:border-tealWarm focus:outline-none" type="email" name="email" autocomplete="email" required>
+              <span class="text-sm font-black text-ink/65">Email address</span>
+              <input class="mt-2 w-full rounded-2xl border border-ink/15 px-4 py-3 font-bold focus:border-deepTeal focus:outline-none" type="email" name="email" autocomplete="email" required>
             </label>
-            <button class="focus-ring self-end rounded-full bg-coral px-6 py-3 font-black text-white shadow-lg shadow-coral/20 transition hover:-translate-y-0.5 hover:bg-[#ff5757]" type="submit">Request consultation</button>
+            <button class="focus-ring self-end rounded-full bg-mediumTeal px-6 py-3 font-black text-white shadow-lg shadow-mediumTeal/20 transition hover:-translate-y-0.5 hover:bg-[#277f73]" type="submit">Request consultation</button>
           </div>
         </form>
 
         <div class="mt-6 grid gap-4 sm:grid-cols-3">
-          <div class="rounded-3xl bg-cream p-5">
-            <p class="text-sm font-black text-navySoft/55">Overall readiness</p>
-            <p class="mt-2 text-3xl font-black text-tealWarm">${Math.round(result.overall * 100)}%</p>
+          <div class="rounded-3xl bg-linen p-5">
+            <p class="text-sm font-black text-ink/55">Overall readiness</p>
+            <p class="mt-2 text-3xl font-black text-deepTeal">${Math.round(result.overall * 100)}%</p>
           </div>
-          <div class="rounded-3xl bg-blush p-5">
-            <p class="text-sm font-black text-navySoft/55">Best next step</p>
-            <p class="mt-2 text-xl font-black text-coral">${growthList[0]}</p>
+          <div class="rounded-3xl bg-sand p-5">
+            <p class="text-sm font-black text-ink/55">Best next step</p>
+            <p class="mt-2 text-xl font-black text-mediumTeal">${growthList[0]}</p>
           </div>
-          <div class="rounded-3xl bg-mist p-5">
-            <p class="text-sm font-black text-navySoft/55">Review status</p>
-            <p class="mt-2 text-xl font-black text-tealWarm">Ready to discuss</p>
+          <div class="rounded-3xl bg-seafoam p-5">
+            <p class="text-sm font-black text-ink/55">Review status</p>
+            <p class="mt-2 text-xl font-black text-deepTeal">Ready to discuss</p>
           </div>
         </div>
 
         <div class="mt-6 grid gap-5 lg:grid-cols-2">
-          <div class="rounded-3xl bg-white p-5 shadow-sm ring-1 ring-navySoft/10">
+          <div class="rounded-3xl bg-white p-5 shadow-sm ring-1 ring-ink/10">
             <h4 class="text-xl font-black">Reading KPI map</h4>
             <div class="mt-4 space-y-3">
               ${Object.entries(result.scores).map(([key, score]) => `
@@ -629,31 +634,31 @@
                     <span>${kpiLabels[key]}</span>
                     <span>${Math.round(score * 100)}%</span>
                   </div>
-                  <div class="mt-1 h-2 overflow-hidden rounded-full bg-navySoft/10">
-                    <div class="h-full rounded-full bg-gradient-to-r from-tealWarm via-sunny to-coral" style="width:${Math.round(score * 100)}%"></div>
+                  <div class="mt-1 h-2 overflow-hidden rounded-full bg-ink/10">
+                    <div class="h-full rounded-full bg-gradient-to-r from-deepTeal via-gold to-mediumTeal" style="width:${Math.round(score * 100)}%"></div>
                   </div>
                 </div>
               `).join('')}
             </div>
           </div>
 
-          <div class="rounded-3xl bg-white p-5 shadow-sm ring-1 ring-navySoft/10">
+          <div class="rounded-3xl bg-white p-5 shadow-sm ring-1 ring-ink/10">
             <h4 class="text-xl font-black">Personalized recommendation</h4>
-            <p class="mt-3 text-navySoft/70">A specialist may explore these instructional priorities with ${name}:</p>
+            <p class="mt-3 text-ink/70">A specialist may explore these instructional priorities with ${name}:</p>
             <ul class="mt-4 space-y-3">
-              ${growthList.map(item => `<li class="rounded-2xl bg-blush px-4 py-3 font-bold text-navySoft">${item}</li>`).join('')}
+              ${growthList.map(item => `<li class="rounded-2xl bg-sand px-4 py-3 font-bold text-ink">${item}</li>`).join('')}
             </ul>
             <h4 class="mt-6 text-xl font-black">Strengths to celebrate</h4>
             <ul class="mt-4 space-y-3">
-              ${strengthList.map(item => `<li class="rounded-2xl bg-mist px-4 py-3 font-bold text-navySoft">${item}</li>`).join('')}
+              ${strengthList.map(item => `<li class="rounded-2xl bg-seafoam px-4 py-3 font-bold text-ink">${item}</li>`).join('')}
             </ul>
           </div>
         </div>
 
-        <div class="mt-6 rounded-3xl bg-navySoft p-5 text-white">
+        <div class="mt-6 rounded-3xl bg-ink p-5 text-white">
           <h4 class="text-xl font-black">What happens next?</h4>
           <p class="mt-3 leading-7 text-white/80">A trained specialist can review the broader reading history and use methodology-specific evidence to determine whether PFR or OG+ placement is appropriate. This survey alone does not make that decision.</p>
-          <a href="/contact/" class="mt-5 inline-flex rounded-full bg-white px-6 py-3 font-black text-tealWarm transition hover:-translate-y-0.5">Schedule a consultation</a>
+          <a href="/contact/" class="mt-5 inline-flex rounded-full bg-white px-6 py-3 font-black text-deepTeal transition hover:-translate-y-0.5">Schedule a consultation</a>
         </div>
       `;
     }
@@ -690,7 +695,7 @@
         return;
       }
       if (!canAdvance()) {
-        body.insertAdjacentHTML('beforeend', '<p class="mt-4 rounded-2xl bg-blush px-4 py-3 text-sm font-black text-coral">Please answer this step before continuing.</p>');
+        body.insertAdjacentHTML('beforeend', '<p class="mt-4 rounded-2xl bg-sand px-4 py-3 text-sm font-black text-mediumTeal">Please answer this step before continuing.</p>');
         return;
       }
       state.stepIndex += 1;
