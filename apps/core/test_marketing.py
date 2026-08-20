@@ -63,6 +63,7 @@ class MarketingPageTests(SimpleTestCase):
         content = self._render("marketing_home")
 
         self.assertIn("Reading intervention that shows clear progress", content)
+        self.assertIn("Unlock Reading. Unlock Everything.", content)
         self.assertIn("Schedule a consultation", content)
         self.assertIn("Live parent dashboard", content)
         self.assertNotIn("For schools &amp; teachers", content)
@@ -113,10 +114,12 @@ class MarketingPageTests(SimpleTestCase):
             with self.subTest(route_name=route_name):
                 self.assertIn("Barlow+Condensed", content)
                 self.assertIn("/assets/logo/cc-lockup-linen-ui.png", content)
+                self.assertIn("/assets/logo/cc-lockup-ink-ui.png", content)
                 self.assertIn("/assets/logo/cc-favicon-gold-teal-32.png", content)
                 self.assertIn("/assets/logo/cc-apple-touch-icon-gold-teal-180.png", content)
                 self.assertNotIn("clear-code-reading-logo", content)
                 self.assertNotIn("clear-code-reading-icon", content)
+                self.assertNotIn("logo-plate", content)
 
         homepage = self._render("marketing_home")
         for color in BRAND_COLORS:
