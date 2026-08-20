@@ -54,16 +54,15 @@
       background-image: radial-gradient(rgba(15, 43, 53, .11) 1px, transparent 1px);
       background-size: 22px 22px;
     }
-    .logo-plate { background: linear-gradient(135deg, rgba(247,242,234,.98), rgba(232,213,176,.45)); }
     summary::-webkit-details-marker { display: none; }
   </style>
   {% block extra_head %}{% endblock %}
 </head>
 <body class="bg-linen font-sans text-ink antialiased">
   <a href="#main-content" class="focus-ring fixed left-4 top-3 z-[70] -translate-y-24 rounded-full bg-ink px-5 py-3 font-black text-white transition focus:translate-y-0">Skip to content</a>
-  <header class="sticky inset-x-0 top-0 z-50 border-b border-deepTeal/10 bg-linen/95 backdrop-blur-xl">
+  <header class="sticky inset-x-0 top-0 z-50 border-b border-deepTeal/10 bg-linen">
     <nav class="mx-auto flex max-w-7xl items-center justify-between gap-3 px-4 py-3 sm:px-6 lg:px-8" aria-label="Main navigation">
-      <a href="/" class="focus-ring logo-plate flex shrink-0 items-center rounded-2xl px-2 py-1 shadow-sm ring-1 ring-ink/5">
+      <a href="/" class="focus-ring flex shrink-0 items-center rounded-lg">
         <img src="/assets/logo/cc-lockup-linen-ui.png" alt="ClearCode Reading home" class="h-11 w-auto max-w-[150px] object-contain sm:h-12 sm:max-w-[220px]">
       </a>
       <div class="hidden items-center gap-5 text-sm font-black text-ink/75 xl:flex">
@@ -109,8 +108,8 @@
   <footer class="bg-ink px-4 py-12 text-white sm:px-6 lg:px-8">
     <div class="mx-auto grid max-w-7xl gap-10 lg:grid-cols-[1fr_auto] lg:items-start">
       <div>
-        <span class="logo-plate inline-flex rounded-2xl p-2 shadow-sm">
-          <img src="/assets/logo/cc-lockup-linen-ui.png" alt="ClearCode Reading" class="h-12 w-auto max-w-[240px] object-contain">
+        <span class="inline-flex">
+          <img src="/assets/logo/cc-lockup-ink-ui.png" alt="ClearCode Reading" class="h-12 w-auto max-w-[240px] object-contain">
         </span>
         <p class="mt-4 max-w-xl text-sm leading-6 text-white/70">Specialist-led structured literacy intervention with precise placement and live parent visibility.</p>
         <p class="mt-2 text-sm font-bold text-gold">Unlock Reading. Unlock Everything.</p>
