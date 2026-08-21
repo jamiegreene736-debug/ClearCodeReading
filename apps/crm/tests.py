@@ -440,6 +440,15 @@ class CrmWorkspaceTests(TestCase):
         self.assertEqual(anonymous_response.status_code, 302)
         self.assertEqual(guardian_response.status_code, 403)
 
+    def test_admin_dashboard_header_has_direct_crm_button(self):
+        self.client.force_login(self.admin_user)
+
+        response = self.client.get(reverse("portal_dashboard"))
+
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, 'data-testid="crm-header-link"')
+        self.assertContains(response, f'href="{reverse("crm_contact_list")}"')
+
     def test_non_staff_school_admin_is_not_available_as_a_crm_owner(self):
         user_model = get_user_model()
         school_admin = user_model.objects.create_user(

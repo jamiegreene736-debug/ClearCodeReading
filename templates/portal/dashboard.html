@@ -54,6 +54,11 @@
         <a href="/inbox/" class="hidden rounded-full px-4 py-2 text-sm font-black text-ink/70 transition hover:text-deepTeal sm:inline-flex">Inbox</a>
         {% if request.user.is_staff %}
           <a href="/admin/blog/blogpost/" class="hidden rounded-full px-4 py-2 text-sm font-black text-ink/70 transition hover:text-deepTeal lg:inline-flex">Blog posts</a>
+        {% endif %}
+        {% if request.user.is_staff or request.user.is_superuser or request.user.role == 'super_admin' %}
+          <a data-testid="crm-header-link" href="{% url 'crm_contact_list' %}" class="focus-ring hidden rounded-full bg-ink px-5 py-3 text-sm font-black text-white shadow-lg shadow-ink/15 transition hover:-translate-y-0.5 hover:bg-deepTeal sm:inline-flex">CRM</a>
+        {% endif %}
+        {% if request.user.is_staff %}
           <a href="/admin/" class="hidden rounded-full px-4 py-2 text-sm font-black text-ink/70 transition hover:text-deepTeal sm:inline-flex">Admin</a>
         {% endif %}
         <form method="post" action="{% url 'logout' %}">
@@ -359,7 +364,7 @@
               <div class="flex gap-2 text-sm font-black">
                 <span class="rounded-full bg-seafoam px-4 py-2 text-deepTeal">{{ lead_count }} total</span>
                 <span class="rounded-full bg-sand px-4 py-2 text-mediumTeal">{{ new_lead_count }} new</span>
-                {% if request.user.is_staff or request.user.is_superuser %}
+                {% if request.user.is_staff or request.user.is_superuser or request.user.role == 'super_admin' %}
                   <a class="focus-ring rounded-full bg-ink px-4 py-2 text-white transition hover:bg-deepTeal" href="{% url 'crm_contact_list' %}">Open CRM</a>
                 {% endif %}
               </div>
@@ -370,7 +375,7 @@
                   <div class="flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
                     <div>
                       <div class="flex flex-wrap items-center gap-2">
-                        <h3 class="text-xl font-black">{% if request.user.is_staff or request.user.is_superuser %}<a class="hover:text-deepTeal" href="{% url 'crm_contact_detail' lead.pk %}">{{ lead.contact_name }}</a>{% else %}{{ lead.contact_name }}{% endif %}</h3>
+                        <h3 class="text-xl font-black">{% if request.user.is_staff or request.user.is_superuser or request.user.role == 'super_admin' %}<a class="hover:text-deepTeal" href="{% url 'crm_contact_detail' lead.pk %}">{{ lead.contact_name }}</a>{% else %}{{ lead.contact_name }}{% endif %}</h3>
                         <span class="rounded-full bg-white px-3 py-1 text-xs font-black text-ink/60">{{ lead.get_audience_display }}</span>
                         <span class="rounded-full bg-white px-3 py-1 text-xs font-black text-deepTeal">{{ lead.get_status_display }}</span>
                       </div>
