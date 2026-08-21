@@ -34,7 +34,7 @@ class CrmTests(SimpleTestCase):
     def test_homepage_positions_clear_code_as_specialist_led_intervention(self):
         homepage = render_to_string("index.html")
 
-        self.assertIn("Clear progress.", homepage)
+        self.assertIn("Reading intervention that shows clear progress", homepage)
         self.assertIn("Specialist-led structured literacy", homepage)
         self.assertIn("Schedule a consultation", homepage)
         self.assertIn("Phonics for Reading", homepage)

@@ -1,5 +1,6 @@
 from django.contrib import admin
 from django.conf import settings
+from django.conf.urls.static import static
 from django.contrib.auth.views import LogoutView
 from django.urls import include, path
 from django.views.generic import TemplateView
@@ -37,6 +38,7 @@ urlpatterns = [
     path("privacy/", TemplateView.as_view(template_name="privacy.html"), name="marketing_privacy"),
     path("approach/", TemplateView.as_view(template_name="approach.html"), name="marketing_approach"),
     path("assessment/", TemplateView.as_view(template_name="assessment.html"), name="reading_assessment"),
+    path("blog/", include("apps.blog.urls")),
     path("login/", PortalLoginView.as_view(), name="login"),
     path("logout/", LogoutView.as_view(next_page="/"), name="logout"),
     path("dashboard/", PortalDashboardView.as_view(), name="portal_dashboard"),
@@ -59,3 +61,6 @@ urlpatterns = [
     path("admin/", admin.site.urls),
     path("api/", include("apps.api.urls")),
 ]
+
+if settings.DEBUG:
+    urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)

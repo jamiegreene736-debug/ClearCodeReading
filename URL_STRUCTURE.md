@@ -9,6 +9,8 @@
 - `/privacy/`
 - `/contact/`
 - `/assessment/`
+- `/blog/`
+- `/blog/<slug>/`
 - `/login/`
 - `/crm/signup/`
 - `/admin/`
@@ -73,6 +75,8 @@
 | `/privacy/` | Plain-language FERPA-oriented privacy and consent overview |
 | `/contact/` | Primary family consultation form |
 | `/assessment/` | Optional secondary reading survey |
+| `/blog/` | Published reading insights and resources |
+| `/blog/<slug>/` | Public article detail; drafts and scheduled posts return 404 |
 | `/crm/signup/` | POST-only CRM lead capture used by public inquiry forms |
 
 ## `clearcodereading/urls.py`

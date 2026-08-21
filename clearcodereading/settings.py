@@ -37,6 +37,7 @@ SHARED_APPS = [
     "corsheaders",
     "drf_spectacular",
     "apps.core",
+    "apps.blog.apps.BlogConfig",
     "apps.notifications.apps.NotificationsConfig",
     "apps.users",
     "apps.crm",

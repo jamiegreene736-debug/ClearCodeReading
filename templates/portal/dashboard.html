@@ -53,6 +53,7 @@
       <div class="flex items-center gap-3">
         <a href="/inbox/" class="hidden rounded-full px-4 py-2 text-sm font-black text-ink/70 transition hover:text-deepTeal sm:inline-flex">Inbox</a>
         {% if request.user.is_staff %}
+          <a href="/admin/blog/blogpost/" class="hidden rounded-full px-4 py-2 text-sm font-black text-ink/70 transition hover:text-deepTeal lg:inline-flex">Blog posts</a>
           <a href="/admin/" class="hidden rounded-full px-4 py-2 text-sm font-black text-ink/70 transition hover:text-deepTeal sm:inline-flex">Admin</a>
         {% endif %}
         <form method="post" action="{% url 'logout' %}">

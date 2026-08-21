@@ -82,6 +82,7 @@ class MarketingPageTests(SimpleTestCase):
             "/how-it-works/",
             "/families/",
             "/approach/",
+            "/blog/",
             "/privacy/",
             "/contact/",
             "/login/",
