@@ -15,7 +15,8 @@ RUN pip install --upgrade pip \
     && pip install -r requirements.txt
 
 COPY . .
-RUN chmod +x /app/scripts/entrypoint.sh
+RUN python manage.py collectstatic --noinput \
+    && chmod +x /app/scripts/entrypoint.sh
 
 EXPOSE 8000
 
