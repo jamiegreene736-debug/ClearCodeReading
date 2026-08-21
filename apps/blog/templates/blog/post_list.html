@@ -1,0 +1,85 @@
+{% extends "base_marketing.html" %}
+
+{% block title %}Reading Insights | ClearCode Reading Blog{% endblock %}
+{% block meta_description %}Practical structured-literacy guidance, reading progress insights, and clear next steps for families and specialists.{% endblock %}
+{% block og_title %}Reading Insights | ClearCode Reading{% endblock %}
+{% block og_description %}Clear, practical guidance for helping readers build skills and confidence.{% endblock %}
+
+{% block content %}
+  <section class="hero-wash overflow-hidden py-16 sm:py-24">
+    <div class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+      <p class="inline-flex rounded-full bg-white px-4 py-2 text-sm font-black uppercase tracking-[.14em] text-deepTeal shadow-sm ring-1 ring-deepTeal/15">ClearCode Reading blog</p>
+      <h1 class="mt-6 max-w-4xl text-4xl font-black leading-[1.05] tracking-tight text-ink sm:text-6xl">Reading insights, made clear.</h1>
+      <p class="mt-6 max-w-2xl text-lg leading-8 text-ink/75 sm:text-xl">Practical structured-literacy guidance, progress insights, and thoughtful next steps for families and reading specialists.</p>
+    </div>
+  </section>
+
+  <section class="bg-white py-16 sm:py-20">
+    <div class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+      {% if posts %}
+        <div class="grid gap-6 lg:grid-cols-2">
+          {% for post in posts %}
+            <article class="group flex h-full flex-col overflow-hidden rounded-[2rem] {% if forloop.first %}bg-ink text-white lg:col-span-2 lg:grid lg:grid-cols-[1.05fr_.95fr]{% else %}bg-linen text-ink{% endif %} shadow-xl shadow-deepTeal/10 ring-1 ring-deepTeal/10">
+              {% if post.cover_image %}
+                <a href="{{ post.get_absolute_url }}" class="focus-ring block overflow-hidden {% if forloop.first %}lg:min-h-[28rem]{% else %}aspect-[16/9]{% endif %}">
+                  <img src="{{ post.cover_image.url }}" alt="{{ post.cover_image_alt }}" class="h-full w-full object-cover transition duration-500 group-hover:scale-[1.03]" {% if not forloop.first %}loading="lazy"{% endif %}>
+                </a>
+              {% else %}
+                <a href="{{ post.get_absolute_url }}" class="focus-ring dot-grid grid min-h-64 place-items-center overflow-hidden {% if forloop.first %}bg-deepTeal lg:min-h-[28rem]{% else %}bg-seafoam{% endif %}" aria-label="Read {{ post.title }}">
+                  <span class="grid h-24 w-24 place-items-center rounded-[2rem] {% if forloop.first %}bg-gold text-ink{% else %}bg-white text-deepTeal{% endif %} text-3xl font-black shadow-xl">Cc</span>
+                </a>
+              {% endif %}
+              <div class="flex flex-1 flex-col p-7 sm:p-9">
+                <div class="flex flex-wrap items-center gap-3 text-xs font-black uppercase tracking-[.14em] {% if forloop.first %}text-gold{% else %}text-deepTeal{% endif %}">
+                  {% if post.category %}<span>{{ post.category }}</span><span aria-hidden="true">·</span>{% endif %}
+                  <time datetime="{{ post.published_at|date:'c' }}">{{ post.published_at|date:"M j, Y" }}</time>
+                  {% if post.is_featured %}<span class="rounded-full {% if forloop.first %}bg-white/10{% else %}bg-seafoam{% endif %} px-3 py-1">Featured</span>{% endif %}
+                </div>
+                <h2 class="mt-4 text-3xl font-black leading-tight {% if forloop.first %}sm:text-5xl{% endif %}">
+                  <a href="{{ post.get_absolute_url }}" class="focus-ring rounded-lg transition {% if forloop.first %}hover:text-gold{% else %}hover:text-deepTeal{% endif %}">{{ post.title }}</a>
+                </h2>
+                <p class="mt-4 text-lg leading-8 {% if forloop.first %}text-white/75{% else %}text-ink/70{% endif %}">{{ post.excerpt }}</p>
+                <div class="mt-auto flex items-center justify-between gap-4 pt-7 text-sm font-bold {% if forloop.first %}text-white/60{% else %}text-ink/55{% endif %}">
+                  <span>{{ post.display_author }} · {{ post.reading_time_minutes }} min read</span>
+                  <a href="{{ post.get_absolute_url }}" class="focus-ring shrink-0 rounded-full {% if forloop.first %}bg-gold text-ink{% else %}bg-deepTeal text-white{% endif %} px-5 py-3 font-black transition group-hover:-translate-y-0.5">Read article</a>
+                </div>
+              </div>
+            </article>
+          {% endfor %}
+        </div>
+
+        {% if is_paginated %}
+          <nav class="mt-12 flex items-center justify-center gap-3" aria-label="Blog pagination">
+            {% if page_obj.has_previous %}
+              <a href="?page={{ page_obj.previous_page_number }}" class="focus-ring rounded-full bg-linen px-5 py-3 font-black text-ink ring-1 ring-ink/10">Previous</a>
+            {% endif %}
+            <span class="px-4 py-3 text-sm font-black text-ink/60">Page {{ page_obj.number }} of {{ page_obj.paginator.num_pages }}</span>
+            {% if page_obj.has_next %}
+              <a href="?page={{ page_obj.next_page_number }}" class="focus-ring rounded-full bg-deepTeal px-5 py-3 font-black text-white">Next</a>
+            {% endif %}
+          </nav>
+        {% endif %}
+      {% else %}
+        <div class="mx-auto max-w-3xl rounded-[2rem] bg-linen p-8 text-center shadow-xl ring-1 ring-deepTeal/10 sm:p-12">
+          <span class="mx-auto grid h-20 w-20 place-items-center rounded-[1.7rem] bg-gold text-2xl font-black text-ink">Cc</span>
+          <h2 class="mt-6 text-3xl font-black">The first insight is on its way.</h2>
+          <p class="mx-auto mt-4 max-w-xl text-lg leading-8 text-ink/70">We’re preparing practical resources for families and specialists. In the meantime, explore how ClearCode turns reading evidence into clear next steps.</p>
+          <a href="/how-it-works/" class="focus-ring mt-7 inline-flex rounded-full bg-deepTeal px-6 py-3 font-black text-white">See how ClearCode works</a>
+          {% if request.user.is_staff %}
+            <a href="/admin/blog/blogpost/add/" class="focus-ring mt-3 inline-flex rounded-full bg-ink px-6 py-3 font-black text-white sm:ml-2">Write the first post</a>
+          {% endif %}
+        </div>
+      {% endif %}
+    </div>
+  </section>
+
+  <section class="bg-seafoam py-14">
+    <div class="mx-auto flex max-w-7xl flex-col gap-6 px-4 sm:px-6 lg:flex-row lg:items-center lg:justify-between lg:px-8">
+      <div>
+        <p class="text-sm font-black uppercase tracking-[.18em] text-deepTeal">Need help with your reader?</p>
+        <h2 class="mt-2 text-3xl font-black text-ink">Turn questions into a clear instructional plan.</h2>
+      </div>
+      <a href="/contact/" class="focus-ring shrink-0 rounded-full bg-ink px-7 py-4 text-center font-black text-white shadow-xl transition hover:-translate-y-0.5">Schedule a consultation</a>
+    </div>
+  </section>
+{% endblock %}

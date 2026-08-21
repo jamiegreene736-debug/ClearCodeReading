@@ -76,6 +76,7 @@ Useful URLs:
 
 - Marketing homepage: `http://localhost:8000/`
 - Family consultation: `http://localhost:8000/contact/`
+- Public blog: `http://localhost:8000/blog/`
 - Admin: `http://localhost:8000/admin/`
 - Optional browser survey: `http://localhost:8000/assessment/`
 - Swagger docs: `http://localhost:8000/api/docs/`
@@ -96,6 +97,14 @@ docker compose run --rm web python manage.py seed_demo_login
 ```
 
 On Railway, the deploy start command runs migrations, seeds the Reading Survey question bank, and creates these demo credentials automatically.
+
+### Publishing blog posts
+
+Staff can create and manage articles at `/admin/blog/blogpost/` or use the **Blog posts**
+shortcut in the administrator dashboard. New articles start as drafts. Set the status to
+**Published** to publish immediately, or choose a future **Published at** time to schedule the
+article. Draft and future-dated articles are never returned by the public blog views. Cover
+images are optional; when one is supplied, its accessible image description is required.
 
 If `ELEVENLABS_API_KEY` and `ELEVENLABS_VOICE_ID` are set in Railway, predeploy also generates any missing cached assessment audio into PostgreSQL.
 
