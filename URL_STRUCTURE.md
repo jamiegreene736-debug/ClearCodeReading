@@ -72,6 +72,7 @@
 | `/how-it-works/` | Placement, sessions, parent dashboard, and decision-support flow |
 | `/families/` | Parent journey, dashboard visibility, and home-practice expectations |
 | `/approach/` | Structured-literacy, one-methodology, specialist-led, education-only stance |
+| `/careers/` | Teacher and company career paths with an expression-of-interest form |
 | `/privacy/` | Plain-language FERPA-oriented privacy and consent overview |
 | `/contact/` | Primary family consultation form |
 | `/assessment/` | Optional secondary reading survey |

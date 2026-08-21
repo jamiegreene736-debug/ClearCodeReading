@@ -19,17 +19,30 @@ class WebsiteSignupView(View):
     def post(self, request):
         contact_name = request.POST.get("name", "").strip()
         contact_email = request.POST.get("email", "").strip().lower()
+        career_path = request.POST.get("career_path", "").strip()
+        role_interest = request.POST.get("role_interest", "").strip()[:255]
+        is_career_signup = request.POST.get("redirect_to") == "/careers/"
+        career_fields_are_missing = is_career_signup and (
+            career_path not in {"teacher", "company"} or not role_interest
+        )
+        if not contact_name or not contact_email or career_fields_are_missing:
+            messages.error(request, "Please complete the required fields so we can follow up.")
+            return redirect(self._redirect_target(request, "missing"))
+
         audience = request.POST.get("audience", Lead.Audience.PARENT)
         if audience not in Lead.Audience.values:
             audience = Lead.Audience.OTHER
 
-        if not contact_name or not contact_email:
-            messages.error(request, "Please add your name and email so we can follow up.")
-            return redirect(self._redirect_target(request, "missing"))
-
         organization_name = request.POST.get("organization_name", "").strip()
         contact_phone = request.POST.get("phone", "").strip()
         notes = request.POST.get("notes", "").strip()
+        if career_path in {"teacher", "company"}:
+            audience = Lead.Audience.TEACHER if career_path == "teacher" else Lead.Audience.OTHER
+            career_details = [
+                f"Career path: {career_path}",
+                f"Role interest: {role_interest}" if role_interest else "",
+            ]
+            notes = "\n".join(part for part in [*career_details, notes] if part)
         child_age_grade = request.POST.get("child_age_grade", "").strip()
         if child_age_grade:
             notes = "\n".join(part for part in [f"Child age or grade: {child_age_grade}", notes] if part)
@@ -44,6 +57,7 @@ class WebsiteSignupView(View):
             "latest_signup_audience": audience,
             "source_path": request.path,
             "user_agent": request.META.get("HTTP_USER_AGENT", ""),
+            "career_path": career_path if career_path in {"teacher", "company"} else "",
         }
         defaults = {
             "school_name": school_name,
@@ -79,6 +93,8 @@ class WebsiteSignupView(View):
 
     @staticmethod
     def _redirect_target(request, result):
+        if request.POST.get("redirect_to") == "/careers/":
+            return f"/careers/?signup={result}#career-interest-form"
         if request.POST.get("redirect_to") == "/contact/":
             return f"/contact/?signup={result}#consultation-form"
         return f"/?signup={result}#top"
