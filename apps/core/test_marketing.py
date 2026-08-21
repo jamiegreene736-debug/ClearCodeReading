@@ -13,6 +13,7 @@ PUBLIC_PAGES = {
     "marketing_home": "index.html",
     "marketing_how_it_works": "how-it-works.html",
     "marketing_families": "families.html",
+    "marketing_careers": "careers.html",
     "marketing_contact": "contact.html",
     "marketing_privacy": "privacy.html",
     "marketing_approach": "approach.html",
@@ -74,6 +75,7 @@ class MarketingPageTests(SimpleTestCase):
             "marketing_home",
             "marketing_how_it_works",
             "marketing_families",
+            "marketing_careers",
             "marketing_contact",
             "marketing_privacy",
             "marketing_approach",
@@ -83,6 +85,7 @@ class MarketingPageTests(SimpleTestCase):
             "/families/",
             "/approach/",
             "/blog/",
+            "/careers/",
             "/privacy/",
             "/contact/",
             "/login/",
@@ -108,6 +111,15 @@ class MarketingPageTests(SimpleTestCase):
         self.assertIn("Optional family reading survey", content)
         self.assertIn("not a PFR or OG+ placement instrument", content)
         self.assertIn('href="/contact/"', content)
+
+    def test_careers_page_has_teacher_and_company_paths(self):
+        content = self._render("marketing_careers")
+
+        self.assertIn("Teach with ClearCode", content)
+        self.assertIn("Build ClearCode with us", content)
+        self.assertIn('id="career-interest-form"', content)
+        self.assertIn('name="career_path"', content)
+        self.assertIn('action="/crm/signup/"', content)
 
     def test_public_pages_use_the_clearcode_brand_system(self):
         for route_name in PUBLIC_PAGES:
@@ -203,6 +215,67 @@ class ConsultationFormTests(TestCase):
         self.assertRedirects(
             response,
             "/contact/?signup=missing#consultation-form",
+            fetch_redirect_response=False,
+        )
+        self.assertFalse(Lead.objects.exists())
+
+    def test_career_interest_creates_teacher_lead_and_returns_to_careers(self):
+        response = self.client.post(
+            reverse("crm_signup"),
+            {
+                "name": "Morgan Specialist",
+                "email": "morgan@example.com",
+                "audience": Lead.Audience.OTHER,
+                "career_path": "teacher",
+                "role_interest": "Reading specialist",
+                "notes": "I have five years of structured literacy experience.",
+                "redirect_to": "/careers/",
+            },
+        )
+
+        self.assertRedirects(
+            response,
+            "/careers/?signup=thanks#career-interest-form",
+            fetch_redirect_response=False,
+        )
+        lead = Lead.objects.get(contact_email="morgan@example.com")
+        self.assertEqual(lead.audience, Lead.Audience.TEACHER)
+        self.assertEqual(lead.metadata["career_path"], "teacher")
+        self.assertIn("Role interest: Reading specialist", lead.notes)
+
+    def test_career_interest_creates_company_lead(self):
+        self.client.post(
+            reverse("crm_signup"),
+            {
+                "name": "Avery Builder",
+                "email": "avery@example.com",
+                "career_path": "company",
+                "role_interest": "Product design",
+                "notes": "I build accessible education products.",
+                "redirect_to": "/careers/",
+            },
+        )
+
+        lead = Lead.objects.get(contact_email="avery@example.com")
+        self.assertEqual(lead.audience, Lead.Audience.OTHER)
+        self.assertEqual(lead.metadata["career_path"], "company")
+        self.assertIn("Role interest: Product design", lead.notes)
+
+    def test_career_interest_requires_a_valid_path_and_role(self):
+        response = self.client.post(
+            reverse("crm_signup"),
+            {
+                "name": "Taylor Candidate",
+                "email": "taylor@example.com",
+                "career_path": "invalid",
+                "role_interest": "",
+                "redirect_to": "/careers/",
+            },
+        )
+
+        self.assertRedirects(
+            response,
+            "/careers/?signup=missing#career-interest-form",
             fetch_redirect_response=False,
         )
         self.assertFalse(Lead.objects.exists())
