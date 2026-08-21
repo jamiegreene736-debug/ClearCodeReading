@@ -83,6 +83,7 @@ Useful URLs:
 - ReDoc: `http://localhost:8000/api/redoc/`
 - OpenAPI schema: `http://localhost:8000/api/schema/`
 - Health check: `http://localhost:8000/api/v1/health/`
+- CRM contacts: `http://localhost:8000/crm/` (central staff only)
 
 Demo credentials:
 
@@ -183,11 +184,15 @@ and capacity definitions are documented in
 
 CRM:
 
+- `/crm/` — staff contacts, form-submission activity, notes, and tasks
 - `/api/v1/leads/`
 - `/api/v1/leads/<id>/qualify/`
 - `/api/v1/leads/<id>/convert/`
 - `/api/v1/opportunities/`
 - `/api/v1/opportunities/<id>/advance/`
+
+See [`docs/CRM.md`](docs/CRM.md) for intake sources, data retention, authorization,
+and verification details.
 
 ## Assessment Workflow
 

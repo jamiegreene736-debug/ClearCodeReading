@@ -9,9 +9,12 @@ from django.test import RequestFactory, SimpleTestCase, TestCase, override_setti
 from django.template.loader import render_to_string
 from django.urls import reverse
 from django.utils import timezone
+from rest_framework.test import APIClient
 
 from apps.crm.admin import NewsletterCampaignAdmin
 from apps.crm.models import (
+    CrmActivity,
+    FormSubmission,
     Lead,
     NewsletterCampaign,
     NewsletterDelivery,
@@ -87,6 +90,12 @@ class NewsletterSignupTests(TestCase):
         self.assertEqual(subscription.status, NewsletterSubscription.Status.ACTIVE)
         self.assertEqual(subscription.source_path, "/families/")
         self.assertIsNotNone(subscription.consented_at)
+        lead = Lead.objects.get(contact_email="jamie@example.com")
+        submission = FormSubmission.objects.get(lead=lead)
+        self.assertEqual(submission.form_type, FormSubmission.FormType.NEWSLETTER)
+        self.assertEqual(submission.source_path, "/families/")
+        self.assertNotIn("csrfmiddlewaretoken", submission.submitted_data)
+        self.assertNotIn("website", submission.submitted_data)
 
     def test_signup_rejects_invalid_email_or_missing_consent(self):
         invalid_email = self.client.post(
@@ -336,3 +345,185 @@ class NewsletterAdminTests(TestCase):
 
         self.assertIn("Email delivery is not configured", content)
         self.assertNotIn('value="Send newsletter now"', content)
+
+
+class FormSubmissionIntakeTests(TestCase):
+    def test_repeat_consultation_submissions_update_one_contact_and_preserve_both_events(self):
+        first = {
+            "name": "Jordan Reader",
+            "email": "JORDAN@example.com",
+            "phone": "555-0101",
+            "audience": Lead.Audience.PARENT,
+            "organization_name": "Family consultation",
+            "estimated_students": "1",
+            "child_age_grade": "Grade 2",
+            "notes": "Needs help with decoding.",
+            "redirect_to": "/contact/",
+        }
+        response = self.client.post(reverse("crm_signup"), first)
+        second = {**first, "phone": "555-0199", "notes": "Following up after school meeting."}
+        self.client.post(reverse("crm_signup"), second)
+
+        self.assertRedirects(
+            response,
+            "/contact/?signup=thanks#consultation-form",
+            fetch_redirect_response=False,
+        )
+        self.assertEqual(Lead.objects.count(), 1)
+        lead = Lead.objects.get()
+        self.assertEqual(lead.contact_email, "jordan@example.com")
+        self.assertEqual(lead.contact_phone, "555-0199")
+        self.assertEqual(lead.form_submissions.count(), 2)
+        self.assertEqual(
+            set(lead.form_submissions.values_list("form_type", flat=True)),
+            {FormSubmission.FormType.CONSULTATION},
+        )
+
+    def test_assessment_follow_up_is_labeled_with_its_actual_source(self):
+        self.client.post(
+            reverse("crm_signup"),
+            {
+                "name": "Morgan Parent",
+                "email": "morgan@example.com",
+                "audience": Lead.Audience.PARENT,
+                "organization_name": "Reading assessment follow-up",
+                "notes": "Estimated reading age: 7.",
+            },
+        )
+
+        submission = FormSubmission.objects.get()
+        self.assertEqual(submission.form_type, FormSubmission.FormType.ASSESSMENT)
+        self.assertEqual(submission.source_path, "/assessment/")
+
+    def test_invalid_email_is_rejected_without_creating_crm_records(self):
+        response = self.client.post(
+            reverse("crm_signup"),
+            {"name": "Bad Email", "email": "not-an-email", "redirect_to": "/contact/"},
+        )
+
+        self.assertEqual(response.status_code, 302)
+        self.assertFalse(Lead.objects.exists())
+        self.assertFalse(FormSubmission.objects.exists())
+
+
+class CrmWorkspaceTests(TestCase):
+    def setUp(self):
+        user_model = get_user_model()
+        self.admin_user = user_model.objects.create_superuser(
+            username="crm-admin",
+            email="crm-admin@example.com",
+            password="test-password",
+        )
+        self.guardian = user_model.objects.create_user(
+            username="guardian",
+            email="guardian@example.com",
+            password="test-password",
+        )
+        self.lead = Lead.objects.create(
+            school_name="Family inquiry",
+            contact_name="Alex Reader",
+            contact_email="alex@example.com",
+            audience=Lead.Audience.PARENT,
+        )
+        FormSubmission.objects.create(
+            lead=self.lead,
+            form_type=FormSubmission.FormType.CONSULTATION,
+            source_path="/contact/",
+            submitted_data={"name": "Alex Reader", "email": "alex@example.com"},
+        )
+
+    def test_workspace_requires_central_crm_access(self):
+        anonymous_response = self.client.get(reverse("crm_contact_list"))
+        self.client.force_login(self.guardian)
+        guardian_response = self.client.get(reverse("crm_contact_list"))
+
+        self.assertEqual(anonymous_response.status_code, 302)
+        self.assertEqual(guardian_response.status_code, 403)
+
+    def test_leads_api_rejects_a_non_crm_portal_user(self):
+        api_client = APIClient()
+        api_client.force_authenticate(self.guardian)
+
+        response = api_client.get("/api/v1/leads/")
+
+        self.assertEqual(response.status_code, 403)
+
+    def test_contact_index_searches_and_displays_submission_counts(self):
+        self.client.force_login(self.admin_user)
+        response = self.client.get(reverse("crm_contact_list"), {"q": "alex@example.com"})
+
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "Alex Reader")
+        self.assertContains(response, "Every valid website submission")
+        self.assertEqual(list(response.context["contacts"]), [self.lead])
+        self.assertEqual(response.context["contacts"][0].submission_count, 1)
+
+    def test_recent_sort_places_captured_submissions_before_uncaptured_contacts(self):
+        Lead.objects.create(
+            school_name="Imported contact",
+            contact_name="Recently imported",
+            contact_email="imported@example.com",
+            audience=Lead.Audience.OTHER,
+        )
+        self.client.force_login(self.admin_user)
+
+        response = self.client.get(reverse("crm_contact_list"))
+
+        self.assertEqual(response.context["contacts"][0].pk, self.lead.pk)
+
+    def test_contact_properties_notes_and_tasks_are_manageable(self):
+        self.client.force_login(self.admin_user)
+        detail_url = reverse("crm_contact_detail", args=[self.lead.pk])
+        update_response = self.client.post(
+            reverse("crm_contact_update", args=[self.lead.pk]),
+            {
+                "status": Lead.Status.CONTACTED,
+                "audience": Lead.Audience.PARENT,
+                "assigned_to": self.admin_user.pk,
+            },
+        )
+        note_response = self.client.post(
+            reverse("crm_note_create", args=[self.lead.pk]),
+            {"body": "Left a voicemail and sent the family guide."},
+        )
+        task_response = self.client.post(
+            reverse("crm_task_create", args=[self.lead.pk]),
+            {
+                "subject": "Call Alex",
+                "due_at": "2026-09-01T14:00",
+                "assigned_to": self.admin_user.pk,
+            },
+        )
+
+        self.assertRedirects(update_response, detail_url, fetch_redirect_response=False)
+        self.assertEqual(note_response.status_code, 302)
+        self.assertEqual(task_response.status_code, 302)
+        self.lead.refresh_from_db()
+        self.assertEqual(self.lead.status, Lead.Status.CONTACTED)
+        self.assertEqual(self.lead.assigned_to, self.admin_user)
+        note = self.lead.crm_activities.get(activity_type=CrmActivity.ActivityType.NOTE)
+        task = self.lead.crm_activities.get(activity_type=CrmActivity.ActivityType.TASK)
+        self.assertEqual(note.body, "Left a voicemail and sent the family guide.")
+        self.assertEqual(task.assigned_to, self.admin_user)
+
+        complete_response = self.client.post(
+            reverse("crm_task_complete", args=[self.lead.pk, task.pk])
+        )
+        task.refresh_from_db()
+        self.assertEqual(complete_response.status_code, 302)
+        self.assertIsNotNone(task.completed_at)
+
+    def test_contact_detail_renders_unified_activity_timeline(self):
+        CrmActivity.objects.create(
+            lead=self.lead,
+            activity_type=CrmActivity.ActivityType.NOTE,
+            body="Consultation booked for Friday.",
+            created_by=self.admin_user,
+        )
+        self.client.force_login(self.admin_user)
+
+        response = self.client.get(reverse("crm_contact_detail", args=[self.lead.pk]))
+
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "Consultation request submitted")
+        self.assertContains(response, "Consultation booked for Friday.")

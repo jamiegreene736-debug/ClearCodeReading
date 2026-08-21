@@ -218,3 +218,80 @@ class NewsletterDelivery(TimestampedModel):
 
     def __str__(self):
         return f"{self.campaign}: {self.recipient_email} ({self.status})"
+
+
+class FormSubmission(TimestampedModel):
+    """Immutable intake evidence for a valid public form submission."""
+
+    class FormType(models.TextChoices):
+        CONSULTATION = "consultation", "Consultation request"
+        ASSESSMENT = "assessment", "Assessment follow-up"
+        CAREER = "career", "Career interest"
+        NEWSLETTER = "newsletter", "Newsletter signup"
+        WEBSITE = "website", "Website inquiry"
+
+    lead = models.ForeignKey(
+        Lead,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="form_submissions",
+    )
+    form_type = models.CharField(max_length=32, choices=FormType.choices, db_index=True)
+    source_path = models.CharField(max_length=255, blank=True, db_index=True)
+    submitted_data = models.JSONField(default=dict)
+
+    class Meta:
+        ordering = ["-created_at"]
+        indexes = [
+            models.Index(fields=["form_type", "created_at"], name="crm_form_type_created"),
+            models.Index(fields=["lead", "created_at"], name="crm_form_lead_created"),
+        ]
+
+    def __str__(self):
+        return f"{self.get_form_type_display()} at {self.created_at:%Y-%m-%d %H:%M}"
+
+
+class CrmActivity(TimestampedModel):
+    class ActivityType(models.TextChoices):
+        NOTE = "note", "Note"
+        TASK = "task", "Task"
+
+    lead = models.ForeignKey(Lead, on_delete=models.CASCADE, related_name="crm_activities")
+    activity_type = models.CharField(max_length=16, choices=ActivityType.choices, db_index=True)
+    subject = models.CharField(max_length=255, blank=True)
+    body = models.TextField(blank=True)
+    due_at = models.DateTimeField(null=True, blank=True, db_index=True)
+    completed_at = models.DateTimeField(null=True, blank=True, db_index=True)
+    created_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="crm_activities_created",
+    )
+    assigned_to = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="crm_tasks_assigned",
+    )
+
+    class Meta:
+        ordering = ["-created_at"]
+        verbose_name_plural = "CRM activities"
+        indexes = [
+            models.Index(fields=["lead", "activity_type", "created_at"], name="crm_activity_lead_type"),
+            models.Index(fields=["activity_type", "completed_at", "due_at"], name="crm_activity_task_state"),
+        ]
+
+    def clean(self):
+        super().clean()
+        if self.activity_type == self.ActivityType.NOTE and not self.body.strip():
+            raise ValidationError({"body": "A note cannot be empty."})
+        if self.activity_type == self.ActivityType.TASK and not self.subject.strip():
+            raise ValidationError({"subject": "A task needs a title."})
+
+    def __str__(self):
+        return self.subject or f"{self.get_activity_type_display()} for {self.lead.contact_name}"
