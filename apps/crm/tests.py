@@ -18,7 +18,11 @@ from apps.crm.models import (
     NewsletterSubscription,
     Opportunity,
 )
-from apps.crm.newsletters import make_unsubscribe_token, send_newsletter_campaign
+from apps.crm.newsletters import (
+    NewsletterEmailDeliveryNotConfigured,
+    make_unsubscribe_token,
+    send_newsletter_campaign,
+)
 from apps.crm.serializers import OpportunitySerializer
 from apps.crm.views import NewsletterUnsubscribeView, WebsiteSignupView
 
@@ -184,6 +188,7 @@ class NewsletterUnsubscribeTests(TestCase):
 
 
 @override_settings(
+    DEBUG=True,
     EMAIL_BACKEND="django.core.mail.backends.locmem.EmailBackend",
     DEFAULT_FROM_EMAIL="ClearCode Reading <newsletter@example.com>",
     PUBLIC_APP_URL="https://clearcodereading.example",
@@ -262,8 +267,21 @@ class NewsletterSendingTests(TestCase):
         with self.assertRaises(ValidationError):
             self.campaign.full_clean()
 
+    @override_settings(
+        DEBUG=False,
+        EMAIL_BACKEND="django.core.mail.backends.console.EmailBackend",
+        PUBLIC_APP_URL="http://localhost:8000",
+    )
+    def test_production_send_fails_closed_without_delivery_configuration(self):
+        with self.assertRaises(NewsletterEmailDeliveryNotConfigured):
+            send_newsletter_campaign(self.campaign.pk)
 
-@override_settings(EMAIL_BACKEND="django.core.mail.backends.locmem.EmailBackend")
+        self.campaign.refresh_from_db()
+        self.assertEqual(self.campaign.status, NewsletterCampaign.Status.DRAFT)
+        self.assertFalse(self.campaign.deliveries.exists())
+
+
+@override_settings(DEBUG=True, EMAIL_BACKEND="django.core.mail.backends.locmem.EmailBackend")
 class NewsletterAdminTests(TestCase):
     def setUp(self):
         user_model = get_user_model()
@@ -300,3 +318,21 @@ class NewsletterAdminTests(TestCase):
         self.assertEqual(self.campaign.status, NewsletterCampaign.Status.SENT)
         self.assertEqual(self.campaign.sent_by, self.admin_user)
         self.assertEqual(len(mail.outbox), 1)
+
+    @override_settings(
+        DEBUG=False,
+        EMAIL_BACKEND="django.core.mail.backends.console.EmailBackend",
+        PUBLIC_APP_URL="http://localhost:8000",
+    )
+    def test_admin_confirmation_disables_send_without_production_email(self):
+        url = reverse("admin:crm_newslettercampaign_send", args=[self.campaign.pk])
+        model_admin = NewsletterCampaignAdmin(NewsletterCampaign, admin.site)
+        request = RequestFactory().get(url)
+        request.user = self.admin_user
+
+        response = model_admin.send_view(request, self.campaign.pk)
+        response.render()
+        content = response.content.decode()
+
+        self.assertIn("Email delivery is not configured", content)
+        self.assertNotIn('value="Send newsletter now"', content)

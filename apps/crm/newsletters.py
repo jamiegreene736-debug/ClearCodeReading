@@ -1,5 +1,5 @@
 from datetime import timedelta
-from urllib.parse import urljoin
+from urllib.parse import urljoin, urlparse
 
 from django.conf import settings
 from django.core import signing
@@ -14,6 +14,12 @@ from apps.crm.models import NewsletterCampaign, NewsletterDelivery, NewsletterSu
 
 
 UNSUBSCRIBE_SIGNING_SALT = "apps.crm.newsletter.unsubscribe"
+DEVELOPMENT_EMAIL_BACKENDS = {
+    "django.core.mail.backends.console.EmailBackend",
+    "django.core.mail.backends.dummy.EmailBackend",
+    "django.core.mail.backends.filebased.EmailBackend",
+    "django.core.mail.backends.locmem.EmailBackend",
+}
 
 
 class NewsletterSendError(Exception):
@@ -26,6 +32,24 @@ class NewsletterSendInProgress(NewsletterSendError):
 
 class NoActiveNewsletterSubscribers(NewsletterSendError):
     pass
+
+
+class NewsletterEmailDeliveryNotConfigured(NewsletterSendError):
+    pass
+
+
+def newsletter_delivery_configuration_errors():
+    if settings.DEBUG:
+        return ()
+
+    errors = []
+    if settings.EMAIL_BACKEND in DEVELOPMENT_EMAIL_BACKENDS:
+        errors.append("Configure a production email backend.")
+
+    public_url = urlparse(settings.PUBLIC_APP_URL)
+    if public_url.scheme != "https" or public_url.hostname in {None, "localhost", "127.0.0.1"}:
+        errors.append("Set PUBLIC_APP_URL to the public HTTPS site URL.")
+    return tuple(errors)
 
 
 def make_unsubscribe_token(subscription):
@@ -155,6 +179,10 @@ def _finalize_campaign(campaign_id):
 
 
 def send_newsletter_campaign(campaign_id, *, sent_by=None):
+    configuration_errors = newsletter_delivery_configuration_errors()
+    if configuration_errors:
+        raise NewsletterEmailDeliveryNotConfigured(" ".join(configuration_errors))
+
     campaign, should_send = _claim_campaign(campaign_id, sent_by)
     if not should_send:
         return campaign

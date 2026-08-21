@@ -17,6 +17,7 @@ from apps.crm.models import (
 )
 from apps.crm.newsletters import (
     NewsletterSendError,
+    newsletter_delivery_configuration_errors,
     send_newsletter_campaign,
 )
 
@@ -243,6 +244,7 @@ class NewsletterCampaignAdmin(admin.ModelAdmin):
                 status=NewsletterSubscription.Status.ACTIVE,
             ).count(),
             "retry_count": campaign.deliveries.filter(status=NewsletterDelivery.Status.FAILED).count(),
+            "configuration_errors": newsletter_delivery_configuration_errors(),
         }
         return TemplateResponse(request, "admin/crm/newslettercampaign/send_confirmation.html", context)
 
