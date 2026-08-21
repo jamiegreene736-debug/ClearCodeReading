@@ -1,0 +1,92 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{% block title %}CRM{% endblock %} | ClearCode Reading</title>
+  <link rel="icon" href="/assets/logo/cc-favicon-gold-teal-32.png" type="image/png" sizes="32x32">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Barlow+Condensed:wght@700;800&display=swap" rel="stylesheet">
+  <style>
+    :root { --navy:#213343; --ink:#33475b; --muted:#5c6f7f; --line:#cbd6e2; --bg:#f5f8fa; --white:#fff; --teal:#1a7a7a; --teal-soft:#e5f5f3; --orange:#f5a623; --red:#c53b3b; }
+    * { box-sizing:border-box; }
+    body { margin:0; color:var(--ink); background:var(--bg); font:14px/1.45 Inter,system-ui,sans-serif; }
+    a { color:inherit; }
+    button,input,select,textarea { font:inherit; }
+    button { cursor:pointer; }
+    .skip { position:fixed; left:16px; top:-60px; z-index:100; padding:10px 16px; color:white; background:var(--navy); border-radius:6px; }
+    .skip:focus { top:12px; }
+    .shell { min-height:100vh; display:grid; grid-template-columns:220px minmax(0,1fr); }
+    .sidebar { position:sticky; top:0; height:100vh; padding:22px 14px; color:white; background:var(--navy); }
+    .brand { display:flex; align-items:center; gap:10px; padding:0 8px 24px; text-decoration:none; font:800 19px Barlow Condensed,sans-serif; letter-spacing:.02em; }
+    .brand-mark { width:32px; height:32px; display:grid; place-items:center; color:var(--navy); background:var(--orange); border-radius:7px; }
+    .nav-label { margin:16px 10px 8px; color:#9fb4c5; font-size:11px; font-weight:700; letter-spacing:.1em; text-transform:uppercase; }
+    .nav-link { display:flex; align-items:center; gap:10px; margin:3px 0; padding:10px 12px; border-radius:5px; color:#eaf0f4; text-decoration:none; font-weight:600; }
+    .nav-link:hover,.nav-link.active { color:white; background:#3d5264; }
+    .main { min-width:0; }
+    .topbar { height:64px; display:flex; align-items:center; justify-content:space-between; gap:20px; padding:0 28px; border-bottom:1px solid var(--line); background:white; }
+    .topbar small { color:var(--muted); }
+    .top-actions { display:flex; align-items:center; gap:14px; }
+    .top-actions a { color:var(--teal); font-weight:600; text-decoration:none; }
+    .logout { padding:7px 12px; color:var(--ink); background:white; border:1px solid var(--line); border-radius:5px; }
+    .content { padding:28px; }
+    .eyebrow { margin:0 0 5px; color:var(--teal); font-size:12px; font-weight:700; letter-spacing:.08em; text-transform:uppercase; }
+    h1,h2,h3,p { margin-top:0; }
+    h1 { margin-bottom:6px; color:var(--navy); font:800 32px/1.1 Barlow Condensed,sans-serif; }
+    h2 { color:var(--navy); font:800 22px/1.2 Barlow Condensed,sans-serif; }
+    .subtle { color:var(--muted); }
+    .flash { margin:0 28px 12px; padding:12px 15px; border:1px solid #8bc7bd; border-radius:5px; background:var(--teal-soft); font-weight:600; }
+    .card { background:white; border:1px solid var(--line); border-radius:7px; box-shadow:0 1px 2px rgba(33,51,67,.05); }
+    .stats { display:grid; grid-template-columns:repeat(5,minmax(0,1fr)); gap:14px; margin:24px 0; }
+    .stat { padding:18px; }
+    .stat-label { color:var(--muted); font-size:12px; font-weight:600; }
+    .stat-value { margin-top:4px; color:var(--navy); font:800 28px Barlow Condensed,sans-serif; }
+    .btn { display:inline-flex; align-items:center; justify-content:center; gap:7px; min-height:36px; padding:8px 14px; border:1px solid var(--line); border-radius:5px; color:var(--ink); background:white; font-weight:600; text-decoration:none; }
+    .btn:hover { border-color:#8ca5b7; background:#f7fafc; }
+    .btn-primary { color:white; border-color:var(--teal); background:var(--teal); }
+    .btn-primary:hover { background:#146969; }
+    .btn-small { min-height:30px; padding:5px 10px; font-size:12px; }
+    .field { display:grid; gap:6px; }
+    .field label,.field-label { color:var(--ink); font-size:12px; font-weight:700; }
+    input,select,textarea { width:100%; padding:9px 10px; color:var(--ink); border:1px solid #99afbf; border-radius:4px; background:white; }
+    input:focus,select:focus,textarea:focus { outline:3px solid rgba(26,122,122,.2); border-color:var(--teal); }
+    textarea { min-height:100px; resize:vertical; }
+    .badge { display:inline-flex; align-items:center; padding:4px 9px; border-radius:999px; color:#24564e; background:var(--teal-soft); font-size:11px; font-weight:700; white-space:nowrap; }
+    .badge-neutral { color:#526574; background:#edf2f5; }
+    .badge-warn { color:#754f00; background:#fff0ce; }
+    .avatar { width:40px; height:40px; flex:0 0 auto; display:grid; place-items:center; color:white; background:var(--teal); border-radius:50%; font-weight:700; text-transform:uppercase; }
+    .empty { padding:45px 20px; text-align:center; color:var(--muted); }
+    @media (max-width:1000px) { .stats { grid-template-columns:repeat(2,minmax(0,1fr)); } }
+    @media (max-width:760px) { .shell { display:block; } .sidebar { position:static; width:100%; height:auto; padding:12px; } .brand { padding-bottom:8px; } .nav-label { display:none; } .nav-group { display:flex; overflow:auto; } .nav-link { white-space:nowrap; } .topbar { padding:0 16px; } .content { padding:20px 14px; } .stats { grid-template-columns:1fr 1fr; } .flash { margin:0 14px 10px; } }
+    {% block extra_style %}{% endblock %}
+  </style>
+</head>
+<body>
+  <a class="skip" href="#main-content">Skip to content</a>
+  <div class="shell">
+    <aside class="sidebar">
+      <a class="brand" href="{% url 'crm_contact_list' %}"><span class="brand-mark">CC</span><span>ClearCode CRM</span></a>
+      <p class="nav-label">CRM</p>
+      <nav class="nav-group" aria-label="CRM navigation">
+        <a class="nav-link active" href="{% url 'crm_contact_list' %}"><span aria-hidden="true">◎</span> Contacts</a>
+        <a class="nav-link" href="{% url 'crm_contact_list' %}?status=new"><span aria-hidden="true">◇</span> New leads</a>
+        <a class="nav-link" href="{% url 'crm_contact_list' %}?owner=unassigned"><span aria-hidden="true">⌁</span> Unassigned</a>
+      </nav>
+      <p class="nav-label">ClearCode</p>
+      <nav class="nav-group">
+        <a class="nav-link" href="{% url 'portal_dashboard' %}"><span aria-hidden="true">▦</span> Dashboard</a>
+        <a class="nav-link" href="/admin/"><span aria-hidden="true">⚙</span> Admin</a>
+      </nav>
+    </aside>
+    <div class="main">
+      <header class="topbar">
+        <div><strong>CRM workspace</strong><br><small>Website form intake and follow-up</small></div>
+        <div class="top-actions"><a href="/">View website</a><form method="post" action="{% url 'logout' %}">{% csrf_token %}<button class="logout" type="submit">Log out</button></form></div>
+      </header>
+      {% if messages %}{% for message in messages %}<div class="flash" role="status">{{ message }}</div>{% endfor %}{% endif %}
+      <main class="content" id="main-content">{% block content %}{% endblock %}</main>
+    </div>
+  </div>
+</body>
+</html>

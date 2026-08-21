@@ -1,0 +1,102 @@
+{% extends "crm/base.html" %}
+{% block title %}{{ lead.contact_name }}{% endblock %}
+{% block extra_style %}
+  .crumb { display:inline-block; margin-bottom:15px; color:var(--teal); font-weight:600; text-decoration:none; }
+  .record-grid { display:grid; grid-template-columns:250px minmax(0,1fr) 285px; gap:18px; align-items:start; }
+  .panel { padding:18px; }
+  .identity { text-align:center; }
+  .identity .avatar { width:72px; height:72px; margin:0 auto 13px; font-size:24px; }
+  .identity h1 { font-size:27px; }
+  .identity a { color:var(--teal); text-decoration:none; }
+  .quick-actions { display:grid; grid-template-columns:1fr 1fr; gap:8px; margin:18px 0; }
+  .properties { border-top:1px solid var(--line); padding-top:15px; text-align:left; }
+  .property { margin:0 0 13px; }
+  .property dt { color:var(--muted); font-size:11px; font-weight:700; text-transform:uppercase; }
+  .property dd { margin:3px 0 0; overflow-wrap:anywhere; }
+  .composer { padding:18px; }
+  .composer-grid { display:grid; grid-template-columns:1fr 1fr; gap:12px; }
+  .composer form { padding:15px; background:#f5f8fa; border:1px solid var(--line); border-radius:6px; }
+  .composer .field { margin-bottom:10px; }
+  .timeline-title { display:flex; justify-content:space-between; align-items:center; margin:22px 0 10px; }
+  .timeline { position:relative; display:grid; gap:12px; }
+  .event { padding:17px 17px 14px 52px; position:relative; }
+  .event-icon { position:absolute; left:15px; top:16px; width:25px; height:25px; display:grid; place-items:center; color:white; background:var(--teal); border-radius:50%; font-size:12px; font-weight:700; }
+  .event.task .event-icon { background:var(--orange); color:var(--navy); }
+  .event-meta { color:var(--muted); font-size:12px; }
+  .event h3 { margin:3px 0 6px; font-size:15px; }
+  .event p:last-child { margin-bottom:0; }
+  .submission-data { display:grid; grid-template-columns:minmax(110px,.35fr) 1fr; gap:5px 12px; margin-top:11px; padding-top:11px; border-top:1px solid #e4ebef; }
+  .submission-data dt { color:var(--muted); font-size:12px; text-transform:capitalize; }
+  .submission-data dd { margin:0; overflow-wrap:anywhere; white-space:pre-wrap; }
+  .side-title { margin-bottom:12px; font-size:18px; }
+  .task-row { padding:12px 0; border-top:1px solid #e5ebef; }
+  .task-row:first-of-type { border-top:0; }
+  .task-row form { margin-top:8px; }
+  .property-form { display:grid; gap:11px; }
+  @media (max-width:1150px) { .record-grid { grid-template-columns:220px minmax(0,1fr); } .record-side { grid-column:1/-1; } }
+  @media (max-width:760px) { .record-grid { grid-template-columns:1fr; } .record-side { grid-column:auto; } .composer-grid { grid-template-columns:1fr; } }
+{% endblock %}
+{% block content %}
+  <a class="crumb" href="{% url 'crm_contact_list' %}">← Back to contacts</a>
+  <div class="record-grid">
+    <aside class="card panel identity">
+      <span class="avatar">{{ lead.contact_name|slice:":1" }}</span>
+      <h1>{{ lead.contact_name }}</h1>
+      <p class="subtle">{{ lead.organization_name|default:lead.school_name }}</p>
+      <p><a href="mailto:{{ lead.contact_email }}">{{ lead.contact_email }}</a>{% if lead.contact_phone %}<br><a href="tel:{{ lead.contact_phone }}">{{ lead.contact_phone }}</a>{% endif %}</p>
+      <div class="quick-actions"><a class="btn btn-small" href="mailto:{{ lead.contact_email }}">Email</a><a class="btn btn-small" href="#activity">Add activity</a></div>
+      <dl class="properties">
+        <div class="property"><dt>Lead status</dt><dd><span class="badge {% if lead.status == 'new' %}badge-warn{% endif %}">{{ lead.get_status_display }}</span></dd></div>
+        <div class="property"><dt>Audience</dt><dd>{{ lead.get_audience_display }}</dd></div>
+        <div class="property"><dt>Contact owner</dt><dd>{% if lead.assigned_to %}{{ lead.assigned_to.get_full_name|default:lead.assigned_to.email }}{% else %}Unassigned{% endif %}</dd></div>
+        <div class="property"><dt>First seen</dt><dd>{{ lead.created_at|date:"M j, Y, g:i A" }}</dd></div>
+        <div class="property"><dt>Linked account</dt><dd>{% if lead.linked_user %}{{ lead.linked_user.get_full_name|default:lead.linked_user.email }}{% else %}No account yet{% endif %}</dd></div>
+      </dl>
+    </aside>
+
+    <section id="activity">
+      <div class="card composer">
+        <h2>Log activity</h2>
+        <div class="composer-grid">
+          <form method="post" action="{% url 'crm_note_create' lead.pk %}">{% csrf_token %}<div class="field"><label for="note-body">Note</label><textarea id="note-body" name="body" required placeholder="Add context from a call, email, or internal review"></textarea></div><button class="btn btn-primary" type="submit">Save note</button></form>
+          <form method="post" action="{% url 'crm_task_create' lead.pk %}">{% csrf_token %}<div class="field"><label for="task-subject">Task</label><input id="task-subject" name="subject" required placeholder="Follow up with this contact"></div><div class="field"><label for="task-due">Due</label><input id="task-due" type="datetime-local" name="due_at" required></div><div class="field"><label for="task-owner">Assigned to</label><select id="task-owner" name="assigned_to">{% for owner in owners %}<option value="{{ owner.pk }}" {% if owner.pk == request.user.pk %}selected{% endif %}>{{ owner.get_full_name|default:owner.email }}</option>{% endfor %}</select></div><button class="btn btn-primary" type="submit">Create task</button></form>
+        </div>
+      </div>
+      <div class="timeline-title"><h2>Activity</h2><span class="subtle">Newest first</span></div>
+      <div class="timeline">
+        {% for event in timeline %}
+          <article class="card event {{ event.kind }}">
+            <span class="event-icon">{% if event.kind == 'submission' %}F{% elif event.kind == 'task' %}T{% else %}N{% endif %}</span>
+            <div class="event-meta">{{ event.created_at|date:"M j, Y, g:i A" }}</div>
+            {% if event.kind == 'submission' %}
+              <h3>{{ event.item.get_form_type_display }} submitted</h3><p class="subtle">Source: {{ event.item.source_path|default:"Unknown page" }}</p>
+              <dl class="submission-data">{% for key,value in event.item.submitted_data.items %}<dt>{{ key|cut:"_" }}</dt><dd>{{ value|default:"—" }}</dd>{% endfor %}</dl>
+            {% elif event.kind == 'task' %}
+              <h3>{{ event.item.subject }} {% if event.item.completed_at %}<span class="badge">Completed</span>{% else %}<span class="badge badge-warn">Open task</span>{% endif %}</h3>
+              {% if event.item.body %}<p>{{ event.item.body|linebreaksbr }}</p>{% endif %}<p class="event-meta">Due {{ event.item.due_at|date:"M j, Y, g:i A" }} · Assigned to {% if event.item.assigned_to %}{{ event.item.assigned_to.get_full_name|default:event.item.assigned_to.email }}{% else %}Unassigned{% endif %}</p>
+            {% else %}
+              <h3>Note by {% if event.item.created_by %}{{ event.item.created_by.get_full_name|default:event.item.created_by.email }}{% else %}Former user{% endif %}</h3><p>{{ event.item.body|linebreaksbr }}</p>
+            {% endif %}
+          </article>
+        {% empty %}<div class="card empty">No activity has been recorded for this contact.</div>{% endfor %}
+      </div>
+    </section>
+
+    <aside class="record-side">
+      <section class="card panel">
+        <h2 class="side-title">About this contact</h2>
+        <form class="property-form" method="post" action="{% url 'crm_contact_update' lead.pk %}">{% csrf_token %}
+          <div class="field"><label for="detail-status">Lead status</label><select id="detail-status" name="status">{% for value,label in status_choices %}<option value="{{ value }}" {% if lead.status == value %}selected{% endif %}>{{ label }}</option>{% endfor %}</select></div>
+          <div class="field"><label for="detail-audience">Audience</label><select id="detail-audience" name="audience">{% for value,label in audience_choices %}<option value="{{ value }}" {% if lead.audience == value %}selected{% endif %}>{{ label }}</option>{% endfor %}</select></div>
+          <div class="field"><label for="detail-owner">Contact owner</label><select id="detail-owner" name="assigned_to"><option value="">Unassigned</option>{% for owner in owners %}<option value="{{ owner.pk }}" {% if lead.assigned_to_id == owner.pk %}selected{% endif %}>{{ owner.get_full_name|default:owner.email }}</option>{% endfor %}</select></div>
+          <button class="btn" type="submit">Save properties</button>
+        </form>
+      </section>
+      <section class="card panel" style="margin-top:18px">
+        <h2 class="side-title">Open tasks <span class="badge badge-neutral">{{ open_tasks|length }}</span></h2>
+        {% for task in open_tasks %}<div class="task-row"><strong>{{ task.subject }}</strong><div class="event-meta">Due {{ task.due_at|date:"M j, g:i A" }}</div><form method="post" action="{% url 'crm_task_complete' lead.pk task.pk %}">{% csrf_token %}<button class="btn btn-small" type="submit">✓ Mark complete</button></form></div>{% empty %}<p class="subtle">No open follow-up tasks.</p>{% endfor %}
+      </section>
+      {% if lead.notes %}<section class="card panel" style="margin-top:18px"><h2 class="side-title">Latest inquiry notes</h2><p>{{ lead.notes|linebreaksbr }}</p></section>{% endif %}
+    </aside>
+  </div>
+{% endblock %}

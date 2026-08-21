@@ -9,6 +9,8 @@ from django.utils import timezone
 from django.utils.html import format_html
 
 from apps.crm.models import (
+    CrmActivity,
+    FormSubmission,
     Lead,
     NewsletterCampaign,
     NewsletterDelivery,
@@ -29,6 +31,24 @@ class OpportunityInline(admin.TabularInline):
     fields = ("name", "stage", "value", "probability", "expected_close_date", "owner", "school")
 
 
+class FormSubmissionInline(admin.TabularInline):
+    model = FormSubmission
+    extra = 0
+    fields = ("form_type", "source_path", "submitted_data", "created_at")
+    readonly_fields = fields
+    can_delete = False
+
+    def has_add_permission(self, request, obj=None):
+        return False
+
+
+class CrmActivityInline(admin.TabularInline):
+    model = CrmActivity
+    extra = 0
+    fields = ("activity_type", "subject", "due_at", "completed_at", "created_by", "assigned_to")
+    readonly_fields = ("created_at",)
+
+
 @admin.action(description="Mark selected leads as contacted")
 def mark_contacted(modeladmin, request, queryset):
     queryset.update(status=Lead.Status.CONTACTED, updated_at=timezone.now())
@@ -41,7 +61,7 @@ def mark_qualified(modeladmin, request, queryset):
 
 @admin.register(Lead)
 class LeadAdmin(admin.ModelAdmin):
-    inlines = (OpportunityInline,)
+    inlines = (FormSubmissionInline, CrmActivityInline, OpportunityInline)
     list_display = (
         "school_name",
         "contact_name",
@@ -89,6 +109,29 @@ class LeadAdmin(admin.ModelAdmin):
             html.append(f"<tr><td>{row['stage']}</td><td>{row['count']}</td><td>{row['total_value'] or 0}</td></tr>")
         html.append("</table></body></html>")
         return HttpResponse("".join(html))
+
+
+@admin.register(FormSubmission)
+class FormSubmissionAdmin(admin.ModelAdmin):
+    list_display = ("form_type", "lead", "source_path", "created_at")
+    list_filter = ("form_type", "source_path", "created_at")
+    search_fields = ("lead__contact_name", "lead__contact_email", "submitted_data")
+    readonly_fields = ("lead", "form_type", "source_path", "submitted_data", "created_at", "updated_at")
+
+    def has_add_permission(self, request):
+        return False
+
+    def has_delete_permission(self, request, obj=None):
+        return False
+
+
+@admin.register(CrmActivity)
+class CrmActivityAdmin(admin.ModelAdmin):
+    list_display = ("activity_type", "lead", "subject", "assigned_to", "due_at", "completed_at", "created_at")
+    list_filter = ("activity_type", "assigned_to", "completed_at", "due_at")
+    search_fields = ("lead__contact_name", "lead__contact_email", "subject", "body")
+    autocomplete_fields = ("lead", "created_by", "assigned_to")
+    readonly_fields = ("created_at", "updated_at")
 
 
 @admin.action(description="Mark selected opportunities as won")

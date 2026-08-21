@@ -7,7 +7,17 @@ from django.views.generic import TemplateView
 from django.views.static import serve
 
 from apps.assessments.views import assessment_audio, assessment_audio_status
-from apps.crm.views import NewsletterSignupView, NewsletterUnsubscribeView, WebsiteSignupView
+from apps.crm.views import (
+    CrmContactDetailView,
+    CrmContactListView,
+    CrmContactUpdateView,
+    CrmNoteCreateView,
+    CrmTaskCompleteView,
+    CrmTaskCreateView,
+    NewsletterSignupView,
+    NewsletterUnsubscribeView,
+    WebsiteSignupView,
+)
 from apps.sessions.views import RapidSessionLogView
 from apps.users.portal_views import (
     AssignLessonTemplateToChildView,
@@ -45,6 +55,16 @@ urlpatterns = [
     path("dashboard/", PortalDashboardView.as_view(), name="portal_dashboard"),
     path("inbox/", PortalInboxView.as_view(), name="portal_inbox"),
     path("portal/sessions/rapid-log/", RapidSessionLogView.as_view(), name="rapid_session_log"),
+    path("crm/", CrmContactListView.as_view(), name="crm_contact_list"),
+    path("crm/contacts/<int:pk>/", CrmContactDetailView.as_view(), name="crm_contact_detail"),
+    path("crm/contacts/<int:pk>/update/", CrmContactUpdateView.as_view(), name="crm_contact_update"),
+    path("crm/contacts/<int:pk>/notes/", CrmNoteCreateView.as_view(), name="crm_note_create"),
+    path("crm/contacts/<int:pk>/tasks/", CrmTaskCreateView.as_view(), name="crm_task_create"),
+    path(
+        "crm/contacts/<int:pk>/tasks/<int:activity_id>/complete/",
+        CrmTaskCompleteView.as_view(),
+        name="crm_task_complete",
+    ),
     path("crm/signup/", WebsiteSignupView.as_view(), name="crm_signup"),
     path("newsletter/subscribe/", NewsletterSignupView.as_view(), name="newsletter_signup"),
     path(
