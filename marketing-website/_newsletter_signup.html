@@ -1,0 +1,32 @@
+<section id="newsletter-signup" class="border-t border-deepTeal/10 bg-seafoam px-4 py-14 sm:px-6 lg:px-8" aria-labelledby="newsletter-heading">
+  <div class="mx-auto grid max-w-7xl gap-8 rounded-[2rem] bg-white p-6 shadow-xl shadow-deepTeal/10 ring-1 ring-deepTeal/10 sm:p-10 lg:grid-cols-[.9fr_1.1fr] lg:items-center">
+    <div>
+      <p class="text-sm font-black uppercase tracking-[.18em] text-mediumTeal">ClearCode newsletter</p>
+      <h2 id="newsletter-heading" class="mt-3 text-3xl font-black sm:text-4xl">Useful reading guidance, delivered clearly.</h2>
+      <p class="mt-4 max-w-xl text-lg leading-7 text-ink/70">Get practical structured-literacy insights, family resources, and ClearCode updates. No student information. No inbox clutter.</p>
+    </div>
+    <form method="post" action="{% url 'newsletter_signup' %}" class="rounded-[1.6rem] bg-linen p-5 sm:p-6">
+      {% csrf_token %}
+      <input type="hidden" name="redirect_to" value="{{ request.path }}">
+      <div class="hidden" aria-hidden="true">
+        <label for="newsletter-website">Website</label>
+        <input id="newsletter-website" name="website" type="text" tabindex="-1" autocomplete="off">
+      </div>
+      <div class="grid gap-4 sm:grid-cols-2">
+        <label class="block font-black" for="newsletter-name">
+          Name <span class="font-medium text-ink/55">(optional)</span>
+          <input id="newsletter-name" class="focus-ring mt-2 w-full rounded-2xl border border-ink/15 bg-white px-4 py-3 font-bold" type="text" name="name" autocomplete="name" maxlength="255">
+        </label>
+        <label class="block font-black" for="newsletter-email">
+          Email address
+          <input id="newsletter-email" class="focus-ring mt-2 w-full rounded-2xl border border-ink/15 bg-white px-4 py-3 font-bold" type="email" name="email" autocomplete="email" maxlength="254" required>
+        </label>
+      </div>
+      <label class="mt-4 flex items-start gap-3 text-sm leading-6 text-ink/70">
+        <input class="focus-ring mt-1 h-4 w-4 shrink-0 accent-deepTeal" type="checkbox" name="consent" value="yes" required>
+        <span>I agree to receive the ClearCode Reading newsletter. I can unsubscribe at any time. See the <a href="/privacy/" class="font-black text-deepTeal underline underline-offset-2">privacy page</a>.</span>
+      </label>
+      <button class="focus-ring mt-5 w-full rounded-full bg-deepTeal px-6 py-3 font-black text-white shadow-lg shadow-deepTeal/20 transition hover:-translate-y-0.5 hover:bg-[#176a6a] sm:w-auto" type="submit">Join the newsletter</button>
+    </form>
+  </div>
+</section>

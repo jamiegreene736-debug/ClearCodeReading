@@ -1,4 +1,5 @@
 from django.conf import settings
+from django.core.exceptions import ValidationError
 from django.db import models
 from django.utils import timezone
 
@@ -107,3 +108,113 @@ class Opportunity(TimestampedModel, SoftDeleteModel):
 
     def __str__(self):
         return f"{self.name} ({self.stage})"
+
+
+class NewsletterSubscription(TimestampedModel):
+    class Status(models.TextChoices):
+        ACTIVE = "active", "Active"
+        UNSUBSCRIBED = "unsubscribed", "Unsubscribed"
+
+    email = models.EmailField(unique=True)
+    name = models.CharField(max_length=255, blank=True)
+    status = models.CharField(max_length=16, choices=Status.choices, default=Status.ACTIVE, db_index=True)
+    consented_at = models.DateTimeField(default=timezone.now)
+    unsubscribed_at = models.DateTimeField(null=True, blank=True)
+    source_path = models.CharField(max_length=255, blank=True)
+    consent_version = models.CharField(max_length=32, default="newsletter-v1")
+    last_sent_at = models.DateTimeField(null=True, blank=True)
+
+    class Meta:
+        ordering = ["-created_at"]
+        indexes = [
+            models.Index(fields=["status", "created_at"], name="crm_newssub_status_created"),
+        ]
+
+    def save(self, *args, **kwargs):
+        self.email = self.email.strip().lower()
+        super().save(*args, **kwargs)
+
+    def __str__(self):
+        return self.email
+
+
+class NewsletterCampaign(TimestampedModel):
+    class Status(models.TextChoices):
+        DRAFT = "draft", "Draft"
+        SENDING = "sending", "Sending"
+        SENT = "sent", "Sent"
+        PARTIALLY_FAILED = "partially_failed", "Partially failed"
+
+    subject = models.CharField(max_length=255)
+    preview_text = models.CharField(max_length=255, blank=True)
+    body = models.TextField(help_text="Plain text; paragraph breaks are preserved in the HTML email.")
+    status = models.CharField(max_length=24, choices=Status.choices, default=Status.DRAFT, db_index=True)
+    created_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="newsletter_campaigns_created",
+    )
+    sent_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="newsletter_campaigns_sent",
+    )
+    sending_started_at = models.DateTimeField(null=True, blank=True)
+    sent_at = models.DateTimeField(null=True, blank=True)
+    recipient_count = models.PositiveIntegerField(default=0)
+    delivered_count = models.PositiveIntegerField(default=0)
+    failed_count = models.PositiveIntegerField(default=0)
+
+    class Meta:
+        ordering = ["-created_at"]
+        indexes = [
+            models.Index(fields=["status", "created_at"], name="crm_newscam_status_created"),
+        ]
+
+    def clean(self):
+        super().clean()
+        if "\n" in self.subject or "\r" in self.subject:
+            raise ValidationError({"subject": "The subject cannot contain line breaks."})
+
+    def __str__(self):
+        return self.subject
+
+
+class NewsletterDelivery(TimestampedModel):
+    class Status(models.TextChoices):
+        PENDING = "pending", "Pending"
+        SENT = "sent", "Sent"
+        FAILED = "failed", "Failed"
+        SKIPPED = "skipped", "Skipped after unsubscribe"
+
+    campaign = models.ForeignKey(NewsletterCampaign, on_delete=models.CASCADE, related_name="deliveries")
+    subscription = models.ForeignKey(
+        NewsletterSubscription,
+        on_delete=models.PROTECT,
+        related_name="deliveries",
+    )
+    recipient_email = models.EmailField()
+    status = models.CharField(max_length=16, choices=Status.choices, default=Status.PENDING, db_index=True)
+    attempts = models.PositiveIntegerField(default=0)
+    sent_at = models.DateTimeField(null=True, blank=True)
+    last_error = models.TextField(blank=True)
+
+    class Meta:
+        ordering = ["campaign_id", "recipient_email"]
+        verbose_name_plural = "newsletter deliveries"
+        constraints = [
+            models.UniqueConstraint(
+                fields=["campaign", "subscription"],
+                name="unique_newsletter_campaign_subscription",
+            ),
+        ]
+        indexes = [
+            models.Index(fields=["campaign", "status"], name="crm_newsdel_campaign_status"),
+        ]
+
+    def __str__(self):
+        return f"{self.campaign}: {self.recipient_email} ({self.status})"

@@ -228,8 +228,16 @@ CELERY_TIMEZONE = TIME_ZONE
 
 EMAIL_BACKEND = os.getenv("EMAIL_BACKEND", "django.core.mail.backends.console.EmailBackend")
 DEFAULT_FROM_EMAIL = os.getenv("DEFAULT_FROM_EMAIL", "Clear Code Reading <no-reply@clearcodereading.com>")
+EMAIL_HOST = os.getenv("EMAIL_HOST", "localhost")
+EMAIL_PORT = int(os.getenv("EMAIL_PORT", "25"))
+EMAIL_HOST_USER = os.getenv("EMAIL_HOST_USER", "")
+EMAIL_HOST_PASSWORD = os.getenv("EMAIL_HOST_PASSWORD", "")
+EMAIL_USE_TLS = os.getenv("EMAIL_USE_TLS", "0") == "1"
+EMAIL_USE_SSL = os.getenv("EMAIL_USE_SSL", "0") == "1"
+EMAIL_TIMEOUT = int(os.getenv("EMAIL_TIMEOUT", "30"))
 PUBLIC_APP_URL = os.getenv("PUBLIC_APP_URL", "http://localhost:8000")
 NOTIFICATIONS_FAIL_SILENTLY = os.getenv("NOTIFICATIONS_FAIL_SILENTLY", "1") == "1"
+NEWSLETTER_SEND_STALE_MINUTES = max(1, int(os.getenv("NEWSLETTER_SEND_STALE_MINUTES", "30")))
 SMS_PROVIDER = os.getenv("SMS_PROVIDER", "stub")
 INSTRUCTIONAL_AI_SERVICE = os.getenv(
     "INSTRUCTIONAL_AI_SERVICE",

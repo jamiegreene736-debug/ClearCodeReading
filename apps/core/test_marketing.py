@@ -96,6 +96,15 @@ class MarketingPageTests(SimpleTestCase):
                 with self.subTest(route_name=route_name, link=link):
                     self.assertIn(f'href="{link}"', content)
 
+    def test_public_pages_include_explicit_consent_newsletter_signup(self):
+        for route_name in PUBLIC_PAGES:
+            content = self._render(route_name)
+            with self.subTest(route_name=route_name):
+                self.assertIn('id="newsletter-signup"', content)
+                self.assertIn('action="/newsletter/subscribe/"', content)
+                self.assertIn('name="consent"', content)
+                self.assertIn("I can unsubscribe at any time", content)
+
     def test_touched_pages_only_reference_existing_local_assets(self):
         marketing_root = Path(settings.BASE_DIR) / "marketing-website"
         for route_name in PUBLIC_PAGES:

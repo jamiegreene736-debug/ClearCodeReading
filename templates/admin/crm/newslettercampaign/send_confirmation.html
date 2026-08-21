@@ -1,0 +1,27 @@
+{% extends "admin/base_site.html" %}
+
+{% block content %}
+  <div id="content-main">
+    <p><a href="{% url 'admin:crm_newslettercampaign_change' original.pk %}">&larr; Back to newsletter</a></p>
+    <h2>{{ original.subject }}</h2>
+    {% if original.preview_text %}<p><strong>Preview text:</strong> {{ original.preview_text }}</p>{% endif %}
+    <fieldset class="module aligned">
+      <div class="form-row">
+        <div>{{ original.body|linebreaks }}</div>
+      </div>
+    </fieldset>
+    {% if retry_count %}
+      <p><strong>{{ retry_count }}</strong> failed delivery{{ retry_count|pluralize }} will be retried. Previously successful deliveries will not be sent again.</p>
+    {% else %}
+      <p>This will create a fixed recipient list from the <strong>{{ active_subscriber_count }}</strong> currently active subscriber{{ active_subscriber_count|pluralize }}. Every email is sent individually and includes an unsubscribe link.</p>
+    {% endif %}
+    <p><strong>Sending is irreversible.</strong> Saving a draft does not send it; only the button below does.</p>
+    <form method="post">
+      {% csrf_token %}
+      <div class="submit-row">
+        <input type="submit" value="{% if retry_count %}Retry failed deliveries{% else %}Send newsletter now{% endif %}" class="default">
+        <a href="{% url 'admin:crm_newslettercampaign_change' original.pk %}" class="closelink">Cancel</a>
+      </div>
+    </form>
+  </div>
+{% endblock %}

@@ -1,0 +1,26 @@
+{% extends "base_marketing.html" %}
+
+{% block title %}Newsletter preferences | ClearCode Reading{% endblock %}
+{% block meta_description %}Manage your ClearCode Reading newsletter subscription.{% endblock %}
+
+{% block content %}
+  <section class="hero-wash px-4 py-20 sm:px-6 lg:px-8">
+    <div class="mx-auto max-w-2xl rounded-[2rem] bg-white p-8 text-center shadow-2xl ring-1 ring-deepTeal/10 sm:p-12">
+      <p class="text-sm font-black uppercase tracking-[.18em] text-mediumTeal">Newsletter preferences</p>
+      {% if invalid_link %}
+        <h1 class="mt-4 text-4xl font-black">This unsubscribe link is not valid.</h1>
+        <p class="mt-5 text-lg leading-8 text-ink/70">Nothing was changed. If you still receive a newsletter, use the unsubscribe link in the most recent message.</p>
+      {% elif unsubscribed %}
+        <h1 class="mt-4 text-4xl font-black">You’re unsubscribed.</h1>
+        <p class="mt-5 text-lg leading-8 text-ink/70">We won’t send more ClearCode Reading newsletters to {{ subscription.email }}. You can rejoin at any time below.</p>
+      {% else %}
+        <h1 class="mt-4 text-4xl font-black">Unsubscribe from the newsletter?</h1>
+        <p class="mt-5 text-lg leading-8 text-ink/70">This will stop newsletter emails to {{ subscription.email }}.</p>
+        <form method="post" class="mt-8">
+          <button class="focus-ring rounded-full bg-deepTeal px-7 py-4 font-black text-white" type="submit">Confirm unsubscribe</button>
+        </form>
+      {% endif %}
+      <a class="focus-ring mt-8 inline-block rounded-lg font-black text-deepTeal underline underline-offset-4" href="/">Return to ClearCode Reading</a>
+    </div>
+  </section>
+{% endblock %}

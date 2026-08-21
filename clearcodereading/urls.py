@@ -7,7 +7,7 @@ from django.views.generic import TemplateView
 from django.views.static import serve
 
 from apps.assessments.views import assessment_audio, assessment_audio_status
-from apps.crm.views import WebsiteSignupView
+from apps.crm.views import NewsletterSignupView, NewsletterUnsubscribeView, WebsiteSignupView
 from apps.sessions.views import RapidSessionLogView
 from apps.users.portal_views import (
     AssignLessonTemplateToChildView,
@@ -46,6 +46,12 @@ urlpatterns = [
     path("inbox/", PortalInboxView.as_view(), name="portal_inbox"),
     path("portal/sessions/rapid-log/", RapidSessionLogView.as_view(), name="rapid_session_log"),
     path("crm/signup/", WebsiteSignupView.as_view(), name="crm_signup"),
+    path("newsletter/subscribe/", NewsletterSignupView.as_view(), name="newsletter_signup"),
+    path(
+        "newsletter/unsubscribe/<str:token>/",
+        NewsletterUnsubscribeView.as_view(),
+        name="newsletter_unsubscribe",
+    ),
     path("assign-teacher/", AssignTeacherView.as_view(), name="assign_teacher"),
     path("portal/templates/assign-teacher/", AssignTemplateToTeacherView.as_view(), name="portal_assign_template_to_teacher"),
     path("portal/lessons/assign-child/", AssignLessonTemplateToChildView.as_view(), name="portal_assign_lesson_to_child"),
