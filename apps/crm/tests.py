@@ -440,6 +440,20 @@ class CrmWorkspaceTests(TestCase):
         self.assertEqual(anonymous_response.status_code, 302)
         self.assertEqual(guardian_response.status_code, 403)
 
+    def test_non_staff_school_admin_is_not_available_as_a_crm_owner(self):
+        user_model = get_user_model()
+        school_admin = user_model.objects.create_user(
+            username="school-admin",
+            email="school-admin@example.com",
+            password="test-password",
+            role=user_model.Role.SCHOOL_ADMIN,
+        )
+        self.client.force_login(self.admin_user)
+
+        response = self.client.get(reverse("crm_contact_detail", args=[self.lead.pk]))
+
+        self.assertNotIn(school_admin, response.context["owners"])
+
     def test_leads_api_rejects_a_non_crm_portal_user(self):
         api_client = APIClient()
         api_client.force_authenticate(self.guardian)

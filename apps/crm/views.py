@@ -341,7 +341,7 @@ class OpportunityViewSet(viewsets.ModelViewSet):
 
 def crm_owner_queryset():
     return CustomUser.objects.filter(is_active=True, is_deleted=False).filter(
-        Q(is_staff=True) | Q(role__in=[CustomUser.Role.SUPER_ADMIN, CustomUser.Role.SCHOOL_ADMIN])
+        Q(is_superuser=True) | Q(is_staff=True) | Q(role=CustomUser.Role.SUPER_ADMIN)
     ).distinct().order_by("first_name", "last_name", "email")
 
 
