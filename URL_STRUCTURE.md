@@ -13,6 +13,8 @@
 - `/blog/<slug>/`
 - `/login/`
 - `/crm/signup/`
+- `/newsletter/subscribe/`
+- `/newsletter/unsubscribe/<signed-token>/`
 - `/admin/`
 - `/api/schema/`
 - `/api/docs/`
@@ -79,6 +81,12 @@
 | `/blog/` | Published reading insights and resources |
 | `/blog/<slug>/` | Public article detail; drafts and scheduled posts return 404 |
 | `/crm/signup/` | POST-only CRM lead capture used by public inquiry forms |
+| `/newsletter/subscribe/` | POST-only explicit-consent newsletter signup |
+| `/newsletter/unsubscribe/<signed-token>/` | Confirmation page and POST endpoint for signed opt-outs |
+
+Newsletter composition and delivery history are available to authorized staff under
+`/admin/crm/newslettercampaign/`, `/admin/crm/newslettersubscription/`, and
+`/admin/crm/newsletterdelivery/`.
 
 ## `clearcodereading/urls.py`
 ```python

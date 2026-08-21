@@ -1,15 +1,21 @@
 from django.contrib import messages
+from django.core.exceptions import ValidationError
+from django.core.validators import validate_email
 from django.db import transaction
-from django.shortcuts import redirect
+from django.shortcuts import redirect, render
 from django.utils import timezone
+from django.utils.decorators import method_decorator
+from django.utils.http import url_has_allowed_host_and_scheme
 from django.views import View
+from django.views.decorators.csrf import csrf_exempt
 from rest_framework import status, viewsets
 from rest_framework.decorators import action
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 
 from apps.api.permissions import IsSchoolAdmin
-from apps.crm.models import Lead, Opportunity
+from apps.crm.models import Lead, NewsletterSubscription, Opportunity
+from apps.crm.newsletters import resolve_unsubscribe_token
 from apps.crm.serializers import LeadSerializer, OpportunitySerializer
 from apps.schools.models import School
 from apps.users.models import AuditLog, CustomUser
@@ -118,6 +124,94 @@ class WebsiteSignupView(View):
         if audience == Lead.Audience.SCHOOL:
             return "School or district inquiry"
         return "Website inquiry"
+
+
+class NewsletterSignupView(View):
+    def post(self, request):
+        redirect_path = self._redirect_path(request)
+        if request.POST.get("website", "").strip():
+            return redirect(f"{redirect_path}?newsletter=thanks#newsletter-signup")
+
+        email = request.POST.get("email", "").strip().lower()
+        consent_given = request.POST.get("consent") == "yes"
+        try:
+            if len(email) > 254:
+                raise ValidationError("Email address is too long.")
+            validate_email(email)
+        except ValidationError:
+            messages.error(request, "Enter a valid email address to join the newsletter.")
+            return redirect(f"{redirect_path}?newsletter=invalid#newsletter-signup")
+        if not consent_given:
+            messages.error(request, "Please confirm that you would like to receive the newsletter.")
+            return redirect(f"{redirect_path}?newsletter=consent#newsletter-signup")
+
+        now = timezone.now()
+        submitted_name = request.POST.get("name", "").strip()[:255]
+        existing_name = (
+            NewsletterSubscription.objects.filter(email=email).values_list("name", flat=True).first()
+        )
+        NewsletterSubscription.objects.update_or_create(
+            email=email,
+            defaults={
+                "name": submitted_name or existing_name or "",
+                "status": NewsletterSubscription.Status.ACTIVE,
+                "consented_at": now,
+                "unsubscribed_at": None,
+                "source_path": redirect_path,
+            },
+        )
+
+        messages.success(request, "You’re subscribed. Look for ClearCode Reading updates in your inbox.")
+        return redirect(f"{redirect_path}?newsletter=thanks#newsletter-signup")
+
+    @staticmethod
+    def _redirect_path(request):
+        candidate = request.POST.get("redirect_to", "/")
+        if len(candidate) > 255 or not candidate.startswith("/") or not url_has_allowed_host_and_scheme(
+            candidate,
+            allowed_hosts={request.get_host()},
+            require_https=request.is_secure(),
+        ):
+            return "/"
+        return candidate.split("?", 1)[0]
+
+
+@method_decorator(csrf_exempt, name="dispatch")
+class NewsletterUnsubscribeView(View):
+    template_name = "crm/newsletter_unsubscribe.html"
+
+    def get(self, request, token):
+        subscription = resolve_unsubscribe_token(token)
+        return render(
+            request,
+            self.template_name,
+            {
+                "token": token,
+                "subscription": subscription,
+                "invalid_link": subscription is None,
+                "unsubscribed": bool(
+                    subscription and subscription.status == NewsletterSubscription.Status.UNSUBSCRIBED
+                ),
+            },
+        )
+
+    def post(self, request, token):
+        subscription = resolve_unsubscribe_token(token)
+        invalid_link = subscription is None
+        if subscription and subscription.status != NewsletterSubscription.Status.UNSUBSCRIBED:
+            subscription.status = NewsletterSubscription.Status.UNSUBSCRIBED
+            subscription.unsubscribed_at = timezone.now()
+            subscription.save(update_fields=["status", "unsubscribed_at", "updated_at"])
+        return render(
+            request,
+            self.template_name,
+            {
+                "token": token,
+                "subscription": subscription,
+                "invalid_link": invalid_link,
+                "unsubscribed": not invalid_link,
+            },
+        )
 
 
 class LeadViewSet(viewsets.ModelViewSet):
