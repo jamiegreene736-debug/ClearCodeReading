@@ -13,7 +13,7 @@
   <link rel="apple-touch-icon" href="/assets/logo/cc-apple-touch-icon-gold-teal-180.png" sizes="180x180">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:ital,wght@0,500;0,600;0,700;0,800;0,900;1,600&family=Source+Sans+3:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
   <script src="https://cdn.tailwindcss.com"></script>
   <script>
     tailwind.config = {
@@ -35,8 +35,8 @@
             mediumTealGlow: '0 22px 70px rgba(46, 184, 184, 0.18)'
           },
           fontFamily: {
-            sans: ['Source Sans 3', 'ui-sans-serif', 'system-ui', 'sans-serif'],
-            display: ['Barlow Condensed', 'Arial Narrow', 'ui-sans-serif', 'system-ui', 'sans-serif']
+            sans: ['Plus Jakarta Sans', 'ui-sans-serif', 'system-ui', 'sans-serif'],
+            display: ['Plus Jakarta Sans', 'ui-sans-serif', 'system-ui', 'sans-serif']
           }
         }
       }
@@ -56,8 +56,24 @@
       background-size: 22px 22px;
     }
     summary::-webkit-details-marker { display: none; }
-    body { font-family: "Source Sans 3", ui-sans-serif, system-ui, sans-serif; }
-    h1, h2, h3, .display-type { font-family: "Barlow Condensed", "Arial Narrow", sans-serif; }
+    html { font-size: 16px; }
+    body {
+      font-family: "Plus Jakarta Sans", ui-sans-serif, system-ui, sans-serif;
+      font-size: 1rem;
+      line-height: 1.65;
+      text-rendering: optimizeLegibility;
+    }
+    h1, h2, h3, .display-type {
+      font-family: "Plus Jakarta Sans", ui-sans-serif, system-ui, sans-serif;
+      letter-spacing: -.035em;
+    }
+    .brand-lockup { align-items: center; display: inline-flex; gap: .65rem; line-height: 1; }
+    .brand-lockup__mark { flex: 0 0 auto; height: 2.75rem; width: 2.75rem; }
+    .brand-lockup__words { display: grid; gap: .28rem; }
+    .brand-lockup__name { font-size: 1.15rem; font-weight: 800; letter-spacing: -.045em; text-transform: uppercase; }
+    .brand-lockup__clear { color: #F7F2EA; }
+    .brand-lockup__code { color: #F5A623; margin-left: .28rem; }
+    .brand-lockup__reading { color: #2EB8B8; font-size: .58rem; font-weight: 700; letter-spacing: .3em; text-transform: uppercase; }
   </style>
   {% block extra_head %}{% endblock %}
 </head>
@@ -65,8 +81,8 @@
   <a href="#main-content" class="focus-ring fixed left-4 top-3 z-[70] -translate-y-24 rounded-full bg-ink px-5 py-3 font-black text-white transition focus:translate-y-0">Skip to content</a>
   <header class="sticky inset-x-0 top-0 z-50 border-b border-gold/20 bg-ink">
     <nav class="mx-auto flex max-w-7xl items-center justify-between gap-3 px-4 py-3 sm:px-6 lg:px-8" aria-label="Main navigation">
-      <a href="/" class="focus-ring flex shrink-0 items-center rounded-lg">
-        <img src="/assets/logo/cc-lockup-ink-ui.png" alt="ClearCode Reading home" class="h-11 w-auto max-w-[150px] object-contain sm:h-12 sm:max-w-[220px]">
+      <a href="/" class="focus-ring flex shrink-0 items-center rounded-lg" aria-label="ClearCode Reading home">
+        {% include "_brand_lockup.html" %}
       </a>
       <div class="hidden items-center gap-7 text-sm font-bold text-white/80 lg:flex">
         <a class="focus-ring rounded-lg transition hover:text-gold" href="/about/">About</a>
@@ -116,9 +132,7 @@
   <footer class="bg-ink px-4 py-12 text-white sm:px-6 lg:px-8">
     <div class="mx-auto grid max-w-7xl gap-10 lg:grid-cols-[1fr_auto] lg:items-start">
       <div>
-        <span class="inline-flex">
-          <img src="/assets/logo/cc-lockup-ink-ui.png" alt="ClearCode Reading" class="h-12 w-auto max-w-[240px] object-contain">
-        </span>
+        <a class="focus-ring inline-flex rounded-lg" href="/" aria-label="ClearCode Reading home">{% include "_brand_lockup.html" %}</a>
         <p class="mt-4 max-w-xl text-sm leading-6 text-white/70">Specialist-led structured literacy intervention with precise placement and live parent visibility.</p>
         <p class="mt-2 text-sm font-bold text-gold">Unlock Reading. Unlock Everything.</p>
       </div>
