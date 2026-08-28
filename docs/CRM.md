@@ -62,7 +62,7 @@ The HTML workspace and leads API are restricted to superusers, staff, and centra
 
 Each deal belongs to one pipeline. A company pursuing more than one capital structure gets separate linked deals—for example, one Foundation Grants / PRIs deal and one Equity / Investment deal—while the company and contacts remain single records. Recruiting is not a pipeline.
 
-Family consultation and assessment follow-up intake creates or reuses one open Families / Enrollment deal. If the family survey's partner checkbox is selected, the raw response is retained and an `IntakeTriage` item is created. Staff choose the appropriate destination pipeline or pipelines; the system never creates several partner deals merely because the checkbox was selected.
+Family consultation and assessment follow-up intake creates or reuses one open Families / Enrollment deal. The assessment follow-up lets a family select Referral Partner, Donor, Advocate, or any combination of the three. The selections are retained separately on the submission and contact, exposed as a CRM contact filter, and sent together to one `IntakeTriage` item. Staff choose the appropriate destination pipeline or pipelines; the system never creates several partner deals merely because several interests were selected.
 
 ## Verification
 
