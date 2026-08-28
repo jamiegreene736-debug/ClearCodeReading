@@ -152,14 +152,22 @@ class MarketingPageTests(SimpleTestCase):
         self.assertIn("Florida Department of Education", content)
         self.assertIn('href="/contact/#consultation-form"', content)
 
-    def test_careers_page_has_teacher_and_company_paths(self):
+    def test_careers_page_uses_supplied_clinical_team_positioning(self):
         content = self._render("marketing_careers")
 
-        self.assertIn("Teach with ClearCode", content)
-        self.assertIn("Build ClearCode with us", content)
+        self.assertIn("You Know How to Teach Reading.", content)
+        self.assertIn("Three Students, Maximum", content)
+        self.assertIn("Paid Planning Time", content)
+        self.assertIn("Profit Sharing", content)
+        self.assertIn("Certification, On Us", content)
+        self.assertIn("We're hiring ahead of our 2027 opening", content)
+        self.assertIn("Reading Specialist", content)
+        self.assertIn("Educators Seeking OG Certification", content)
+        self.assertIn("Orlando Metro", content)
         self.assertIn('id="career-interest-form"', content)
         self.assertIn('name="career_path"', content)
         self.assertIn('action="/crm/signup/"', content)
+        self.assertEqual(content.count('href="#career-interest-form"'), 3)
 
     def test_approach_page_uses_the_full_family_pathway(self):
         content = self._render("marketing_approach")
