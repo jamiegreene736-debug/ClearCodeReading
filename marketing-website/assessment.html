@@ -80,8 +80,8 @@
           This short survey explores phonemic awareness, phonics, sight words, fluency, vocabulary, comprehension, writing readiness, and reading confidence.
         </p>
         <div class="mt-6 grid gap-3 text-sm font-bold text-ink/70 sm:grid-cols-2 lg:grid-cols-1 xl:grid-cols-2">
-          <span class="rounded-2xl bg-seafoam px-4 py-3">8-10 minutes</span>
-          <span class="rounded-2xl bg-sand px-4 py-3">Ages 4-10</span>
+          <span class="rounded-2xl bg-seafoam px-4 py-3">10-15 minutes</span>
+          <span class="rounded-2xl bg-sand px-4 py-3">Ages 4-18</span>
           <span class="rounded-2xl bg-linen px-4 py-3">Parent-friendly result</span>
           <span class="rounded-2xl bg-white px-4 py-3 ring-1 ring-ink/10">Human review ready</span>
         </div>
@@ -95,7 +95,7 @@
           <div class="mb-6">
             <div class="flex items-center justify-between gap-4">
               <div>
-                <p id="step-eyebrow" class="text-sm font-black uppercase tracking-[0.18em] text-deepTeal">Step 1 of 12</p>
+                <p id="step-eyebrow" class="text-sm font-black uppercase tracking-[0.18em] text-deepTeal">Child survey</p>
                 <h2 id="step-title" class="mt-2 text-2xl font-black sm:text-4xl">Let’s meet your reader.</h2>
                 <button id="read-current-button" class="focus-ring group mt-4 inline-flex min-h-14 items-center gap-3 rounded-full bg-deepTeal px-5 py-3 text-base font-black text-white shadow-lg shadow-deepTeal/25 ring-2 ring-white transition hover:-translate-y-0.5 hover:bg-[#176a6a]" type="button" aria-label="Tap to hear this question read aloud">
                   <span class="grid h-9 w-9 place-items-center rounded-full bg-white text-xl text-deepTeal shadow-sm transition group-hover:scale-105" aria-hidden="true">▶</span>
@@ -159,6 +159,14 @@
           <option value="8">8</option>
           <option value="9">9</option>
           <option value="10">10</option>
+          <option value="11">11</option>
+          <option value="12">12</option>
+          <option value="13">13</option>
+          <option value="14">14</option>
+          <option value="15">15</option>
+          <option value="16">16</option>
+          <option value="17">17</option>
+          <option value="18">18</option>
         </select>
       </label>
       <div class="rounded-3xl bg-linen p-5">
@@ -170,7 +178,7 @@
 
   <script>
     const assessmentSteps = [
-      { type: 'intro', title: 'Let’s meet your reader.', eyebrow: 'Step 1 of 12' },
+      { type: 'intro', title: 'Let’s meet your reader.', eyebrow: 'Child survey' },
       {
         kpi: 'phonemicAwareness',
         title: 'Sound awareness',
@@ -294,6 +302,271 @@
       { type: 'result', title: 'Your reading snapshot is ready.', eyebrow: 'Results' }
     ];
 
+    const inventoryQuestion = (id, prompt, examples = []) => ({ id, prompt, examples });
+
+    const parentInventoryGradeChoices = [
+      { value: 'kindergarten', label: 'Kindergarten', inventoryKey: 'kindergarten' },
+      { value: 'grade_1', label: '1st', inventoryKey: 'firstGrade' },
+      { value: 'grade_2', label: '2nd', inventoryKey: 'secondGrade' },
+      { value: 'grade_3', label: '3rd', inventoryKey: 'thirdGradeAndAbove' },
+      { value: 'grade_4', label: '4th', inventoryKey: 'thirdGradeAndAbove' },
+      { value: 'grade_5', label: '5th', inventoryKey: 'thirdGradeAndAbove' },
+      { value: 'grade_6', label: '6th', inventoryKey: 'thirdGradeAndAbove' },
+      { value: 'grade_7', label: '7th', inventoryKey: 'thirdGradeAndAbove' },
+      { value: 'grade_8', label: '8th', inventoryKey: 'thirdGradeAndAbove' },
+      { value: 'high_school', label: 'High School', inventoryKey: 'thirdGradeAndAbove' }
+    ];
+
+    const parentReadingInventories = {
+      kindergarten: {
+        label: 'Kindergarten',
+        resourceAt: 13,
+        groups: [
+          {
+            title: 'Sound awareness',
+            continueAt: 9,
+            questions: [
+              inventoryQuestion('kindergarten-01', 'My child can break apart a word into syllables.', ['For example, if you say, “Tell me the syllables you hear in backpack,” your child will respond, “Back and pack.”']),
+              inventoryQuestion('kindergarten-02', 'My child can put together two syllables to make a word.', ['For example, if you say, “What word would nap and kin make?” your child will respond, “Napkin.”']),
+              inventoryQuestion('kindergarten-03', 'My child can add syllables in a word.', ['For example, if you say, “If I have cross and add walk, what new word do I have?” your child will respond, “Crosswalk.”']),
+              inventoryQuestion('kindergarten-04', 'My child can substitute syllables in a word.', ['For example, if you say, “If I have crosswalk and switch out cross for side, what new word do I have?” your child will respond, “Sidewalk.”']),
+              inventoryQuestion('kindergarten-05', 'My child can take away syllables in a word.', ['For example, if you say, “If I have sidewalk and take away side, what word do I have left?” your child will respond, “Walk.”']),
+              inventoryQuestion('kindergarten-06', 'My child can name words that rhyme.', ['For example, if you say, “Tell me a word that rhymes with light,” your child might respond, “Bright.”']),
+              inventoryQuestion('kindergarten-07', 'My child can name words that begin with the same sound.', ['For example, if you say, “Tell me a word that starts with the same sound as map,” your child could respond with, “Mom” (or another word that starts with m).']),
+              inventoryQuestion('kindergarten-08', 'My child can break apart a word into the first sound and the rest of the word.', ['For example, if you say, “Tell me the first sound in the word sun and then the rest of the word,” your child will respond, “/s/ and un.”']),
+              inventoryQuestion('kindergarten-09', 'My child can identify the sounds in a spoken word.', ['For example, if you say, “Tell me the first sound you hear in the word dog,” your child will respond, “/d/.”', 'For example, if you say, “Tell me the middle sound you hear in the word dog,” your child will respond, “/o/.”', 'For example, if you say, “Tell me the final sound you hear in the word dog,” your child will respond, “/g/.”']),
+              inventoryQuestion('kindergarten-10', 'My child can put together three sounds to make a word.', ['For example, if you say, “Tell me what word has these sounds /b/ /a/ /t/,” your child will respond, “bat.”']),
+              inventoryQuestion('kindergarten-11', 'My child can break apart the sounds in a word with three sounds.', ['For example, if you say, “Tell me the sounds you hear in the word cup,” your child will respond, “/c/ /u/ /p/.”'])
+            ]
+          },
+          {
+            title: 'Letters and early phonics',
+            continueAt: 4,
+            questions: [
+              inventoryQuestion('kindergarten-12', 'My child can identify the names of each uppercase and lowercase letter in the alphabet.'),
+              inventoryQuestion('kindergarten-13', 'My child can say the sound each consonant makes.'),
+              inventoryQuestion('kindergarten-14', 'My child can say the short and long sounds that each vowel (a, e, i, o, u) makes.'),
+              inventoryQuestion('kindergarten-15', 'My child can read words with a consonant-vowel-consonant (CVC) syllable pattern.', ['My child can read words like yet, wax, fig, mud, and rob.']),
+              inventoryQuestion('kindergarten-16', 'My child can spell words with a consonant-vowel-consonant (CVC) syllable pattern.', ['My child can spell words like rub, fin, sob, wet, and mad.'])
+            ]
+          },
+          {
+            title: 'Irregular words',
+            questions: [
+              inventoryQuestion('kindergarten-17', 'My child can read some words that occur frequently in texts but are irregularly spelled.', ['My child can read and spell words like is, was, are, the, do, and you.'])
+            ]
+          },
+          {
+            title: 'Comprehension',
+            questions: [
+              inventoryQuestion('kindergarten-18', 'My child can accurately retell a story using details about the character(s), setting, and important events in the order they occurred in the story.')
+            ]
+          },
+          {
+            title: 'Writing',
+            questions: [
+              inventoryQuestion('kindergarten-19', 'My child can write all upper and lowercase letters.'),
+              inventoryQuestion('kindergarten-20', 'My child begins sentences with a capital letter and ends sentences with punctuation.')
+            ]
+          }
+        ]
+      },
+      firstGrade: {
+        label: 'First Grade',
+        resourceAt: 16,
+        groups: [
+          {
+            title: 'Advanced sound awareness',
+            continueAt: 4,
+            questions: [
+              inventoryQuestion('first-grade-01', 'My child can break apart a word into sounds.', ['For example, if you say, “Tell me the sounds you hear in the word shop,” your child will respond, “/sh/ /o/ /p/.”', 'For example, if you say, “Tell me the sounds you hear in the word send,” your child will respond, “/s/ /e/ /n/ /d/.”']),
+              inventoryQuestion('first-grade-02', 'My child can put together sounds to make a word.', ['For example, if you say, “Tell me what word has these sounds /ch/ /a/ /t/,” your child will respond, “chat.”', 'For example, if you say, “Tell me what word has these sounds /c/ /l/ /a/ /p/,” your child will respond, “clap.”']),
+              inventoryQuestion('first-grade-03', 'My child can put together a word that has at least five sounds.', ['For example, if you say, “Tell me what word has these sounds /s/ /t/ /r/ /o/ /l/,” your child will respond, “stroll.”']),
+              inventoryQuestion('first-grade-04', 'My child can break apart a word that has at least five sounds.', ['For example, if you say, “Tell me the sounds you hear in the word stump,” your child will respond, “/s/ /t/ /u/ /m/ /p/.”']),
+              inventoryQuestion('first-grade-05', 'My child can add sounds in a word.', ['For example, if you say, “If I have ranch and add /b/ to the beginning, what new word do I have?” your child will respond, “Branch.”']),
+              inventoryQuestion('first-grade-06', 'My child can substitute sounds in a word.', ['For example, if you say, “If I have track and switch out /c/ for /p/, what new word do I have?” your child will respond, “Trap.”']),
+              inventoryQuestion('first-grade-07', 'My child can take away sounds in a word.', ['For example, if you say, “If I have steam and take away the /s/, what word do I have left?” your child will respond, “Team.”'])
+            ]
+          },
+          {
+            title: 'Phonics and spelling',
+            continueAt: 9,
+            questions: [
+              inventoryQuestion('first-grade-08', 'My child can read and spell words with digraphs like shop, chat, them, sick, and which.'),
+              inventoryQuestion('first-grade-09', 'My child can read and spell words with blends like grip, plug, strap, belt, and went.'),
+              inventoryQuestion('first-grade-10', 'My child can read and spell words with glued sounds like strong, bring, trunk, and bank.'),
+              inventoryQuestion('first-grade-11', 'My child can read and spell words with a vowel-consonant-e (VCe) syllable pattern.', ['For example, my child can read and spell words like shine, blame, joke, mute, and eve.']),
+              inventoryQuestion('first-grade-12', 'My child can read and spell words with an r-controlled syllable pattern.', ['For example, my child can read and spell words like storm, park, third, fern, and church.']),
+              inventoryQuestion('first-grade-13', 'My child can read and spell words with trigraphs like catch, fetch, dodge, and pledge.'),
+              inventoryQuestion('first-grade-14', 'My child can read and spell words with soft c /s/ and soft g /j/ like space, nice, page, and verge.'),
+              inventoryQuestion('first-grade-15', 'My child can read and spell two-syllable words like rabbit, goblet, velvet, and contest.'),
+              inventoryQuestion('first-grade-16', 'My child can read and spell words with y as a vowel like baby, hobby, spy, and fly.'),
+              inventoryQuestion('first-grade-17', 'My child can read and spell two-syllable words like fifty, combo, disco, and gusto.'),
+              inventoryQuestion('first-grade-18', 'My child can read and spell words with suffixes like cats, lashes, jumped, hopeful, helpless, swinging, surfer, and sharpest.')
+            ]
+          },
+          {
+            title: 'Irregular words and fluency',
+            questions: [
+              inventoryQuestion('first-grade-19', 'My child can read and spell some words that occur frequently in texts but are irregularly spelled.', ['My child can read and spell words like one, good, from, who, what, and where.']),
+              inventoryQuestion('first-grade-20', 'When my child reads a text aloud, they read accurately and use phrasing and expression without having to sound out too many words.')
+            ]
+          },
+          {
+            title: 'Comprehension',
+            questions: [
+              inventoryQuestion('first-grade-21', 'My child can accurately retell a story orally or in writing using details about the character(s), setting, and important events in the order they occurred in the story.'),
+              inventoryQuestion('first-grade-22', 'My child can tell me a lesson a character learned after listening to or reading a story.')
+            ]
+          },
+          {
+            title: 'Writing',
+            questions: [
+              inventoryQuestion('first-grade-23', 'My child writes in complete sentences with subject-verb agreement.')
+            ]
+          },
+          {
+            title: 'Vocabulary',
+            questions: [
+              inventoryQuestion('first-grade-24', 'My child has a wide vocabulary that they use appropriately in speaking and writing.'),
+              inventoryQuestion('first-grade-25', 'When my child comes across an unfamiliar word in a text, they can use context clues to determine the meaning of the unfamiliar word.')
+            ]
+          }
+        ]
+      },
+      secondGrade: {
+        label: 'Second Grade',
+        resourceAt: 19,
+        groups: [
+          {
+            title: 'Phonics and spelling review',
+            continueAt: 10,
+            questions: [
+              inventoryQuestion('second-grade-01', 'My child can read and spell words with digraphs like shop, chat, them, sick, and which.'),
+              inventoryQuestion('second-grade-02', 'My child can read and spell words with blends like grip, plug, strap, belt, and went.'),
+              inventoryQuestion('second-grade-03', 'My child can read and spell words with glued sounds like strong, bring, trunk, and bank.'),
+              inventoryQuestion('second-grade-04', 'My child can read and spell words with a vowel-consonant-e (VCe) syllable pattern.', ['For example, my child can read and spell words like shine, blame, joke, mute, and eve.']),
+              inventoryQuestion('second-grade-05', 'My child can read and spell words with an r-controlled syllable pattern.', ['For example, my child can read and spell words like storm, park, third, fern, and church.']),
+              inventoryQuestion('second-grade-06', 'My child can read and spell words with trigraphs like catch, fetch, dodge, and pledge.'),
+              inventoryQuestion('second-grade-07', 'My child can read and spell words with soft c /s/ and soft g /j/ like space, nice, page, and verge.'),
+              inventoryQuestion('second-grade-08', 'My child can read and spell two-syllable words like rabbit, goblet, velvet, and contest.'),
+              inventoryQuestion('second-grade-09', 'My child can read and spell words with y as a vowel like baby, hobby, spy, and fly.'),
+              inventoryQuestion('second-grade-10', 'My child can read and spell two-syllable words like fifty, combo, disco, and gusto.'),
+              inventoryQuestion('second-grade-11', 'My child can read and spell words with suffixes like cats, lashes, jumped, hopeful, helpless, swinging, surfer, and sharpest.')
+            ]
+          },
+          {
+            title: 'Advanced phonics and spelling',
+            continueAt: 4,
+            questions: [
+              inventoryQuestion('second-grade-12', 'My child can read and spell words with a vowel team syllable pattern.', ['My child can read and spell words like rain, stay, boat, snow, light, tree, cheap, join, toy, book, food, count, and howl.']),
+              inventoryQuestion('second-grade-13', 'My child can read and spell two-syllable words like fifty, combo, disco, and gusto.'),
+              inventoryQuestion('second-grade-14', 'My child can read and spell words with the consonant -le syllable pattern.', ['My child can read and spell words like marble, bugle, battle, and staple.']),
+              inventoryQuestion('second-grade-15', 'My child can read and spell words with common prefixes and suffixes.', ['My child can read and spell words like replying, singer, hoping, and disconnected.']),
+              inventoryQuestion('second-grade-16', 'My child can read and spell words like island, knight, and ghost.')
+            ]
+          },
+          {
+            title: 'Irregular words and fluency',
+            questions: [
+              inventoryQuestion('second-grade-17', 'My child can read and spell some words that occur frequently in texts but are irregularly spelled.', ['My child can read and spell words like always, ready, before, and through.']),
+              inventoryQuestion('second-grade-18', 'When my child reads a text aloud, they read accurately and use phrasing and expression without having to sound out too many words.')
+            ]
+          },
+          {
+            title: 'Comprehension',
+            questions: [
+              inventoryQuestion('second-grade-19', 'My child can accurately retell a story orally or in writing using details about the character(s), setting, and important events in the order they occurred in the story.'),
+              inventoryQuestion('second-grade-20', 'My child can tell me a theme or lesson a character learned after listening to or reading a story.'),
+              inventoryQuestion('second-grade-21', 'My child can explain why an author wrote an informational text and tell me the text’s main idea and relevant details.')
+            ]
+          },
+          {
+            title: 'Writing',
+            questions: [
+              inventoryQuestion('second-grade-22', 'My child writes in complete sentences with subject-verb agreement.'),
+              inventoryQuestion('second-grade-23', 'My child varied sentence structure with simple and compound sentences.')
+            ]
+          },
+          {
+            title: 'Vocabulary',
+            questions: [
+              inventoryQuestion('second-grade-24', 'My child has a wide vocabulary that they use appropriately in speaking and writing.'),
+              inventoryQuestion('second-grade-25', 'When my child comes across an unfamiliar word in a text, they can use context clues to determine the meaning of the unfamiliar word.')
+            ]
+          }
+        ]
+      },
+      thirdGradeAndAbove: {
+        label: 'Third Grade and Above',
+        resourceAt: 19,
+        groups: [
+          {
+            title: 'Phonics and spelling review',
+            continueAt: 8,
+            questions: [
+              inventoryQuestion('third-plus-01', 'My child can read and spell words with a vowel-consonant-e (VCe) syllable pattern.', ['For example, my child can read and spell words like shine, blame, joke, mute, and eve.']),
+              inventoryQuestion('third-plus-02', 'My child can read and spell words with an r-controlled syllable pattern.', ['For example, my child can read and spell words like storm, park, third, fern, and church.']),
+              inventoryQuestion('third-plus-03', 'My child can read and spell words with trigraphs like catch, fetch, dodge, and pledge.'),
+              inventoryQuestion('third-plus-04', 'My child can read and spell words with soft c /s/ and soft g /j/ like space, nice, page, and verge.'),
+              inventoryQuestion('third-plus-05', 'My child can read and spell two-syllable words like rabbit, goblet, velvet, and contest.'),
+              inventoryQuestion('third-plus-06', 'My child can read and spell words with y as a vowel like baby, hobby, spy, and fly.'),
+              inventoryQuestion('third-plus-07', 'My child can read and spell two-syllable words like fifty, combo, disco, and gusto.'),
+              inventoryQuestion('third-plus-08', 'My child can read and spell words with suffixes like cats, lashes, jumped, hopeful, helpless, swinging, surfer, and sharpest.')
+            ]
+          },
+          {
+            title: 'Advanced phonics and spelling',
+            continueAt: 4,
+            questions: [
+              inventoryQuestion('third-plus-09', 'My child can read and spell words with a vowel team syllable pattern.', ['My child can read and spell words like rain, stay, boat, snow, light, tree, cheap, join, toy, book, food, count, and howl.']),
+              inventoryQuestion('third-plus-10', 'My child can read and spell two-syllable words like fifty, combo, disco, and gusto.'),
+              inventoryQuestion('third-plus-11', 'My child can read and spell words with the consonant -le syllable pattern.', ['My child can read and spell words like marble, bugle, battle, and staple.']),
+              inventoryQuestion('third-plus-12', 'My child can read and spell words with common prefixes and suffixes.', ['My child can read and spell words like replying, singer, hoping, and disconnected.']),
+              inventoryQuestion('third-plus-13', 'My child can read and spell words like island, knight, and ghost.')
+            ]
+          },
+          {
+            title: 'Multisyllabic words',
+            continueAt: 2,
+            questions: [
+              inventoryQuestion('third-plus-14', 'My child can read words like malfunction, inspection, judgement, and beneficial.'),
+              inventoryQuestion('third-plus-15', 'My child can read words with suffixes like hopeful, harmless, and gentlest.'),
+              inventoryQuestion('third-plus-16', 'My child can read words like underground, misconduct, collectable, and employment.')
+            ]
+          },
+          {
+            title: 'Fluency',
+            questions: [
+              inventoryQuestion('third-plus-17', 'When my child reads a text aloud, they read accurately and use phrasing and expression without having to sound out too many words.')
+            ]
+          },
+          {
+            title: 'Comprehension',
+            questions: [
+              inventoryQuestion('third-plus-18', 'My child can accurately summarize a story orally and in writing using details about the character(s), setting, and important events in the order they occurred in the story.'),
+              inventoryQuestion('third-plus-19', 'My child can tell me a theme or lesson a character learned after listening to or reading a story.'),
+              inventoryQuestion('third-plus-20', 'My child can explain why an author wrote an informational text and tell me the text’s main idea and relevant details.')
+            ]
+          },
+          {
+            title: 'Writing',
+            questions: [
+              inventoryQuestion('third-plus-21', 'My child writes in complete sentences with subject-verb agreement.'),
+              inventoryQuestion('third-plus-22', 'My child varied sentence structure with simple, compound, and complex sentences.')
+            ]
+          },
+          {
+            title: 'Vocabulary',
+            questions: [
+              inventoryQuestion('third-plus-23', 'My child has a wide vocabulary that they use appropriately in speaking and writing.'),
+              inventoryQuestion('third-plus-24', 'When my child comes across an unfamiliar word in a text, they can use context clues to determine the meaning of the unfamiliar word.')
+            ]
+          }
+        ]
+      }
+    };
+
     const kpiLabels = {
       phonemicAwareness: 'Phonemic awareness',
       letterSound: 'Letter sounds',
@@ -327,9 +600,91 @@
       childName: '',
       childAge: '',
       answers: {},
+      zipCode: '',
+      inventoryGrade: '',
+      inventoryAnswers: {},
+      inventoryStoppedAtGroup: null,
+      lastInventoryStepIndex: null,
       preferredVoice: null,
       audioPlayer: null
     };
+
+    function selectedGradeChoice() {
+      return parentInventoryGradeChoices.find((choice) => choice.value === state.inventoryGrade) || null;
+    }
+
+    function selectedParentInventory() {
+      const gradeChoice = selectedGradeChoice();
+      return gradeChoice ? parentReadingInventories[gradeChoice.inventoryKey] : null;
+    }
+
+    function parentInventorySteps() {
+      const inventory = selectedParentInventory();
+      if (!inventory) return [];
+      let overallIndex = 0;
+      return inventory.groups.flatMap((group, groupIndex) => group.questions.map((question, questionIndex) => {
+        overallIndex += 1;
+        return {
+          type: 'parentQuestion',
+          title: group.title,
+          prompt: question.prompt,
+          examples: question.examples,
+          inventoryQuestionId: question.id,
+          groupIndex,
+          questionIndex,
+          groupQuestionCount: group.questions.length,
+          overallIndex,
+          overallQuestionCount: inventory.groups.reduce((total, item) => total + item.questions.length, 0),
+          isGroupEnd: questionIndex === group.questions.length - 1
+        };
+      }));
+    }
+
+    function workflowSteps() {
+      return [
+        ...assessmentSteps.slice(0, -1),
+        {
+          type: 'parentIntro',
+          title: 'One more step for the parent.',
+          eyebrow: 'Parent Reading Inventory'
+        },
+        ...parentInventorySteps(),
+        assessmentSteps[assessmentSteps.length - 1]
+      ];
+    }
+
+    function groupYesCount(groupIndex) {
+      const inventory = selectedParentInventory();
+      if (!inventory) return 0;
+      return inventory.groups[groupIndex].questions.reduce(
+        (total, question) => total + Number(state.inventoryAnswers[question.id] === true),
+        0
+      );
+    }
+
+    function calculateParentInventoryResult() {
+      const inventory = selectedParentInventory();
+      const gradeChoice = selectedGradeChoice();
+      if (!inventory || !gradeChoice) return null;
+      const questions = inventory.groups.flatMap((group) => group.questions);
+      const answeredCount = questions.filter((question) => state.inventoryAnswers[question.id] !== undefined).length;
+      const yesCount = questions.filter((question) => state.inventoryAnswers[question.id] === true).length;
+      const stoppedGroup = state.inventoryStoppedAtGroup === null
+        ? null
+        : inventory.groups[state.inventoryStoppedAtGroup];
+      const supportRecommended = Boolean(stoppedGroup) || yesCount < inventory.resourceAt;
+      return {
+        gradeLabel: gradeChoice.label,
+        inventoryLabel: inventory.label,
+        total: questions.length,
+        answeredCount,
+        yesCount,
+        percent: Math.round((yesCount / questions.length) * 100),
+        supportRecommended,
+        stoppedGroup,
+        resourceAt: inventory.resourceAt
+      };
+    }
 
     const body = document.getElementById('step-body');
     const title = document.getElementById('step-title');
@@ -433,6 +788,7 @@
     function cachedAudioForStep(step) {
       if (step.type === 'intro') return cachedAudioByStep.intro;
       if (step.type === 'result') return cachedAudioByStep.result;
+      if (step.type === 'parentIntro' || step.type === 'parentQuestion') return null;
       return cachedAudioByStep[step.kpi] || null;
     }
 
@@ -479,6 +835,20 @@
           { text: `You are reading at a ${result.readingAge.toFixed(1)} year old level.`, rate: 0.78, pitch: 1.04 }
         ];
       }
+      if (step.type === 'parentIntro') {
+        return [
+          { text: 'Now it is time for the parent reading inventory.', rate: 0.82, pitch: 1.05, pause: 300 },
+          { text: 'Enter your ZIP Code and choose your child’s grade. The next questions will use Yes or No answers.', rate: 0.78, pitch: 1.03 }
+        ];
+      }
+      if (step.type === 'parentQuestion') {
+        return [
+          { text: step.title, rate: 0.82, pitch: 1.05, pause: 240 },
+          { text: step.prompt, rate: 0.76, pitch: 1.04, pause: 320 },
+          ...step.examples.map((example) => ({ text: example, rate: 0.76, pitch: 1.02, pause: 260 })),
+          { text: 'Choose Yes or No.', rate: 0.8, pitch: 1.03 }
+        ];
+      }
       return [
         { text: step.title, rate: 0.82, pitch: 1.05, pause: 260 },
         { text: step.prompt, rate: 0.76, pitch: 1.04, pause: 520 },
@@ -500,15 +870,27 @@
     }
 
     function render() {
-      const step = assessmentSteps[state.stepIndex];
+      const steps = workflowSteps();
+      const step = steps[state.stepIndex];
       title.textContent = step.title;
       eyebrow.textContent = step.eyebrow || `Step ${state.stepIndex + 1} of ${assessmentSteps.length}`;
-      progress.style.width = `${Math.max(8, ((state.stepIndex + 1) / assessmentSteps.length) * 100)}%`;
+      if (step.type === 'parentQuestion') {
+        eyebrow.textContent = `Parent inventory • ${step.overallIndex} of ${step.overallQuestionCount}`;
+      } else if (!step.eyebrow) {
+        eyebrow.textContent = `Step ${state.stepIndex + 1} of ${steps.length}`;
+      }
+      progress.style.width = `${Math.max(8, ((state.stepIndex + 1) / steps.length) * 100)}%`;
       backButton.classList.toggle('invisible', state.stepIndex === 0);
-      nextButton.textContent = state.stepIndex === assessmentSteps.length - 2 ? 'See Results' : state.stepIndex === assessmentSteps.length - 1 ? 'Start Again' : 'Next';
+      if (step.type === 'result') nextButton.textContent = 'Start Again';
+      else if (step.type === 'parentIntro') nextButton.textContent = 'Start Parent Inventory';
+      else if (step.type === 'parentQuestion' && state.stepIndex === steps.length - 2) nextButton.textContent = 'See Results';
+      else if (steps[state.stepIndex + 1]?.type === 'parentIntro') nextButton.textContent = 'Continue to Parent Inventory';
+      else nextButton.textContent = 'Next';
 
       if (step.type === 'intro') renderIntro();
       else if (step.type === 'result') renderResult();
+      else if (step.type === 'parentIntro') renderParentIntro();
+      else if (step.type === 'parentQuestion') renderParentQuestion(step);
       else renderQuestion(step);
     }
 
@@ -543,6 +925,79 @@
       });
     }
 
+    function renderParentIntro() {
+      body.innerHTML = `
+        <div class="rounded-3xl bg-linen p-5">
+          <p class="text-sm font-black uppercase tracking-[0.16em] text-mediumTeal">About 5 minutes</p>
+          <p class="mt-3 text-2xl font-black leading-snug">Is your child on track in reading?</p>
+          <p class="mt-3 leading-7 text-ink/70">We’ll share what the research says about where your child is and what to watch for. If you aren’t sure about an answer, ask your child using the prompt provided.</p>
+        </div>
+        <div class="mt-5 grid gap-5">
+          <label class="block">
+            <span class="text-sm font-black text-ink">ZIP Code</span>
+            <input id="parent-zip-code" class="mt-2 w-full rounded-2xl border border-ink/15 px-4 py-4 text-lg font-bold focus:border-deepTeal focus:outline-none" type="text" inputmode="numeric" autocomplete="postal-code" maxlength="10" placeholder="12345" value="${escapeAttribute(state.zipCode)}">
+            <span class="mt-2 block text-sm font-bold text-ink/55">Enter a 5-digit ZIP Code or ZIP+4.</span>
+          </label>
+          <label class="block">
+            <span class="text-sm font-black text-ink">Select your child’s grade</span>
+            <select id="parent-grade" class="mt-2 w-full rounded-2xl border border-ink/15 px-4 py-4 text-lg font-bold focus:border-deepTeal focus:outline-none">
+              <option value="">Choose grade</option>
+              ${parentInventoryGradeChoices.map((choice) => `<option value="${choice.value}" ${state.inventoryGrade === choice.value ? 'selected' : ''}>${choice.label}</option>`).join('')}
+            </select>
+          </label>
+          <div class="rounded-3xl bg-seafoam p-5">
+            <h3 class="text-lg font-black">How to answer</h3>
+            <p class="mt-2 leading-7 text-ink/70">Choose Yes when your child can consistently do what the statement describes. Choose No when they cannot do it yet or you are unsure.</p>
+          </div>
+        </div>
+      `;
+      body.querySelector('#parent-zip-code').addEventListener('input', (event) => {
+        state.zipCode = event.target.value.trim();
+      });
+      body.querySelector('#parent-grade').addEventListener('change', (event) => {
+        if (state.inventoryGrade !== event.target.value) {
+          state.inventoryGrade = event.target.value;
+          state.inventoryAnswers = {};
+          state.inventoryStoppedAtGroup = null;
+          state.lastInventoryStepIndex = null;
+        }
+      });
+    }
+
+    function renderParentQuestion(step) {
+      const answer = state.inventoryAnswers[step.inventoryQuestionId];
+      body.innerHTML = `
+        <div class="rounded-3xl bg-linen p-5">
+          <div class="flex flex-wrap items-center justify-between gap-3">
+            <p class="text-sm font-black uppercase tracking-[0.16em] text-mediumTeal">${step.title}</p>
+            <span class="rounded-full bg-white px-3 py-2 text-sm font-black text-deepTeal ring-1 ring-deepTeal/15">${step.questionIndex + 1} of ${step.groupQuestionCount} in this section</span>
+          </div>
+          <p class="mt-4 text-2xl font-black leading-snug">${step.prompt}</p>
+          ${step.examples.length ? `
+            <div class="mt-4 space-y-2 rounded-2xl bg-white/75 p-4 text-base leading-7 text-ink/70">
+              ${step.examples.map((example) => `<p>${example}</p>`).join('')}
+            </div>
+          ` : ''}
+        </div>
+        <div class="mt-5 grid gap-3 sm:grid-cols-2" role="group" aria-label="Answer Yes or No">
+          <button type="button" class="answer-card focus-ring rounded-3xl border-2 border-ink/10 bg-white p-6 text-left text-xl font-black text-ink shadow-sm transition hover:-translate-y-0.5 hover:border-deepTeal/70" data-inventory-answer="yes" aria-pressed="${answer === true}">
+            <span class="block text-sm uppercase tracking-[0.16em] text-deepTeal">1</span>
+            Yes
+          </button>
+          <button type="button" class="answer-card focus-ring rounded-3xl border-2 border-ink/10 bg-white p-6 text-left text-xl font-black text-ink shadow-sm transition hover:-translate-y-0.5 hover:border-deepTeal/70" data-inventory-answer="no" aria-pressed="${answer === false}">
+            <span class="block text-sm uppercase tracking-[0.16em] text-deepTeal">0</span>
+            No
+          </button>
+        </div>
+      `;
+      body.querySelectorAll('[data-inventory-answer]').forEach((button) => {
+        button.addEventListener('click', () => {
+          state.inventoryAnswers[step.inventoryQuestionId] = button.dataset.inventoryAnswer === 'yes';
+          renderParentQuestion(step);
+        });
+      });
+    }
+
     function calculateResults() {
       const scoredSteps = assessmentSteps.filter((step) => step.kpi);
       const scores = {};
@@ -566,16 +1021,34 @@
     function renderResult() {
       const result = calculateResults();
       const name = state.childName || 'Your child';
+      const safeName = escapeHtml(name);
+      const parentResult = calculateParentInventoryResult();
       const levelText = `${result.readingAge.toFixed(1)}-year-old level`;
       const growthList = result.growth.length ? result.growth.slice(0, 4) : ['Continue building fluency and comprehension with just-right texts'];
       const strengthList = result.strengths.length ? result.strengths.slice(0, 4) : ['Early reading behaviors are emerging'];
-      const gapCopy = result.gap === null
+      const gapCopy = Number(state.childAge) > 11
+        ? 'The digital questions estimate foundational reading skills through about age 11. For older readers, give the parent inventory and specialist review more weight.'
+        : result.gap === null
         ? 'Add your child’s age next time to compare reading age to chronological age.'
         : result.gap >= 0.5
-          ? `${name} is currently reading above the selected age by about ${result.gap.toFixed(1)} years.`
+          ? `${safeName} is currently reading above the selected age by about ${result.gap.toFixed(1)} years.`
           : result.gap <= -0.5
-            ? `${name} is currently reading below the selected age by about ${Math.abs(result.gap).toFixed(1)} years.`
-            : `${name} is reading close to the selected age band.`;
+            ? `${safeName} is currently reading below the selected age by about ${Math.abs(result.gap).toFixed(1)} years.`
+            : `${safeName} is reading close to the selected age band.`;
+      const inventoryPanel = parentResult ? `
+        <div class="mt-6 rounded-[2rem] ${parentResult.supportRecommended ? 'bg-sand' : 'bg-seafoam'} p-6 ring-1 ring-ink/10">
+          <p class="text-sm font-black uppercase tracking-[0.18em] text-deepTeal">${parentResult.gradeLabel} Parent Reading Inventory</p>
+          <h3 class="mt-3 text-3xl font-black">${parentResult.supportRecommended ? 'Consider reading support.' : 'Foundational skills look on track in this inventory.'}</h3>
+          <p class="mt-3 text-lg leading-8 text-ink/75">
+            ${parentResult.stoppedGroup
+              ? `The inventory ended at the ${parentResult.stoppedGroup.title} checkpoint with ${groupYesCount(state.inventoryStoppedAtGroup)} of ${parentResult.stoppedGroup.questions.length} Yes answers.`
+              : `${parentResult.yesCount} of ${parentResult.total} statements were marked Yes (${parentResult.percent}%).`}
+          </p>
+          ${parentResult.supportRecommended
+            ? '<p class="mt-3 font-bold leading-7 text-ink/75">A specialist can help clarify the pattern and recommend practical next steps.</p>'
+            : '<ul class="mt-4 grid gap-3 font-bold text-ink sm:grid-cols-2"><li class="rounded-2xl bg-white/70 px-4 py-3">Comprehension and fluency resources</li><li class="rounded-2xl bg-white/70 px-4 py-3">Age-appropriate book lists</li></ul>'}
+        </div>
+      ` : '';
 
       body.innerHTML = `
         <div class="rounded-[2rem] bg-gradient-to-br from-deepTeal to-[#007D78] p-7 text-white shadow-glow">
@@ -583,6 +1056,8 @@
           <h3 class="mt-3 text-4xl font-black sm:text-6xl">You are reading at a ${levelText}</h3>
           <p class="mt-4 text-lg leading-8 text-white/85">${gapCopy}</p>
         </div>
+
+        ${inventoryPanel}
 
         <form class="mt-6 rounded-[2rem] bg-white p-5 shadow-xl shadow-deepTeal/10 ring-2 ring-deepTeal/15" method="post" action="/crm/signup/">
           <input type="hidden" name="csrfmiddlewaretoken" value="${getCookie('csrftoken')}">
@@ -646,7 +1121,7 @@
 
           <div class="rounded-3xl bg-white p-5 shadow-sm ring-1 ring-ink/10">
             <h4 class="text-xl font-black">Personalized recommendation</h4>
-            <p class="mt-3 text-ink/70">A specialist may explore these instructional priorities with ${name}:</p>
+            <p class="mt-3 text-ink/70">A specialist may explore these instructional priorities with ${safeName}:</p>
             <ul class="mt-4 space-y-3">
               ${growthList.map(item => `<li class="rounded-2xl bg-sand px-4 py-3 font-bold text-ink">${item}</li>`).join('')}
             </ul>
@@ -673,6 +1148,10 @@
         .replace(/>/g, '&gt;');
     }
 
+    function escapeHtml(value) {
+      return escapeAttribute(value).replace(/'/g, '&#039;');
+    }
+
     function getCookie(name) {
       return document.cookie
         .split('; ')
@@ -681,18 +1160,31 @@
     }
 
     function canAdvance() {
-      const step = assessmentSteps[state.stepIndex];
+      const step = workflowSteps()[state.stepIndex];
       if (step.type === 'intro') return state.childName.trim() && state.childAge;
+      if (step.type === 'parentIntro') {
+        return /^\d{5}(?:-\d{4})?$/.test(state.zipCode) && Boolean(selectedParentInventory());
+      }
+      if (step.type === 'parentQuestion') {
+        return state.inventoryAnswers[step.inventoryQuestionId] !== undefined;
+      }
       if (step.type === 'result') return true;
       return state.answers[step.kpi] !== undefined;
     }
 
     nextButton.addEventListener('click', () => {
-      if (state.stepIndex === assessmentSteps.length - 1) {
+      const steps = workflowSteps();
+      const step = steps[state.stepIndex];
+      if (step.type === 'result') {
         state.stepIndex = 0;
         state.childName = '';
         state.childAge = '';
         state.answers = {};
+        state.zipCode = '';
+        state.inventoryGrade = '';
+        state.inventoryAnswers = {};
+        state.inventoryStoppedAtGroup = null;
+        state.lastInventoryStepIndex = null;
         render();
         return;
       }
@@ -700,14 +1192,33 @@
         body.insertAdjacentHTML('beforeend', '<p class="mt-4 rounded-2xl bg-sand px-4 py-3 text-sm font-black text-mediumTeal">Please answer this step before continuing.</p>');
         return;
       }
+      if (step.type === 'parentQuestion' && step.isGroupEnd) {
+        const inventory = selectedParentInventory();
+        const group = inventory.groups[step.groupIndex];
+        state.inventoryStoppedAtGroup = null;
+        if (group.continueAt && groupYesCount(step.groupIndex) < group.continueAt) {
+          state.inventoryStoppedAtGroup = step.groupIndex;
+          state.lastInventoryStepIndex = state.stepIndex;
+          state.stepIndex = steps.length - 1;
+          render();
+          window.scrollTo({ top: 0, behavior: 'smooth' });
+          return;
+        }
+      }
       state.stepIndex += 1;
       render();
       window.scrollTo({ top: 0, behavior: 'smooth' });
     });
 
     backButton.addEventListener('click', () => {
-      state.stepIndex = Math.max(0, state.stepIndex - 1);
+      const step = workflowSteps()[state.stepIndex];
+      if (step.type === 'result' && state.inventoryStoppedAtGroup !== null && state.lastInventoryStepIndex !== null) {
+        state.stepIndex = state.lastInventoryStepIndex;
+      } else {
+        state.stepIndex = Math.max(0, state.stepIndex - 1);
+      }
       render();
+      window.scrollTo({ top: 0, behavior: 'smooth' });
     });
 
     readButton.addEventListener('click', () => {
@@ -723,7 +1234,7 @@
         resetReadButton();
         return;
       }
-      const step = assessmentSteps[state.stepIndex];
+      const step = workflowSteps()[state.stepIndex];
       if (!playCachedAudio(step)) {
         speak(speechTextForStep(step));
       }
