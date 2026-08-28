@@ -113,6 +113,21 @@
       outline: 3px solid rgba(245, 166, 35, .6);
       outline-offset: 2px;
     }
+    .career-field input[type="file"] {
+      background: rgba(168, 207, 196, .16);
+      padding: .65rem;
+    }
+    .career-field input[type="file"]::file-selector-button {
+      background: var(--career-deep-teal);
+      border: 0;
+      border-radius: .25rem;
+      color: #fff;
+      cursor: pointer;
+      font-family: "Barlow Condensed", "Arial Narrow", sans-serif;
+      font-weight: 700;
+      margin-right: .75rem;
+      padding: .65rem .9rem;
+    }
     @media (max-width: 767px) {
       .career-section {
         padding: 4.5rem 1.25rem;
@@ -223,45 +238,51 @@
         <div>
           <p class="career-eyebrow">Tell us about your work</p>
           <h2 id="interest-heading" class="career-title mt-3">Introduce yourself</h2>
-          <p class="career-description mt-5">No formal application required yet. Send us a note about what you teach, where you trained, and what you're looking for. We'll take it from there.</p>
+          <p class="career-description mt-5">Share your contact details, resume, and cover letter. We'll take it from there.</p>
           <p class="career-description mt-5 rounded-lg bg-white p-5 shadow-sm">Please do not include student information, medical records, Social Security numbers, or other highly sensitive details.</p>
         </div>
 
-        <form id="career-interest-form" class="scroll-mt-28 rounded-xl bg-white p-6 shadow-xl shadow-deepTeal/10 ring-1 ring-ink/10 sm:p-8" method="post" action="/crm/signup/">
+        <form id="career-interest-form" class="scroll-mt-28 rounded-xl bg-white p-6 shadow-xl shadow-deepTeal/10 ring-1 ring-ink/10 sm:p-8" method="post" action="/crm/signup/" enctype="multipart/form-data">
           {% csrf_token %}
-          <input type="hidden" name="audience" value="other">
-          <input type="hidden" name="organization_name" value="Career interest">
           <input type="hidden" name="redirect_to" value="/careers/">
+          <input type="hidden" name="career_path" value="teacher">
           <p class="career-eyebrow">Career Interest</p>
-          <p class="career-description mt-3">Required fields are marked with an asterisk.</p>
+          <p class="career-description mt-3">All fields are required.</p>
           <div class="mt-7 grid gap-5 sm:grid-cols-2">
             <label class="career-field">
               <span>Your name *</span>
               <input type="text" name="name" autocomplete="name" maxlength="255" required>
             </label>
             <label class="career-field">
+              <span>Phone *</span>
+              <input type="tel" name="phone" autocomplete="tel" maxlength="32" required>
+            </label>
+          </div>
+          <label class="career-field mt-5">
+            <span>Address *</span>
+            <textarea class="min-h-28" name="address" autocomplete="street-address" maxlength="500" required></textarea>
+          </label>
+          <div class="mt-5 grid gap-5 sm:grid-cols-2">
+            <label class="career-field sm:col-span-2">
               <span>Email *</span>
               <input type="email" name="email" autocomplete="email" maxlength="254" required>
             </label>
             <label class="career-field">
-              <span>Career path *</span>
-              <select name="career_path" required>
-                <option value="">Choose a path</option>
-                <option value="teacher">Teaching or reading specialist</option>
-                <option value="company">Company team</option>
-              </select>
+              <span>Resume *</span>
+              <input type="file" name="resume" accept=".pdf,.doc,.docx" required>
             </label>
             <label class="career-field">
-              <span>Role or area of interest *</span>
-              <input type="text" name="role_interest" maxlength="255" placeholder="For example: reading specialist" required>
+              <span>Cover letter *</span>
+              <input type="file" name="cover_letter" accept=".pdf,.doc,.docx" required>
             </label>
           </div>
           <label class="career-field mt-5">
-            <span>What would you bring to ClearCode? *</span>
-            <textarea class="min-h-40" name="notes" placeholder="Share what you teach, where you trained, and what you're looking for." required></textarea>
+            <span>How did you hear about us? *</span>
+            <input type="text" name="how_heard" maxlength="255" required>
           </label>
+          <p class="mt-3 text-xs leading-5 text-ink/55">Upload PDF, DOC, or DOCX files no larger than 10 MB each.</p>
           <button class="career-button focus-ring mt-6 w-full bg-ink text-linen hover:bg-deepTeal" type="submit">Introduce Yourself</button>
-          <p class="mt-4 text-center text-[.68rem] leading-5 text-ink/50">This is an expression of interest, not an application to a currently open role or a promise of employment. We use your information only to evaluate potential career fit and follow up.</p>
+          <p class="mt-4 text-center text-[.68rem] leading-5 text-ink/50">This is an expression of interest, not an application to a currently open role or a promise of employment. Your information and documents are available only to authorized ClearCode staff for recruiting follow-up.</p>
         </form>
       </div>
     </section>

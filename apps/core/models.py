@@ -1,4 +1,12 @@
+from pathlib import Path
+from uuid import uuid4
+
 from django.db import models
+
+
+def recruiting_document_upload_path(instance, filename):
+    extension = Path(filename).suffix.lower()
+    return f"recruiting/documents/{uuid4().hex}{extension}"
 
 
 class TimeStampedModel(models.Model):
@@ -22,6 +30,12 @@ class RecruitingInterest(TimeStampedModel):
     name = models.CharField(max_length=255)
     email = models.EmailField(db_index=True)
     phone = models.CharField(max_length=32, blank=True)
+    address = models.TextField(blank=True)
+    how_heard = models.CharField(max_length=255, blank=True)
+    resume = models.FileField(upload_to=recruiting_document_upload_path, blank=True)
+    resume_original_name = models.CharField(max_length=255, blank=True)
+    cover_letter = models.FileField(upload_to=recruiting_document_upload_path, blank=True)
+    cover_letter_original_name = models.CharField(max_length=255, blank=True)
     career_path = models.CharField(max_length=16, choices=CareerPath.choices, db_index=True)
     role_interest = models.CharField(max_length=255)
     notes = models.TextField()
