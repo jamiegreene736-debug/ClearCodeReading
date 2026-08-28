@@ -41,33 +41,10 @@
         radial-gradient(circle at 86% 16%, rgba(46, 184, 184, .12), transparent 24%),
         linear-gradient(135deg, #F7F2EA 0%, #A8CFC4 48%, #E8D5B0 100%);
     }
-    .logo-plate { background: linear-gradient(135deg, rgba(247,242,234,.98), rgba(232,213,176,.45)); }
   </style>
 </head>
 <body class="page-bg min-h-screen font-sans text-ink antialiased">
-  <header class="sticky top-0 z-40 border-b border-deepTeal/10 bg-linen/95 backdrop-blur-xl">
-    <nav class="mx-auto flex max-w-7xl items-center justify-between gap-4 px-4 py-3 sm:px-6 lg:px-8">
-      <a href="/dashboard/" class="focus-ring logo-plate rounded-2xl px-2 py-1 shadow-sm ring-1 ring-ink/5">
-        <img src="/assets/logo/cc-lockup-linen-ui.png" alt="ClearCode Reading" class="h-12 w-auto max-w-[230px] object-contain sm:max-w-[300px]">
-      </a>
-      <div class="flex items-center gap-3">
-        <a href="/inbox/" class="hidden rounded-full px-4 py-2 text-sm font-black text-ink/70 transition hover:text-deepTeal sm:inline-flex">Inbox</a>
-        {% if request.user.is_staff %}
-          <a href="/admin/blog/blogpost/" class="hidden rounded-full px-4 py-2 text-sm font-black text-ink/70 transition hover:text-deepTeal lg:inline-flex">Blog posts</a>
-        {% endif %}
-        {% if request.user.is_staff or request.user.is_superuser or request.user.role == 'super_admin' %}
-          <a data-testid="crm-header-link" href="{% url 'crm_contact_list' %}" class="focus-ring hidden rounded-full bg-ink px-5 py-3 text-sm font-black text-white shadow-lg shadow-ink/15 transition hover:-translate-y-0.5 hover:bg-deepTeal sm:inline-flex">CRM</a>
-        {% endif %}
-        {% if request.user.is_staff %}
-          <a href="/admin/" class="hidden rounded-full px-4 py-2 text-sm font-black text-ink/70 transition hover:text-deepTeal sm:inline-flex">Admin</a>
-        {% endif %}
-        <form method="post" action="{% url 'logout' %}">
-          {% csrf_token %}
-          <button class="focus-ring rounded-full bg-mediumTeal px-5 py-3 text-sm font-extrabold text-white shadow-lg shadow-mediumTeal/25 transition hover:-translate-y-0.5 hover:bg-[#277f73]" type="submit">Logout</button>
-        </form>
-      </div>
-    </nav>
-  </header>
+  {% include "portal/_header.html" %}
 
   <main class="mx-auto max-w-7xl px-4 py-10 sm:px-6 lg:px-8">
     {% if messages %}
