@@ -47,6 +47,17 @@ BRAND_KIT_FILES = {
     "cc-wordmark-light.png",
 }
 
+LEARNING_PHOTOS_BY_PAGE = {
+    "marketing_home": {
+        "specialist-reading-session.jpg",
+        "family-reading-practice.jpg",
+    },
+    "marketing_how_it_works": {"specialist-reading-session.jpg"},
+    "marketing_families": {"family-reading-practice.jpg"},
+    "marketing_approach": {"inclusive-literacy-lesson.jpg"},
+    "marketing_careers": {"educator-team-collaboration.jpg"},
+}
+
 
 class MarketingPageTests(SimpleTestCase):
     def setUp(self):
@@ -136,6 +147,20 @@ class MarketingPageTests(SimpleTestCase):
             for asset_path in asset_paths:
                 with self.subTest(route_name=route_name, asset_path=asset_path):
                     self.assertTrue((marketing_root / asset_path.removeprefix("/")).is_file())
+
+    def test_key_pages_include_accessible_learning_photography(self):
+        for route_name, photo_names in LEARNING_PHOTOS_BY_PAGE.items():
+            content = self._render(route_name)
+            for photo_name in photo_names:
+                with self.subTest(route_name=route_name, photo_name=photo_name):
+                    image_tag = re.search(
+                        rf'<img[^>]+src="/assets/images/{re.escape(photo_name)}"[^>]*>',
+                        content,
+                    )
+                    self.assertIsNotNone(image_tag)
+                    self.assertRegex(image_tag.group(0), r'alt="[^"]+"')
+                    self.assertIn('width="1536"', image_tag.group(0))
+                    self.assertIn('height="1024"', image_tag.group(0))
 
     def test_assessment_is_positioned_as_optional_not_placement(self):
         content = self._render("reading_assessment")
