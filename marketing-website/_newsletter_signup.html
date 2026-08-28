@@ -1,5 +1,18 @@
-<section id="newsletter-signup" class="border-t border-deepTeal/10 bg-seafoam px-4 py-14 sm:px-6 lg:px-8" aria-labelledby="newsletter-heading">
+<section id="newsletter-signup" class="scroll-mt-24 border-t border-deepTeal/10 bg-seafoam px-4 py-14 sm:px-6 lg:px-8" aria-labelledby="newsletter-heading">
   <div class="mx-auto grid max-w-7xl gap-8 rounded-[2rem] bg-white p-6 shadow-xl shadow-deepTeal/10 ring-1 ring-deepTeal/10 sm:p-10 lg:grid-cols-[.9fr_1.1fr] lg:items-center">
+    {% if request.GET.newsletter and messages %}
+      <div class="space-y-3 lg:col-span-2" aria-live="polite" aria-atomic="true" data-testid="newsletter-signup-feedback">
+        {% for message in messages %}
+          <div class="flex items-start gap-4 rounded-[1.5rem] border-4 border-gold bg-ink px-5 py-5 text-white shadow-2xl shadow-ink/25 sm:px-7" role="{% if 'error' in message.tags %}alert{% else %}status{% endif %}">
+            <span class="grid h-11 w-11 shrink-0 place-items-center rounded-full bg-gold text-2xl font-black text-ink shadow-md" aria-hidden="true">{% if 'error' in message.tags %}!{% else %}✓{% endif %}</span>
+            <div>
+              <p class="text-sm font-black uppercase tracking-[.16em] text-gold">{% if 'error' in message.tags %}Please check your signup{% else %}Newsletter signup confirmed{% endif %}</p>
+              <p class="mt-1 text-lg font-black leading-7 sm:text-xl">{{ message }}</p>
+            </div>
+          </div>
+        {% endfor %}
+      </div>
+    {% endif %}
     <div>
       <p class="text-sm font-black uppercase tracking-[.18em] text-mediumTeal">ClearCode newsletter</p>
       <h2 id="newsletter-heading" class="mt-3 text-3xl font-black sm:text-4xl">Useful reading guidance, delivered clearly.</h2>
