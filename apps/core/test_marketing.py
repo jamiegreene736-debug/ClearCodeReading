@@ -7,7 +7,7 @@ from django.test import RequestFactory, SimpleTestCase, TestCase
 from django.urls import resolve, reverse
 
 from apps.core.models import RecruitingInterest
-from apps.crm.models import Lead
+from apps.crm.models import FormSubmission, Lead
 
 
 PUBLIC_PAGES = {
@@ -178,6 +178,22 @@ class MarketingPageTests(SimpleTestCase):
         self.assertIn("Florida Department of Education", content)
         self.assertIn('href="/contact/#consultation-form"', content)
 
+    def test_contact_page_links_to_family_survey_and_has_generic_contact_form(self):
+        content = self._render("marketing_contact")
+
+        self.assertIn(
+            'href="https://docs.google.com/document/d/'
+            '1pu7xPbdj-Cn8MiBYmoxDefYpCNGSxH1EL59DMjleDxY/edit?usp=sharing"',
+            content,
+        )
+        self.assertIn("Complete the family interest survey", content)
+        self.assertIn('id="consultation-form"', content)
+        self.assertIn('name="name"', content)
+        self.assertIn('name="email"', content)
+        self.assertIn('name="notes"', content)
+        self.assertNotIn('name="phone"', content)
+        self.assertNotIn('name="child_age_grade"', content)
+
     def test_careers_page_uses_supplied_clinical_team_positioning(self):
         content = self._render("marketing_careers")
 
@@ -277,19 +293,16 @@ class MarketingPageTests(SimpleTestCase):
         self.assertTrue(favicon_path.is_file())
 
 
-class ConsultationFormTests(TestCase):
-    def test_contact_form_creates_family_lead_and_returns_to_contact_page(self):
+class ContactFormTests(TestCase):
+    def test_contact_form_creates_generic_lead_and_returns_to_contact_page(self):
         response = self.client.post(
             reverse("crm_signup"),
             {
-                "name": "Jamie Parent",
-                "email": "parent@example.com",
-                "phone": "555-0102",
-                "audience": Lead.Audience.PARENT,
-                "organization_name": "Family consultation",
-                "estimated_students": "1",
-                "child_age_grade": "Age 7, grade 2",
-                "notes": "We would like help understanding current reading progress.",
+                "name": "Jamie Reader",
+                "email": "reader@example.com",
+                "audience": Lead.Audience.OTHER,
+                "organization_name": "Website contact",
+                "notes": "I have a question about ClearCode Reading.",
                 "redirect_to": "/contact/",
             },
         )
@@ -299,15 +312,39 @@ class ConsultationFormTests(TestCase):
             "/contact/?signup=thanks#consultation-form",
             fetch_redirect_response=False,
         )
-        lead = Lead.objects.get(contact_email="parent@example.com")
-        self.assertEqual(lead.audience, Lead.Audience.PARENT)
-        self.assertIn("Child age or grade: Age 7, grade 2", lead.notes)
-        self.assertIn("current reading progress", lead.notes)
+        lead = Lead.objects.get(contact_email="reader@example.com")
+        submission = FormSubmission.objects.get(lead=lead)
+        self.assertEqual(lead.audience, Lead.Audience.OTHER)
+        self.assertEqual(lead.notes, "I have a question about ClearCode Reading.")
+        self.assertEqual(submission.form_type, FormSubmission.FormType.WEBSITE)
+        self.assertEqual(submission.source_path, "/contact/")
+        self.assertFalse(lead.opportunities.exists())
 
     def test_contact_form_missing_required_contact_returns_to_form(self):
         response = self.client.post(
             reverse("crm_signup"),
             {"name": "", "email": "", "redirect_to": "/contact/"},
+        )
+
+        self.assertRedirects(
+            response,
+            "/contact/?signup=missing#consultation-form",
+            fetch_redirect_response=False,
+        )
+        self.assertFalse(Lead.objects.exists())
+        self.assertFalse(RecruitingInterest.objects.exists())
+
+    def test_contact_form_requires_a_message(self):
+        response = self.client.post(
+            reverse("crm_signup"),
+            {
+                "name": "Jamie Reader",
+                "email": "reader@example.com",
+                "audience": Lead.Audience.OTHER,
+                "organization_name": "Website contact",
+                "notes": "   ",
+                "redirect_to": "/contact/",
+            },
         )
 
         self.assertRedirects(
