@@ -130,6 +130,27 @@ class MarketingPageTests(SimpleTestCase):
         self.assertIn('name="career_path"', content)
         self.assertIn('action="/crm/signup/"', content)
 
+    def test_approach_page_uses_the_full_family_pathway(self):
+        content = self._render("marketing_approach")
+
+        expected_sections = [
+            "The Right Starting Point for Every Student.",
+            "The Assessment",
+            "Precise Placement",
+            "What a Session Looks Like",
+            "How Progress Is Tracked",
+            "The Same Faces, Every Session",
+            "Trained Reading Specialists",
+        ]
+        for section in expected_sections:
+            with self.subTest(section=section):
+                self.assertIn(section, content)
+
+        self.assertIn("Students per group, maximum", content)
+        self.assertIn("ClearCode provides educational reading instruction", content)
+        self.assertIn('href="/contact/"', content)
+        self.assertNotIn('href="waitlist.html"', content)
+
     def test_public_pages_use_the_clearcode_brand_system(self):
         for route_name in PUBLIC_PAGES:
             content = self._render(route_name)
