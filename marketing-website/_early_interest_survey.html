@@ -1,0 +1,268 @@
+<section id="early-interest-survey" class="bg-white py-14 sm:py-20" data-early-interest-survey>
+  <div class="mx-auto max-w-4xl px-4 sm:px-6 lg:px-8">
+    <div class="rounded-[2.25rem] bg-linen p-5 shadow-2xl shadow-deepTeal/10 ring-1 ring-deepTeal/10 sm:p-9">
+      <div class="grid gap-7 lg:grid-cols-[.72fr_1.28fr]">
+        <div>
+          <p class="text-sm font-black uppercase tracking-[.16em] text-deepTeal">ClearCode Early Interest Survey</p>
+          <h2 class="mt-3 text-3xl font-black leading-tight sm:text-4xl">Ten questions. About two minutes.</h2>
+          <p class="mt-5 leading-7 text-ink/70">We are a new evidence-based reading center opening in Winter Park and Maitland in June 2027. We are trying to understand what families like yours need, and to build a small group of founding families to walk with us from the beginning.</p>
+          <p class="mt-4 rounded-2xl bg-white p-4 text-sm font-bold leading-6 text-ink/65 ring-1 ring-ink/10">Your name, email, and ZIP code are required so we can follow up. Everything else is optional. We will never sell your information.</p>
+          {% if survey_placement == "blog" %}
+            <p class="mt-4 text-sm font-bold text-deepTeal">Your response will be connected to this article in the CRM so the team knows what prompted your interest.</p>
+          {% endif %}
+        </div>
+
+        <form method="post" action="/crm/survey/" class="rounded-[2rem] bg-white p-5 shadow-sm ring-1 ring-ink/10 sm:p-7" data-survey-form novalidate>
+          {% csrf_token %}
+          <input type="hidden" name="source_path" value="{{ survey_source_path }}">
+          <input type="hidden" name="blog_post_slug" value="{% if blog_post %}{{ blog_post.slug }}{% endif %}">
+          <div class="hidden" aria-hidden="true">
+            <label>Website <input type="text" name="website" tabindex="-1" autocomplete="off"></label>
+          </div>
+
+          <div class="mb-6" aria-live="polite">
+            <div class="flex items-center justify-between gap-4 text-sm font-black">
+              <span data-survey-progress-label>Question 1 of 10</span>
+              <span class="text-deepTeal" data-survey-time>About 2 minutes</span>
+            </div>
+            <div class="mt-3 h-2 overflow-hidden rounded-full bg-ink/10">
+              <div class="h-full w-[10%] rounded-full bg-gradient-to-r from-deepTeal to-mediumTeal transition-all" data-survey-progress-bar></div>
+            </div>
+          </div>
+
+          <fieldset data-survey-step="1">
+            <legend class="text-xl font-black">1. Your first and last name</legend>
+            <label class="mt-4 block">
+              <span class="sr-only">First and last name</span>
+              <input class="w-full rounded-2xl border border-ink/15 px-4 py-4 font-bold focus:border-deepTeal focus:outline-none" name="name" autocomplete="name" maxlength="255" placeholder="First Last" required>
+            </label>
+          </fieldset>
+
+          <fieldset data-survey-step="2" hidden>
+            <legend class="text-xl font-black">2. Your email address</legend>
+            <label class="mt-4 block">
+              <span class="sr-only">Email address</span>
+              <input class="w-full rounded-2xl border border-ink/15 px-4 py-4 font-bold focus:border-deepTeal focus:outline-none" type="email" name="email" autocomplete="email" maxlength="254" placeholder="name@example.com" required>
+            </label>
+            <label class="mt-4 flex items-start gap-3 rounded-2xl bg-seafoam/55 p-4 text-sm font-bold leading-6 text-ink/75">
+              <input class="mt-1 h-5 w-5 shrink-0 accent-deepTeal" type="checkbox" name="email_consent" value="yes" required>
+              <span>Yes, ClearCode may email me about this survey and about the center opening. We will never sell or share your information, and you can unsubscribe at any time.</span>
+            </label>
+          </fieldset>
+
+          <fieldset data-survey-step="3" hidden>
+            <legend class="text-xl font-black">3. Your home ZIP code</legend>
+            <label class="mt-4 block">
+              <span class="sr-only">Five-digit ZIP code</span>
+              <input class="w-full rounded-2xl border border-ink/15 px-4 py-4 font-bold focus:border-deepTeal focus:outline-none" name="home_zip" inputmode="numeric" autocomplete="postal-code" pattern="[0-9]{5}" maxlength="5" placeholder="32789" required>
+            </label>
+          </fieldset>
+
+          <fieldset data-survey-step="4" hidden>
+            <legend class="text-xl font-black">4. Which best describes your situation?</legend>
+            <div class="mt-4 grid gap-3">
+              <label class="survey-choice"><input type="radio" name="respondent_situation" value="prek_2_struggling" required><span>I have a child in Pre-K through 2nd grade who struggles with reading, or I suspect they do.</span></label>
+              <label class="survey-choice"><input type="radio" name="respondent_situation" value="grade_3_5_struggling"><span>I have a child in 3rd through 5th grade who struggles with reading, or I suspect they do.</span></label>
+              <label class="survey-choice"><input type="radio" name="respondent_situation" value="grade_6_8_struggling"><span>I have a child in 6th through 8th grade who struggles with reading, or I suspect they do.</span></label>
+              <label class="survey-choice"><input type="radio" name="respondent_situation" value="multiple_grade_bands"><span>I have more than one child who struggles with reading, in different grade bands.</span></label>
+              <label class="survey-choice"><input type="radio" name="respondent_situation" value="older_than_grade_8"><span>My child is older than 8th grade, and I am interested for the future or on behalf of another family.</span></label>
+              <label class="survey-choice"><input type="radio" name="respondent_situation" value="community_supporter"><span>I am an educator, reading specialist, local parent, potential donor or supporter, or other, with no struggling reader at home.</span></label>
+            </div>
+          </fieldset>
+
+          <fieldset data-survey-step="5" hidden>
+            <legend class="text-xl font-black">5. Which have you tried in the last two years to support your child’s reading?</legend>
+            <p class="mt-2 text-sm text-ink/60">Select all that apply. This question is optional.</p>
+            <div class="mt-4 grid gap-3">
+              <label class="survey-choice"><input type="checkbox" name="supports_tried" value="school_intervention"><span>School-based reading intervention</span></label>
+              <label class="survey-choice"><input type="checkbox" name="supports_tried" value="general_tutoring"><span>General private tutoring</span></label>
+              <label class="survey-choice"><input type="checkbox" name="supports_tried" value="specialized_tutor"><span>Specialized reading tutor (Orton-Gillingham, Wilson, Barton, Lindamood-Bell, and similar)</span></label>
+              <label class="survey-choice"><input type="checkbox" name="supports_tried" value="speech_educational_therapy"><span>Speech-language pathologist or educational therapist</span></label>
+              <label class="survey-choice"><input type="checkbox" name="supports_tried" value="online_program"><span>Online reading program, app, or game</span></label>
+              <label class="survey-choice"><input type="checkbox" name="supports_tried" value="medical_consultation"><span>Pediatrician, neurologist, or psychologist consultation</span></label>
+              <label class="survey-choice"><input type="checkbox" name="supports_tried" value="formal_evaluation"><span>Formal dyslexia or learning evaluation</span></label>
+              <label class="survey-choice"><input type="checkbox" name="supports_tried" value="changed_schooling"><span>Changed schools or schooling models because of reading</span></label>
+              <label class="survey-choice"><input type="checkbox" name="supports_tried" value="nothing_yet" data-nothing-yet><span>Nothing yet; we are just starting to look for help</span></label>
+            </div>
+          </fieldset>
+
+          <fieldset data-survey-step="6" hidden>
+            <legend class="text-xl font-black">6. Roughly how much has your household spent out of pocket on reading help in the last 12 months?</legend>
+            <p class="mt-2 text-sm text-ink/60">Tutoring, evaluations, specialists, programs, and materials. Optional.</p>
+            <div class="mt-4 grid gap-3 sm:grid-cols-2">
+              <label class="survey-choice"><input type="radio" name="annual_reading_spend" value="none"><span>$0, nothing yet</span></label>
+              <label class="survey-choice"><input type="radio" name="annual_reading_spend" value="up_to_500"><span>$1 to $500</span></label>
+              <label class="survey-choice"><input type="radio" name="annual_reading_spend" value="501_2000"><span>$501 to $2,000</span></label>
+              <label class="survey-choice"><input type="radio" name="annual_reading_spend" value="2001_5000"><span>$2,001 to $5,000</span></label>
+              <label class="survey-choice"><input type="radio" name="annual_reading_spend" value="5001_10000"><span>$5,001 to $10,000</span></label>
+              <label class="survey-choice"><input type="radio" name="annual_reading_spend" value="over_10000"><span>More than $10,000</span></label>
+              <label class="survey-choice"><input type="radio" name="annual_reading_spend" value="prefer_not_to_say"><span>Prefer not to say</span></label>
+            </div>
+          </fieldset>
+
+          <fieldset data-survey-step="7" hidden>
+            <legend class="text-xl font-black">7. Which commitment shape would your family most realistically choose?</legend>
+            <p class="mt-3 rounded-2xl bg-linen p-4 text-sm leading-6 text-ink/70">Imagine a specialized reading center for your child: credentialed specialists, evidence-based methodology such as Orton-Gillingham, a structured curriculum, and progress reporting you can see. Sessions are 60 minutes.</p>
+            <div class="mt-4 grid gap-3">
+              <label class="survey-choice"><input type="radio" name="commitment_preference" value="weekly_few_months"><span>One session per week for a few months</span></label>
+              <label class="survey-choice"><input type="radio" name="commitment_preference" value="one_two_weekly_three_six_months"><span>One to two sessions per week for three to six months</span></label>
+              <label class="survey-choice"><input type="radio" name="commitment_preference" value="two_three_weekly_six_twelve_months"><span>Two to three sessions per week for six to twelve months</span></label>
+              <label class="survey-choice"><input type="radio" name="commitment_preference" value="two_three_weekly_school_year"><span>Two to three sessions per week for a full school year or more</span></label>
+              <label class="survey-choice"><input type="radio" name="commitment_preference" value="specialist_recommendation"><span>Whatever the specialist recommends, we will commit to it</span></label>
+            </div>
+          </fieldset>
+
+          <fieldset data-survey-step="8" hidden>
+            <legend class="text-xl font-black">8. What is the most you would consider paying per 1-on-1 session for the right program?</legend>
+            <div class="mt-4 grid gap-3 sm:grid-cols-2">
+              <label class="survey-choice"><input type="radio" name="one_to_one_budget" value="up_to_75"><span>Up to $75</span></label>
+              <label class="survey-choice"><input type="radio" name="one_to_one_budget" value="up_to_100"><span>Up to $100</span></label>
+              <label class="survey-choice"><input type="radio" name="one_to_one_budget" value="up_to_125"><span>Up to $125</span></label>
+              <label class="survey-choice"><input type="radio" name="one_to_one_budget" value="up_to_150"><span>Up to $150</span></label>
+              <label class="survey-choice"><input type="radio" name="one_to_one_budget" value="up_to_200"><span>Up to $200</span></label>
+              <label class="survey-choice"><input type="radio" name="one_to_one_budget" value="over_200"><span>More than $200</span></label>
+              <label class="survey-choice sm:col-span-2"><input type="radio" name="one_to_one_budget" value="scholarship_esa"><span>Only if covered by scholarship or ESA funds</span></label>
+            </div>
+          </fieldset>
+
+          <fieldset data-survey-step="9" hidden>
+            <legend class="text-xl font-black">9. What is the most you would consider paying per session in a small group of three students?</legend>
+            <div class="mt-4 grid gap-3 sm:grid-cols-2">
+              <label class="survey-choice"><input type="radio" name="small_group_budget" value="up_to_50"><span>Up to $50</span></label>
+              <label class="survey-choice"><input type="radio" name="small_group_budget" value="up_to_75"><span>Up to $75</span></label>
+              <label class="survey-choice"><input type="radio" name="small_group_budget" value="up_to_100"><span>Up to $100</span></label>
+              <label class="survey-choice"><input type="radio" name="small_group_budget" value="up_to_125"><span>Up to $125</span></label>
+              <label class="survey-choice"><input type="radio" name="small_group_budget" value="over_125"><span>More than $125</span></label>
+              <label class="survey-choice"><input type="radio" name="small_group_budget" value="scholarship_esa"><span>Only if covered by scholarship or ESA funds</span></label>
+              <label class="survey-choice sm:col-span-2"><input type="radio" name="small_group_budget" value="prefer_one_to_one"><span>I prefer 1-on-1 sessions</span></label>
+            </div>
+          </fieldset>
+
+          <fieldset data-survey-step="10" hidden>
+            <legend class="text-xl font-black">10. How would you like to engage with ClearCode?</legend>
+            <p class="mt-3 rounded-2xl bg-linen p-4 text-sm leading-6 text-ink/70">ClearCode Reading is a specialized literacy center opening in Winter Park and Maitland in early 2027. We serve Pre-K through 8th grade children who struggle with reading, including those with dyslexia.</p>
+            <p class="mt-2 text-sm text-ink/60">Select all that apply. At least one is required.</p>
+            <div class="mt-4 grid gap-3">
+              <label class="survey-choice" data-family-engagement><input type="checkbox" name="engagement_interests" value="priority_waitlist"><span>Join the priority enrollment waitlist for my child</span></label>
+              <label class="survey-choice" data-family-engagement><input type="checkbox" name="engagement_interests" value="consultation"><span>Schedule a free consultation with one of our specialists</span></label>
+              <label class="survey-choice"><input type="checkbox" name="engagement_interests" value="opening_updates"><span>Receive updates as we approach our June 2027 opening</span></label>
+              <label class="survey-choice"><input type="checkbox" name="engagement_interests" value="community_partner"><span>Partner with ClearCode as a community advocate, referral source, potential donor funding scholarships, or in another way</span></label>
+              <label class="survey-choice"><input type="checkbox" name="engagement_interests" value="refer_family"><span>Refer another family who needs help</span></label>
+              <label class="survey-choice"><input type="checkbox" name="engagement_interests" value="professional_connection"><span>Connect us with a school, pediatrician, or evaluator who should know about ClearCode</span></label>
+              <label class="survey-choice"><input type="checkbox" name="engagement_interests" value="career_interest"><span>I am an educator or specialist interested in working at ClearCode</span></label>
+              <label class="survey-choice"><input type="checkbox" name="engagement_interests" value="general_email"><span>Just keep me on your general email list for now</span></label>
+            </div>
+          </fieldset>
+
+          <div class="mt-7 flex flex-col-reverse gap-3 sm:flex-row sm:justify-between">
+            <button class="focus-ring rounded-full bg-ink/5 px-6 py-3 font-black text-ink disabled:opacity-40" type="button" data-survey-back disabled>Back</button>
+            <button class="focus-ring rounded-full bg-deepTeal px-7 py-3 font-black text-white shadow-glow transition hover:-translate-y-0.5" type="button" data-survey-next>Next</button>
+            <button class="focus-ring hidden rounded-full bg-gold px-7 py-3 font-black text-ink shadow-lg transition hover:-translate-y-0.5" type="submit" data-survey-submit>Submit survey</button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <style>
+    .survey-choice { display:flex; align-items:flex-start; gap:.75rem; border:1px solid rgba(15,43,53,.12); border-radius:1rem; padding:.8rem 1rem; font-size:.875rem; font-weight:700; line-height:1.45; color:rgba(15,43,53,.78); cursor:pointer; }
+    .survey-choice:hover { border-color:rgba(26,122,122,.55); background:rgba(168,207,196,.2); }
+    .survey-choice input { width:1.15rem; height:1.15rem; margin-top:.08rem; flex:0 0 auto; accent-color:#1A7A7A; }
+  </style>
+
+  <script>
+    (() => {
+      const root = document.currentScript.closest('[data-early-interest-survey]');
+      const form = root.querySelector('[data-survey-form]');
+      const steps = [...form.querySelectorAll('[data-survey-step]')];
+      const back = form.querySelector('[data-survey-back]');
+      const next = form.querySelector('[data-survey-next]');
+      const submit = form.querySelector('[data-survey-submit]');
+      const progressLabel = form.querySelector('[data-survey-progress-label]');
+      const progressBar = form.querySelector('[data-survey-progress-bar]');
+      const timeLabel = form.querySelector('[data-survey-time]');
+      const parentSituations = new Set(['prek_2_struggling', 'grade_3_5_struggling', 'grade_6_8_struggling', 'multiple_grade_bands']);
+      let currentQuestion = 1;
+
+      function situation() {
+        return form.querySelector('input[name="respondent_situation"]:checked')?.value || '';
+      }
+
+      function isParentBranch() {
+        return parentSituations.has(situation());
+      }
+
+      function visibleQuestions() {
+        return isParentBranch() ? [1,2,3,4,5,6,7,8,9,10] : [1,2,3,4,10];
+      }
+
+      function render() {
+        steps.forEach((step) => { step.hidden = Number(step.dataset.surveyStep) !== currentQuestion; });
+        const visible = visibleQuestions();
+        back.disabled = visible.indexOf(currentQuestion) === 0;
+        next.classList.toggle('hidden', currentQuestion === 10);
+        submit.classList.toggle('hidden', currentQuestion !== 10);
+        progressLabel.textContent = `Question ${currentQuestion} of 10`;
+        progressBar.style.width = `${currentQuestion * 10}%`;
+        timeLabel.textContent = isParentBranch() || currentQuestion < 4 ? 'About 2 minutes' : 'Under 1 minute';
+        const parentBranch = isParentBranch();
+        form.querySelectorAll('[data-family-engagement]').forEach((label) => {
+          label.hidden = !parentBranch;
+          if (!parentBranch) label.querySelector('input').checked = false;
+        });
+      }
+
+      function currentStepIsValid() {
+        const fieldset = form.querySelector(`[data-survey-step="${currentQuestion}"]`);
+        const controls = [...fieldset.querySelectorAll('input, select, textarea')];
+        if (currentQuestion === 10 && !controls.some((control) => control.checked)) {
+          const firstVisibleControl = controls.find((control) => !control.closest('[hidden]')) || controls[0];
+          firstVisibleControl.setCustomValidity('Choose at least one option.');
+          firstVisibleControl.reportValidity();
+          firstVisibleControl.setCustomValidity('');
+          return false;
+        }
+        const invalid = controls.find((control) => !control.checkValidity());
+        if (invalid) {
+          invalid.reportValidity();
+          return false;
+        }
+        return true;
+      }
+
+      next.addEventListener('click', () => {
+        if (!currentStepIsValid()) return;
+        const visible = visibleQuestions();
+        currentQuestion = visible[Math.min(visible.indexOf(currentQuestion) + 1, visible.length - 1)];
+        render();
+      });
+
+      back.addEventListener('click', () => {
+        const visible = visibleQuestions();
+        currentQuestion = visible[Math.max(visible.indexOf(currentQuestion) - 1, 0)];
+        render();
+      });
+
+      form.querySelectorAll('input[name="respondent_situation"]').forEach((control) => control.addEventListener('change', render));
+      form.querySelectorAll('input[name="supports_tried"]').forEach((control) => {
+        control.addEventListener('change', () => {
+          const nothing = form.querySelector('[data-nothing-yet]');
+          if (control === nothing && nothing.checked) {
+            form.querySelectorAll('input[name="supports_tried"]').forEach((item) => { if (item !== nothing) item.checked = false; });
+          } else if (control.checked) {
+            nothing.checked = false;
+          }
+        });
+      });
+      form.addEventListener('submit', (event) => {
+        if (currentQuestion !== 10) {
+          event.preventDefault();
+          next.click();
+          return;
+        }
+        if (!currentStepIsValid()) event.preventDefault();
+      });
+      render();
+    })();
+  </script>
+</section>

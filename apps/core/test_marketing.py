@@ -23,6 +23,7 @@ PUBLIC_PAGES = {
     "marketing_privacy": "privacy.html",
     "marketing_approach": "approach.html",
     "reading_assessment": "assessment.html",
+    "early_interest_survey": "survey.html",
 }
 
 BRAND_COLORS = {
@@ -172,6 +173,7 @@ class MarketingPageTests(SimpleTestCase):
             "/careers/",
             "/privacy/",
             "/contact/",
+            "/survey/",
             "/login/",
         ]
         for route_name in route_names:
@@ -269,6 +271,35 @@ class MarketingPageTests(SimpleTestCase):
         self.assertIn('value="donor"', content)
         self.assertIn('value="advocate"', content)
         self.assertIn("select all that apply", content)
+
+    def test_assessment_contact_handoff_includes_structured_survey_fields(self):
+        content = self._render("reading_assessment")
+
+        for field_name in (
+            "child_name",
+            "child_age",
+            "home_zip",
+            "child_grade",
+            "assessment_answers",
+            "inventory_answers",
+            "inventory_stopped_group",
+        ):
+            with self.subTest(field_name=field_name):
+                self.assertIn(f'name="{field_name}"', content)
+
+    def test_main_early_interest_survey_uses_the_crm_contract(self):
+        content = self._render("early_interest_survey")
+
+        self.assertIn('id="early-interest-survey"', content)
+        self.assertIn('action="/crm/survey/"', content)
+        self.assertIn('name="source_path" value="/survey/"', content)
+        self.assertIn("Question 1 of 10", content)
+        self.assertIn('name="email_consent"', content)
+        self.assertIn('name="home_zip"', content)
+        self.assertIn('name="respondent_situation"', content)
+        self.assertIn('name="supports_tried"', content)
+        self.assertIn('name="engagement_interests"', content)
+        self.assertIn("We will never sell or share your information", content)
 
     def test_about_page_preserves_the_supplied_positioning_and_sources(self):
         content = self._render("marketing_about")

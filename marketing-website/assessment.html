@@ -1073,6 +1073,13 @@
           <input type="hidden" name="audience" value="parent">
           <input type="hidden" name="organization_name" value="Reading assessment follow-up">
           <input type="hidden" name="estimated_students" value="1">
+          <input type="hidden" name="child_name" value="${escapeAttribute(name)}">
+          <input type="hidden" name="child_age" value="${escapeAttribute(state.childAge)}">
+          <input type="hidden" name="home_zip" value="${escapeAttribute(state.zipCode)}">
+          <input type="hidden" name="child_grade" value="${escapeAttribute(state.inventoryGrade)}">
+          <input type="hidden" name="assessment_answers" value="${escapeAttribute(JSON.stringify(state.answers))}">
+          <input type="hidden" name="inventory_answers" value="${escapeAttribute(JSON.stringify(state.inventoryAnswers))}">
+          <input type="hidden" name="inventory_stopped_group" value="${state.inventoryStoppedAtGroup === null ? '' : state.inventoryStoppedAtGroup}">
           <input type="hidden" name="notes" value="${escapeAttribute(`Assessment follow-up requested for ${name}. Estimated reading age: ${levelText}. Best next step: ${growthList[0]}.`)}">
           <div class="flex flex-col gap-2 md:flex-row md:items-start md:justify-between">
             <div>

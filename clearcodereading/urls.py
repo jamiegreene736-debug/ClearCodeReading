@@ -24,6 +24,7 @@ from apps.crm.views import (
     CrmTriageResolveView,
     NewsletterSignupView,
     NewsletterUnsubscribeView,
+    SurveySubmissionView,
     WebsiteSignupView,
 )
 from apps.sessions.views import RapidSessionLogView
@@ -59,6 +60,7 @@ urlpatterns = [
     path("privacy/", TemplateView.as_view(template_name="privacy.html"), name="marketing_privacy"),
     path("approach/", TemplateView.as_view(template_name="approach.html"), name="marketing_approach"),
     path("assessment/", TemplateView.as_view(template_name="assessment.html"), name="reading_assessment"),
+    path("survey/", TemplateView.as_view(template_name="survey.html"), name="early_interest_survey"),
     path("blog/", include("apps.blog.urls")),
     path("login/", PortalLoginView.as_view(), name="login"),
     path("logout/", LogoutView.as_view(next_page="/"), name="logout"),
@@ -85,6 +87,7 @@ urlpatterns = [
         name="crm_task_complete",
     ),
     path("crm/signup/", WebsiteSignupView.as_view(), name="crm_signup"),
+    path("crm/survey/", SurveySubmissionView.as_view(), name="crm_survey_submit"),
     path("newsletter/subscribe/", NewsletterSignupView.as_view(), name="newsletter_signup"),
     path(
         "newsletter/unsubscribe/<str:token>/",

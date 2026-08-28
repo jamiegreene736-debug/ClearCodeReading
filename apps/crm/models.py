@@ -535,6 +535,7 @@ class FormSubmission(TimestampedModel):
     class FormType(models.TextChoices):
         CONSULTATION = "consultation", "Consultation request"
         ASSESSMENT = "assessment", "Assessment follow-up"
+        SURVEY = "survey", "Early interest survey"
         CAREER = "career", "Career interest"
         NEWSLETTER = "newsletter", "Newsletter signup"
         WEBSITE = "website", "Website inquiry"

@@ -41,6 +41,14 @@ from apps.crm.services import (
     resolve_triage_item,
     sanitized_submission_data,
 )
+from apps.crm.surveys import (
+    SurveySubmissionError,
+    apply_structured_assessment_to_deal,
+    parse_early_interest_survey,
+    record_early_interest_survey,
+    resolve_survey_source,
+    structured_assessment_submission,
+)
 from apps.schools.models import School
 from apps.users.models import AuditLog, CustomUser
 
@@ -92,6 +100,24 @@ class WebsiteSignupView(View):
         has_partner_interest = bool(relationship_interests) or partner_interest_is_selected(
             request.POST.get("partner_interest")
         )
+        assessment_data = (
+            structured_assessment_submission(request.POST)
+            if organization_name == "Reading assessment follow-up"
+            else None
+        )
+        intake_metadata = {
+            "partner_interest": has_partner_interest,
+            "relationship_interests": relationship_interests,
+        }
+        submitted_data = sanitized_submission_data(request.POST)
+        if assessment_data:
+            intake_metadata.update(
+                {
+                    "home_zip": assessment_data["home_zip"],
+                    "latest_reading_assessment": assessment_data,
+                }
+            )
+            submitted_data.update(assessment_data)
         lead, submission = record_form_submission(
             intake=LeadIntake(
                 contact_email=contact_email,
@@ -102,17 +128,16 @@ class WebsiteSignupView(View):
                 contact_phone=contact_phone,
                 estimated_students=estimated_students,
                 notes=notes,
-                metadata={
-                    "partner_interest": has_partner_interest,
-                    "relationship_interests": relationship_interests,
-                },
+                metadata=intake_metadata,
             ),
             form_type=self._form_type(request, organization_name),
             source_path=source_path,
-            submitted_data=sanitized_submission_data(request.POST),
+            submitted_data=submitted_data,
         )
         form_type = submission.form_type
-        if form_type in {FormSubmission.FormType.CONSULTATION, FormSubmission.FormType.ASSESSMENT}:
+        if form_type == FormSubmission.FormType.ASSESSMENT and assessment_data:
+            apply_structured_assessment_to_deal(lead=lead, assessment_data=assessment_data)
+        elif form_type in {FormSubmission.FormType.CONSULTATION, FormSubmission.FormType.ASSESSMENT}:
             ensure_family_enrollment_deal(lead=lead)
         if has_partner_interest:
             create_partner_triage(lead=lead, submission=submission)
@@ -220,6 +245,35 @@ class WebsiteSignupView(View):
             return "/assessment/"
         candidate = request.POST.get("redirect_to", "/")
         return candidate if candidate in {"/", "/careers/", "/contact/"} else "/"
+
+
+class SurveySubmissionView(View):
+    @staticmethod
+    def _redirect_target(source_path, result):
+        return f"{source_path}?survey={result}#early-interest-survey"
+
+    def post(self, request):
+        try:
+            source = resolve_survey_source(request.POST)
+        except SurveySubmissionError:
+            messages.error(request, "This survey link is no longer valid. Please use the main survey page.")
+            return redirect(self._redirect_target("/survey/", "invalid"))
+
+        if request.POST.get("website", "").strip():
+            return redirect(self._redirect_target(source.path, "thanks"))
+
+        try:
+            answers = parse_early_interest_survey(request.POST)
+            record_early_interest_survey(answers=answers, source=source)
+        except SurveySubmissionError as exc:
+            messages.error(request, str(exc))
+            return redirect(self._redirect_target(source.path, "invalid"))
+
+        messages.success(
+            request,
+            "Thank you. Your survey is in the ClearCode CRM, and our team will follow up based on what you selected.",
+        )
+        return redirect(self._redirect_target(source.path, "thanks"))
 
 
 class NewsletterSignupView(View):
