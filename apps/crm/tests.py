@@ -749,7 +749,7 @@ class CrmWorkspaceTests(TestCase):
         self.assertIsNotNone(crm_link)
         self.assertIn('aria-current="page"', dashboard_link.group())
         self.assertNotIn('aria-current="page"', crm_link.group())
-        self.assertContains(response, "/assets/logo/cc-lockup-ink-ui.png")
+        self.assertContains(response, "/assets/logo/cc-monogram-gold-teal.png")
 
     def test_inbox_header_highlights_inbox_instead_of_dashboard(self):
         self.client.force_login(self.admin_user)
