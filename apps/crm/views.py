@@ -45,12 +45,23 @@ class WebsiteSignupView(View):
         contact_email = request.POST.get("email", "").strip().lower()
         career_path = request.POST.get("career_path", "").strip()
         role_interest = request.POST.get("role_interest", "").strip()[:255]
+        organization_name = request.POST.get("organization_name", "").strip()[:255]
         submitted_notes = request.POST.get("notes", "").strip()
         is_career_signup = request.POST.get("redirect_to") == "/careers/"
+        is_generic_contact = (
+            request.POST.get("redirect_to") == "/contact/"
+            and organization_name == "Website contact"
+        )
         career_fields_are_missing = is_career_signup and (
             career_path not in RecruitingInterest.CareerPath.values or not role_interest or not submitted_notes
         )
-        if not contact_name or not contact_email or career_fields_are_missing:
+        required_fields_are_missing = (
+            not contact_name
+            or not contact_email
+            or career_fields_are_missing
+            or (is_generic_contact and not submitted_notes)
+        )
+        if required_fields_are_missing:
             messages.error(request, "Please complete the required fields so we can follow up.")
             return redirect(self._redirect_target(request, "missing"))
         try:
@@ -78,7 +89,6 @@ class WebsiteSignupView(View):
         if audience not in Lead.Audience.values:
             audience = Lead.Audience.OTHER
 
-        organization_name = request.POST.get("organization_name", "").strip()[:255]
         contact_phone = request.POST.get("phone", "").strip()[:32]
         notes = submitted_notes
         child_age_grade = request.POST.get("child_age_grade", "").strip()
@@ -148,6 +158,8 @@ class WebsiteSignupView(View):
             return FormSubmission.FormType.CAREER
         if organization_name == "Reading assessment follow-up":
             return FormSubmission.FormType.ASSESSMENT
+        if organization_name == "Website contact":
+            return FormSubmission.FormType.WEBSITE
         if request.POST.get("redirect_to") == "/contact/":
             return FormSubmission.FormType.CONSULTATION
         return FormSubmission.FormType.WEBSITE
