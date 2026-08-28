@@ -1,3 +1,5 @@
+from io import BytesIO
+
 from django.contrib import admin
 from django.core.exceptions import PermissionDenied
 from django.http import FileResponse, Http404
@@ -11,8 +13,13 @@ from apps.core.models import RecruitingInterest
 @admin.register(RecruitingInterest)
 class RecruitingInterestAdmin(admin.ModelAdmin):
     document_fields = {
-        "resume": ("resume", "resume_original_name"),
-        "cover-letter": ("cover_letter", "cover_letter_original_name"),
+        "resume": ("resume_data", "resume_original_name", "resume_content_type", "resume"),
+        "cover-letter": (
+            "cover_letter_data",
+            "cover_letter_original_name",
+            "cover_letter_content_type",
+            "cover_letter",
+        ),
     }
     list_display = ("name", "email", "career_path", "how_heard", "status", "created_at")
     list_filter = ("career_path", "status", "created_at")
@@ -63,8 +70,10 @@ class RecruitingInterestAdmin(admin.ModelAdmin):
 
     @staticmethod
     def _document_link(obj, document_kind, label):
-        field_name, _original_name_field = RecruitingInterestAdmin.document_fields[document_kind]
-        if not obj or not getattr(obj, field_name):
+        data_field, _original_name_field, _content_type_field, legacy_field = (
+            RecruitingInterestAdmin.document_fields[document_kind]
+        )
+        if not obj or not (getattr(obj, data_field) or getattr(obj, legacy_field)):
             return "—"
         return format_html(
             '<a href="{}">{}</a>',
@@ -84,19 +93,28 @@ class RecruitingInterestAdmin(admin.ModelAdmin):
         if not self.has_view_permission(request, interest):
             raise PermissionDenied
 
-        field_name, original_name_field = document_config
-        document = getattr(interest, field_name)
-        if not document:
+        data_field, original_name_field, content_type_field, legacy_field = document_config
+        document_data = getattr(interest, data_field)
+        legacy_document = getattr(interest, legacy_field)
+        if not document_data and not legacy_document:
             raise Http404("Document not found.")
-        try:
-            document.open("rb")
-        except FileNotFoundError as exc:
-            raise Http404("Document not found.") from exc
+
+        if document_data:
+            document = BytesIO(bytes(document_data))
+            content_type = getattr(interest, content_type_field) or "application/octet-stream"
+        else:
+            try:
+                legacy_document.open("rb")
+            except FileNotFoundError as exc:
+                raise Http404("Document not found.") from exc
+            document = legacy_document
+            content_type = None
 
         response = FileResponse(
             document,
             as_attachment=True,
-            filename=getattr(interest, original_name_field) or document.name,
+            filename=getattr(interest, original_name_field) or legacy_document.name,
+            content_type=content_type,
         )
         response["Cache-Control"] = "private, no-store"
         response["X-Content-Type-Options"] = "nosniff"

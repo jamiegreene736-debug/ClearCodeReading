@@ -137,9 +137,11 @@ class WebsiteSignupView(View):
             phone=form.cleaned_data["phone"].strip(),
             address=form.cleaned_data["address"].strip(),
             how_heard=how_heard,
-            resume=resume,
+            resume_data=resume.read(),
+            resume_content_type=self._document_content_type(resume.name),
             resume_original_name=self._safe_upload_name(resume.name),
-            cover_letter=cover_letter,
+            cover_letter_data=cover_letter.read(),
+            cover_letter_content_type=self._document_content_type(cover_letter.name),
             cover_letter_original_name=self._safe_upload_name(cover_letter.name),
             career_path=career_path,
             role_interest=dict(RecruitingInterest.CareerPath.choices)[career_path],
@@ -152,6 +154,14 @@ class WebsiteSignupView(View):
     @staticmethod
     def _safe_upload_name(filename):
         return Path(str(filename).replace("\\", "/")).name[:255]
+
+    @staticmethod
+    def _document_content_type(filename):
+        return {
+            ".pdf": "application/pdf",
+            ".doc": "application/msword",
+            ".docx": "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+        }[Path(filename).suffix.lower()]
 
     @staticmethod
     def _redirect_target(request, result):

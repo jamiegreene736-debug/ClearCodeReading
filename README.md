@@ -444,7 +444,7 @@ Production deployments should connect real email/SMS providers, keep `PUBLIC_APP
 
 ### Careers intake
 
-The Careers form sends introductions to the dedicated recruiting communication queue, separate from sales CRM contacts. It captures contact details, referral source, resume, and cover letter; accepts PDF, DOC, and DOCX files up to 10 MB each; and stores uploaded documents under randomized names. Authorized staff review responses and download documents through the protected **Admin → Core → Recruiting interests** workflow.
+The Careers form sends introductions to the dedicated recruiting communication queue, separate from sales CRM contacts. It captures contact details, referral source, resume, and cover letter; accepts PDF, DOC, and DOCX files up to 10 MB each; and stores new uploaded document contents with the recruiting record in PostgreSQL. Authorized staff review responses and download documents through the protected **Admin → Core → Recruiting interests** workflow.
 
 ### Newsletter workflow
 
