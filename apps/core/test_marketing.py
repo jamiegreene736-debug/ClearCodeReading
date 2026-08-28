@@ -3,6 +3,8 @@ from pathlib import Path
 
 from django.conf import settings
 from django.contrib.auth import get_user_model
+from django.contrib.messages import constants as message_constants
+from django.contrib.messages.storage.base import Message
 from django.core.files.uploadedfile import SimpleUploadedFile
 from django.template.loader import get_template
 from django.test import RequestFactory, SimpleTestCase, TestCase, override_settings
@@ -211,6 +213,24 @@ class MarketingPageTests(SimpleTestCase):
                 self.assertIn('action="/newsletter/subscribe/"', content)
                 self.assertIn('name="consent"', content)
                 self.assertIn("I can unsubscribe at any time", content)
+
+    def test_newsletter_confirmation_is_prominent_at_signup_on_shared_and_standalone_pages(self):
+        confirmation = "You’re subscribed. Look for ClearCode Reading updates in your inbox."
+
+        for route_name in ("marketing_home", "reading_assessment"):
+            request = RequestFactory().get("/?newsletter=thanks")
+            content = get_template(PUBLIC_PAGES[route_name]).render(
+                {"messages": [Message(message_constants.SUCCESS, confirmation)]},
+                request,
+            )
+
+            with self.subTest(route_name=route_name):
+                self.assertEqual(content.count(confirmation), 1)
+                self.assertLess(content.index('id="newsletter-signup"'), content.index(confirmation))
+                self.assertIn('data-testid="newsletter-signup-feedback"', content)
+                self.assertIn('role="status"', content)
+                self.assertIn("Newsletter signup confirmed", content)
+                self.assertIn("border-4 border-gold bg-ink", content)
 
     def test_touched_pages_only_reference_existing_local_assets(self):
         marketing_root = Path(settings.BASE_DIR) / "marketing-website"

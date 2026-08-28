@@ -117,7 +117,7 @@
     </nav>
   </header>
 
-  {% if messages %}
+  {% if messages and not request.GET.newsletter %}
     <div class="mx-auto max-w-7xl space-y-2 px-4 pt-4 sm:px-6 lg:px-8" aria-live="polite">
       {% for message in messages %}
         <p class="rounded-2xl bg-linen px-5 py-4 text-sm font-black shadow-sm ring-1 ring-gold/40">{{ message }}</p>
