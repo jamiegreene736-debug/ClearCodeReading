@@ -56,6 +56,11 @@ LEARNING_PHOTOS_BY_PAGE = {
         "learning-carousel-small-group.jpg",
         "learning-carousel-one-to-one.jpg",
         "learning-carousel-educator-collaboration.jpg",
+        "session-carousel-arrival.jpg",
+        "session-carousel-settle-in.jpg",
+        "session-carousel-multiple-groups.jpg",
+        "session-carousel-hands-on.jpg",
+        "session-carousel-wrap-up.jpg",
         "specialist-reading-session.jpg",
         "family-reading-practice.jpg",
     },
@@ -118,18 +123,32 @@ class MarketingPageTests(SimpleTestCase):
         self.assertTrue(hero_path.is_file())
         self.assertLess(hero_path.stat().st_size, 500_000)
 
-    def test_homepage_carousel_is_manual_accessible_and_uses_local_photos(self):
+    def test_homepage_carousels_are_manual_accessible_and_use_local_photos(self):
         content = self._render("marketing_home")
 
-        self.assertIn('aria-roledescription="carousel"', content)
-        self.assertEqual(content.count('data-carousel-slide role="group"'), 3)
-        self.assertEqual(content.count('aria-roledescription="slide"'), 3)
-        self.assertEqual(content.count('data-carousel-dot='), 3)
+        self.assertEqual(content.count('aria-roledescription="carousel"'), 2)
+        self.assertEqual(content.count('data-carousel-slide role="group"'), 8)
+        self.assertEqual(content.count('aria-roledescription="slide"'), 8)
+        self.assertEqual(content.count('data-carousel-dot='), 8)
         self.assertIn('aria-label="Show previous learning scene"', content)
         self.assertIn('aria-label="Show next learning scene"', content)
+        self.assertIn('aria-label="Show previous session moment"', content)
+        self.assertIn('aria-label="Show next session moment"', content)
+        self.assertIn("A ClearCode session feels calm, focused, and connected.", content)
+        self.assertIn("no more than three students", content)
         self.assertIn("event.key === 'ArrowLeft'", content)
         self.assertIn("event.key === 'ArrowRight'", content)
         self.assertNotIn("setInterval", content)
+
+        image_root = Path(settings.BASE_DIR) / "marketing-website/assets/images"
+        session_image_names = sorted(
+            name
+            for name in LEARNING_PHOTOS_BY_PAGE["marketing_home"]
+            if name.startswith("session-carousel-")
+        )
+        for image_name in session_image_names:
+            with self.subTest(image_name=image_name):
+                self.assertLess((image_root / image_name).stat().st_size, 500_000)
 
     def test_shared_marketing_navigation_is_consistent(self):
         route_names = [
