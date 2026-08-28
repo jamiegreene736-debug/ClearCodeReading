@@ -435,6 +435,10 @@ configuration, and example flag and prediction payloads.
 
 Production deployments should connect real email/SMS providers, keep `PUBLIC_APP_URL` accurate, store secrets outside git, and review data-retention rules with counsel.
 
+### Careers intake
+
+The Careers form sends introductions to the dedicated recruiting communication queue, separate from sales CRM contacts. It captures contact details, referral source, resume, and cover letter; accepts PDF, DOC, and DOCX files up to 10 MB each; and stores uploaded documents under randomized names. Authorized staff review responses and download documents through the protected **Admin → Core → Recruiting interests** workflow.
+
 ### Newsletter workflow
 
 Every public marketing page includes an explicit-consent newsletter form. Subscribers can opt out through the signed link included in every newsletter. Staff can compose a draft under **Admin → CRM → Newsletter campaigns**, preview the final copy, and use **Review & send** to confirm delivery. Saving a campaign never sends it.

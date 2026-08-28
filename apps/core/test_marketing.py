@@ -1,9 +1,12 @@
 import re
+import tempfile
 from pathlib import Path
 
 from django.conf import settings
+from django.contrib.auth import get_user_model
+from django.core.files.uploadedfile import SimpleUploadedFile
 from django.template.loader import get_template
-from django.test import RequestFactory, SimpleTestCase, TestCase
+from django.test import RequestFactory, SimpleTestCase, TestCase, override_settings
 from django.urls import resolve, reverse
 
 from apps.core.models import RecruitingInterest
@@ -243,6 +246,15 @@ class MarketingPageTests(SimpleTestCase):
         self.assertIn('id="career-interest-form"', content)
         self.assertIn('name="career_path"', content)
         self.assertIn('action="/crm/signup/"', content)
+        self.assertIn('enctype="multipart/form-data"', content)
+        self.assertIn('name="phone"', content)
+        self.assertIn('name="address"', content)
+        self.assertIn('name="email"', content)
+        self.assertIn('name="resume"', content)
+        self.assertIn('name="cover_letter"', content)
+        self.assertIn('name="how_heard"', content)
+        self.assertNotIn('name="role_interest"', content)
+        self.assertNotIn('name="notes"', content)
         self.assertEqual(content.count('href="#career-interest-form"'), 3)
 
     def test_approach_page_uses_the_full_family_pathway(self):
@@ -328,6 +340,32 @@ class MarketingPageTests(SimpleTestCase):
 
 
 class ContactFormTests(TestCase):
+    def setUp(self):
+        self.media_directory = tempfile.TemporaryDirectory()
+        self.media_override = override_settings(MEDIA_ROOT=self.media_directory.name)
+        self.media_override.enable()
+
+    def tearDown(self):
+        self.media_override.disable()
+        self.media_directory.cleanup()
+
+    @staticmethod
+    def _document(name):
+        return SimpleUploadedFile(name, b"%PDF-1.4\nClearCode test document", "application/pdf")
+
+    def _career_application(self, career_path="teacher"):
+        return {
+            "name": "Morgan Specialist",
+            "email": "morgan@example.com",
+            "phone": "555-0142",
+            "address": "123 Reading Lane\nOrlando, FL 32801",
+            "how_heard": "Teacher referral",
+            "career_path": career_path,
+            "resume": self._document("Morgan Resume.pdf"),
+            "cover_letter": self._document("Morgan Cover Letter.pdf"),
+            "redirect_to": "/careers/",
+        }
+
     def test_contact_form_creates_generic_lead_and_returns_to_contact_page(self):
         response = self.client.post(
             reverse("crm_signup"),
@@ -392,15 +430,7 @@ class ContactFormTests(TestCase):
     def test_career_interest_stays_in_recruiting_and_returns_to_careers(self):
         response = self.client.post(
             reverse("crm_signup"),
-            {
-                "name": "Morgan Specialist",
-                "email": "morgan@example.com",
-                "audience": Lead.Audience.OTHER,
-                "career_path": "teacher",
-                "role_interest": "Reading specialist",
-                "notes": "I have five years of structured literacy experience.",
-                "redirect_to": "/careers/",
-            },
+            self._career_application(),
         )
 
         self.assertRedirects(
@@ -410,43 +440,73 @@ class ContactFormTests(TestCase):
         )
         interest = RecruitingInterest.objects.get(email="morgan@example.com")
         self.assertEqual(interest.career_path, RecruitingInterest.CareerPath.TEACHER)
-        self.assertEqual(interest.role_interest, "Reading specialist")
+        self.assertEqual(interest.role_interest, "Teaching or reading specialist")
+        self.assertEqual(interest.phone, "555-0142")
+        self.assertEqual(interest.address, "123 Reading Lane\nOrlando, FL 32801")
+        self.assertEqual(interest.how_heard, "Teacher referral")
+        self.assertEqual(interest.resume_original_name, "Morgan Resume.pdf")
+        self.assertEqual(interest.cover_letter_original_name, "Morgan Cover Letter.pdf")
+        self.assertTrue(interest.resume.name.endswith(".pdf"))
+        self.assertTrue(interest.cover_letter.name.endswith(".pdf"))
+        self.assertNotIn("Morgan Resume", interest.resume.name)
         self.assertFalse(Lead.objects.filter(contact_email="morgan@example.com").exists())
 
     def test_company_career_interest_stays_out_of_crm(self):
+        application = self._career_application(career_path="company")
+        application.update(name="Avery Builder", email="avery@example.com")
         self.client.post(
             reverse("crm_signup"),
-            {
-                "name": "Avery Builder",
-                "email": "avery@example.com",
-                "career_path": "company",
-                "role_interest": "Product design",
-                "notes": "I build accessible education products.",
-                "redirect_to": "/careers/",
-            },
+            application,
         )
 
         interest = RecruitingInterest.objects.get(email="avery@example.com")
         self.assertEqual(interest.career_path, RecruitingInterest.CareerPath.COMPANY)
-        self.assertEqual(interest.role_interest, "Product design")
+        self.assertEqual(interest.role_interest, "Company team")
         self.assertFalse(Lead.objects.filter(contact_email="avery@example.com").exists())
 
-    def test_career_interest_requires_a_valid_path_and_role(self):
+    def test_career_interest_rejects_an_unsafe_document_type(self):
+        application = self._career_application()
+        application["resume"] = SimpleUploadedFile(
+            "payload.exe",
+            b"not a document",
+            "application/octet-stream",
+        )
         response = self.client.post(
             reverse("crm_signup"),
-            {
-                "name": "Taylor Candidate",
-                "email": "taylor@example.com",
-                "career_path": "invalid",
-                "role_interest": "",
-                "redirect_to": "/careers/",
-            },
+            application,
         )
 
         self.assertRedirects(
             response,
-            "/careers/?signup=missing#career-interest-form",
+            "/careers/?signup=invalid#career-interest-form",
             fetch_redirect_response=False,
         )
         self.assertFalse(Lead.objects.exists())
         self.assertFalse(RecruitingInterest.objects.exists())
+
+    def test_recruiting_documents_are_only_downloadable_by_authorized_staff(self):
+        self.client.post(reverse("crm_signup"), self._career_application())
+        interest = RecruitingInterest.objects.get()
+        download_url = reverse(
+            "admin:core_recruitinginterest_document",
+            args=(interest.pk, "resume"),
+        )
+
+        anonymous_response = self.client.get(download_url)
+        self.assertEqual(anonymous_response.status_code, 302)
+        self.assertIn("/admin/login/", anonymous_response.url)
+
+        admin_user = get_user_model().objects.create_superuser(
+            username="recruiting-admin",
+            email="recruiting-admin@example.com",
+            password="test-password",
+        )
+        self.client.force_login(admin_user)
+        response = self.client.get(download_url)
+
+        self.assertEqual(response.status_code, 200)
+        self.assertIn("private", response["Cache-Control"])
+        self.assertIn("no-store", response["Cache-Control"])
+        self.assertEqual(response["X-Content-Type-Options"], "nosniff")
+        self.assertIn('filename="Morgan Resume.pdf"', response["Content-Disposition"])
+        self.assertIn(b"ClearCode test document", b"".join(response.streaming_content))

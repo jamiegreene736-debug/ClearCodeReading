@@ -1,3 +1,5 @@
+from pathlib import Path
+
 from django.contrib import messages
 from django.contrib.auth.mixins import LoginRequiredMixin, UserPassesTestMixin
 from django.contrib.auth.views import redirect_to_login
@@ -21,6 +23,7 @@ from rest_framework.decorators import action
 from rest_framework.permissions import BasePermission, IsAuthenticated
 from rest_framework.response import Response
 
+from apps.core.forms import RecruitingInterestForm
 from apps.core.models import RecruitingInterest
 from apps.crm.models import Company, CrmActivity, FormSubmission, IntakeTriage, Lead, NewsletterSubscription, Opportunity
 from apps.crm.newsletters import resolve_unsubscribe_token
@@ -41,24 +44,20 @@ from apps.users.models import AuditLog, CustomUser
 
 class WebsiteSignupView(View):
     def post(self, request):
+        if request.POST.get("redirect_to") == "/careers/":
+            return self._record_recruiting_interest(request)
+
         contact_name = request.POST.get("name", "").strip()[:255]
         contact_email = request.POST.get("email", "").strip().lower()
-        career_path = request.POST.get("career_path", "").strip()
-        role_interest = request.POST.get("role_interest", "").strip()[:255]
         organization_name = request.POST.get("organization_name", "").strip()[:255]
         submitted_notes = request.POST.get("notes", "").strip()
-        is_career_signup = request.POST.get("redirect_to") == "/careers/"
         is_generic_contact = (
             request.POST.get("redirect_to") == "/contact/"
             and organization_name == "Website contact"
         )
-        career_fields_are_missing = is_career_signup and (
-            career_path not in RecruitingInterest.CareerPath.values or not role_interest or not submitted_notes
-        )
         required_fields_are_missing = (
             not contact_name
             or not contact_email
-            or career_fields_are_missing
             or (is_generic_contact and not submitted_notes)
         )
         if required_fields_are_missing:
@@ -71,19 +70,6 @@ class WebsiteSignupView(View):
         except ValidationError:
             messages.error(request, "Enter a valid email address so we can follow up.")
             return redirect(self._redirect_target(request, "invalid"))
-
-        if is_career_signup:
-            RecruitingInterest.objects.create(
-                name=contact_name,
-                email=contact_email,
-                phone=request.POST.get("phone", "").strip()[:32],
-                career_path=career_path,
-                role_interest=role_interest,
-                notes=submitted_notes,
-                source_path="/careers/",
-            )
-            messages.success(request, "Thanks. Your interest is with the ClearCode recruiting team.")
-            return redirect(self._redirect_target(request, "thanks"))
 
         audience = request.POST.get("audience", Lead.Audience.PARENT)
         if audience not in Lead.Audience.values:
@@ -123,6 +109,41 @@ class WebsiteSignupView(View):
 
         messages.success(request, "Thanks. Your request is with the ClearCode Reading team, and we’ll follow up about next steps.")
         return redirect(self._redirect_target(request, "thanks"))
+
+    def _record_recruiting_interest(self, request):
+        form = RecruitingInterestForm(request.POST, request.FILES)
+        if not form.is_valid():
+            messages.error(
+                request,
+                "Complete every field and upload PDF, DOC, or DOCX documents no larger than 10 MB.",
+            )
+            return redirect(self._redirect_target(request, "invalid"))
+
+        career_path = form.cleaned_data["career_path"]
+        resume = form.cleaned_data["resume"]
+        cover_letter = form.cleaned_data["cover_letter"]
+        how_heard = form.cleaned_data["how_heard"].strip()
+        RecruitingInterest.objects.create(
+            name=form.cleaned_data["name"].strip(),
+            email=form.cleaned_data["email"],
+            phone=form.cleaned_data["phone"].strip(),
+            address=form.cleaned_data["address"].strip(),
+            how_heard=how_heard,
+            resume=resume,
+            resume_original_name=self._safe_upload_name(resume.name),
+            cover_letter=cover_letter,
+            cover_letter_original_name=self._safe_upload_name(cover_letter.name),
+            career_path=career_path,
+            role_interest=dict(RecruitingInterest.CareerPath.choices)[career_path],
+            notes=f"How they heard about us: {how_heard}",
+            source_path="/careers/",
+        )
+        messages.success(request, "Thanks. Your interest is with the ClearCode recruiting team.")
+        return redirect(self._redirect_target(request, "thanks"))
+
+    @staticmethod
+    def _safe_upload_name(filename):
+        return Path(str(filename).replace("\\", "/")).name[:255]
 
     @staticmethod
     def _redirect_target(request, result):
