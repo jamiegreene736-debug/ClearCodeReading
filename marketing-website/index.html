@@ -1,145 +1,151 @@
 {% extends "base_marketing.html" %}
 
 {% block title %}ClearCode Reading | Structured Literacy Intervention for K–8 Readers{% endblock %}
-{% block meta_description %}K–8 structured literacy intervention with precise placement, expert specialists, and a live parent dashboard that shows real progress week by week.{% endblock %}
+{% block meta_description %}Specialist-led K–8 structured literacy intervention with precise placement and a clear family view of reading progress.{% endblock %}
 {% block og_title %}ClearCode Reading | Unlock Reading. Unlock Everything.{% endblock %}
-{% block og_description %}Structured literacy intervention built to close the gap with precise placement, expert specialists, and progress families can see.{% endblock %}
+{% block og_description %}Structured literacy intervention with expert specialists and progress families can understand.{% endblock %}
 
 {% block extra_head %}
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@300;400;500&display=swap" rel="stylesheet">
   <style>
-    .reference-homepage { font-family: "DM Mono", ui-monospace, monospace; }
-    .reference-homepage h1,
-    .reference-homepage h2,
-    .reference-homepage h3,
-    .reference-homepage .display-type { font-family: "Barlow Condensed", "Arial Narrow", sans-serif; }
-    .reference-homepage .eyebrow { letter-spacing: .2em; }
-    .reference-homepage .reference-card { border-top: 3px solid var(--card-accent, #2EB8B8); }
+    .home-eyebrow { letter-spacing: .18em; }
+    .hero-photo { object-position: 52% center; }
+    @media (max-width: 1023px) { .hero-photo { object-position: 50% 42%; } }
   </style>
 {% endblock %}
 
 {% block content %}
-  <div class="reference-homepage">
-    <section class="bg-ink px-4 py-20 text-center text-white sm:px-6 sm:py-28 lg:px-8 lg:py-32">
-      <div class="mx-auto max-w-4xl">
-        <h1 class="text-5xl leading-[1.02] tracking-tight sm:text-7xl lg:text-8xl">
-          <span class="block font-light text-white/40">Unlock Reading.</span>
-          <span class="block font-bold text-linen">Unlock Everything.</span>
-        </h1>
-        <p class="mx-auto mt-8 max-w-3xl text-sm leading-7 text-white/60 sm:text-base sm:leading-8">If reading feels like a nightly battle at your house, with tears, avoidance, and the sense that your child is falling further behind, you’re not doing anything wrong. Neither is your child. ClearCode is K–8 structured literacy intervention built to close the gap: precise placement, expert specialists, and a live dashboard that shows you real progress, week by week.</p>
-        <div class="mt-10 flex flex-col justify-center gap-4 sm:flex-row">
-          <a href="/contact/#consultation-form" class="focus-ring rounded bg-mediumTeal px-8 py-4 text-center text-sm font-bold uppercase tracking-[.1em] text-ink transition hover:-translate-y-0.5 hover:bg-[#45c7c7]">Join the Priority Waitlist</a>
-          <a href="/contact/" class="focus-ring rounded border border-white/25 px-8 py-4 text-center text-sm font-bold uppercase tracking-[.1em] text-linen transition hover:-translate-y-0.5 hover:border-white/60 hover:bg-white/5">Contact Us</a>
+  <div id="top" class="bg-white">
+    <section class="relative isolate overflow-hidden bg-linen">
+      <div class="absolute inset-x-0 top-0 h-28 bg-gradient-to-b from-seafoam/35 to-transparent" aria-hidden="true"></div>
+      <div class="relative mx-auto grid min-h-[620px] max-w-7xl gap-12 px-4 py-12 sm:px-6 sm:py-16 lg:grid-cols-[1.02fr_.98fr] lg:items-start lg:gap-14 lg:px-8 lg:py-12">
+        <div class="max-w-2xl">
+          <p class="home-eyebrow text-xs font-bold uppercase text-deepTeal sm:text-sm">K–8 structured literacy intervention</p>
+          <h1 class="mt-5 text-5xl font-black leading-[.94] tracking-[-.025em] text-ink sm:text-6xl lg:text-7xl">Reading intervention with progress families can see.</h1>
+          <p class="display-type mt-5 text-3xl font-bold leading-tight text-deepTeal sm:text-4xl">Unlock Reading. Unlock Everything.</p>
+          <p class="mt-6 max-w-xl text-lg leading-8 text-ink/70">ClearCode connects precise placement, specialist-led instruction, and a live family progress view so you always understand what your child is learning—and what comes next.</p>
+          <div class="mt-8 flex flex-col gap-3 sm:flex-row">
+            <a href="/contact/#consultation-form" class="focus-ring rounded-full bg-deepTeal px-7 py-4 text-center font-bold text-white shadow-glow transition hover:-translate-y-0.5 hover:bg-[#176a6a]">Request a consultation</a>
+            <a href="#how-it-works" class="focus-ring rounded-full border border-ink/20 bg-white px-7 py-4 text-center font-bold text-ink transition hover:-translate-y-0.5 hover:border-deepTeal hover:text-deepTeal">See how it works</a>
+          </div>
+          <p class="mt-5 text-sm font-semibold text-ink/55">Opening in the Orlando metro area · Priority access available</p>
         </div>
+
+        <div class="relative mx-auto w-full max-w-2xl lg:mx-0">
+          <div class="overflow-hidden rounded-[2.2rem] bg-ink shadow-2xl shadow-ink/20 ring-1 ring-ink/10">
+            <img class="hero-photo aspect-[4/4.15] w-full object-cover sm:aspect-[4/3.6] lg:aspect-[5/4]" src="/assets/images/hero-reading-specialist.jpg" alt="A reading specialist and elementary-age child work together with a book and letter tiles." width="1536" height="1024" fetchpriority="high">
+          </div>
+          <div class="relative mx-4 -mt-16 rounded-[1.6rem] bg-white p-5 shadow-2xl ring-1 ring-ink/10 sm:mx-8 sm:-mt-20 sm:p-6">
+            <div class="flex items-center justify-between gap-4">
+              <div><p class="home-eyebrow text-[10px] font-bold uppercase text-deepTeal">Example family view</p><p class="display-type mt-1 text-2xl font-bold text-ink">A clear reading path</p></div>
+              <span class="rounded-full bg-seafoam px-3 py-2 text-xs font-bold text-forest">Updated each session</span>
+            </div>
+            <div class="mt-4 rounded-2xl bg-linen p-4">
+              <div class="flex justify-between gap-4 text-xs font-bold text-ink/65"><span>Current skill targets</span><span>7 of 9 demonstrated</span></div>
+              <div class="mt-3 h-2.5 overflow-hidden rounded-full bg-white"><div class="h-full w-[78%] rounded-full bg-deepTeal"></div></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section aria-label="ClearCode trust indicators" class="border-y border-ink/10 bg-white">
+      <div class="mx-auto grid max-w-7xl divide-y divide-ink/10 px-4 text-center sm:grid-cols-2 sm:divide-x sm:divide-y-0 sm:px-6 lg:grid-cols-4 lg:px-8">
+        <div class="px-4 py-6"><p class="display-type text-2xl font-bold text-ink">K–8 readers</p><p class="mt-1 text-sm text-ink/55">Age-appropriate pathways</p></div>
+        <div class="px-4 py-6"><p class="display-type text-2xl font-bold text-ink">3 students maximum</p><p class="mt-1 text-sm text-ink/55">Small-group attention</p></div>
+        <div class="px-4 py-6"><p class="display-type text-2xl font-bold text-ink">Established methods</p><p class="mt-1 text-sm text-ink/55">OG and Phonics for Reading</p></div>
+        <div class="px-4 py-6"><p class="display-type text-2xl font-bold text-ink">Family-visible progress</p><p class="mt-1 text-sm text-ink/55">Evidence after every session</p></div>
       </div>
     </section>
 
     <section class="bg-white px-4 py-20 sm:px-6 sm:py-24 lg:px-8">
-      <div class="mx-auto max-w-5xl text-center">
-        <h2 class="text-4xl font-bold tracking-tight text-ink sm:text-5xl">Reading gaps don’t close on their own.</h2>
-        <p class="mx-auto mt-5 max-w-3xl text-sm leading-7 text-ink/60">Waiting for a child to “catch up” is the most common advice families get. It’s also the least supported by the research.</p>
-        <div class="mt-12 grid gap-6 md:grid-cols-3">
-          <article class="reference-card rounded-xl bg-linen px-6 py-10" style="--card-accent: #2EB8B8;">
-            <p class="display-type text-5xl font-bold text-ink sm:text-6xl">2 in 5</p>
-            <p class="mt-3 text-xs leading-6 text-ink/55">Florida students read below grade level.</p>
-          </article>
-          <article class="reference-card rounded-xl bg-linen px-6 py-10" style="--card-accent: #2EB8B8;">
-            <p class="display-type text-5xl font-bold text-ink sm:text-6xl">88%</p>
-            <p class="mt-3 text-xs leading-6 text-ink/55">Of first graders reading below benchmark are still behind years later.</p>
-          </article>
-          <article class="reference-card rounded-xl bg-linen px-6 py-10" style="--card-accent: #2EB8B8;">
-            <p class="display-type text-5xl font-bold text-ink sm:text-6xl">90–95%</p>
-            <p class="mt-3 text-xs leading-6 text-ink/55">Of struggling readers can reach grade level with the right intervention.</p>
-          </article>
+      <div class="mx-auto grid max-w-6xl gap-12 lg:grid-cols-[.78fr_1.22fr] lg:items-start">
+        <div class="lg:sticky lg:top-28">
+          <p class="home-eyebrow text-sm font-bold uppercase text-deepTeal">When reading feels harder than it should</p>
+          <h2 class="mt-4 text-4xl font-black leading-tight text-ink sm:text-5xl">You do not have to keep guessing.</h2>
+          <p class="mt-5 text-lg leading-8 text-ink/65">A child can work hard and still need a more precise instructional path. ClearCode helps families move from worry and fragmented reports to a shared plan.</p>
         </div>
-        <p class="mx-auto mt-8 max-w-5xl text-[11px] leading-5 text-ink/40">Sources: Florida Department of Education, 2024–25 FAST ELA/Reading results, grades 3–8. Center for Research and Reform in Education, Johns Hopkins University (2026); Juel, C. (1988), <em>Journal of Educational Psychology</em>, 80(4). G. Reid Lyon, NICHD/NIH, congressional testimony (1997), via Reading Rockets.</p>
-        <p class="display-type mt-14 text-3xl font-bold text-ink">You’re not alone. And it’s not too late.</p>
+        <div class="grid gap-5 sm:grid-cols-3 lg:grid-cols-1">
+          <article class="rounded-[1.75rem] bg-linen p-6 sm:p-7"><h3 class="text-2xl font-bold text-ink">Homework becomes a nightly battle</h3><p class="mt-3 leading-7 text-ink/65">Reading brings tears, avoidance, or a growing belief that effort is not working.</p></article>
+          <article class="rounded-[1.75rem] bg-seafoam/65 p-6 sm:p-7"><h3 class="text-2xl font-bold text-ink">Reports do not explain the next step</h3><p class="mt-3 leading-7 text-ink/65">Scores arrive, but the family still cannot see which skills need attention now.</p></article>
+          <article class="rounded-[1.75rem] bg-sand/75 p-6 sm:p-7"><h3 class="text-2xl font-bold text-ink">Support feels disconnected</h3><p class="mt-3 leading-7 text-ink/65">Tutoring, school updates, and home practice point in different directions.</p></article>
+        </div>
+      </div>
+      <div class="mx-auto mt-14 grid max-w-6xl gap-5 rounded-[2rem] bg-ink p-7 text-white sm:grid-cols-3 sm:p-9">
+        <div><p class="display-type text-4xl font-black text-gold">2 in 5</p><p class="mt-2 text-sm leading-6 text-white/65">Florida students read below grade level.</p></div>
+        <div><p class="display-type text-4xl font-black text-gold">88%</p><p class="mt-2 text-sm leading-6 text-white/65">Of first graders below benchmark remained behind years later in a landmark study.</p></div>
+        <div><p class="display-type text-4xl font-black text-gold">90–95%</p><p class="mt-2 text-sm leading-6 text-white/65">Of struggling readers can reach grade level with the right intervention.</p></div>
+        <p class="text-[11px] leading-5 text-white/40 sm:col-span-3">Sources: Florida Department of Education, 2024–25 FAST ELA/Reading results, grades 3–8; Juel, C. (1988), <em>Journal of Educational Psychology</em>, 80(4); G. Reid Lyon, NICHD/NIH congressional testimony (1997), via Reading Rockets.</p>
       </div>
     </section>
 
-    <section class="bg-linen px-4 py-20 sm:px-6 sm:py-24 lg:px-8" id="how-it-works">
-      <div class="mx-auto max-w-5xl">
-        <div class="text-center">
-          <p class="eyebrow text-sm font-medium uppercase text-deepTeal sm:text-base">How ClearCode Works</p>
-          <h2 class="mt-4 text-4xl font-bold tracking-tight text-ink sm:text-5xl">One connected path from placement to progress.</h2>
-          <p class="mx-auto mt-5 max-w-3xl text-sm leading-7 text-ink/60">A straightforward process, built around your child. Every step gives specialists sharper insight to guide instruction. You get a clearer view of their progress.</p>
+    <section id="how-it-works" class="scroll-mt-24 bg-linen px-4 py-20 sm:px-6 sm:py-24 lg:px-8">
+      <div class="mx-auto max-w-6xl">
+        <div class="mx-auto max-w-3xl text-center">
+          <p class="home-eyebrow text-sm font-bold uppercase text-deepTeal">How ClearCode works</p>
+          <h2 class="mt-4 text-4xl font-black leading-tight text-ink sm:text-5xl">Three steps. One connected reading path.</h2>
+          <p class="mt-5 text-lg leading-8 text-ink/65">Specialists make the instructional decisions. ClearCode keeps the evidence and family communication connected.</p>
         </div>
-        <div class="mt-12 grid gap-6 md:grid-cols-2">
-          <article class="reference-card rounded-xl bg-white p-7 shadow-sm" style="--card-accent: #2C4A45;">
-            <span class="display-type grid h-9 w-9 place-items-center rounded-full bg-forest text-sm font-bold text-linen">1</span>
-            <h3 class="mt-5 text-2xl font-bold text-ink">Precise Placement</h3>
-            <p class="mt-3 text-sm leading-7 text-ink/60">Every child completes an initial assessment and is placed into one structured literacy sequence. K–2 students are placed in Orton-Gillingham; grades 3–8 students are placed in Phonics for Reading.</p>
-          </article>
-          <article class="reference-card rounded-xl bg-white p-7 shadow-sm" style="--card-accent: #5A9E8F;">
-            <span class="display-type grid h-9 w-9 place-items-center rounded-full bg-eucalyptus text-sm font-bold text-linen">2</span>
-            <h3 class="mt-5 text-2xl font-bold text-ink">Specialist-Led Sessions</h3>
-            <p class="mt-3 text-sm leading-7 text-ink/60">Reading specialists deliver lessons aligned to each program’s methodology and capture student progress in every session.</p>
-          </article>
-          <article class="reference-card rounded-xl bg-white p-7 shadow-sm" style="--card-accent: #A8CFC4;">
-            <span class="display-type grid h-9 w-9 place-items-center rounded-full bg-seafoam text-sm font-bold text-ink">3</span>
-            <h3 class="mt-5 text-2xl font-bold text-ink">Live Parent Dashboard</h3>
-            <p class="mt-3 text-sm leading-7 text-ink/60">Families see skill mastery, fluency trends, specialist notes, next steps, and at-home practice resources.</p>
-          </article>
-          <article class="reference-card rounded-xl bg-white p-7 shadow-sm" style="--card-accent: #E8D5B0;">
-            <span class="display-type grid h-9 w-9 place-items-center rounded-full bg-sand text-sm font-bold text-ink">4</span>
-            <h3 class="mt-5 text-2xl font-bold text-ink">Responsive Support</h3>
-            <p class="mt-3 text-sm leading-7 text-ink/60">Each pathway has built-in sessions for review and additional support to ensure skill mastery.</p>
-          </article>
-        </div>
-        <div class="mt-10 text-center">
-          <a href="/contact/#consultation-form" class="focus-ring inline-flex rounded bg-ink px-8 py-4 text-sm font-bold uppercase tracking-[.1em] text-linen transition hover:-translate-y-0.5 hover:bg-deepTeal">Join the Priority Waitlist</a>
-        </div>
+        <ol class="mt-12 grid gap-6 lg:grid-cols-3">
+          <li class="rounded-[2rem] bg-white p-7 shadow-sm ring-1 ring-ink/5 sm:p-8"><span class="display-type grid h-12 w-12 place-items-center rounded-full bg-gold text-xl font-black text-ink">1</span><h3 class="mt-6 text-3xl font-bold text-ink">Consultation and placement</h3><p class="mt-3 leading-7 text-ink/65">We learn about the reader, review the available evidence, and identify the appropriate methodology and starting point.</p></li>
+          <li class="rounded-[2rem] bg-white p-7 shadow-sm ring-1 ring-ink/5 sm:p-8"><span class="display-type grid h-12 w-12 place-items-center rounded-full bg-mediumTeal text-xl font-black text-ink">2</span><h3 class="mt-6 text-3xl font-bold text-ink">Specialist-led instruction</h3><p class="mt-3 leading-7 text-ink/65">A trained reading specialist follows a structured sequence and captures meaningful evidence during every session.</p></li>
+          <li class="rounded-[2rem] bg-white p-7 shadow-sm ring-1 ring-ink/5 sm:p-8"><span class="display-type grid h-12 w-12 place-items-center rounded-full bg-forest text-xl font-black text-white">3</span><h3 class="mt-6 text-3xl font-bold text-ink">Progress you can follow</h3><p class="mt-3 leading-7 text-ink/65">Families see skill mastery, fluency trends, specialist notes, next milestones, and connected home practice.</p></li>
+        </ol>
+        <div class="mt-10 text-center"><a href="/contact/#consultation-form" class="focus-ring inline-flex rounded-full bg-ink px-8 py-4 font-bold text-white transition hover:-translate-y-0.5 hover:bg-deepTeal">Request a consultation</a></div>
       </div>
     </section>
 
     <section class="bg-white px-4 py-20 sm:px-6 sm:py-24 lg:px-8">
-      <div class="mx-auto max-w-5xl">
-        <div class="text-center">
-          <p class="eyebrow text-sm font-medium uppercase text-deepTeal sm:text-base">Why Families Choose ClearCode</p>
-          <h2 class="mt-4 text-4xl font-bold tracking-tight text-ink sm:text-5xl">Proven methods. Real relationships.</h2>
-          <p class="mx-auto mt-5 max-w-3xl text-sm leading-7 text-ink/60">Evidence-based intervention delivered by specialists who know your child by name.</p>
+      <div class="mx-auto max-w-6xl">
+        <div class="mx-auto max-w-3xl text-center"><p class="home-eyebrow text-sm font-bold uppercase text-deepTeal">Built for the whole reading team</p><h2 class="mt-4 text-4xl font-black leading-tight text-ink sm:text-5xl">Start with the path that fits you.</h2></div>
+        <div class="mt-12 grid gap-6 lg:grid-cols-2">
+          <article class="rounded-[2rem] bg-seafoam/60 p-8 sm:p-10"><p class="home-eyebrow text-xs font-bold uppercase text-deepTeal">For families</p><h3 class="mt-4 text-3xl font-black text-ink">Know what your child is learning.</h3><p class="mt-4 leading-7 text-ink/65">Understand the instructional plan, see meaningful progress, and reinforce the same skills at home.</p><a href="/families/" class="focus-ring mt-7 inline-flex font-bold text-deepTeal underline decoration-mediumTeal/40 decoration-2 underline-offset-8">Explore the family experience</a></article>
+          <article class="rounded-[2rem] bg-ink p-8 text-white sm:p-10"><p class="home-eyebrow text-xs font-bold uppercase text-gold">For schools and specialists</p><h3 class="mt-4 text-3xl font-black">Keep evidence and next steps connected.</h3><p class="mt-4 leading-7 text-white/70">Give specialists a disciplined workflow while instructional leaders retain control of every placement and support decision.</p><a href="/contact/?audience=school#consultation-form" class="focus-ring mt-7 inline-flex font-bold text-gold underline decoration-gold/40 decoration-2 underline-offset-8">Talk with the ClearCode team</a></article>
         </div>
-        <div class="mt-12 grid gap-6 lg:grid-cols-3">
-          <article class="reference-card rounded-xl bg-white p-7 shadow-md ring-1 ring-ink/5" style="--card-accent: #2C4A45;">
-            <h3 class="text-2xl font-bold text-ink">Timeline and Cost Upfront</h3>
-            <p class="mt-3 text-sm leading-7 text-ink/60">Our assessment defines your child’s starting point and reading goals, along with the time and cost to get there.</p>
-          </article>
-          <article class="reference-card rounded-xl bg-white p-7 shadow-md ring-1 ring-ink/5" style="--card-accent: #5A9E8F;">
-            <h3 class="text-2xl font-bold text-ink">Progress You Can See</h3>
-            <p class="mt-3 text-sm leading-7 text-ink/60">A live dashboard keeps you updated on your child’s progress, with resources for ongoing support at home.</p>
-          </article>
-          <article class="reference-card rounded-xl bg-white p-7 shadow-md ring-1 ring-ink/5" style="--card-accent: #E8D5B0;">
-            <h3 class="text-2xl font-bold text-ink">Relationships Fuel Reading</h3>
-            <p class="mt-3 text-sm leading-7 text-ink/60">Our specialists build relationships with each child. Knowing someone’s in your corner helps kids succeed.</p>
-            <p class="mt-4 text-[11px] leading-5 text-ink/40">Source: Rosenthal &amp; Jacobson, <em>Pygmalion in the Classroom</em> (1968)</p>
-          </article>
-        </div>
-        <div class="mt-10 text-center">
-          <a href="/contact/#consultation-form" class="focus-ring inline-flex rounded bg-ink px-8 py-4 text-sm font-bold uppercase tracking-[.1em] text-linen transition hover:-translate-y-0.5 hover:bg-deepTeal">Join the Priority Waitlist</a>
+        <div class="mt-8 grid gap-6 md:grid-cols-2">
+          <article class="rounded-[2rem] border border-ink/10 bg-linen p-8"><p class="home-eyebrow text-xs font-bold uppercase text-deepTeal">Grades K–2</p><h3 class="mt-3 text-3xl font-black text-ink">Orton-Gillingham Plus</h3><p class="mt-3 leading-7 text-ink/65">Explicit, multisensory, cumulative structured-literacy instruction for developing readers.</p></article>
+          <article class="rounded-[2rem] border border-ink/10 bg-linen p-8"><p class="home-eyebrow text-xs font-bold uppercase text-deepTeal">Grades 3–8</p><h3 class="mt-3 text-3xl font-black text-ink">Phonics for Reading</h3><p class="mt-3 leading-7 text-ink/65">Direct, carefully sequenced foundational-skill intervention for older struggling readers.</p></article>
         </div>
       </div>
     </section>
 
-    <section class="border-t border-ink/5 bg-white px-4 py-20 sm:px-6 sm:py-24 lg:px-8">
-      <div class="mx-auto max-w-3xl text-center">
-        <p class="eyebrow text-sm font-medium uppercase text-deepTeal sm:text-base">Paying for Intervention</p>
-        <h2 class="mt-4 text-4xl font-bold tracking-tight text-ink sm:text-5xl">Cost shouldn’t decide who learns to read</h2>
-        <p class="mt-5 text-sm leading-7 text-ink/60">Florida families can use state education scholarships, including the Family Empowerment Scholarship, to cover reading intervention. We accept scholarship funding and private pay, and we’ll walk you through which options your family qualifies for before you commit to anything.</p>
+    <section id="progress" class="scroll-mt-24 bg-ink px-4 py-20 text-white sm:px-6 sm:py-24 lg:px-8">
+      <div class="mx-auto grid max-w-6xl gap-12 lg:grid-cols-[.8fr_1.2fr] lg:items-center">
+        <div><p class="home-eyebrow text-sm font-bold uppercase text-gold">The family progress view</p><h2 class="mt-4 text-4xl font-black leading-tight sm:text-5xl">See the story behind every session.</h2><p class="mt-5 text-lg leading-8 text-white/70">ClearCode turns instructional evidence into plain-language updates without replacing specialist judgment or promising a fixed outcome date.</p><ul class="mt-7 space-y-3 text-white/75"><li class="flex gap-3"><span class="font-black text-mediumTeal">✓</span><span>Current skill mastery and sequence position</span></li><li class="flex gap-3"><span class="font-black text-mediumTeal">✓</span><span>Fluency trends and recent specialist notes</span></li><li class="flex gap-3"><span class="font-black text-mediumTeal">✓</span><span>Next milestones and aligned home practice</span></li></ul></div>
+        <div class="rounded-[2rem] bg-white p-5 text-ink shadow-2xl sm:p-7" aria-label="Illustrative family dashboard preview">
+          <div class="flex flex-wrap items-center justify-between gap-4 border-b border-ink/10 pb-5"><div><p class="home-eyebrow text-[10px] font-bold uppercase text-deepTeal">Illustrative data</p><h3 class="mt-1 text-3xl font-black">Sample reader progress</h3></div><span class="rounded-full bg-linen px-4 py-2 text-sm font-bold">Sequence 04</span></div>
+          <div class="mt-5 grid gap-4 sm:grid-cols-3"><div class="rounded-2xl bg-linen p-4"><p class="text-xs font-bold uppercase tracking-wider text-ink/45">Skill targets</p><p class="display-type mt-2 text-3xl font-black">7 / 9</p><p class="mt-1 text-xs text-ink/55">Demonstrated</p></div><div class="rounded-2xl bg-seafoam/65 p-4"><p class="text-xs font-bold uppercase tracking-wider text-ink/45">Fluency trend</p><p class="display-type mt-2 text-3xl font-black">Upward</p><p class="mt-1 text-xs text-ink/55">Across recent checks</p></div><div class="rounded-2xl bg-sand/75 p-4"><p class="text-xs font-bold uppercase tracking-wider text-ink/45">Next focus</p><p class="display-type mt-2 text-3xl font-black">Blends</p><p class="mt-1 text-xs text-ink/55">Specialist selected</p></div></div>
+          <div class="mt-4 rounded-2xl border border-ink/10 p-5"><div class="flex items-center justify-between gap-4"><p class="font-bold">Recent skill evidence</p><p class="text-xs font-semibold text-ink/45">Last 5 sessions</p></div><div class="mt-5 flex h-28 items-end gap-3" aria-hidden="true"><div class="h-[42%] flex-1 rounded-t-lg bg-seafoam"></div><div class="h-[55%] flex-1 rounded-t-lg bg-eucalyptus"></div><div class="h-[58%] flex-1 rounded-t-lg bg-eucalyptus"></div><div class="h-[72%] flex-1 rounded-t-lg bg-deepTeal"></div><div class="h-[82%] flex-1 rounded-t-lg bg-mediumTeal"></div></div></div>
+        </div>
       </div>
     </section>
 
     <section class="bg-linen px-4 py-20 sm:px-6 sm:py-24 lg:px-8">
-      <div class="mx-auto max-w-3xl text-center">
-        <p class="eyebrow text-sm font-medium uppercase text-deepTeal sm:text-base">Start with a Conversation</p>
-        <h2 class="mt-4 text-4xl font-bold tracking-tight text-ink sm:text-5xl">Ready to see what clear progress looks like?</h2>
-        <p class="mx-auto mt-5 max-w-2xl text-sm leading-7 text-ink/60">We’ll explain the next steps and whether ClearCode’s structured literacy approach is a fit.</p>
-        <div class="mt-8 flex flex-col justify-center gap-4 sm:flex-row">
-          <a href="/contact/#consultation-form" class="focus-ring rounded bg-ink px-8 py-4 text-sm font-bold uppercase tracking-[.1em] text-linen transition hover:-translate-y-0.5 hover:bg-deepTeal">Join the Priority Waitlist</a>
-          <a href="/contact/" class="focus-ring rounded border border-ink px-8 py-4 text-sm font-bold uppercase tracking-[.1em] text-ink transition hover:-translate-y-0.5 hover:bg-white">Contact Us</a>
+      <div class="mx-auto grid max-w-6xl gap-10 lg:grid-cols-[.72fr_1.28fr] lg:items-center">
+        <div><p class="home-eyebrow text-sm font-bold uppercase text-deepTeal">What the journey can look like</p><h2 class="mt-4 text-4xl font-black leading-tight text-ink sm:text-5xl">A family story they can actually follow.</h2><p class="mt-4 text-sm leading-6 text-ink/50">Illustrative journey—not a testimonial or promised outcome.</p></div>
+        <div class="rounded-[2rem] bg-white p-7 shadow-sm sm:p-9"><div class="grid gap-6 sm:grid-cols-3"><div><p class="home-eyebrow text-[10px] font-bold uppercase text-deepTeal">At the beginning</p><p class="mt-3 leading-7 text-ink/65">A family brings scattered reports, unanswered questions, and concern about confidence.</p></div><div><p class="home-eyebrow text-[10px] font-bold uppercase text-deepTeal">During instruction</p><p class="mt-3 leading-7 text-ink/65">The specialist follows one structured sequence and records evidence while it is fresh.</p></div><div><p class="home-eyebrow text-[10px] font-bold uppercase text-deepTeal">At home</p><p class="mt-3 leading-7 text-ink/65">The family can see what changed, what comes next, and which short practice reinforces the lesson.</p></div></div></div>
+      </div>
+    </section>
+
+    <section class="bg-white px-4 py-20 sm:px-6 sm:py-24 lg:px-8">
+      <div class="mx-auto max-w-4xl">
+        <div class="text-center"><p class="home-eyebrow text-sm font-bold uppercase text-deepTeal">Frequently asked questions</p><h2 class="mt-4 text-4xl font-black text-ink sm:text-5xl">What families usually want to know.</h2></div>
+        <div class="mt-10 space-y-4">
+          <details class="group rounded-2xl bg-linen p-5"><summary class="focus-ring flex cursor-pointer list-none items-center justify-between gap-5 rounded-lg font-bold"><span>Who does ClearCode serve?</span><span class="text-2xl text-deepTeal group-open:rotate-45" aria-hidden="true">+</span></summary><p class="mt-4 max-w-3xl leading-7 text-ink/65">ClearCode is designed for K–8 students who need explicit foundational reading intervention. A consultation helps determine whether the model fits the reader’s educational needs.</p></details>
+          <details class="group rounded-2xl bg-linen p-5"><summary class="focus-ring flex cursor-pointer list-none items-center justify-between gap-5 rounded-lg font-bold"><span>Is ClearCode a diagnostic or medical service?</span><span class="text-2xl text-deepTeal group-open:rotate-45" aria-hidden="true">+</span></summary><p class="mt-4 max-w-3xl leading-7 text-ink/65">No. ClearCode provides educational reading intervention. It does not diagnose dyslexia, replace medical advice, or guarantee a particular result or timeline.</p></details>
+          <details class="group rounded-2xl bg-linen p-5"><summary class="focus-ring flex cursor-pointer list-none items-center justify-between gap-5 rounded-lg font-bold"><span>Which instructional methods are used?</span><span class="text-2xl text-deepTeal group-open:rotate-45" aria-hidden="true">+</span></summary><p class="mt-4 max-w-3xl leading-7 text-ink/65">Students follow one methodology at a time: Orton-Gillingham Plus for the K–2 pathway or Phonics for Reading for the grades 3–8 pathway, based on appropriate placement evidence.</p></details>
+          <details class="group rounded-2xl bg-linen p-5"><summary class="focus-ring flex cursor-pointer list-none items-center justify-between gap-5 rounded-lg font-bold"><span>How large are the groups?</span><span class="text-2xl text-deepTeal group-open:rotate-45" aria-hidden="true">+</span></summary><p class="mt-4 max-w-3xl leading-7 text-ink/65">ClearCode groups are designed for a maximum of three students so specialists can deliver direct instruction and observe individual responses.</p></details>
+          <details class="group rounded-2xl bg-linen p-5"><summary class="focus-ring flex cursor-pointer list-none items-center justify-between gap-5 rounded-lg font-bold"><span>How will I know whether progress is happening?</span><span class="text-2xl text-deepTeal group-open:rotate-45" aria-hidden="true">+</span></summary><p class="mt-4 max-w-3xl leading-7 text-ink/65">The family dashboard connects skill mastery, fluency trends, recent specialist notes, next milestones, and home practice to session evidence.</p></details>
+          <details class="group rounded-2xl bg-linen p-5"><summary class="focus-ring flex cursor-pointer list-none items-center justify-between gap-5 rounded-lg font-bold"><span>How do we begin?</span><span class="text-2xl text-deepTeal group-open:rotate-45" aria-hidden="true">+</span></summary><p class="mt-4 max-w-3xl leading-7 text-ink/65">Submit the short consultation request. The team will review it, contact you, and explain fit, availability, placement, cost, and the clearest next step.</p></details>
         </div>
       </div>
+    </section>
+
+    <section class="border-y border-ink/10 bg-seafoam/55 px-4 py-14 sm:px-6 lg:px-8">
+      <div class="mx-auto flex max-w-6xl flex-col gap-7 lg:flex-row lg:items-center lg:justify-between"><div class="max-w-3xl"><p class="home-eyebrow text-xs font-bold uppercase text-deepTeal">Beyond one family</p><h2 class="mt-3 text-3xl font-black text-ink sm:text-4xl">Help expand access through the ClearCode Foundation.</h2><p class="mt-3 leading-7 text-ink/65">Families, educators, and community partners can help more children find a clear path into reading.</p></div><a href="/foundation/" class="focus-ring shrink-0 rounded-full bg-ink px-7 py-4 text-center font-bold text-white transition hover:-translate-y-0.5 hover:bg-deepTeal">Explore the Foundation</a></div>
+    </section>
+
+    <section class="bg-ink px-4 py-20 text-center text-white sm:px-6 sm:py-24">
+      <div class="mx-auto max-w-3xl"><p class="home-eyebrow text-sm font-bold uppercase text-gold">Start with a conversation</p><h2 class="mt-4 text-4xl font-black sm:text-5xl">Let’s find the clearest next step.</h2><p class="mx-auto mt-5 max-w-2xl text-lg leading-8 text-white/70">Tell us what you are noticing. We will follow up to discuss fit, availability, and the right starting point—without pressure or diagnostic claims.</p><a href="/contact/#consultation-form" class="focus-ring mt-8 inline-flex rounded-full bg-gold px-8 py-4 font-bold text-ink shadow-lg transition hover:-translate-y-0.5 hover:bg-[#ffb23d]">Request a consultation</a></div>
     </section>
   </div>
 {% endblock %}
