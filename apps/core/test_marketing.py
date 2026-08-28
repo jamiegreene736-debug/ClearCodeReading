@@ -143,6 +143,27 @@ class MarketingPageTests(SimpleTestCase):
         self.assertIn("not a PFR or OG+ placement instrument", content)
         self.assertIn('href="/contact/"', content)
 
+    def test_assessment_appends_complete_grade_routed_parent_inventory(self):
+        content = self._render("reading_assessment")
+
+        self.assertIn("One more step for the parent.", content)
+        self.assertIn("ZIP Code", content)
+        self.assertIn("Select your child’s grade", content)
+        self.assertIn("High School", content)
+        self.assertIn("Start Parent Inventory", content)
+        self.assertIn("Choose Yes or No.", content)
+        self.assertEqual(content.count("inventoryQuestion('kindergarten-"), 20)
+        self.assertEqual(content.count("inventoryQuestion('first-grade-"), 25)
+        self.assertEqual(content.count("inventoryQuestion('second-grade-"), 25)
+        self.assertEqual(content.count("inventoryQuestion('third-plus-"), 24)
+        self.assertIn("resourceAt: 13", content)
+        self.assertIn("resourceAt: 16", content)
+        self.assertEqual(content.count("resourceAt: 19"), 2)
+        self.assertIn("state.inventoryStoppedAtGroup = step.groupIndex", content)
+        self.assertIn("Consider reading support.", content)
+        self.assertIn("Comprehension and fluency resources", content)
+        self.assertIn("Age-appropriate book lists", content)
+
     def test_about_page_preserves_the_supplied_positioning_and_sources(self):
         content = self._render("marketing_about")
 

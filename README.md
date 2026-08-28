@@ -221,7 +221,12 @@ review determine PFR or OG+ placement.
 The browser experience at `/assessment/` is an optional, secondary marketing survey. The
 primary public journey is the specialist-intervention consultation at `/contact/`. The
 database-backed assessment workflow is available through the `/api/v1/assessments/` endpoints
-below.
+below. After the child-facing questions, the browser survey runs the grade-routed Parent Reading
+Inventory for Kindergarten, Grade 1, Grade 2, or Grade 3 and above. Each statement uses a Yes/No
+answer, checkpoint scores can end the inventory early with a reading-support recommendation, and
+completed inventories route families to either support or comprehension, fluency, and book-list
+resources. ZIP Code, grade, and inventory answers remain in the browser session and are not added
+to the consultation submission.
 
 Seed the starter question bank:
 
