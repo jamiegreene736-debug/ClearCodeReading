@@ -52,6 +52,10 @@ BRAND_KIT_FILES = {
 
 LEARNING_PHOTOS_BY_PAGE = {
     "marketing_home": {
+        "homepage-hero-specialist-student.jpg",
+        "learning-carousel-small-group.jpg",
+        "learning-carousel-one-to-one.jpg",
+        "learning-carousel-educator-collaboration.jpg",
         "specialist-reading-session.jpg",
         "family-reading-practice.jpg",
     },
@@ -108,11 +112,24 @@ class MarketingPageTests(SimpleTestCase):
     def test_homepage_uses_a_local_optimized_hero_photo(self):
         content = self._render("marketing_home")
 
-        self.assertIn('/assets/images/hero-reading-specialist.jpg', content)
+        self.assertIn('/assets/images/homepage-hero-specialist-student.jpg', content)
         self.assertIn('fetchpriority="high"', content)
-        hero_path = Path(settings.BASE_DIR) / "marketing-website/assets/images/hero-reading-specialist.jpg"
+        hero_path = Path(settings.BASE_DIR) / "marketing-website/assets/images/homepage-hero-specialist-student.jpg"
         self.assertTrue(hero_path.is_file())
         self.assertLess(hero_path.stat().st_size, 500_000)
+
+    def test_homepage_carousel_is_manual_accessible_and_uses_local_photos(self):
+        content = self._render("marketing_home")
+
+        self.assertIn('aria-roledescription="carousel"', content)
+        self.assertEqual(content.count('data-carousel-slide role="group"'), 3)
+        self.assertEqual(content.count('aria-roledescription="slide"'), 3)
+        self.assertEqual(content.count('data-carousel-dot='), 3)
+        self.assertIn('aria-label="Show previous learning scene"', content)
+        self.assertIn('aria-label="Show next learning scene"', content)
+        self.assertIn("event.key === 'ArrowLeft'", content)
+        self.assertIn("event.key === 'ArrowRight'", content)
+        self.assertNotIn("setInterval", content)
 
     def test_shared_marketing_navigation_is_consistent(self):
         route_names = [
@@ -325,12 +342,12 @@ class MarketingPageTests(SimpleTestCase):
         for route_name in PUBLIC_PAGES:
             content = self._render(route_name)
             with self.subTest(route_name=route_name):
-                self.assertIn("Barlow+Condensed", content)
+                self.assertIn("Plus+Jakarta+Sans", content)
                 self.assertEqual(
-                    content.count("/assets/logo/cc-lockup-ink-ui.png"),
+                    content.count("/assets/logo/cc-monogram-gold-teal.png"),
                     2,
                 )
-                self.assertNotIn("/assets/logo/cc-lockup-linen-ui.png", content)
+                self.assertNotIn("/assets/logo/cc-lockup-ink-ui.png", content)
                 self.assertIn("/assets/logo/cc-favicon-gold-teal-32.png", content)
                 self.assertIn("/assets/logo/cc-apple-touch-icon-gold-teal-180.png", content)
                 self.assertNotIn("clear-code-reading-logo", content)
@@ -367,7 +384,7 @@ class MarketingPageTests(SimpleTestCase):
         for relative_path in template_paths:
             content = (Path(settings.BASE_DIR) / relative_path).read_text()
             with self.subTest(template=relative_path):
-                self.assertIn("Barlow+Condensed", content)
+                self.assertIn("Plus+Jakarta+Sans", content)
                 self.assertIn("cc-favicon-gold-teal-32.png", content)
                 self.assertIn("cc-apple-touch-icon-gold-teal-180.png", content)
                 self.assertIn("#0F2B35", content)

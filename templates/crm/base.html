@@ -7,11 +7,11 @@
   <link rel="icon" href="/assets/logo/cc-favicon-gold-teal-32.png" type="image/png" sizes="32x32">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Barlow+Condensed:wght@700;800&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
   <style>
     :root { --navy:#213343; --ink:#33475b; --muted:#5c6f7f; --line:#cbd6e2; --bg:#f5f8fa; --white:#fff; --teal:#1a7a7a; --teal-soft:#e5f5f3; --orange:#f5a623; --red:#c53b3b; }
     * { box-sizing:border-box; }
-    body { margin:0; color:var(--ink); background:var(--bg); font:14px/1.45 Inter,system-ui,sans-serif; }
+    body { margin:0; color:var(--ink); background:var(--bg); font:14px/1.55 "Plus Jakarta Sans",system-ui,sans-serif; text-rendering:optimizeLegibility; }
     a { color:inherit; }
     button,input,select,textarea { font:inherit; }
     button { cursor:pointer; }
@@ -19,7 +19,7 @@
     .skip:focus { top:12px; }
     .shell { min-height:100vh; display:grid; grid-template-columns:220px minmax(0,1fr); }
     .sidebar { position:sticky; top:0; height:100vh; padding:22px 14px; color:white; background:var(--navy); }
-    .brand { display:flex; align-items:center; gap:10px; padding:0 8px 24px; text-decoration:none; font:800 19px Barlow Condensed,sans-serif; letter-spacing:.02em; }
+    .brand { display:flex; align-items:center; gap:10px; padding:0 8px 24px; text-decoration:none; font:800 19px "Plus Jakarta Sans",sans-serif; letter-spacing:-.02em; }
     .brand-mark { width:32px; height:32px; display:grid; place-items:center; color:var(--navy); background:var(--orange); border-radius:7px; }
     .nav-label { margin:16px 10px 8px; color:#9fb4c5; font-size:11px; font-weight:700; letter-spacing:.1em; text-transform:uppercase; }
     .nav-link { display:flex; align-items:center; gap:10px; margin:3px 0; padding:10px 12px; border-radius:5px; color:#eaf0f4; text-decoration:none; font-weight:600; }
@@ -33,15 +33,15 @@
     .content { padding:28px; }
     .eyebrow { margin:0 0 5px; color:var(--teal); font-size:12px; font-weight:700; letter-spacing:.08em; text-transform:uppercase; }
     h1,h2,h3,p { margin-top:0; }
-    h1 { margin-bottom:6px; color:var(--navy); font:800 32px/1.1 Barlow Condensed,sans-serif; }
-    h2 { color:var(--navy); font:800 22px/1.2 Barlow Condensed,sans-serif; }
+    h1 { margin-bottom:6px; color:var(--navy); font:800 32px/1.2 "Plus Jakarta Sans",sans-serif; letter-spacing:-.035em; }
+    h2 { color:var(--navy); font:800 22px/1.25 "Plus Jakarta Sans",sans-serif; letter-spacing:-.025em; }
     .subtle { color:var(--muted); }
     .flash { margin:0 28px 12px; padding:12px 15px; border:1px solid #8bc7bd; border-radius:5px; background:var(--teal-soft); font-weight:600; }
     .card { background:white; border:1px solid var(--line); border-radius:7px; box-shadow:0 1px 2px rgba(33,51,67,.05); }
     .stats { display:grid; grid-template-columns:repeat(auto-fit,minmax(150px,1fr)); gap:14px; margin:24px 0; }
     .stat { padding:18px; }
     .stat-label { color:var(--muted); font-size:12px; font-weight:600; }
-    .stat-value { margin-top:4px; color:var(--navy); font:800 28px Barlow Condensed,sans-serif; }
+    .stat-value { margin-top:4px; color:var(--navy); font:800 28px "Plus Jakarta Sans",sans-serif; letter-spacing:-.03em; }
     .btn { display:inline-flex; align-items:center; justify-content:center; gap:7px; min-height:36px; padding:8px 14px; border:1px solid var(--line); border-radius:5px; color:var(--ink); background:white; font-weight:600; text-decoration:none; }
     .btn:hover { border-color:#8ca5b7; background:#f7fafc; }
     .btn-primary { color:white; border-color:var(--teal); background:var(--teal); }

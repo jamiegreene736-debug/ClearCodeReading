@@ -10,7 +10,7 @@
   <link rel="apple-touch-icon" href="/assets/logo/cc-apple-touch-icon-gold-teal-180.png" sizes="180x180">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:ital,wght@0,400;0,500;0,600;0,700;0,800;0,900;1,400;1,600;1,700&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
   <script src="https://cdn.tailwindcss.com"></script>
   <script>
     tailwind.config = {
@@ -32,7 +32,7 @@
             mediumTealGlow: '0 22px 70px rgba(46, 184, 184, 0.18)'
           },
           fontFamily: {
-            sans: ['Barlow Condensed', 'Arial Narrow', 'ui-sans-serif', 'system-ui', 'sans-serif']
+            sans: ['Plus Jakarta Sans', 'ui-sans-serif', 'system-ui', 'sans-serif']
           }
         }
       }
@@ -53,13 +53,22 @@
       box-shadow: 0 18px 50px rgba(26, 122, 122, .14);
       transform: translateY(-2px);
     }
+    body { font-family: "Plus Jakarta Sans", ui-sans-serif, system-ui, sans-serif; line-height: 1.65; text-rendering: optimizeLegibility; }
+    h1, h2, h3 { font-family: "Plus Jakarta Sans", ui-sans-serif, system-ui, sans-serif; letter-spacing: -.035em; }
+    .brand-lockup { align-items: center; display: inline-flex; gap: .65rem; line-height: 1; }
+    .brand-lockup__mark { flex: 0 0 auto; height: 2.75rem; width: 2.75rem; }
+    .brand-lockup__words { display: grid; gap: .28rem; }
+    .brand-lockup__name { font-size: 1.15rem; font-weight: 800; letter-spacing: -.045em; text-transform: uppercase; }
+    .brand-lockup__clear { color: #F7F2EA; }
+    .brand-lockup__code { color: #F5A623; margin-left: .28rem; }
+    .brand-lockup__reading { color: #2EB8B8; font-size: .58rem; font-weight: 700; letter-spacing: .3em; text-transform: uppercase; }
   </style>
 </head>
 <body class="page-bg min-h-screen font-sans text-ink antialiased">
   <header class="sticky top-0 z-40 border-b border-gold/20 bg-ink">
     <nav class="mx-auto flex max-w-7xl items-center justify-between gap-4 px-4 py-3 sm:px-6 lg:px-8">
-      <a href="/" class="focus-ring rounded-lg">
-        <img src="/assets/logo/cc-lockup-ink-ui.png" alt="ClearCode Reading" class="h-12 w-auto max-w-[220px] object-contain sm:max-w-[300px]">
+      <a href="/" class="focus-ring rounded-lg" aria-label="ClearCode Reading home">
+        {% include "_brand_lockup.html" %}
       </a>
       <div class="flex items-center gap-2 sm:gap-3">
         <a href="/how-it-works/" class="hidden rounded-full px-4 py-2 text-sm font-black text-white/80 transition hover:text-gold md:inline-flex">How it works</a>
@@ -129,7 +138,7 @@
   <footer class="bg-ink px-4 py-10 text-white sm:px-6 lg:px-8">
     <div class="mx-auto flex max-w-7xl flex-col gap-6 md:flex-row md:items-center md:justify-between">
       <div>
-        <span class="inline-flex"><img src="/assets/logo/cc-lockup-ink-ui.png" alt="ClearCode Reading" class="h-11 w-auto max-w-[220px] object-contain"></span>
+        <a class="focus-ring inline-flex rounded-lg" href="/" aria-label="ClearCode Reading home">{% include "_brand_lockup.html" %}</a>
         <p class="mt-3 max-w-xl text-sm text-white/70">Specialist-led structured literacy intervention with clear parent visibility.</p>
       </div>
       <div class="flex flex-wrap gap-5 text-sm font-bold text-white/75">

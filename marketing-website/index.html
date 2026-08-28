@@ -8,8 +8,10 @@
 {% block extra_head %}
   <style>
     .home-eyebrow { letter-spacing: .18em; }
-    .hero-photo { object-position: 52% center; }
-    @media (max-width: 1023px) { .hero-photo { object-position: 50% 42%; } }
+    .hero-photo { object-position: 54% center; }
+    .carousel-slide[hidden] { display: none; }
+    .carousel-dot[aria-current="true"] { background: #0F2B35; transform: scale(1.18); }
+    @media (max-width: 1023px) { .hero-photo { object-position: 52% 44%; } }
   </style>
 {% endblock %}
 
@@ -20,7 +22,7 @@
       <div class="relative mx-auto grid min-h-[620px] max-w-7xl gap-12 px-4 py-12 sm:px-6 sm:py-16 lg:grid-cols-[1.02fr_.98fr] lg:items-start lg:gap-14 lg:px-8 lg:py-12">
         <div class="max-w-2xl">
           <p class="home-eyebrow text-xs font-bold uppercase text-deepTeal sm:text-sm">K–8 structured literacy intervention</p>
-          <h1 class="mt-5 text-5xl font-black leading-[.94] tracking-[-.025em] text-ink sm:text-6xl lg:text-7xl">Reading intervention with progress families can see.</h1>
+          <h1 class="mt-5 text-5xl font-extrabold leading-[1.03] tracking-[-.04em] text-ink sm:text-6xl">Reading intervention with progress families can see.</h1>
           <p class="display-type mt-5 text-3xl font-bold leading-tight text-deepTeal sm:text-4xl">Unlock Reading. Unlock Everything.</p>
           <p class="mt-6 max-w-xl text-lg leading-8 text-ink/70">ClearCode connects precise placement, specialist-led instruction, and a live family progress view so you always understand what your child is learning—and what comes next.</p>
           <div class="mt-8 flex flex-col gap-3 sm:flex-row">
@@ -32,7 +34,7 @@
 
         <div class="relative mx-auto w-full max-w-2xl lg:mx-0">
           <div class="overflow-hidden rounded-[2.2rem] bg-ink shadow-2xl shadow-ink/20 ring-1 ring-ink/10">
-            <img class="hero-photo aspect-[4/4.15] w-full object-cover sm:aspect-[4/3.6] lg:aspect-[5/4]" src="/assets/images/hero-reading-specialist.jpg" alt="A reading specialist and elementary-age child work together with a book and letter tiles." width="1536" height="1024" fetchpriority="high">
+            <img class="hero-photo aspect-[4/4.15] w-full object-cover sm:aspect-[4/3.6] lg:aspect-[5/4]" src="/assets/images/homepage-hero-specialist-student.jpg" alt="A reading specialist and elementary-age student read together at a table with letter tiles." width="1536" height="1024" fetchpriority="high">
           </div>
           <div class="relative mx-4 -mt-16 rounded-[1.6rem] bg-white p-5 shadow-2xl ring-1 ring-ink/10 sm:mx-8 sm:-mt-20 sm:p-6">
             <div class="flex items-center justify-between gap-4">
@@ -54,6 +56,61 @@
         <div class="px-4 py-6"><p class="display-type text-2xl font-bold text-ink">3 students maximum</p><p class="mt-1 text-sm text-ink/55">Small-group attention</p></div>
         <div class="px-4 py-6"><p class="display-type text-2xl font-bold text-ink">Established methods</p><p class="mt-1 text-sm text-ink/55">OG and Phonics for Reading</p></div>
         <div class="px-4 py-6"><p class="display-type text-2xl font-bold text-ink">Family-visible progress</p><p class="mt-1 text-sm text-ink/55">Evidence after every session</p></div>
+      </div>
+    </section>
+
+    <section class="bg-seafoam/35 px-4 py-20 sm:px-6 sm:py-24 lg:px-8" aria-labelledby="learning-gallery-title">
+      <div class="mx-auto max-w-6xl">
+        <div class="grid gap-6 lg:grid-cols-[1fr_auto] lg:items-end">
+          <div class="max-w-3xl">
+            <p class="home-eyebrow text-sm font-bold uppercase text-deepTeal">Learning in motion</p>
+            <h2 id="learning-gallery-title" class="mt-4 text-4xl font-extrabold leading-tight text-ink sm:text-5xl">A closer look at the people behind every reading step.</h2>
+            <p class="mt-5 text-lg leading-8 text-ink/65">ClearCode brings students, specialists, and families into one connected learning experience—focused enough for the individual and supported by a thoughtful team.</p>
+          </div>
+          <p class="rounded-full bg-white px-4 py-2 text-sm font-bold text-ink/60 shadow-sm ring-1 ring-ink/10">Use the arrows to explore</p>
+        </div>
+
+        <div class="mt-10" data-carousel role="region" aria-roledescription="carousel" aria-label="ClearCode learning experiences">
+          <div id="learning-carousel-slides" class="overflow-hidden rounded-[2rem] bg-white shadow-xl ring-1 ring-ink/10" aria-live="polite">
+            <figure class="carousel-slide grid lg:grid-cols-[1.3fr_.7fr]" data-carousel-slide role="group" aria-roledescription="slide" aria-label="1 of 3">
+              <img src="/assets/images/learning-carousel-small-group.jpg" alt="A reading specialist leads three elementary students through a small-group literacy lesson." class="aspect-[3/2] h-full w-full object-cover" width="1536" height="1024" loading="lazy">
+              <figcaption class="flex flex-col justify-center bg-white p-7 sm:p-9 lg:p-10">
+                <p class="home-eyebrow text-xs font-bold uppercase text-deepTeal">Small-group instruction</p>
+                <h3 class="mt-4 text-3xl font-extrabold leading-tight text-ink">Focused enough to notice every reader.</h3>
+                <p class="mt-4 leading-7 text-ink/65">Groups are designed for no more than three students, giving specialists room to model, listen, respond, and keep each learner engaged.</p>
+              </figcaption>
+            </figure>
+            <figure class="carousel-slide grid lg:grid-cols-[1.3fr_.7fr]" data-carousel-slide role="group" aria-roledescription="slide" aria-label="2 of 3" hidden>
+              <img src="/assets/images/learning-carousel-one-to-one.jpg" alt="A reading specialist supports an older elementary student as he reads and works with syllable cards." class="aspect-[3/2] h-full w-full object-cover" width="1536" height="1024" loading="lazy">
+              <figcaption class="flex flex-col justify-center bg-white p-7 sm:p-9 lg:p-10">
+                <p class="home-eyebrow text-xs font-bold uppercase text-deepTeal">Individual attention</p>
+                <h3 class="mt-4 text-3xl font-extrabold leading-tight text-ink">Challenge without losing confidence.</h3>
+                <p class="mt-4 leading-7 text-ink/65">Age-respectful materials and a clear instructional sequence help older readers practice foundational skills without feeling talked down to.</p>
+              </figcaption>
+            </figure>
+            <figure class="carousel-slide grid lg:grid-cols-[1.3fr_.7fr]" data-carousel-slide role="group" aria-roledescription="slide" aria-label="3 of 3" hidden>
+              <img src="/assets/images/learning-carousel-educator-collaboration.jpg" alt="Two reading specialists collaborate at a table using lesson and phonics materials." class="aspect-[3/2] h-full w-full object-cover" width="1536" height="1024" loading="lazy">
+              <figcaption class="flex flex-col justify-center bg-white p-7 sm:p-9 lg:p-10">
+                <p class="home-eyebrow text-xs font-bold uppercase text-deepTeal">Specialist collaboration</p>
+                <h3 class="mt-4 text-3xl font-extrabold leading-tight text-ink">A plan that stays connected.</h3>
+                <p class="mt-4 leading-7 text-ink/65">Specialists use shared evidence to prepare the next lesson and explain progress in language families can understand.</p>
+              </figcaption>
+            </figure>
+          </div>
+
+          <div class="mt-6 flex flex-wrap items-center justify-between gap-4">
+            <div class="flex items-center gap-3">
+              <button type="button" class="focus-ring grid h-12 w-12 place-items-center rounded-full bg-ink text-xl font-bold text-white transition hover:-translate-y-0.5 hover:bg-deepTeal" data-carousel-prev aria-controls="learning-carousel-slides" aria-label="Show previous learning scene">&#8592;</button>
+              <button type="button" class="focus-ring grid h-12 w-12 place-items-center rounded-full bg-ink text-xl font-bold text-white transition hover:-translate-y-0.5 hover:bg-deepTeal" data-carousel-next aria-controls="learning-carousel-slides" aria-label="Show next learning scene">&#8594;</button>
+              <span class="ml-1 text-sm font-bold text-ink/55" data-carousel-status>1 / 3</span>
+            </div>
+            <div class="flex items-center gap-3" aria-label="Choose a learning scene">
+              <button type="button" class="carousel-dot focus-ring h-3 w-3 rounded-full bg-ink/25 transition" data-carousel-dot="0" aria-label="Show slide 1: Small-group instruction" aria-current="true"></button>
+              <button type="button" class="carousel-dot focus-ring h-3 w-3 rounded-full bg-ink/25 transition" data-carousel-dot="1" aria-label="Show slide 2: Individual attention" aria-current="false"></button>
+              <button type="button" class="carousel-dot focus-ring h-3 w-3 rounded-full bg-ink/25 transition" data-carousel-dot="2" aria-label="Show slide 3: Specialist collaboration" aria-current="false"></button>
+            </div>
+          </div>
+        </div>
       </div>
     </section>
 
@@ -154,4 +211,40 @@
       <div class="mx-auto max-w-3xl"><p class="home-eyebrow text-sm font-bold uppercase text-gold">Start with a conversation</p><h2 class="mt-4 text-4xl font-black sm:text-5xl">Let’s find the clearest next step.</h2><p class="mx-auto mt-5 max-w-2xl text-lg leading-8 text-white/70">Tell us what you are noticing. We will follow up to discuss fit, availability, and the right starting point—without pressure or diagnostic claims.</p><a href="/contact/#consultation-form" class="focus-ring mt-8 inline-flex rounded-full bg-gold px-8 py-4 font-bold text-ink shadow-lg transition hover:-translate-y-0.5 hover:bg-[#ffb23d]">Request a consultation</a></div>
     </section>
   </div>
+{% endblock %}
+
+{% block scripts %}
+  <script>
+    document.querySelectorAll('[data-carousel]').forEach((carousel) => {
+      const slides = Array.from(carousel.querySelectorAll('[data-carousel-slide]'));
+      const dots = Array.from(carousel.querySelectorAll('[data-carousel-dot]'));
+      const status = carousel.querySelector('[data-carousel-status]');
+      let currentIndex = 0;
+
+      const showSlide = (nextIndex) => {
+        currentIndex = (nextIndex + slides.length) % slides.length;
+        slides.forEach((slide, index) => {
+          slide.hidden = index !== currentIndex;
+        });
+        dots.forEach((dot, index) => {
+          dot.setAttribute('aria-current', String(index === currentIndex));
+        });
+        status.textContent = `${currentIndex + 1} / ${slides.length}`;
+      };
+
+      carousel.querySelector('[data-carousel-prev]').addEventListener('click', () => showSlide(currentIndex - 1));
+      carousel.querySelector('[data-carousel-next]').addEventListener('click', () => showSlide(currentIndex + 1));
+      dots.forEach((dot, index) => dot.addEventListener('click', () => showSlide(index)));
+      carousel.addEventListener('keydown', (event) => {
+        if (event.key === 'ArrowLeft') {
+          event.preventDefault();
+          showSlide(currentIndex - 1);
+        }
+        if (event.key === 'ArrowRight') {
+          event.preventDefault();
+          showSlide(currentIndex + 1);
+        }
+      });
+    });
+  </script>
 {% endblock %}
