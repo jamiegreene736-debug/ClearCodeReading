@@ -1,0 +1,15 @@
+{% extends "base_marketing.html" %}
+
+{% block title %}Early Interest Survey | ClearCode Reading{% endblock %}
+{% block meta_description %}Tell ClearCode Reading what your family or community needs in a two-minute early interest survey.{% endblock %}
+
+{% block content %}
+  <section class="hero-wash py-14 sm:py-20">
+    <div class="mx-auto max-w-4xl px-4 text-center sm:px-6 lg:px-8">
+      <p class="text-sm font-black uppercase tracking-[.18em] text-deepTeal">Two-minute early interest survey</p>
+      <h1 class="mt-4 text-4xl font-black leading-tight text-ink sm:text-6xl">Help shape ClearCode Reading from the beginning.</h1>
+      <p class="mx-auto mt-6 max-w-3xl text-lg leading-8 text-ink/75">We are opening an evidence-based reading center in Winter Park and Maitland. Your answers help us understand what families and community partners need.</p>
+    </div>
+  </section>
+  {% include "_early_interest_survey.html" with survey_source_path="/survey/" survey_placement="main" %}
+{% endblock %}

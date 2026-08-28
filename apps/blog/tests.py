@@ -212,6 +212,11 @@ class BlogPublicViewTests(TestCase):
         self.assertIn("Jordan Lee", content)
         self.assertIn("&lt;script&gt;alert(&#x27;unsafe&#x27;)&lt;/script&gt;", content)
         self.assertNotIn("<script>alert('unsafe')</script>", content)
+        self.assertIn('id="early-interest-survey"', content)
+        self.assertIn('action="/crm/survey/"', content)
+        self.assertIn(f'name="source_path" value="{self.published.get_absolute_url()}"', content)
+        self.assertIn(f'name="blog_post_slug" value="{self.published.slug}"', content)
+        self.assertIn("Ten questions. About two minutes.", content)
 
     def test_draft_and_scheduled_article_urls_return_not_found(self):
         for post in (self.draft, self.scheduled):

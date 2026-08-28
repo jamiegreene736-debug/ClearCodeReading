@@ -1,3 +1,4 @@
+import json
 import re
 from unittest.mock import MagicMock, patch
 
@@ -12,6 +13,7 @@ from django.urls import reverse
 from django.utils import timezone
 from rest_framework.test import APIClient
 
+from apps.blog.models import BlogPost
 from apps.crm.admin import NewsletterCampaignAdmin
 from apps.crm.models import (
     Company,
@@ -492,6 +494,198 @@ class FormSubmissionIntakeTests(TestCase):
             lead.opportunities.get().pipeline,
             Opportunity.Pipeline.FAMILY_ENROLLMENT,
         )
+
+    def test_assessment_follow_up_preserves_structured_results_and_updates_family_deal(self):
+        response = self.client.post(
+            reverse("crm_signup"),
+            {
+                "name": "Morgan Parent",
+                "email": "morgan-structured@example.com",
+                "audience": Lead.Audience.PARENT,
+                "organization_name": "Reading assessment follow-up",
+                "notes": "Requested a specialist follow-up.",
+                "child_name": "Avery",
+                "child_age": "8",
+                "home_zip": "32789",
+                "child_grade": "grade_3",
+                "assessment_answers": json.dumps(
+                    {
+                        "phonemicAwareness": 0,
+                        "letterSound": 1,
+                        "phonics": 2,
+                        "advancedPhonics": 3,
+                        "sightWords": 2,
+                        "fluency": 1,
+                        "vocabulary": 0,
+                        "comprehension": 1,
+                        "writingReadiness": 2,
+                        "confidence": 1,
+                    }
+                ),
+                "inventory_answers": json.dumps(
+                    {"third-plus-01": True, "third-plus-02": False}
+                ),
+                "inventory_stopped_group": "0",
+            },
+        )
+
+        self.assertEqual(response.status_code, 302)
+        lead = Lead.objects.get(contact_email="morgan-structured@example.com")
+        submission = lead.form_submissions.get()
+        result = submission.submitted_data["digital_reading_result"]
+        inventory = submission.submitted_data["parent_inventory_result"]
+        self.assertEqual(submission.form_type, FormSubmission.FormType.ASSESSMENT)
+        self.assertEqual(submission.submitted_data["child_name"], "Avery")
+        self.assertEqual(result["reading_age"], 7.4)
+        self.assertEqual(inventory["yes_count"], 1)
+        self.assertTrue(inventory["support_recommended"])
+        deal = lead.opportunities.get()
+        self.assertEqual(deal.student_name, "Avery")
+        self.assertEqual(deal.in_catchment_zip, "32789")
+        self.assertEqual(deal.grade_band, Opportunity.GradeBand.GRADE_3_5)
+        self.assertEqual(deal.metadata["latest_reading_assessment"]["child_grade"], "grade_3")
+
+
+class EarlyInterestSurveyIntakeTests(TestCase):
+    def _payload(self, **overrides):
+        payload = {
+            "source_path": "/survey/",
+            "name": "Jordan Reader",
+            "email": "JORDAN@example.com",
+            "email_consent": "yes",
+            "home_zip": "32789",
+            "respondent_situation": "grade_3_5_struggling",
+            "supports_tried": ["school_intervention", "specialized_tutor"],
+            "annual_reading_spend": "2001_5000",
+            "commitment_preference": "two_three_weekly_six_twelve_months",
+            "one_to_one_budget": "scholarship_esa",
+            "small_group_budget": "up_to_75",
+            "engagement_interests": ["priority_waitlist", "opening_updates"],
+        }
+        payload.update(overrides)
+        return payload
+
+    def test_main_survey_preserves_answers_and_routes_family_properties(self):
+        response = self.client.post(reverse("crm_survey_submit"), self._payload())
+
+        self.assertRedirects(
+            response,
+            "/survey/?survey=thanks#early-interest-survey",
+            fetch_redirect_response=False,
+        )
+        lead = Lead.objects.get(contact_email="jordan@example.com")
+        submission = lead.form_submissions.get()
+        self.assertEqual(submission.form_type, FormSubmission.FormType.SURVEY)
+        self.assertEqual(submission.source_path, "/survey/")
+        self.assertEqual(
+            submission.submitted_data["supports_tried"],
+            ["school_intervention", "specialized_tutor"],
+        )
+        self.assertEqual(submission.submitted_data["survey_placement"], "Main survey page")
+        self.assertEqual(lead.metadata["home_zip"], "32789")
+        self.assertEqual(
+            lead.metadata["engagement_interests"],
+            ["priority_waitlist", "opening_updates"],
+        )
+        deal = lead.opportunities.get()
+        self.assertEqual(deal.pipeline, Opportunity.Pipeline.FAMILY_ENROLLMENT)
+        self.assertEqual(deal.stage, Opportunity.Stage.FAMILY_WAITLIST)
+        self.assertEqual(deal.grade_band, Opportunity.GradeBand.GRADE_3_5)
+        self.assertEqual(deal.in_catchment_zip, "32789")
+        self.assertEqual(deal.funding_type, Opportunity.FundingType.ESA)
+        subscription = NewsletterSubscription.objects.get(email="jordan@example.com")
+        self.assertEqual(subscription.source_path, "/survey/")
+        self.assertEqual(subscription.consent_version, "early-interest-v1")
+        self.assertIsNotNone(subscription.consented_at)
+
+    def test_blog_survey_deduplicates_contact_and_preserves_article_attribution(self):
+        post = BlogPost.objects.create(
+            title="A clear reading path",
+            excerpt="Practical next steps.",
+            body="Article body.",
+            status=BlogPost.Status.PUBLISHED,
+        )
+        self.client.post(reverse("crm_survey_submit"), self._payload())
+
+        response = self.client.post(
+            reverse("crm_survey_submit"),
+            self._payload(
+                source_path=post.get_absolute_url(),
+                blog_post_slug=post.slug,
+                engagement_interests=["consultation"],
+            ),
+        )
+
+        self.assertRedirects(
+            response,
+            f"{post.get_absolute_url()}?survey=thanks#early-interest-survey",
+            fetch_redirect_response=False,
+        )
+        self.assertEqual(Lead.objects.count(), 1)
+        lead = Lead.objects.get()
+        self.assertEqual(lead.form_submissions.count(), 2)
+        blog_submission = lead.form_submissions.get(source_path=post.get_absolute_url())
+        self.assertEqual(blog_submission.submitted_data["survey_placement"], "Blog article")
+        self.assertEqual(blog_submission.submitted_data["blog_post_title"], post.title)
+        self.assertEqual(blog_submission.submitted_data["blog_post_slug"], post.slug)
+
+    def test_non_parent_partner_signal_enters_triage_without_family_deal(self):
+        response = self.client.post(
+            reverse("crm_survey_submit"),
+            self._payload(
+                respondent_situation="community_supporter",
+                supports_tried=[],
+                annual_reading_spend="",
+                commitment_preference="",
+                one_to_one_budget="",
+                small_group_budget="",
+                engagement_interests=["community_partner", "career_interest"],
+            ),
+        )
+
+        self.assertEqual(response.status_code, 302)
+        lead = Lead.objects.get()
+        self.assertEqual(lead.audience, Lead.Audience.OTHER)
+        self.assertFalse(lead.opportunities.exists())
+        triage = IntakeTriage.objects.get(lead=lead)
+        self.assertEqual(triage.source_signal, IntakeTriage.SourceSignal.PARTNER_INTEREST)
+        self.assertEqual(
+            triage.submission.submitted_data["engagement_interests"],
+            ["community_partner", "career_interest"],
+        )
+
+    def test_survey_rejects_missing_consent_and_conditional_tampering(self):
+        missing_consent = self.client.post(
+            reverse("crm_survey_submit"),
+            self._payload(email_consent=""),
+        )
+        tampered = self.client.post(
+            reverse("crm_survey_submit"),
+            self._payload(
+                email="other@example.com",
+                respondent_situation="community_supporter",
+                engagement_interests=["priority_waitlist"],
+            ),
+        )
+
+        self.assertEqual(missing_consent.status_code, 302)
+        self.assertEqual(tampered.status_code, 302)
+        self.assertFalse(Lead.objects.exists())
+        self.assertFalse(FormSubmission.objects.exists())
+
+    def test_survey_honeypot_is_discarded_without_records(self):
+        response = self.client.post(
+            reverse("crm_survey_submit"),
+            {"source_path": "/survey/", "website": "https://spam.example"},
+        )
+
+        self.assertRedirects(
+            response,
+            "/survey/?survey=thanks#early-interest-survey",
+            fetch_redirect_response=False,
+        )
+        self.assertFalse(Lead.objects.exists())
+        self.assertFalse(FormSubmission.objects.exists())
 
 
 class CrmWorkspaceTests(TestCase):
