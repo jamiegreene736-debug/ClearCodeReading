@@ -30,6 +30,7 @@ from apps.crm.services import (
     TERMINAL_DEAL_STAGES,
     create_partner_triage,
     ensure_family_enrollment_deal,
+    normalize_relationship_interests,
     partner_interest_is_selected,
     record_form_submission,
     resolve_triage_item,
@@ -97,6 +98,12 @@ class WebsiteSignupView(View):
         estimated_students = self._clean_positive_int(request.POST.get("estimated_students"))
         school_name = self._school_name_for_signup(audience, organization_name)
         source_path = self._source_path(request, organization_name)
+        relationship_interests = normalize_relationship_interests(
+            request.POST.getlist("relationship_interests")
+        )
+        has_partner_interest = bool(relationship_interests) or partner_interest_is_selected(
+            request.POST.get("partner_interest")
+        )
         lead, submission = record_form_submission(
             intake=LeadIntake(
                 contact_email=contact_email,
@@ -108,7 +115,8 @@ class WebsiteSignupView(View):
                 estimated_students=estimated_students,
                 notes=notes,
                 metadata={
-                    "partner_interest": partner_interest_is_selected(request.POST.get("partner_interest")),
+                    "partner_interest": has_partner_interest,
+                    "relationship_interests": relationship_interests,
                 },
             ),
             form_type=self._form_type(request, organization_name),
@@ -118,7 +126,7 @@ class WebsiteSignupView(View):
         form_type = submission.form_type
         if form_type in {FormSubmission.FormType.CONSULTATION, FormSubmission.FormType.ASSESSMENT}:
             ensure_family_enrollment_deal(lead=lead)
-        if partner_interest_is_selected(request.POST.get("partner_interest")):
+        if has_partner_interest:
             create_partner_triage(lead=lead, submission=submission)
 
         messages.success(request, "Thanks. Your request is with the ClearCode Reading team, and we’ll follow up about next steps.")
@@ -661,6 +669,7 @@ class CrmContactListView(CrmAccessMixin, TemplateView):
         query = self.request.GET.get("q", "").strip()[:255]
         status_filter = self.request.GET.get("status", "")
         audience_filter = self.request.GET.get("audience", "")
+        relationship_interest_filter = self.request.GET.get("relationship_interest", "")
         owner_filter = self.request.GET.get("owner", "")
         if query:
             contacts = contacts.filter(
@@ -674,6 +683,10 @@ class CrmContactListView(CrmAccessMixin, TemplateView):
             contacts = contacts.filter(status=status_filter)
         if audience_filter in Lead.Audience.values:
             contacts = contacts.filter(audience=audience_filter)
+        if relationship_interest_filter in Lead.RelationshipInterest.values:
+            contacts = contacts.filter(
+                metadata__relationship_interests__contains=[relationship_interest_filter]
+            )
         if owner_filter == "unassigned":
             contacts = contacts.filter(assigned_to__isnull=True)
         elif owner_filter.isdigit():
@@ -711,10 +724,12 @@ class CrmContactListView(CrmAccessMixin, TemplateView):
                 "owners": crm_owner_queryset(),
                 "status_choices": Lead.Status.choices,
                 "audience_choices": Lead.Audience.choices,
+                "relationship_interest_choices": Lead.RelationshipInterest.choices,
                 "active_filters": {
                     "q": query,
                     "status": status_filter,
                     "audience": audience_filter,
+                    "relationship_interest": relationship_interest_filter,
                     "owner": owner_filter,
                     "sort": ordering,
                 },

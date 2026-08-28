@@ -71,6 +71,11 @@ class Lead(TimestampedModel, SoftDeleteModel):
         UNQUALIFIED = "unqualified", "Unqualified"
         CONVERTED = "converted", "Converted"
 
+    class RelationshipInterest(models.TextChoices):
+        REFERRAL_PARTNER = "referral_partner", "Referral Partner"
+        DONOR = "donor", "Donor"
+        ADVOCATE = "advocate", "Advocate"
+
     school_name = models.CharField(max_length=255)
     contact_name = models.CharField(max_length=255)
     contact_email = models.EmailField()
@@ -106,6 +111,12 @@ class Lead(TimestampedModel, SoftDeleteModel):
 
     def __str__(self):
         return f"{self.school_name} - {self.contact_name}"
+
+    @property
+    def relationship_interest_labels(self) -> list[str]:
+        stored = (self.metadata or {}).get("relationship_interests", [])
+        selected = set(stored) if isinstance(stored, list) else set()
+        return [label for value, label in self.RelationshipInterest.choices if value in selected]
 
 
 class Opportunity(TimestampedModel, SoftDeleteModel):

@@ -91,7 +91,7 @@
             <div class="event-meta">{{ event.created_at|date:"M j, Y, g:i A" }}</div>
             {% if event.kind == 'submission' %}
               <h3>{{ event.item.get_form_type_display }} submitted</h3><p class="subtle">Source: {{ event.item.source_path|default:"Unknown page" }}</p>
-              <dl class="submission-data">{% for key,value in event.item.submitted_data.items %}<dt>{{ key|crm_field_label }}</dt><dd>{{ value|default:"—" }}</dd>{% endfor %}</dl>
+              <dl class="submission-data">{% for key,value in event.item.submitted_data.items %}<dt>{{ key|crm_field_label }}</dt><dd>{{ value|crm_field_value|default:"—" }}</dd>{% endfor %}</dl>
             {% elif event.kind == 'task' %}
               <h3>{{ event.item.subject }} {% if event.item.completed_at %}<span class="badge">Completed</span>{% else %}<span class="badge badge-warn">Open task</span>{% endif %}</h3>
               {% if event.item.body %}<p>{{ event.item.body|linebreaksbr }}</p>{% endif %}<p class="event-meta">Due {{ event.item.due_at|date:"M j, Y, g:i A" }} · Assigned to {% if event.item.assigned_to %}{{ event.item.assigned_to.get_full_name|default:event.item.assigned_to.email }}{% else %}Unassigned{% endif %}</p>

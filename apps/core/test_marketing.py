@@ -189,6 +189,15 @@ class MarketingPageTests(SimpleTestCase):
         self.assertIn("Comprehension and fluency resources", content)
         self.assertIn("Age-appropriate book lists", content)
 
+    def test_assessment_support_interest_allows_three_independent_selections(self):
+        content = self._render("reading_assessment")
+
+        self.assertEqual(content.count('name="relationship_interests"'), 3)
+        self.assertIn('value="referral_partner"', content)
+        self.assertIn('value="donor"', content)
+        self.assertIn('value="advocate"', content)
+        self.assertIn("select all that apply", content)
+
     def test_about_page_preserves_the_supplied_positioning_and_sources(self):
         content = self._render("marketing_about")
 

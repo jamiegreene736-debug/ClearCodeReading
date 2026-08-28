@@ -18,6 +18,7 @@ PUBLIC_SUBMISSION_FIELDS = {
     "notes",
     "organization_name",
     "partner_interest",
+    "relationship_interests",
     "phone",
     "role_interest",
 }
@@ -33,16 +34,35 @@ class LeadIntake:
     contact_phone: str = ""
     estimated_students: int | None = None
     notes: str = ""
-    metadata: dict[str, str] = field(default_factory=dict)
+    metadata: dict[str, object] = field(default_factory=dict)
 
 
-def sanitized_submission_data(post_data):
+def sanitized_submission_data(post_data) -> dict[str, str | list[str]]:
     """Keep only expected public fields; never persist CSRF or honeypot values."""
-    return {
-        key: str(post_data.get(key, ""))[:5000]
-        for key in PUBLIC_SUBMISSION_FIELDS
-        if key in post_data
-    }
+    sanitized = {}
+    for key in PUBLIC_SUBMISSION_FIELDS:
+        if key not in post_data:
+            continue
+        if key == "relationship_interests" and hasattr(post_data, "getlist"):
+            sanitized[key] = normalize_relationship_interests(post_data.getlist(key))
+        else:
+            sanitized[key] = str(post_data.get(key, ""))[:5000]
+    return sanitized
+
+
+def normalize_relationship_interests(values) -> list[str]:
+    if not values:
+        return []
+    if isinstance(values, str):
+        values = [values]
+    allowed = set(Lead.RelationshipInterest.values)
+    return list(
+        dict.fromkeys(
+            str(value).strip()
+            for value in values
+            if str(value).strip() in allowed
+        )
+    )
 
 
 @transaction.atomic
@@ -53,6 +73,12 @@ def record_form_submission(*, intake, form_type, source_path, submitted_data):
     ).first()
     linked_user = CustomUser.objects.filter(email=intake.contact_email, is_deleted=False).first()
     now = timezone.now()
+    previous_interests = normalize_relationship_interests(
+        ((lead.metadata if lead else {}) or {}).get("relationship_interests", [])
+    )
+    submitted_interests = normalize_relationship_interests(
+        intake.metadata.get("relationship_interests", [])
+    )
     metadata = {
         **((lead.metadata if lead else {}) or {}),
         **intake.metadata,
@@ -60,6 +86,9 @@ def record_form_submission(*, intake, form_type, source_path, submitted_data):
         "latest_signup_audience": intake.audience,
         "source_path": source_path,
     }
+    combined_interests = list(dict.fromkeys([*previous_interests, *submitted_interests]))
+    if combined_interests:
+        metadata["relationship_interests"] = combined_interests
 
     if lead is None:
         lead = Lead.objects.create(

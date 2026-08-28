@@ -29,6 +29,7 @@ from apps.crm.newsletters import (
     send_newsletter_campaign,
 )
 from apps.crm.serializers import OpportunitySerializer
+from apps.crm.services import normalize_relationship_interests
 from apps.crm.views import NewsletterUnsubscribeView, WebsiteSignupView
 
 
@@ -56,6 +57,19 @@ class CrmTests(SimpleTestCase):
         serializer = OpportunitySerializer()
         with self.assertRaisesMessage(Exception, "Probability must be between 0 and 100."):
             serializer.validate_probability(101)
+
+    def test_relationship_interests_are_allowlisted_and_deduplicated(self):
+        self.assertEqual(
+            normalize_relationship_interests(
+                [
+                    Lead.RelationshipInterest.DONOR,
+                    "unexpected",
+                    Lead.RelationshipInterest.DONOR,
+                    Lead.RelationshipInterest.ADVOCATE,
+                ]
+            ),
+            [Lead.RelationshipInterest.DONOR, Lead.RelationshipInterest.ADVOCATE],
+        )
 
     def test_website_signup_defaults_family_inquiry_for_parent(self):
         self.assertEqual(
@@ -442,6 +456,42 @@ class FormSubmissionIntakeTests(TestCase):
         self.assertEqual(lead.opportunities.count(), 1)
         self.assertEqual(lead.opportunities.get().pipeline, Opportunity.Pipeline.FAMILY_ENROLLMENT)
 
+    def test_assessment_preserves_multiple_relationship_interests_in_one_triage_item(self):
+        selected_interests = [
+            Lead.RelationshipInterest.REFERRAL_PARTNER,
+            Lead.RelationshipInterest.DONOR,
+            Lead.RelationshipInterest.ADVOCATE,
+        ]
+
+        self.client.post(
+            reverse("crm_signup"),
+            {
+                "name": "Multi Interest Parent",
+                "email": "multi-interest@example.com",
+                "audience": Lead.Audience.PARENT,
+                "organization_name": "Reading assessment follow-up",
+                "relationship_interests": selected_interests,
+            },
+        )
+
+        lead = Lead.objects.get(contact_email="multi-interest@example.com")
+        triage = IntakeTriage.objects.get(lead=lead)
+        self.assertEqual(IntakeTriage.objects.filter(lead=lead).count(), 1)
+        self.assertEqual(
+            triage.submission.submitted_data["relationship_interests"],
+            selected_interests,
+        )
+        self.assertEqual(lead.metadata["relationship_interests"], selected_interests)
+        self.assertEqual(
+            lead.relationship_interest_labels,
+            ["Referral Partner", "Donor", "Advocate"],
+        )
+        self.assertEqual(lead.opportunities.count(), 1)
+        self.assertEqual(
+            lead.opportunities.get().pipeline,
+            Opportunity.Pipeline.FAMILY_ENROLLMENT,
+        )
+
 
 class CrmWorkspaceTests(TestCase):
     def setUp(self):
@@ -530,6 +580,42 @@ class CrmWorkspaceTests(TestCase):
         response = self.client.get(reverse("crm_contact_list"))
 
         self.assertEqual(response.context["contacts"][0].pk, self.lead.pk)
+
+    def test_contact_index_filters_each_relationship_interest_separately(self):
+        donor = Lead.objects.create(
+            school_name="Donor inquiry",
+            contact_name="Dana Donor",
+            contact_email="donor@example.com",
+            audience=Lead.Audience.OTHER,
+            metadata={
+                "relationship_interests": [
+                    Lead.RelationshipInterest.REFERRAL_PARTNER,
+                    Lead.RelationshipInterest.DONOR,
+                ]
+            },
+        )
+        Lead.objects.create(
+            school_name="Advocate inquiry",
+            contact_name="Avery Advocate",
+            contact_email="advocate@example.com",
+            audience=Lead.Audience.OTHER,
+            metadata={"relationship_interests": [Lead.RelationshipInterest.ADVOCATE]},
+        )
+        self.client.force_login(self.admin_user)
+
+        response = self.client.get(
+            reverse("crm_contact_list"),
+            {"relationship_interest": Lead.RelationshipInterest.DONOR},
+        )
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(list(response.context["contacts"]), [donor])
+        self.assertContains(response, "Dana Donor")
+        self.assertNotContains(response, "Avery Advocate")
+        self.assertEqual(
+            response.context["active_filters"]["relationship_interest"],
+            Lead.RelationshipInterest.DONOR,
+        )
 
     def test_contact_properties_notes_and_tasks_are_manageable(self):
         self.client.force_login(self.admin_user)
