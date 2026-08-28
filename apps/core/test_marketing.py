@@ -11,6 +11,7 @@ from apps.crm.models import Lead
 
 PUBLIC_PAGES = {
     "marketing_home": "index.html",
+    "marketing_about": "about.html",
     "marketing_how_it_works": "how-it-works.html",
     "marketing_families": "families.html",
     "marketing_careers": "careers.html",
@@ -73,6 +74,7 @@ class MarketingPageTests(SimpleTestCase):
     def test_shared_marketing_navigation_is_consistent(self):
         route_names = [
             "marketing_home",
+            "marketing_about",
             "marketing_how_it_works",
             "marketing_families",
             "marketing_careers",
@@ -81,6 +83,7 @@ class MarketingPageTests(SimpleTestCase):
             "marketing_approach",
         ]
         expected_links = [
+            "/about/",
             "/how-it-works/",
             "/families/",
             "/approach/",
@@ -120,6 +123,20 @@ class MarketingPageTests(SimpleTestCase):
         self.assertIn("Optional family reading survey", content)
         self.assertIn("not a PFR or OG+ placement instrument", content)
         self.assertIn('href="/contact/"', content)
+
+    def test_about_page_preserves_the_supplied_positioning_and_sources(self):
+        content = self._render("marketing_about")
+
+        self.assertIn("Every Child Deserves to Read", content)
+        self.assertIn("The solution exists. Access to it doesn't.", content)
+        self.assertIn("2 in 5", content)
+        self.assertIn("90&ndash;95%", content)
+        self.assertIn("Orton-Gillingham", content)
+        self.assertIn("Phonics for Reading", content)
+        self.assertIn("Four principles", content)
+        self.assertIn("A sustainable model built for students, educators, and families", content)
+        self.assertIn("Florida Department of Education", content)
+        self.assertIn('href="/contact/#consultation-form"', content)
 
     def test_careers_page_has_teacher_and_company_paths(self):
         content = self._render("marketing_careers")

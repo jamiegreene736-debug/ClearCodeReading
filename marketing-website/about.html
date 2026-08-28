@@ -1,0 +1,124 @@
+{% extends "base_marketing.html" %}
+
+{% block title %}About ClearCode Reading | Every Child Deserves to Read{% endblock %}
+{% block meta_description %}ClearCode Reading makes evidence-based reading intervention accessible to K–8 students through established programs, trained specialists, and a sustainable center model.{% endblock %}
+{% block og_title %}About ClearCode Reading{% endblock %}
+{% block og_description %}Every child deserves access to reading intervention that works.{% endblock %}
+
+{% block extra_head %}
+  <link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@300;400&family=Syne:wght@600;700;800&display=swap" rel="stylesheet">
+  <style>
+    .about-copy { font-family: "DM Mono", ui-monospace, monospace; }
+    .about-eyebrow { font-family: "Syne", ui-sans-serif, sans-serif; }
+  </style>
+{% endblock %}
+
+{% block content %}
+  <section class="relative overflow-hidden bg-ink py-20 text-center text-white sm:py-24">
+    <div class="absolute left-[12%] top-0 h-56 w-56 rounded-full bg-gold/10 blur-3xl" aria-hidden="true"></div>
+    <div class="absolute bottom-0 right-[12%] h-64 w-64 rounded-full bg-mediumTeal/10 blur-3xl" aria-hidden="true"></div>
+    <div class="relative mx-auto max-w-4xl px-4 sm:px-6 lg:px-8">
+      <p class="about-eyebrow text-sm font-bold uppercase tracking-[.2em] text-mediumTeal">About</p>
+      <h1 class="mt-5 text-5xl font-black leading-[1.05] sm:text-7xl">Every Child Deserves to Read</h1>
+      <p class="about-copy mx-auto mt-6 max-w-3xl text-sm leading-8 text-white/65">ClearCode Reading is a scalable center model that makes evidence-based reading intervention accessible to K&ndash;8 students, opening in the Orlando metro area.</p>
+    </div>
+  </section>
+
+  <section class="bg-white py-20 sm:py-24">
+    <div class="mx-auto max-w-5xl px-4 text-center sm:px-6 lg:px-8">
+      <p class="about-eyebrow text-sm font-bold uppercase tracking-[.2em] text-deepTeal">Why We Exist</p>
+      <h2 class="mt-4 text-4xl font-black sm:text-5xl">The solution exists. Access to it doesn't.</h2>
+      <p class="about-copy mx-auto mt-5 max-w-3xl text-sm leading-8 text-ink/60">Research has known how to teach a struggling reader for decades. Most families still can't get it.</p>
+      <div class="mx-auto mt-12 grid max-w-3xl gap-5 sm:grid-cols-2">
+        <article class="rounded-[2rem] border-t-4 border-mediumTeal bg-linen p-8 shadow-sm">
+          <p class="text-5xl font-black leading-none text-ink sm:text-6xl">2 in 5</p>
+          <p class="about-copy mt-4 text-sm leading-6 text-ink/55">Florida students read below grade level</p>
+        </article>
+        <article class="rounded-[2rem] border-t-4 border-mediumTeal bg-linen p-8 shadow-sm">
+          <p class="text-5xl font-black leading-none text-ink sm:text-6xl">90&ndash;95%</p>
+          <p class="about-copy mt-4 text-sm leading-6 text-ink/55">Can reach grade level with the right intervention</p>
+        </article>
+      </div>
+      <p class="about-copy mx-auto mt-8 max-w-3xl text-[11px] leading-5 text-ink/40">Sources: Florida Department of Education, 2024&ndash;25 FAST ELA/Reading results, grades 3&ndash;8. G. Reid Lyon, NICHD/NIH, congressional testimony (1997), via Reading Rockets.</p>
+    </div>
+  </section>
+
+  <section class="bg-linen py-20 sm:py-24">
+    <div class="mx-auto max-w-6xl px-4 text-center sm:px-6 lg:px-8">
+      <p class="about-eyebrow text-sm font-bold uppercase tracking-[.2em] text-deepTeal">The Interventions</p>
+      <h2 class="mt-4 text-4xl font-black sm:text-5xl">Reading intervention that works</h2>
+      <p class="about-copy mx-auto mt-5 max-w-3xl text-sm leading-8 text-ink/60">Two established programs, both grounded in the Science of Reading and used by reading specialists for decades. We didn't invent the curriculum your child learns from, and that is the point.</p>
+      <div class="mx-auto mt-12 grid max-w-4xl gap-6 text-left md:grid-cols-2">
+        <article class="rounded-[2rem] border-t-4 border-forest bg-white p-8 shadow-sm sm:p-9">
+          <p class="text-sm font-black uppercase tracking-[.16em] text-deepTeal">Grades K&ndash;2</p>
+          <h3 class="mt-3 text-3xl font-black">Orton-Gillingham</h3>
+          <p class="about-copy mt-4 text-sm leading-7 text-ink/60">The approach structured literacy is built on. Direct, multi-sensory, cumulative, and diagnostic-prescriptive, developed specifically for students with dyslexia and related reading difficulties.</p>
+          <p class="about-copy mt-6 border-t border-ink/10 pt-5 text-[11px] leading-5 text-ink/40">Academy of Orton-Gillingham Practitioners and Educators</p>
+        </article>
+        <article class="rounded-[2rem] border-t-4 border-eucalyptus bg-white p-8 shadow-sm sm:p-9">
+          <p class="text-sm font-black uppercase tracking-[.16em] text-deepTeal">Grades 3&ndash;8</p>
+          <h3 class="mt-3 text-3xl font-black">Phonics for Reading</h3>
+          <p class="about-copy mt-4 text-sm leading-7 text-ink/60">Developed by Dr. Anita Archer, drawing on decades of research into the Science of Reading. Explicit decoding instruction with fluency and comprehension support built in.</p>
+          <p class="about-copy mt-6 border-t border-ink/10 pt-5 text-[11px] leading-5 text-ink/40">Curriculum Associates</p>
+        </article>
+      </div>
+    </div>
+  </section>
+
+  <section class="bg-white py-20 sm:py-24">
+    <div class="mx-auto max-w-7xl px-4 text-center sm:px-6 lg:px-8">
+      <p class="about-eyebrow text-sm font-bold uppercase tracking-[.2em] text-deepTeal">What We Believe</p>
+      <h2 class="mt-4 text-4xl font-black sm:text-5xl">Four principles</h2>
+      <div class="mt-14 grid gap-10 sm:grid-cols-2 lg:grid-cols-4">
+        <article>
+          <svg class="mx-auto h-12 w-12 text-forest" viewBox="0 0 40 40" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M8 32 18 20l7 6 9-14"></path><path d="M26 12h8v8"></path></svg>
+          <h3 class="mt-5 text-2xl font-black leading-tight">Nearly all reading challenges are solvable</h3>
+          <p class="about-copy mt-3 text-xs leading-6 text-ink/55">Not a matter of intelligence or effort. A specific set of skill gaps, and the right instruction closes them.</p>
+        </article>
+        <article>
+          <svg class="mx-auto h-12 w-12 text-eucalyptus" viewBox="0 0 40 40" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="20" cy="20" r="13"></circle><path d="M20 13v8l6 3"></path></svg>
+          <h3 class="mt-5 text-2xl font-black leading-tight">Families deserve clarity</h3>
+          <p class="about-copy mt-3 text-xs leading-6 text-ink/55">Published rates, a clear starting point, and an honest timeline before anyone commits.</p>
+        </article>
+        <article>
+          <svg class="mx-auto h-12 w-12 text-deepTeal" viewBox="0 0 40 40" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 33S8 26 8 17c0-5 4-8 8-8 2 0 4 2 4 2s2-2 4-2c4 0 8 3 8 8 0 9-12 16-12 16Z"></path></svg>
+          <h3 class="mt-5 text-2xl font-black leading-tight">Cost shouldn't decide who reads</h3>
+          <p class="about-copy mt-3 text-xs leading-6 text-ink/55">Florida education scholarships accepted alongside private pay.</p>
+        </article>
+        <article>
+          <svg class="mx-auto h-12 w-12 text-gold" viewBox="0 0 40 40" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="15" cy="15" r="5"></circle><path d="M6 31c0-6 4-9 9-9s9 3 9 9"></path><circle cx="28" cy="17" r="4"></circle><path d="M25 31c0-5 3-7 6-7s5 2 5 7"></path></svg>
+          <h3 class="mt-5 text-2xl font-black leading-tight">Specialists deserve better</h3>
+          <p class="about-copy mt-3 text-xs leading-6 text-ink/55">Above-market pay, profit sharing, and covered certification. Strategy, not charity.</p>
+        </article>
+      </div>
+    </div>
+  </section>
+
+  <section class="bg-linen py-20 sm:py-24">
+    <div class="mx-auto max-w-7xl px-4 text-center sm:px-6 lg:px-8">
+      <p class="about-eyebrow text-sm font-bold uppercase tracking-[.2em] text-deepTeal">How We're Built</p>
+      <h2 class="mx-auto mt-4 max-w-4xl text-4xl font-black sm:text-5xl">A sustainable model built for students, educators, and families</h2>
+      <p class="about-copy mx-auto mt-5 max-w-3xl text-sm leading-8 text-ink/60">Great reading intervention usually depends on one exceptional person in one location. We built ClearCode so it doesn't have to.</p>
+      <div class="mt-12 grid gap-6 text-left md:grid-cols-3">
+        <article class="rounded-[2rem] border-t-4 border-forest bg-white p-8 shadow-sm">
+          <h3 class="text-3xl font-black">For Students</h3>
+          <p class="about-copy mt-4 text-sm leading-7 text-ink/60">Small groups, established programs, and instruction that adjusts as progress data comes in. The same clinical rigor at every center.</p>
+        </article>
+        <article class="rounded-[2rem] border-t-4 border-eucalyptus bg-white p-8 shadow-sm">
+          <h3 class="text-3xl font-black">For Educators</h3>
+          <p class="about-copy mt-4 text-sm leading-7 text-ink/60">Compensation, profit sharing, and covered certification that make this a career worth staying in. Retained specialists are what keep quality consistent.</p>
+        </article>
+        <article class="rounded-[2rem] border-t-4 border-seafoam bg-white p-8 shadow-sm">
+          <h3 class="text-3xl font-black">For Families</h3>
+          <p class="about-copy mt-4 text-sm leading-7 text-ink/60">Transparent pricing, scholarships accepted, visible progress, and scheduling that works around a working parent's week.</p>
+        </article>
+      </div>
+    </div>
+  </section>
+
+  <section class="bg-ink px-4 py-24 text-center text-white sm:px-6">
+    <h2 class="text-4xl font-black sm:text-5xl">Let's find your child's starting point</h2>
+    <p class="about-copy mx-auto mt-5 max-w-2xl text-sm leading-8 text-white/60">We'll explain what the assessment involves, what it costs, and whether ClearCode is the right fit for your family.</p>
+    <a href="/contact/#consultation-form" class="focus-ring mt-8 inline-flex rounded-full bg-mediumTeal px-8 py-4 font-black text-ink shadow-mediumTealGlow transition hover:-translate-y-1 hover:bg-[#42c6c6]">Join the Priority Waitlist</a>
+  </section>
+{% endblock %}
