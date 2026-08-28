@@ -70,6 +70,20 @@ class MarketingPageTests(SimpleTestCase):
         self.assertNotIn("For schools &amp; teachers", content)
         self.assertNotIn("4x more clarity", content)
 
+    def test_homepage_priority_waitlist_links_to_family_interest_survey(self):
+        content = self._render("marketing_home")
+
+        self.assertIn(
+            'href="https://docs.google.com/document/d/'
+            '1pu7xPbdj-Cn8MiBYmoxDefYpCNGSxH1EL59DMjleDxY/edit?usp=sharing"',
+            content,
+        )
+        self.assertIn("Join the Priority Waitlist", content)
+        self.assertNotIn(
+            'href="/contact/#consultation-form"',
+            content,
+        )
+
     def test_shared_marketing_navigation_is_consistent(self):
         route_names = [
             "marketing_home",
