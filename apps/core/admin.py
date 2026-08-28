@@ -10,6 +10,11 @@ from django.utils.html import format_html
 from apps.core.models import RecruitingInterest
 
 
+admin.site.site_header = "ClearCode Reading Admin Portal"
+admin.site.site_title = "ClearCode Reading Admin Portal"
+admin.site.index_title = "Admin Portal"
+
+
 @admin.register(RecruitingInterest)
 class RecruitingInterestAdmin(admin.ModelAdmin):
     document_fields = {

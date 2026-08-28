@@ -1,0 +1,294 @@
+/* ClearCode Reading's public brand, adapted to Django's administrative UI. */
+:root,
+html[data-theme="light"] {
+    --primary: #1a7a7a;
+    --secondary: #0f2b35;
+    --accent: #f5a623;
+    --primary-fg: #f7f2ea;
+
+    --body-fg: #0f2b35;
+    --body-bg: #f7f2ea;
+    --body-quiet-color: #52676d;
+    --body-medium-color: #2c4a45;
+    --body-loud-color: #0f2b35;
+
+    --header-color: #f7f2ea;
+    --header-branding-color: #f7f2ea;
+    --header-bg: #1a7a7a;
+    --header-link-color: #f7f2ea;
+
+    --breadcrumbs-fg: #d8f0eb;
+    --breadcrumbs-link-fg: #ffffff;
+    --breadcrumbs-bg: #2c4a45;
+
+    --link-fg: #126b6b;
+    --link-hover-color: #0f2b35;
+    --link-selected-fg: #1a7a7a;
+
+    --hairline-color: #dbe4df;
+    --border-color: #b8cbc4;
+    --darkened-bg: #eff3ef;
+    --selected-bg: #e2eee9;
+    --selected-row: #f7e7c5;
+
+    --button-fg: #ffffff;
+    --button-bg: #1a7a7a;
+    --button-hover-bg: #126363;
+    --default-button-bg: #2c4a45;
+    --default-button-hover-bg: #193a35;
+    --close-button-bg: #52676d;
+    --close-button-hover-bg: #0f2b35;
+    --object-tools-bg: #2c4a45;
+    --object-tools-hover-bg: #1a7a7a;
+
+    --font-family-primary: "Plus Jakarta Sans", ui-sans-serif, system-ui, sans-serif;
+}
+
+html[data-theme="dark"] {
+    --primary: #2eb8b8;
+    --secondary: #0f2b35;
+    --accent: #f5a623;
+    --primary-fg: #f7f2ea;
+    --body-fg: #eef8f5;
+    --body-bg: #10272f;
+    --body-quiet-color: #b8cbc4;
+    --body-medium-color: #d8e6e1;
+    --body-loud-color: #ffffff;
+    --header-bg: #1a7a7a;
+    --breadcrumbs-bg: #2c4a45;
+    --breadcrumbs-fg: #d8f0eb;
+    --breadcrumbs-link-fg: #ffffff;
+    --link-fg: #67d5ce;
+    --link-hover-color: #f5a623;
+    --link-selected-fg: #8be1da;
+    --hairline-color: #29454c;
+    --border-color: #35545a;
+    --darkened-bg: #15333b;
+    --selected-bg: #1c3e46;
+    --selected-row: #294c50;
+    --button-bg: #1a7a7a;
+    --button-hover-bg: #2eb8b8;
+    --default-button-bg: #2c4a45;
+    --default-button-hover-bg: #5a9e8f;
+    --close-button-bg: #35545a;
+    --close-button-hover-bg: #52676d;
+    --object-tools-bg: #2c4a45;
+    --object-tools-hover-bg: #1a7a7a;
+}
+
+@media (prefers-color-scheme: dark) {
+    html[data-theme="auto"] {
+        --primary: #2eb8b8;
+        --secondary: #0f2b35;
+        --accent: #f5a623;
+        --primary-fg: #f7f2ea;
+        --body-fg: #eef8f5;
+        --body-bg: #10272f;
+        --body-quiet-color: #b8cbc4;
+        --body-medium-color: #d8e6e1;
+        --body-loud-color: #ffffff;
+        --header-bg: #1a7a7a;
+        --breadcrumbs-bg: #2c4a45;
+        --breadcrumbs-fg: #d8f0eb;
+        --breadcrumbs-link-fg: #ffffff;
+        --link-fg: #67d5ce;
+        --link-hover-color: #f5a623;
+        --link-selected-fg: #8be1da;
+        --hairline-color: #29454c;
+        --border-color: #35545a;
+        --darkened-bg: #15333b;
+        --selected-bg: #1c3e46;
+        --selected-row: #294c50;
+        --button-bg: #1a7a7a;
+        --button-hover-bg: #2eb8b8;
+        --default-button-bg: #2c4a45;
+        --default-button-hover-bg: #5a9e8f;
+        --close-button-bg: #35545a;
+        --close-button-hover-bg: #52676d;
+        --object-tools-bg: #2c4a45;
+        --object-tools-hover-bg: #1a7a7a;
+    }
+}
+
+body {
+    letter-spacing: -0.006em;
+}
+
+#header {
+    min-height: 58px;
+    padding: 10px 40px;
+    border-bottom: 2px solid rgba(245, 166, 35, 0.45);
+    background: #0f2b35;
+    box-shadow: 0 8px 28px rgba(15, 43, 53, 0.16);
+}
+
+#branding,
+#site-name,
+.clearcode-admin-brand,
+.brand-lockup {
+    display: flex;
+    align-items: center;
+}
+
+#site-name {
+    margin: 0;
+    font-size: inherit;
+    font-weight: inherit;
+}
+
+#site-name a.clearcode-admin-brand {
+    gap: 18px;
+    color: #f7f2ea;
+    text-decoration: none;
+}
+
+.brand-lockup {
+    gap: 10px;
+    line-height: 1;
+}
+
+.brand-lockup__mark {
+    width: 42px;
+    height: 42px;
+    flex: 0 0 auto;
+}
+
+.brand-lockup__words {
+    display: grid;
+    gap: 4px;
+}
+
+.brand-lockup__name {
+    font-size: 17px;
+    font-weight: 800;
+    letter-spacing: -0.045em;
+    text-transform: uppercase;
+}
+
+.brand-lockup__clear {
+    color: #f7f2ea;
+}
+
+.brand-lockup__code {
+    margin-left: 4px;
+    color: #f5a623;
+}
+
+.brand-lockup__reading {
+    color: #2eb8b8;
+    font-size: 9px;
+    font-weight: 700;
+    letter-spacing: 0.3em;
+    text-transform: uppercase;
+}
+
+.clearcode-admin-brand__portal {
+    padding-left: 18px;
+    border-left: 1px solid rgba(247, 242, 234, 0.28);
+    color: #f7f2ea;
+    font-size: 14px;
+    font-weight: 700;
+    letter-spacing: 0.02em;
+}
+
+.clearcode-admin-brand:focus-visible,
+#header a:focus-visible,
+#header button:focus-visible {
+    outline: 3px solid rgba(245, 166, 35, 0.9);
+    outline-offset: 4px;
+    border-radius: 6px;
+}
+
+#header a:hover,
+#header a:focus {
+    color: #f5a623;
+    text-decoration: none;
+}
+
+#header #logout-form button:hover,
+#header #logout-form button:focus {
+    color: #f5a623;
+}
+
+#user-tools {
+    color: rgba(247, 242, 234, 0.75);
+    font-weight: 600;
+}
+
+#content-start {
+    background:
+        radial-gradient(circle at 6% 0%, rgba(245, 166, 35, 0.10), transparent 24rem),
+        radial-gradient(circle at 95% 10%, rgba(46, 184, 184, 0.10), transparent 28rem),
+        var(--body-bg);
+}
+
+#content h1 {
+    color: var(--body-loud-color);
+    font-size: clamp(1.55rem, 2.4vw, 2rem);
+    font-weight: 800;
+    letter-spacing: -0.035em;
+}
+
+.module,
+#content-related .module {
+    overflow: hidden;
+    border: 1px solid var(--hairline-color);
+    border-radius: 14px;
+    background: var(--body-bg);
+    box-shadow: 0 12px 32px rgba(15, 43, 53, 0.08);
+}
+
+.module h2,
+.module caption,
+.inline-group h2 {
+    padding: 10px 14px;
+    font-weight: 800;
+    letter-spacing: 0.035em;
+}
+
+.dashboard #content {
+    width: auto;
+    max-width: 1180px;
+}
+
+.dashboard #content-main {
+    max-width: 820px;
+}
+
+.dashboard #content-related {
+    width: 280px;
+    margin-right: -320px;
+}
+
+.button,
+input[type="submit"],
+input[type="button"],
+.submit-row input,
+a.button {
+    border-radius: 999px;
+    font-weight: 700;
+}
+
+@media (max-width: 767px) {
+    #header {
+        padding: 10px 16px;
+    }
+
+    #site-name a.clearcode-admin-brand {
+        gap: 10px;
+    }
+
+    .brand-lockup__mark {
+        width: 36px;
+        height: 36px;
+    }
+
+    .brand-lockup__words {
+        display: none;
+    }
+
+    .clearcode-admin-brand__portal {
+        padding-left: 10px;
+        font-size: 13px;
+    }
+}
