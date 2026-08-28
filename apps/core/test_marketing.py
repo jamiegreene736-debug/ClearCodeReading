@@ -1,12 +1,11 @@
 import re
-import tempfile
 from pathlib import Path
 
 from django.conf import settings
 from django.contrib.auth import get_user_model
 from django.core.files.uploadedfile import SimpleUploadedFile
 from django.template.loader import get_template
-from django.test import RequestFactory, SimpleTestCase, TestCase, override_settings
+from django.test import RequestFactory, SimpleTestCase, TestCase
 from django.urls import resolve, reverse
 
 from apps.core.models import RecruitingInterest
@@ -349,15 +348,6 @@ class MarketingPageTests(SimpleTestCase):
 
 
 class ContactFormTests(TestCase):
-    def setUp(self):
-        self.media_directory = tempfile.TemporaryDirectory()
-        self.media_override = override_settings(MEDIA_ROOT=self.media_directory.name)
-        self.media_override.enable()
-
-    def tearDown(self):
-        self.media_override.disable()
-        self.media_directory.cleanup()
-
     @staticmethod
     def _document(name):
         return SimpleUploadedFile(name, b"%PDF-1.4\nClearCode test document", "application/pdf")
@@ -455,9 +445,12 @@ class ContactFormTests(TestCase):
         self.assertEqual(interest.how_heard, "Teacher referral")
         self.assertEqual(interest.resume_original_name, "Morgan Resume.pdf")
         self.assertEqual(interest.cover_letter_original_name, "Morgan Cover Letter.pdf")
-        self.assertTrue(interest.resume.name.endswith(".pdf"))
-        self.assertTrue(interest.cover_letter.name.endswith(".pdf"))
-        self.assertNotIn("Morgan Resume", interest.resume.name)
+        self.assertIn(b"ClearCode test document", bytes(interest.resume_data))
+        self.assertIn(b"ClearCode test document", bytes(interest.cover_letter_data))
+        self.assertEqual(interest.resume_content_type, "application/pdf")
+        self.assertEqual(interest.cover_letter_content_type, "application/pdf")
+        self.assertFalse(interest.resume)
+        self.assertFalse(interest.cover_letter)
         self.assertFalse(Lead.objects.filter(contact_email="morgan@example.com").exists())
 
     def test_company_career_interest_stays_out_of_crm(self):
