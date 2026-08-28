@@ -219,6 +219,15 @@ class MarketingPageTests(SimpleTestCase):
         self.assertNotIn('name="phone"', content)
         self.assertNotIn('name="child_age_grade"', content)
 
+    def test_about_principles_use_large_accessible_custom_pictograms(self):
+        content = self._render("marketing_about")
+
+        self.assertEqual(content.count('data-testid="principle-icon"'), 4)
+        self.assertEqual(content.count('viewBox="0 0 128 128"'), 4)
+        self.assertEqual(content.count('class="relative h-40 w-40 max-w-full'), 4)
+        self.assertEqual(content.count('aria-hidden="true" focusable="false"'), 4)
+        self.assertNotIn('class="mx-auto h-12 w-12', content)
+
     def test_careers_page_uses_supplied_clinical_team_positioning(self):
         content = self._render("marketing_careers")
 
