@@ -139,15 +139,19 @@ def record_form_submission(*, intake, form_type, source_path, submitted_data):
 
 
 TERMINAL_DEAL_STAGES = {
-    Opportunity.Stage.ENROLLED,
-    Opportunity.Stage.ACTIVE_PARTNER,
-    Opportunity.Stage.INACTIVE,
-    Opportunity.Stage.STEWARDSHIP,
-    Opportunity.Stage.LOST,
-    Opportunity.Stage.REPORTING_RENEWAL,
-    Opportunity.Stage.DECLINED,
-    Opportunity.Stage.FUNDED,
-    Opportunity.Stage.PASSED,
+    Opportunity.Stage.FAMILY_ENROLLED,
+    Opportunity.Stage.FAMILY_ACTIVE,
+    Opportunity.Stage.FAMILY_LOST,
+    Opportunity.Stage.FAMILY_CHURNED,
+    Opportunity.Stage.PARTNER_ACTIVE,
+    Opportunity.Stage.PARTNER_DORMANT,
+    Opportunity.Stage.DONOR_COMMITTED,
+    Opportunity.Stage.DONOR_STEWARDSHIP,
+    Opportunity.Stage.DONOR_DECLINED,
+    Opportunity.Stage.GRANT_AWARDED,
+    Opportunity.Stage.GRANT_DECLINED,
+    Opportunity.Stage.EQUITY_CLOSED_WON,
+    Opportunity.Stage.EQUITY_PASSED,
 }
 
 
@@ -177,7 +181,10 @@ def ensure_family_enrollment_deal(*, lead, owner=None):
         pipeline=Opportunity.Pipeline.FAMILY_ENROLLMENT,
         stage=Opportunity.initial_stage_for_pipeline(Opportunity.Pipeline.FAMILY_ENROLLMENT),
         probability=10,
-        metadata={"created_from_family_intake": True},
+        metadata={
+            "created_from_family_intake": True,
+            "needs_naming_review": True,
+        },
     )
     deal.full_clean()
     deal.save()
@@ -196,7 +203,7 @@ def create_partner_triage(*, lead, submission):
 
 
 @transaction.atomic
-def resolve_triage_item(*, triage, pipelines, actor, notes="", dismiss=False):
+def resolve_triage_item(*, triage, pipelines, actor, notes="", dismiss=False, advocate=False):
     triage = IntakeTriage.objects.select_for_update().select_related("lead").get(pk=triage.pk)
     if triage.status != IntakeTriage.Status.PENDING:
         return triage
@@ -205,8 +212,8 @@ def resolve_triage_item(*, triage, pipelines, actor, notes="", dismiss=False):
     invalid = set(selected) - set(Opportunity.Pipeline.values)
     if invalid:
         raise ValueError("One or more selected pipelines are invalid.")
-    if not dismiss and not selected:
-        raise ValueError("Choose at least one destination pipeline or dismiss the triage item.")
+    if not dismiss and not selected and not advocate:
+        raise ValueError("Choose at least one destination pipeline, choose Advocate, or dismiss the triage item.")
 
     created_deals = []
     if not dismiss:
@@ -235,7 +242,10 @@ def resolve_triage_item(*, triage, pipelines, actor, notes="", dismiss=False):
                     pipeline=pipeline,
                     stage=Opportunity.initial_stage_for_pipeline(pipeline),
                     probability=10,
-                    metadata={"created_from_triage_id": triage.pk},
+                    metadata={
+                        "created_from_triage_id": triage.pk,
+                        "needs_naming_review": True,
+                    },
                 )
                 deal.full_clean()
                 deal.save()
@@ -246,6 +256,7 @@ def resolve_triage_item(*, triage, pipelines, actor, notes="", dismiss=False):
 
     triage.status = IntakeTriage.Status.DISMISSED if dismiss else IntakeTriage.Status.RESOLVED
     triage.selected_pipelines = [] if dismiss else selected
+    triage.advocate_selected = False if dismiss else advocate
     triage.resolution_notes = notes.strip()
     triage.resolved_by = actor
     triage.resolved_at = timezone.now()
@@ -254,6 +265,7 @@ def resolve_triage_item(*, triage, pipelines, actor, notes="", dismiss=False):
         update_fields=[
             "status",
             "selected_pipelines",
+            "advocate_selected",
             "resolution_notes",
             "resolved_by",
             "resolved_at",

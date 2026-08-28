@@ -1,3 +1,5 @@
+import re
+
 from django.conf import settings
 from django.core.exceptions import ValidationError
 from django.db import models
@@ -122,39 +124,81 @@ class Lead(TimestampedModel, SoftDeleteModel):
 class Opportunity(TimestampedModel, SoftDeleteModel):
     class Pipeline(models.TextChoices):
         FAMILY_ENROLLMENT = "family_enrollment", "Families / Enrollment"
-        REFERRAL_PARTNERS = "referral_partners", "Referral Partners"
+        REFERRAL_PARTNERS = "referral_partners", "School & Teacher Referral Partners"
         FOUNDATION_DONORS = "foundation_donors", "Foundation Donors"
         FOUNDATION_GRANTS = "foundation_grants", "Foundation Grants / PRIs"
         EQUITY_INVESTMENT = "equity_investment", "Equity / Investment"
 
     class Stage(models.TextChoices):
-        NEW = "new", "New inquiry"
-        CONSULTATION = "consultation", "Consultation scheduled"
-        QUALIFIED = "qualified", "Qualified"
-        ENROLLMENT_OFFERED = "enrollment_offered", "Enrollment offered"
-        ENROLLED = "enrolled", "Enrolled"
-        IDENTIFIED = "identified", "Identified"
-        CONTACTED = "contacted", "Contacted"
-        ACTIVE_PARTNER = "active_partner", "Active partner"
-        INACTIVE = "inactive", "Inactive"
-        CULTIVATING = "cultivating", "Cultivating"
-        ASK_PLANNED = "ask_planned", "Ask planned"
-        ASK_MADE = "ask_made", "Ask made"
-        PLEDGED = "pledged", "Pledged"
-        GIFT_RECEIVED = "gift_received", "Gift received"
-        STEWARDSHIP = "stewardship", "Stewardship"
-        LOI = "loi", "LOI"
-        APPLICATION = "application", "Application"
-        SUBMITTED = "submitted", "Submitted"
-        DUE_DILIGENCE = "due_diligence", "Due diligence"
-        AWARDED = "awarded", "Awarded"
-        REPORTING_RENEWAL = "reporting_renewal", "Reporting / renewal"
-        TERMS = "terms", "Terms"
-        COMMITTED = "committed", "Committed"
-        FUNDED = "funded", "Funded"
-        LOST = "lost", "Closed lost"
-        DECLINED = "declined", "Declined"
-        PASSED = "passed", "Passed"
+        FAMILY_LEAD_NURTURE = "family_lead_nurture", "Lead / Nurture"
+        FAMILY_WAITLIST = "family_waitlist", "Waitlist"
+        FAMILY_CONSULTATION = "family_consultation", "Consultation Scheduled"
+        FAMILY_ASSESSMENT = "family_assessment", "Assessment"
+        FAMILY_ENROLLED = "family_enrolled", "Enrolled"
+        FAMILY_ACTIVE = "family_active", "Active"
+        FAMILY_LOST = "family_lost", "Lost"
+        FAMILY_CHURNED = "family_churned", "Churned"
+        PARTNER_IDENTIFIED = "partner_identified", "Identified"
+        PARTNER_CONTACTED = "partner_contacted", "Contacted"
+        PARTNER_MEETING = "partner_meeting", "Meeting / Lunch-and-Learn"
+        PARTNER_ACTIVE = "partner_active", "Active Referrer"
+        PARTNER_DORMANT = "partner_dormant", "Dormant"
+        DONOR_IDENTIFIED = "donor_identified", "Identified"
+        DONOR_CULTIVATION = "donor_cultivation", "Cultivation"
+        DONOR_ASK = "donor_ask", "Ask"
+        DONOR_COMMITTED = "donor_committed", "Committed / Gift"
+        DONOR_STEWARDSHIP = "donor_stewardship", "Stewardship"
+        DONOR_DECLINED = "donor_declined", "Declined"
+        GRANT_NEED_INTRO = "grant_need_intro", "Need Intro"
+        GRANT_RELATIONSHIP = "grant_relationship", "Relationship Building"
+        GRANT_INVITED = "grant_invited", "LOI / Application Invited"
+        GRANT_SUBMITTED = "grant_submitted", "Application Submitted"
+        GRANT_AWARDED = "grant_awarded", "Awarded"
+        GRANT_DECLINED = "grant_declined", "Declined"
+        EQUITY_NEED_INTRO = "equity_need_intro", "Need Intro"
+        EQUITY_INTRODUCED = "equity_introduced", "Introduced"
+        EQUITY_FIRST_MEETING = "equity_first_meeting", "First Meeting"
+        EQUITY_DILIGENCE = "equity_diligence", "Diligence / Data Room"
+        EQUITY_TERM_SHEET = "equity_term_sheet", "Term Sheet"
+        EQUITY_CLOSED_WON = "equity_closed_won", "Closed-Won"
+        EQUITY_PASSED = "equity_passed", "Passed"
+
+    class Priority(models.TextChoices):
+        HIGH = "high", "High"
+        MEDIUM = "medium", "Medium"
+        LOW = "low", "Low"
+
+    class FundingType(models.TextChoices):
+        ESA = "esa", "ESA"
+        PRIVATE_PAY = "private_pay", "Private-pay"
+
+    class EsaProgram(models.TextChoices):
+        FES_UA = "fes_ua", "FES-UA"
+        FES_EO = "fes_eo", "FES-EO"
+        PEP = "pep", "PEP"
+        FTC = "ftc", "FTC"
+
+    class GradeBand(models.TextChoices):
+        PREK_2 = "prek_2", "PreK-2"
+        GRADE_3_5 = "3_5", "3-5"
+        GRADE_6_8 = "6_8", "6-8"
+        MULTI_CHILD = "multi_child", "Multi-child"
+
+    class PartnerType(models.TextChoices):
+        PEDIATRIC = "pediatric", "Pediatric practice"
+        THERAPY = "therapy", "Therapy clinic"
+        PRIVATE_SCHOOL = "private_school", "Private school"
+        HOMESCHOOL = "homeschool", "Homeschool co-op / microschool"
+
+    class DonorType(models.TextChoices):
+        INDIVIDUAL = "individual", "Individual"
+        DAF = "daf", "Donor-advised fund"
+        FAMILY_FOUNDATION = "family_foundation", "Family foundation"
+
+    class CapitalLane(models.TextChoices):
+        COMPANY = "company", "ClearCode, Inc."
+        FOUNDATION = "foundation", "Foundation"
+        BOTH = "both", "Both"
 
     lead = models.ForeignKey(Lead, on_delete=models.SET_NULL, null=True, blank=True, related_name="opportunities")
     company = models.ForeignKey(
@@ -166,14 +210,44 @@ class Opportunity(TimestampedModel, SoftDeleteModel):
     )
     school = models.ForeignKey("schools.School", on_delete=models.SET_NULL, null=True, blank=True, related_name="opportunities")
     owner = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, blank=True, related_name="owned_opportunities")
-    name = models.CharField(max_length=255)
+    name = models.CharField(max_length=255, blank=True)
     pipeline = models.CharField(
         max_length=32,
         choices=Pipeline.choices,
         default=Pipeline.FAMILY_ENROLLMENT,
         db_index=True,
     )
-    stage = models.CharField(max_length=32, choices=Stage.choices, default=Stage.NEW, db_index=True)
+    stage = models.CharField(max_length=32, choices=Stage.choices, default=Stage.FAMILY_LEAD_NURTURE, db_index=True)
+    priority = models.CharField(max_length=16, choices=Priority.choices, blank=True, db_index=True)
+    student_name = models.CharField(max_length=255, blank=True)
+    term_year = models.CharField(max_length=64, blank=True)
+    campaign_year = models.CharField(max_length=128, blank=True)
+    program_name = models.CharField(max_length=255, blank=True)
+    cycle_year = models.PositiveSmallIntegerField(null=True, blank=True)
+    investment_round = models.CharField(max_length=128, blank=True)
+    funding_type = models.CharField(max_length=16, choices=FundingType.choices, blank=True)
+    esa_program = models.CharField(max_length=16, choices=EsaProgram.choices, blank=True)
+    grade_band = models.CharField(max_length=16, choices=GradeBand.choices, blank=True)
+    in_catchment_zip = models.CharField(max_length=10, blank=True)
+    referral_source = models.CharField(max_length=255, blank=True)
+    referral_partner = models.ForeignKey(
+        Company,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="referred_enrollment_deals",
+    )
+    partner_type = models.CharField(max_length=32, choices=PartnerType.choices, blank=True)
+    donor_type = models.CharField(max_length=32, choices=DonorType.choices, blank=True)
+    gift_level = models.CharField(max_length=128, blank=True)
+    grant_cycle_application_date = models.DateField(null=True, blank=True)
+    capital_lane = models.CharField(max_length=16, choices=CapitalLane.choices, blank=True)
+    bucket = models.CharField(max_length=255, blank=True)
+    segment_tags = models.CharField(
+        max_length=255,
+        blank=True,
+        help_text="Comma-separated segment properties; never used as pipeline names.",
+    )
     value = models.DecimalField(max_digits=12, decimal_places=2, default=0)
     probability = models.PositiveSmallIntegerField(default=0)
     expected_close_date = models.DateField(null=True, blank=True, db_index=True)
@@ -189,6 +263,7 @@ class Opportunity(TimestampedModel, SoftDeleteModel):
         verbose_name_plural = "deals"
         indexes = [
             models.Index(fields=["pipeline", "stage"], name="crm_deal_pipeline_stage"),
+            models.Index(fields=["pipeline", "priority"], name="crm_deal_pipeline_priority"),
             models.Index(fields=["stage", "expected_close_date"]),
             models.Index(fields=["owner", "stage"]),
             models.Index(fields=["company", "pipeline"], name="crm_deal_company_pipeline"),
@@ -198,6 +273,12 @@ class Opportunity(TimestampedModel, SoftDeleteModel):
 
     def __str__(self):
         return f"{self.name} ({self.get_pipeline_display()})"
+
+    def save(self, *args, **kwargs):
+        generated_name = self.convention_name
+        if generated_name:
+            self.name = generated_name
+        super().save(*args, **kwargs)
 
     @classmethod
     def stage_choices_for_pipeline(cls, pipeline):
@@ -210,7 +291,7 @@ class Opportunity(TimestampedModel, SoftDeleteModel):
     @classmethod
     def initial_stage_for_pipeline(cls, pipeline):
         choices = cls.stage_choices_for_pipeline(pipeline)
-        return choices[0][0] if choices else cls.Stage.NEW
+        return choices[0][0] if choices else cls.Stage.FAMILY_LEAD_NURTURE
 
     def clean(self):
         super().clean()
@@ -225,56 +306,115 @@ class Opportunity(TimestampedModel, SoftDeleteModel):
             errors["company"] = "The deal company must match the contact's company."
         if not self.lead_id and not self.company_id and not self.school_id:
             errors["lead"] = "Associate the deal with a contact or company."
+        naming_review_pending = bool((self.metadata or {}).get("needs_naming_review"))
+        required_fields = {
+            self.Pipeline.FAMILY_ENROLLMENT: ("student_name", "term_year"),
+            self.Pipeline.REFERRAL_PARTNERS: (),
+            self.Pipeline.FOUNDATION_DONORS: ("campaign_year",),
+            self.Pipeline.FOUNDATION_GRANTS: ("program_name", "cycle_year"),
+            self.Pipeline.EQUITY_INVESTMENT: ("investment_round",),
+        }.get(self.pipeline, ())
+        if not naming_review_pending:
+            for field in required_fields:
+                if not getattr(self, field):
+                    errors[field] = "Required by this pipeline's naming convention."
+            if not self.identity_name:
+                errors["lead"] = "A contact or company name is required for this pipeline."
+        naming_fields = ("student_name", "term_year", "campaign_year", "program_name", "investment_round")
+        if any("(" in str(getattr(self, field) or "") or ")" in str(getattr(self, field) or "") for field in naming_fields):
+            errors["name"] = "Create a second deal instead of using parentheses to distinguish work."
+        year_pattern = re.compile(r"\b(?:19|20)\d{2}\b")
+        if self.pipeline == self.Pipeline.FAMILY_ENROLLMENT and self.term_year and not year_pattern.search(self.term_year):
+            errors["term_year"] = "Include a four-digit year in the enrollment name."
+        if self.pipeline == self.Pipeline.FOUNDATION_DONORS and self.campaign_year and not year_pattern.search(self.campaign_year):
+            errors["campaign_year"] = "Include a four-digit year in the gift name."
+        if self.funding_type != self.FundingType.ESA and self.esa_program:
+            errors["esa_program"] = "ESA program only applies when funding type is ESA."
         if errors:
             raise ValidationError(errors)
+
+    @property
+    def identity_name(self):
+        if self.company_id:
+            return self.company.name
+        if self.lead_id:
+            return self.lead.organization_name or self.lead.contact_name or self.lead.school_name
+        if self.school_id:
+            return self.school.name
+        return ""
+
+    @property
+    def convention_name(self):
+        identity_name = self.identity_name
+        if self.pipeline == self.Pipeline.FAMILY_ENROLLMENT and self.student_name and self.term_year:
+            return f"{self.student_name} — {self.term_year}"
+        if self.pipeline == self.Pipeline.REFERRAL_PARTNERS:
+            return identity_name or self.name.strip()
+        if self.pipeline == self.Pipeline.FOUNDATION_DONORS and identity_name and self.campaign_year:
+            return f"{identity_name} — {self.campaign_year}"
+        if self.pipeline == self.Pipeline.FOUNDATION_GRANTS and identity_name and self.program_name and self.cycle_year:
+            return f"{identity_name} — {self.program_name} — {self.cycle_year}"
+        if self.pipeline == self.Pipeline.EQUITY_INVESTMENT and identity_name and self.investment_round:
+            return f"{identity_name} — {self.investment_round}"
+        return self.name.strip()
+
+    @property
+    def deal_label(self):
+        return {
+            self.Pipeline.FAMILY_ENROLLMENT: "Enrollment",
+            self.Pipeline.REFERRAL_PARTNERS: "Partnership",
+            self.Pipeline.FOUNDATION_DONORS: "Gift",
+            self.Pipeline.FOUNDATION_GRANTS: "Application",
+            self.Pipeline.EQUITY_INVESTMENT: "Investment",
+        }.get(self.pipeline, "Deal")
+
+    @property
+    def needs_naming_review(self):
+        return bool((self.metadata or {}).get("needs_naming_review"))
 
 
 PIPELINE_STAGE_CHOICES = {
     Opportunity.Pipeline.FAMILY_ENROLLMENT: (
-        (Opportunity.Stage.NEW, "New inquiry"),
-        (Opportunity.Stage.CONSULTATION, "Consultation scheduled"),
-        (Opportunity.Stage.QUALIFIED, "Qualified"),
-        (Opportunity.Stage.ENROLLMENT_OFFERED, "Enrollment offered"),
-        (Opportunity.Stage.ENROLLED, "Enrolled"),
-        (Opportunity.Stage.LOST, "Closed lost"),
+        (Opportunity.Stage.FAMILY_LEAD_NURTURE, "Lead / Nurture"),
+        (Opportunity.Stage.FAMILY_WAITLIST, "Waitlist"),
+        (Opportunity.Stage.FAMILY_CONSULTATION, "Consultation Scheduled"),
+        (Opportunity.Stage.FAMILY_ASSESSMENT, "Assessment"),
+        (Opportunity.Stage.FAMILY_ENROLLED, "Enrolled"),
+        (Opportunity.Stage.FAMILY_ACTIVE, "Active"),
+        (Opportunity.Stage.FAMILY_LOST, "Lost"),
+        (Opportunity.Stage.FAMILY_CHURNED, "Churned"),
     ),
     Opportunity.Pipeline.REFERRAL_PARTNERS: (
-        (Opportunity.Stage.IDENTIFIED, "Identified"),
-        (Opportunity.Stage.CONTACTED, "Contacted"),
-        (Opportunity.Stage.QUALIFIED, "Qualified"),
-        (Opportunity.Stage.ACTIVE_PARTNER, "Active partner"),
-        (Opportunity.Stage.INACTIVE, "Inactive"),
-        (Opportunity.Stage.LOST, "Closed lost"),
+        (Opportunity.Stage.PARTNER_IDENTIFIED, "Identified"),
+        (Opportunity.Stage.PARTNER_CONTACTED, "Contacted"),
+        (Opportunity.Stage.PARTNER_MEETING, "Meeting / Lunch-and-Learn"),
+        (Opportunity.Stage.PARTNER_ACTIVE, "Active Referrer"),
+        (Opportunity.Stage.PARTNER_DORMANT, "Dormant"),
     ),
     Opportunity.Pipeline.FOUNDATION_DONORS: (
-        (Opportunity.Stage.IDENTIFIED, "Identified"),
-        (Opportunity.Stage.CULTIVATING, "Cultivating"),
-        (Opportunity.Stage.ASK_PLANNED, "Ask planned"),
-        (Opportunity.Stage.ASK_MADE, "Ask made"),
-        (Opportunity.Stage.PLEDGED, "Pledged"),
-        (Opportunity.Stage.GIFT_RECEIVED, "Gift received"),
-        (Opportunity.Stage.STEWARDSHIP, "Stewardship"),
-        (Opportunity.Stage.LOST, "Closed lost"),
+        (Opportunity.Stage.DONOR_IDENTIFIED, "Identified"),
+        (Opportunity.Stage.DONOR_CULTIVATION, "Cultivation"),
+        (Opportunity.Stage.DONOR_ASK, "Ask"),
+        (Opportunity.Stage.DONOR_COMMITTED, "Committed / Gift"),
+        (Opportunity.Stage.DONOR_STEWARDSHIP, "Stewardship"),
+        (Opportunity.Stage.DONOR_DECLINED, "Declined"),
     ),
     Opportunity.Pipeline.FOUNDATION_GRANTS: (
-        (Opportunity.Stage.QUALIFIED, "Qualified"),
-        (Opportunity.Stage.LOI, "LOI"),
-        (Opportunity.Stage.APPLICATION, "Application"),
-        (Opportunity.Stage.SUBMITTED, "Submitted"),
-        (Opportunity.Stage.DUE_DILIGENCE, "Due diligence"),
-        (Opportunity.Stage.AWARDED, "Awarded"),
-        (Opportunity.Stage.REPORTING_RENEWAL, "Reporting / renewal"),
-        (Opportunity.Stage.DECLINED, "Declined"),
+        (Opportunity.Stage.GRANT_NEED_INTRO, "Need Intro"),
+        (Opportunity.Stage.GRANT_RELATIONSHIP, "Relationship Building"),
+        (Opportunity.Stage.GRANT_INVITED, "LOI / Application Invited"),
+        (Opportunity.Stage.GRANT_SUBMITTED, "Application Submitted"),
+        (Opportunity.Stage.GRANT_AWARDED, "Awarded"),
+        (Opportunity.Stage.GRANT_DECLINED, "Declined"),
     ),
     Opportunity.Pipeline.EQUITY_INVESTMENT: (
-        (Opportunity.Stage.IDENTIFIED, "Identified"),
-        (Opportunity.Stage.CONTACTED, "Introduced / contacted"),
-        (Opportunity.Stage.QUALIFIED, "Qualified"),
-        (Opportunity.Stage.DUE_DILIGENCE, "Due diligence"),
-        (Opportunity.Stage.TERMS, "Terms"),
-        (Opportunity.Stage.COMMITTED, "Committed"),
-        (Opportunity.Stage.FUNDED, "Funded"),
-        (Opportunity.Stage.PASSED, "Passed"),
+        (Opportunity.Stage.EQUITY_NEED_INTRO, "Need Intro"),
+        (Opportunity.Stage.EQUITY_INTRODUCED, "Introduced"),
+        (Opportunity.Stage.EQUITY_FIRST_MEETING, "First Meeting"),
+        (Opportunity.Stage.EQUITY_DILIGENCE, "Diligence / Data Room"),
+        (Opportunity.Stage.EQUITY_TERM_SHEET, "Term Sheet"),
+        (Opportunity.Stage.EQUITY_CLOSED_WON, "Closed-Won"),
+        (Opportunity.Stage.EQUITY_PASSED, "Passed"),
     ),
 }
 
@@ -439,6 +579,7 @@ class IntakeTriage(TimestampedModel):
     source_signal = models.CharField(max_length=32, choices=SourceSignal.choices, db_index=True)
     status = models.CharField(max_length=16, choices=Status.choices, default=Status.PENDING, db_index=True)
     selected_pipelines = models.JSONField(default=list, blank=True)
+    advocate_selected = models.BooleanField(default=False)
     resolution_notes = models.TextField(blank=True)
     resolved_by = models.ForeignKey(
         settings.AUTH_USER_MODEL,

@@ -13,7 +13,7 @@ Current intake sources:
 
 Invalid submissions and newsletter honeypot traffic are rejected before CRM records are created. Stored submission data uses an allowlist and excludes CSRF tokens and honeypot values.
 
-Career-interest submissions are intentionally stored as `core.RecruitingInterest` records and managed in Django admin. They do not create CRM contacts, companies, or deals.
+Career-interest submissions are intentionally stored as `core.RecruitingInterest` records and managed in Django admin. They enter the ClearCode recruiting candidate pool with a named owner (configured with `RECRUITING_OWNER_EMAIL`, with an active staff fallback) and do not create CRM contacts, companies, or deals.
 
 ## Product model
 
@@ -48,21 +48,23 @@ The HTML workspace and leads API are restricted to superusers, staff, and centra
 - `/crm/contacts/<id>/` — contact record and activity timeline.
 - `/crm/companies/` — company records with contact and deal rollups.
 - `/crm/deals/` — pipeline-specific deal boards.
+- `/crm/deals/new/` — create a convention-named deal.
+- `/crm/deals/<id>/` — edit pipeline-specific deal properties.
 - `/crm/triage/` — pending intake routing decisions.
 - `/crm/signup/` — public inquiry ingestion.
 - `/newsletter/subscribe/` — public newsletter consent and CRM ingestion.
 
 ## Deal pipelines
 
-1. Families / Enrollment
-2. Referral Partners
-3. Foundation Donors
-4. Foundation Grants / PRIs
-5. Equity / Investment
+1. **Families / Enrollment** — Lead / Nurture, Waitlist, Consultation Scheduled, Assessment, Enrolled, Active, Lost, Churned. One deal per student, named `Student — term/year`, with funding type, ESA program, grade band, in-catchment ZIP, and referral source properties.
+2. **School & Teacher Referral Partners** — Identified, Contacted, Meeting / Lunch-and-Learn, Active Referrer, Dormant. One partnership per organization, with partner type and priority properties.
+3. **Foundation Donors** — Identified, Cultivation, Ask, Committed / Gift, Stewardship, Declined. Gift deals are named `Donor — campaign/year`, with donor type, priority, and gift level.
+4. **Foundation Grants / PRIs** — Need Intro, Relationship Building, LOI / Application Invited, Application Submitted, Awarded, Declined. Applications are named `Funder — program — cycle year`; capital lane is Foundation, with grant-cycle date and bucket properties.
+5. **Equity / Investment** — Need Intro, Introduced, First Meeting, Diligence / Data Room, Term Sheet, Closed-Won, Passed. Investments are named `Firm — round`, with ClearCode, Inc./Both capital lane, priority, and bucket properties.
 
-Each deal belongs to one pipeline. A company pursuing more than one capital structure gets separate linked deals—for example, one Foundation Grants / PRIs deal and one Equity / Investment deal—while the company and contacts remain single records. Recruiting is not a pipeline.
+Each deal belongs to one pipeline and one stage. Priority and comma-separated segment tags are properties, never substitute pipelines or stages. A company pursuing more than one capital structure gets separate linked deals—for example, one Foundation Grants / PRIs deal and one Equity / Investment deal—while the company and contacts remain single records. Parentheses are rejected in convention-driving name fields; separate work gets a second deal. Recruiting is not a pipeline.
 
-Family consultation and assessment follow-up intake creates or reuses one open Families / Enrollment deal. The assessment follow-up lets a family select Referral Partner, Donor, Advocate, or any combination of the three. The selections are retained separately on the submission and contact, exposed as a CRM contact filter, and sent together to one `IntakeTriage` item. Staff choose the appropriate destination pipeline or pipelines; the system never creates several partner deals merely because several interests were selected.
+Family consultation and assessment follow-up intake creates or reuses one open Families / Enrollment placeholder and marks it for naming review until the student and term/year are supplied. The assessment follow-up lets a family select Referral Partner, Donor, Advocate, or any combination of the three. Selections are retained separately on the submission and contact, exposed as a CRM contact filter, and sent together to one `IntakeTriage` item. Staff choose the appropriate referral, donor, and/or advocate path; Advocate is explicitly recorded without inventing a sixth deal pipeline. Resulting deal placeholders remain visibly marked for naming review, and the system never creates several deal records merely because several interests were selected.
 
 ## Verification
 

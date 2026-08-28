@@ -70,18 +70,9 @@
       <section class="card panel" style="margin-top:18px">
         <h2>Deals</h2>
         {% for deal in deals %}
-          <div class="deal-row"><div><strong>{{ deal.name }}</strong><div class="event-meta">{{ deal.get_pipeline_display }} · {{ deal.get_stage_display }}{% if deal.related_deals.count %} · linked to {{ deal.related_deals.count }} other deal{{ deal.related_deals.count|pluralize }}{% endif %}</div></div><a class="btn btn-small" href="{% url 'crm_deal_list' %}?pipeline={{ deal.pipeline }}">Open pipeline</a></div>
+          <div class="deal-row"><div><strong><a href="{% url 'crm_deal_detail' deal.pk %}">{{ deal.name }}</a></strong><div class="event-meta">{{ deal.get_pipeline_display }} · {{ deal.deal_label }} · {{ deal.get_stage_display }}{% if deal.needs_naming_review %} · naming review required{% endif %}{% if deal.related_deals.count %} · linked to {{ deal.related_deals.count }} other deal{{ deal.related_deals.count|pluralize }}{% endif %}</div></div><a class="btn btn-small" href="{% url 'crm_deal_detail' deal.pk %}">Edit details</a></div>
         {% empty %}<p class="subtle">No deals are attached to this contact yet.</p>{% endfor %}
-        <form class="deal-form" method="post" action="{% url 'crm_deal_create' lead.pk %}" style="margin-top:16px">{% csrf_token %}
-          <div class="field"><label for="deal-name">Deal name</label><input id="deal-name" name="name" required placeholder="Relationship or funding opportunity"></div>
-          <div class="field"><label for="deal-pipeline">Pipeline</label><select id="deal-pipeline" name="pipeline" required>{% for value,label in pipeline_choices %}<option value="{{ value }}">{{ label }}</option>{% endfor %}</select></div>
-          <div class="field"><label for="deal-value">Value</label><input id="deal-value" name="value" type="number" min="0" step="0.01" value="0"></div>
-          <div class="field"><label for="deal-close">Expected close</label><input id="deal-close" name="expected_close_date" type="date"></div>
-          <div class="field"><label for="deal-company">Company</label><select id="deal-company" name="company"><option value="">No company</option>{% for company in companies %}<option value="{{ company.pk }}" {% if lead.company_id == company.pk %}selected{% endif %}>{{ company.name }}</option>{% endfor %}</select></div>
-          <div class="field"><label for="deal-company-name">Or new company</label><input id="deal-company-name" name="company_name" placeholder="Company name"></div>
-          <div class="field"><label for="related-deal">Link another deal</label><select id="related-deal" name="related_deal"><option value="">No linked deal</option>{% for related in related_deal_choices %}<option value="{{ related.pk }}">{{ related.name }}{% if related.company %} — {{ related.company.name }}{% endif %}</option>{% endfor %}</select></div>
-          <button class="btn btn-primary" type="submit">Create deal</button>
-        </form>
+        <p style="margin-top:16px"><a class="btn btn-primary" href="{% url 'crm_deal_create' lead.pk %}">Create deal for this contact</a></p>
       </section>
       <div class="timeline-title"><h2>Activity</h2><span class="subtle">Newest first</span></div>
       <div class="timeline">

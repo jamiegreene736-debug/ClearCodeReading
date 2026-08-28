@@ -28,9 +28,14 @@ from apps.crm.newsletters import (
 
 class OpportunityInline(admin.TabularInline):
     model = Opportunity
+    fk_name = "lead"
     extra = 0
     autocomplete_fields = ("company", "school", "owner")
-    fields = ("name", "pipeline", "stage", "company", "value", "probability", "expected_close_date", "owner")
+    fields = ("name", "pipeline", "stage", "company", "priority", "value", "probability", "expected_close_date", "owner")
+
+
+class CompanyOpportunityInline(OpportunityInline):
+    fk_name = "company"
 
 
 class ContactInline(admin.TabularInline):
@@ -148,11 +153,11 @@ class CrmActivityAdmin(admin.ModelAdmin):
 @admin.action(description="Close selected deals unsuccessfully")
 def close_unsuccessful(modeladmin, request, queryset):
     terminal_stage_by_pipeline = {
-        Opportunity.Pipeline.FAMILY_ENROLLMENT: Opportunity.Stage.LOST,
-        Opportunity.Pipeline.REFERRAL_PARTNERS: Opportunity.Stage.LOST,
-        Opportunity.Pipeline.FOUNDATION_DONORS: Opportunity.Stage.LOST,
-        Opportunity.Pipeline.FOUNDATION_GRANTS: Opportunity.Stage.DECLINED,
-        Opportunity.Pipeline.EQUITY_INVESTMENT: Opportunity.Stage.PASSED,
+        Opportunity.Pipeline.FAMILY_ENROLLMENT: Opportunity.Stage.FAMILY_LOST,
+        Opportunity.Pipeline.REFERRAL_PARTNERS: Opportunity.Stage.PARTNER_DORMANT,
+        Opportunity.Pipeline.FOUNDATION_DONORS: Opportunity.Stage.DONOR_DECLINED,
+        Opportunity.Pipeline.FOUNDATION_GRANTS: Opportunity.Stage.GRANT_DECLINED,
+        Opportunity.Pipeline.EQUITY_INVESTMENT: Opportunity.Stage.EQUITY_PASSED,
     }
     now = timezone.now()
     for pipeline, terminal_stage in terminal_stage_by_pipeline.items():
@@ -161,17 +166,17 @@ def close_unsuccessful(modeladmin, request, queryset):
 
 @admin.register(Opportunity)
 class OpportunityAdmin(admin.ModelAdmin):
-    list_display = ("name", "pipeline", "stage", "company", "lead", "owner", "value", "probability", "expected_close_date", "closed_at")
-    list_filter = ("pipeline", "stage", "owner", "company", "expected_close_date", "closed_at", "is_deleted", "created_at")
-    search_fields = ("name", "company__name", "lead__school_name", "lead__contact_name", "school__name", "owner__email", "next_steps", "lost_reason")
-    autocomplete_fields = ("lead", "company", "school", "owner", "related_deals")
+    list_display = ("name", "deal_label", "pipeline", "stage", "priority", "company", "lead", "owner", "value", "expected_close_date", "closed_at")
+    list_filter = ("pipeline", "stage", "priority", "owner", "company", "expected_close_date", "closed_at", "is_deleted", "created_at")
+    search_fields = ("name", "student_name", "program_name", "investment_round", "segment_tags", "company__name", "lead__school_name", "lead__contact_name", "school__name", "owner__email", "next_steps", "lost_reason")
+    autocomplete_fields = ("lead", "company", "referral_partner", "school", "owner", "related_deals")
     readonly_fields = ("created_at", "updated_at", "deleted_at")
     actions = (close_unsuccessful,)
 
 
 @admin.register(Company)
 class CompanyAdmin(admin.ModelAdmin):
-    inlines = (ContactInline, OpportunityInline)
+    inlines = (ContactInline, CompanyOpportunityInline)
     list_display = ("name", "owner", "website", "created_at")
     list_filter = ("owner", "is_deleted", "created_at")
     search_fields = ("name", "website", "notes")

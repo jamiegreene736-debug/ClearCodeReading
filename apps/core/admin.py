@@ -21,8 +21,17 @@ class RecruitingInterestAdmin(admin.ModelAdmin):
             "cover_letter",
         ),
     }
-    list_display = ("name", "email", "career_path", "how_heard", "status", "created_at")
-    list_filter = ("career_path", "status", "created_at")
+    list_display = (
+        "name",
+        "email",
+        "career_path",
+        "how_heard",
+        "candidate_pool",
+        "owner",
+        "status",
+        "created_at",
+    )
+    list_filter = ("career_path", "candidate_pool", "owner", "status", "created_at")
     search_fields = ("name", "email", "phone", "address", "how_heard", "role_interest", "notes")
     readonly_fields = (
         "resume_download",
@@ -48,8 +57,21 @@ class RecruitingInterestAdmin(admin.ModelAdmin):
             },
         ),
         ("Documents", {"fields": ("resume_download", "cover_letter_download")}),
-        ("Workflow", {"fields": ("status", "source_path", "created_at", "updated_at")}),
+        (
+            "Workflow",
+            {
+                "fields": (
+                    "candidate_pool",
+                    "owner",
+                    "status",
+                    "source_path",
+                    "created_at",
+                    "updated_at",
+                )
+            },
+        ),
     )
+    autocomplete_fields = ("owner",)
 
     def get_urls(self):
         return [
