@@ -1,153 +1,264 @@
 {% extends "base_marketing.html" %}
 
 {% block title %}Careers | ClearCode Reading{% endblock %}
-{% block meta_description %}Explore teaching and company career paths at ClearCode Reading and help families see clear, measurable reading progress.{% endblock %}
+{% block meta_description %}Teach reading with the time, tools, support, and compensation to do the work well at ClearCode Reading in the Orlando metro area.{% endblock %}
 {% block og_title %}Careers at ClearCode Reading{% endblock %}
-{% block og_description %}Teach with ClearCode or help build the company behind a clearer reading-intervention experience.{% endblock %}
+{% block og_description %}Join ClearCode Reading's founding Orlando clinical team and deliver structured literacy intervention the way the research says it should be.{% endblock %}
+
+{% block extra_head %}
+  <link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@300;400&family=Syne:wght@600;700;800&display=swap" rel="stylesheet">
+  <style>
+    .career-page {
+      --career-ink: #0F2B35;
+      --career-forest: #2C4A45;
+      --career-deep-teal: #1A7A7A;
+      --career-medium-teal: #2EB8B8;
+      --career-eucalyptus: #5A9E8F;
+      --career-seafoam: #A8CFC4;
+      --career-sand: #E8D5B0;
+      --career-linen: #F7F2EA;
+      color: var(--career-ink);
+      font-family: "DM Mono", ui-monospace, monospace;
+    }
+    .career-heading {
+      font-family: "Barlow Condensed", "Arial Narrow", sans-serif;
+    }
+    .career-eyebrow {
+      color: var(--career-deep-teal);
+      font-family: "Syne", sans-serif;
+      font-size: .875rem;
+      font-weight: 700;
+      letter-spacing: .2em;
+      text-transform: uppercase;
+    }
+    .career-section {
+      padding: 5.5rem 3rem;
+    }
+    .career-inner {
+      margin-inline: auto;
+      max-width: 62.5rem;
+    }
+    .career-title {
+      font-family: "Barlow Condensed", "Arial Narrow", sans-serif;
+      font-size: clamp(2.25rem, 5vw, 3rem);
+      font-weight: 700;
+      letter-spacing: .01em;
+      line-height: 1.1;
+    }
+    .career-description {
+      color: rgba(15, 43, 53, .58);
+      font-size: .875rem;
+      line-height: 1.75;
+    }
+    .career-card {
+      border-radius: .75rem;
+      border-top: 3px solid var(--career-medium-teal);
+      box-shadow: 0 1px 4px rgba(15, 43, 53, .08);
+      padding: 2rem 1.75rem;
+    }
+    .career-card h3 {
+      font-family: "Barlow Condensed", "Arial Narrow", sans-serif;
+      font-size: 1.35rem;
+      font-weight: 700;
+      line-height: 1.2;
+    }
+    .career-card p {
+      color: rgba(15, 43, 53, .62);
+      font-size: .8125rem;
+      line-height: 1.7;
+      margin-top: .75rem;
+    }
+    .career-button {
+      align-items: center;
+      border-radius: .25rem;
+      display: inline-flex;
+      font-family: "Barlow Condensed", "Arial Narrow", sans-serif;
+      font-size: .875rem;
+      font-weight: 700;
+      justify-content: center;
+      letter-spacing: .1em;
+      padding: .9rem 2rem;
+      text-transform: uppercase;
+      transition: transform 160ms ease, background 160ms ease;
+    }
+    .career-button:hover {
+      transform: translateY(-2px);
+    }
+    .career-field {
+      display: block;
+    }
+    .career-field span {
+      display: block;
+      font-family: "Barlow Condensed", "Arial Narrow", sans-serif;
+      font-size: .95rem;
+      font-weight: 700;
+      letter-spacing: .03em;
+    }
+    .career-field input,
+    .career-field select,
+    .career-field textarea {
+      background: #fff;
+      border: 1px solid rgba(15, 43, 53, .18);
+      border-radius: .4rem;
+      color: var(--career-ink);
+      font: 400 .8125rem/1.5 "DM Mono", ui-monospace, monospace;
+      margin-top: .5rem;
+      padding: .9rem 1rem;
+      width: 100%;
+    }
+    .career-field input:focus,
+    .career-field select:focus,
+    .career-field textarea:focus {
+      border-color: var(--career-deep-teal);
+      outline: 3px solid rgba(245, 166, 35, .6);
+      outline-offset: 2px;
+    }
+    @media (max-width: 767px) {
+      .career-section {
+        padding: 4.5rem 1.25rem;
+      }
+    }
+  </style>
+{% endblock %}
 
 {% block content %}
-  <section class="hero-wash overflow-hidden py-16 sm:py-24">
-    <div class="mx-auto grid max-w-7xl items-center gap-12 px-4 sm:px-6 lg:grid-cols-[1.08fr_.92fr] lg:px-8">
-      <div>
-        <p class="inline-flex rounded-full bg-white px-4 py-2 text-sm font-black uppercase tracking-[.14em] text-deepTeal shadow-sm ring-1 ring-deepTeal/15">Careers at ClearCode</p>
-        <h1 class="mt-6 max-w-3xl text-4xl font-black leading-[1.05] tracking-tight text-ink sm:text-6xl lg:text-7xl">Do work that helps readers move forward.</h1>
-        <p class="mt-6 max-w-2xl text-lg leading-8 text-ink/75 sm:text-xl">We are bringing specialist expertise, thoughtful technology, and clear family communication into one connected reading-intervention experience.</p>
-        <div class="mt-8 flex flex-col gap-3 sm:flex-row">
-          <a href="#teach" class="focus-ring rounded-full bg-deepTeal px-7 py-4 text-center font-black text-white shadow-glow transition hover:-translate-y-1 hover:bg-[#176a6a]">Explore teaching</a>
-          <a href="#company" class="focus-ring rounded-full bg-white px-7 py-4 text-center font-black text-ink shadow-lg ring-1 ring-ink/10 transition hover:-translate-y-1 hover:text-deepTeal">Explore company roles</a>
+  <div class="career-page">
+    <section class="bg-ink px-5 py-20 text-center text-linen sm:px-12 sm:py-24" aria-labelledby="careers-heading">
+      <div class="mx-auto max-w-4xl">
+        <p class="career-eyebrow !text-mediumTeal">Careers</p>
+        <h1 id="careers-heading" class="career-heading mt-5 text-5xl font-bold leading-[1.08] sm:text-6xl">You Know How to Teach Reading.<br class="hidden sm:block"> You Just Need the Right Place to Do It.</h1>
+        <p class="mx-auto mt-6 max-w-2xl text-sm leading-7 text-linen/60">You went into this work to teach kids to read. Then came the caseload, the paperwork, and the students you knew you could reach if you just had the time. We built ClearCode for specialists who are tired of watching that happen.</p>
+        <a href="#career-interest-form" class="career-button focus-ring mt-9 bg-mediumTeal text-ink">Introduce Yourself</a>
+      </div>
+    </section>
+
+    <section class="career-section bg-white" aria-labelledby="work-heading">
+      <div class="career-inner text-center">
+        <p class="career-eyebrow">The Work Itself</p>
+        <h2 id="work-heading" class="career-title mt-3">We've built the workday you've always envisioned</h2>
+        <p class="career-description mx-auto mt-4 max-w-2xl">Structured literacy intervention, delivered the way the research says it should be.</p>
+        <div class="mt-12 grid gap-6 text-left md:grid-cols-2">
+          <article class="career-card bg-linen" style="border-top-color: var(--career-forest);">
+            <h3>Three Students, Maximum</h3>
+            <p>Sixty-minute sessions with groups of no more than three, grouped by shared skills and age. One-to-one when that's the better fit. Never thirty kids and one of you.</p>
+          </article>
+          <article class="career-card bg-linen" style="border-top-color: var(--career-eucalyptus);">
+            <h3>A Program That Backs You</h3>
+            <p>Orton-Gillingham for K&ndash;2, Phonics for Reading for grades 3&ndash;8. Students arrive already assessed and placed, so you start teaching on day one.</p>
+          </article>
+          <article class="career-card bg-linen" style="border-top-color: var(--career-seafoam);">
+            <h3>A Platform That Does the Busywork</h3>
+            <p>Session notes, progress tracking, and parent updates happen in one place, built for clinicians rather than bolted on. Less time reconstructing what happened, more time deciding what comes next.</p>
+          </article>
+          <article class="career-card bg-linen" style="border-top-color: var(--career-sand);">
+            <h3>Paid Planning Time</h3>
+            <p>Planning is part of the job, so we pay for it. Your prep happens on the clock, not at your kitchen table after dinner.</p>
+          </article>
         </div>
       </div>
+    </section>
 
-      <aside class="relative overflow-hidden rounded-[2rem] bg-ink p-8 text-white shadow-2xl shadow-deepTeal/15 sm:p-10">
-        <div class="absolute -right-10 -top-10 h-40 w-40 rounded-full bg-mediumTeal/25 blur-3xl"></div>
-        <p class="relative text-sm font-black uppercase tracking-[.18em] text-gold">The work we value</p>
-        <ul class="relative mt-6 space-y-5">
-          <li class="border-b border-white/10 pb-5">
-            <h2 class="text-xl font-black">Readers before routines</h2>
-            <p class="mt-2 leading-7 text-white/70">We use evidence and professional judgment to choose the next useful step for each child.</p>
-          </li>
-          <li class="border-b border-white/10 pb-5">
-            <h2 class="text-xl font-black">Clarity builds trust</h2>
-            <p class="mt-2 leading-7 text-white/70">Families and teammates deserve plain language, visible progress, and honest expectations.</p>
-          </li>
-          <li>
-            <h2 class="text-xl font-black">Technology supports people</h2>
-            <p class="mt-2 leading-7 text-white/70">We build tools that strengthen great teaching and reduce unnecessary administrative work.</p>
-          </li>
-        </ul>
-      </aside>
-    </div>
-  </section>
+    <section class="career-section bg-linen" aria-labelledby="growth-heading">
+      <div class="career-inner text-center">
+        <p class="career-eyebrow">Growth &amp; Ownership</p>
+        <h2 id="growth-heading" class="career-title mt-3">Earn, own, and grow</h2>
+        <div class="mt-12 grid gap-6 text-left md:grid-cols-3">
+          <article class="career-card bg-white" style="border-top-color: var(--career-forest);">
+            <h3>Profit Sharing</h3>
+            <p>Specialists share in center-level profits. When the center succeeds, the clinical team shares in that success. It's a form of ownership public schools structurally cannot offer.</p>
+          </article>
+          <article class="career-card bg-white" style="border-top-color: var(--career-eucalyptus);">
+            <h3>Certification, On Us</h3>
+            <p>Not certified yet? ClearCode covers Orton-Gillingham coursework and provides supervised practicum hours. A 12&ndash;18 month pipeline that leaves you with a credential you keep for life.</p>
+          </article>
+          <article class="career-card bg-white" style="border-top-color: var(--career-seafoam);">
+            <h3>Clinical Culture</h3>
+            <p>Professional development, clinical supervision, and a caseload built around doing the work well. We are not optimizing for volume.</p>
+          </article>
+        </div>
+      </div>
+    </section>
 
-  <section id="teach" class="scroll-mt-24 bg-white py-20">
-    <div class="mx-auto grid max-w-7xl gap-12 px-4 sm:px-6 lg:grid-cols-[.82fr_1.18fr] lg:items-start lg:px-8">
-      <div>
-        <p class="text-sm font-black uppercase tracking-[.18em] text-mediumTeal">For educators</p>
-        <h2 class="mt-3 text-3xl font-black sm:text-5xl">Teach with ClearCode.</h2>
-        <p class="mt-5 text-lg leading-8 text-ink/70">Help children build durable reading skills through structured, specialist-led instruction—and give families a clearer view of every step forward.</p>
-        <a href="#career-interest-form" class="focus-ring mt-7 inline-flex rounded-full bg-deepTeal px-6 py-3 font-black text-white shadow-lg shadow-deepTeal/20 transition hover:-translate-y-0.5">Share your teaching interest</a>
+    <section class="career-section bg-white text-center" aria-labelledby="compensation-heading">
+      <div class="mx-auto max-w-3xl">
+        <p class="career-eyebrow">Compensation</p>
+        <h2 id="compensation-heading" class="career-title mt-3">And yes, the pay is better</h2>
+        <p class="career-description mx-auto mt-4 max-w-2xl">Great work environments shouldn't require a pay cut. Skilled reading specialists are the scarcest resource in this field, and we compensate accordingly, with profit sharing on top of base pay.</p>
+        <a href="#career-interest-form" class="career-button focus-ring mt-9 bg-ink text-linen">Interested? Tell Us About Yourself</a>
       </div>
-      <div class="grid gap-5 sm:grid-cols-2">
-        <article class="rounded-[2rem] bg-seafoam p-7">
-          <span class="grid h-11 w-11 place-items-center rounded-2xl bg-deepTeal font-black text-white" aria-hidden="true">1</span>
-          <h3 class="mt-5 text-2xl font-black">Bring your expertise</h3>
-          <p class="mt-3 leading-7 text-ink/70">We want educators who care about explicit, evidence-aligned instruction and who notice the details in a reader’s response.</p>
-        </article>
-        <article class="rounded-[2rem] bg-linen p-7">
-          <span class="grid h-11 w-11 place-items-center rounded-2xl bg-gold font-black text-ink" aria-hidden="true">2</span>
-          <h3 class="mt-5 text-2xl font-black">Teach from a clear sequence</h3>
-          <p class="mt-3 leading-7 text-ink/70">Use well-defined instructional paths, session evidence, and professional judgment to keep teaching focused.</p>
-        </article>
-        <article class="rounded-[2rem] bg-sand p-7">
-          <span class="grid h-11 w-11 place-items-center rounded-2xl bg-forest font-black text-white" aria-hidden="true">3</span>
-          <h3 class="mt-5 text-2xl font-black">Make progress visible</h3>
-          <p class="mt-3 leading-7 text-ink/70">Capture useful observations and help families understand what their child is mastering and what comes next.</p>
-        </article>
-        <article class="rounded-[2rem] bg-ink p-7 text-white">
-          <span class="grid h-11 w-11 place-items-center rounded-2xl bg-white font-black text-ink" aria-hidden="true">4</span>
-          <h3 class="mt-5 text-2xl font-black">Keep growing</h3>
-          <p class="mt-3 leading-7 text-white/70">Learn alongside a team that values reflective practice, consistency, and high-quality feedback.</p>
-        </article>
-      </div>
-    </div>
-  </section>
+    </section>
 
-  <section id="company" class="scroll-mt-24 bg-seafoam py-20">
-    <div class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-      <div class="max-w-3xl">
-        <p class="text-sm font-black uppercase tracking-[.18em] text-deepTeal">For company builders</p>
-        <h2 class="mt-3 text-3xl font-black sm:text-5xl">Build ClearCode with us.</h2>
-        <p class="mt-5 text-lg leading-8 text-ink/70">Great intervention depends on more than the lesson itself. We are interested in people who can help create reliable systems, thoughtful experiences, and strong support around every specialist and family.</p>
+    <section class="career-section bg-ink text-center text-linen" aria-labelledby="roles-heading">
+      <div class="career-inner">
+        <p class="career-eyebrow !text-mediumTeal">Open Roles</p>
+        <h2 id="roles-heading" class="career-title mt-3 text-linen">We're hiring ahead of our 2027 opening</h2>
+        <p class="mx-auto mt-4 max-w-2xl text-sm leading-7 text-linen/60">Our flagship center opens in the Orlando metro area in early 2027. We're building the founding clinical team now, and we'd rather meet great specialists early than rush hiring later.</p>
+        <div class="mx-auto mt-12 max-w-3xl space-y-4 text-left">
+          <article class="flex flex-col gap-5 rounded-xl bg-white px-7 py-6 text-ink shadow-sm sm:flex-row sm:items-center">
+            <div class="flex-1">
+              <h3 class="career-heading text-xl font-bold">Reading Specialist</h3>
+              <p class="mt-1 text-xs text-ink/55">Orlando Metro &middot; Full-time &amp; part-time &middot; Founding team</p>
+            </div>
+            <span class="self-start whitespace-nowrap rounded-full border border-deepTeal/30 px-4 py-2 font-sans text-xs font-bold uppercase tracking-[.1em] text-deepTeal sm:self-auto">Hiring for 2027</span>
+          </article>
+          <article class="flex flex-col gap-5 rounded-xl bg-white px-7 py-6 text-ink shadow-sm sm:flex-row sm:items-center">
+            <div class="flex-1">
+              <h3 class="career-heading text-xl font-bold">Educators Seeking OG Certification</h3>
+              <p class="mt-1 text-xs text-ink/55">Orlando Metro &middot; Coursework &amp; practicum covered by ClearCode</p>
+            </div>
+            <span class="self-start whitespace-nowrap rounded-full border border-deepTeal/30 px-4 py-2 font-sans text-xs font-bold uppercase tracking-[.1em] text-deepTeal sm:self-auto">Pipeline</span>
+          </article>
+        </div>
+        <a href="#career-interest-form" class="career-button focus-ring mt-10 bg-mediumTeal text-ink">Introduce Yourself</a>
       </div>
-      <div class="mt-12 grid gap-5 md:grid-cols-3">
-        <article class="rounded-[2rem] bg-white p-7 shadow-sm">
-          <p class="text-sm font-black uppercase tracking-[.16em] text-mediumTeal">Product &amp; technology</p>
-          <h3 class="mt-3 text-2xl font-black">Build useful, trustworthy tools.</h3>
-          <p class="mt-3 leading-7 text-ink/70">Design, engineering, data, and product work grounded in real instructional workflows.</p>
-        </article>
-        <article class="rounded-[2rem] bg-white p-7 shadow-sm">
-          <p class="text-sm font-black uppercase tracking-[.16em] text-mediumTeal">Operations &amp; growth</p>
-          <h3 class="mt-3 text-2xl font-black">Turn quality into a repeatable system.</h3>
-          <p class="mt-3 leading-7 text-ink/70">Help ClearCode serve more families while protecting instructional quality and responsiveness.</p>
-        </article>
-        <article class="rounded-[2rem] bg-white p-7 shadow-sm">
-          <p class="text-sm font-black uppercase tracking-[.16em] text-mediumTeal">Family &amp; specialist success</p>
-          <h3 class="mt-3 text-2xl font-black">Make every interaction clearer.</h3>
-          <p class="mt-3 leading-7 text-ink/70">Create the support, communication, and onboarding that help people do their best work.</p>
-        </article>
-      </div>
-      <a href="#career-interest-form" class="focus-ring mt-8 inline-flex rounded-full bg-ink px-6 py-3 font-black text-white transition hover:-translate-y-0.5 hover:bg-deepTeal">Share your company interest</a>
-    </div>
-  </section>
+    </section>
 
-  <section class="bg-linen py-20">
-    <div class="mx-auto grid max-w-7xl gap-12 px-4 sm:px-6 lg:grid-cols-[.72fr_1.28fr] lg:items-start lg:px-8">
-      <div>
-        <p class="text-sm font-black uppercase tracking-[.18em] text-mediumTeal">Start a conversation</p>
-        <h2 class="mt-3 text-3xl font-black sm:text-5xl">Tell us how you want to contribute.</h2>
-        <p class="mt-5 text-lg leading-8 text-ink/70">We may not have an opening that matches today. Share your interest and we can reach out when a relevant opportunity becomes available.</p>
-        <p class="mt-5 rounded-2xl bg-white p-5 text-sm leading-6 text-ink/65 shadow-sm">Please do not include student information, medical records, Social Security numbers, or other highly sensitive details.</p>
-      </div>
-
-      <form id="career-interest-form" class="scroll-mt-28 rounded-[2rem] bg-white p-6 shadow-2xl shadow-deepTeal/10 ring-1 ring-deepTeal/10 sm:p-9" method="post" action="/crm/signup/">
-        {% csrf_token %}
-        <input type="hidden" name="audience" value="other">
-        <input type="hidden" name="organization_name" value="Career interest">
-        <input type="hidden" name="redirect_to" value="/careers/">
+    <section class="career-section bg-linen" aria-labelledby="interest-heading">
+      <div class="mx-auto grid max-w-5xl gap-12 lg:grid-cols-[.78fr_1.22fr] lg:items-start">
         <div>
-          <p class="text-sm font-black uppercase tracking-[.16em] text-deepTeal">Career interest</p>
-          <h2 class="mt-2 text-3xl font-black">Introduce yourself.</h2>
-          <p class="mt-3 leading-7 text-ink/65">Required fields are marked with an asterisk.</p>
+          <p class="career-eyebrow">Tell us about your work</p>
+          <h2 id="interest-heading" class="career-title mt-3">Introduce yourself</h2>
+          <p class="career-description mt-5">No formal application required yet. Send us a note about what you teach, where you trained, and what you're looking for. We'll take it from there.</p>
+          <p class="career-description mt-5 rounded-lg bg-white p-5 shadow-sm">Please do not include student information, medical records, Social Security numbers, or other highly sensitive details.</p>
         </div>
-        <div class="mt-7 grid gap-5 sm:grid-cols-2">
-          <label class="block">
-            <span class="text-sm font-black">Your name *</span>
-            <input class="focus-ring mt-2 w-full rounded-2xl border border-ink/15 px-4 py-4 focus:border-deepTeal focus:outline-none" type="text" name="name" autocomplete="name" required>
+
+        <form id="career-interest-form" class="scroll-mt-28 rounded-xl bg-white p-6 shadow-xl shadow-deepTeal/10 ring-1 ring-ink/10 sm:p-8" method="post" action="/crm/signup/">
+          {% csrf_token %}
+          <input type="hidden" name="audience" value="other">
+          <input type="hidden" name="organization_name" value="Career interest">
+          <input type="hidden" name="redirect_to" value="/careers/">
+          <p class="career-eyebrow">Career Interest</p>
+          <p class="career-description mt-3">Required fields are marked with an asterisk.</p>
+          <div class="mt-7 grid gap-5 sm:grid-cols-2">
+            <label class="career-field">
+              <span>Your name *</span>
+              <input type="text" name="name" autocomplete="name" maxlength="255" required>
+            </label>
+            <label class="career-field">
+              <span>Email *</span>
+              <input type="email" name="email" autocomplete="email" maxlength="254" required>
+            </label>
+            <label class="career-field">
+              <span>Career path *</span>
+              <select name="career_path" required>
+                <option value="">Choose a path</option>
+                <option value="teacher">Teaching or reading specialist</option>
+                <option value="company">Company team</option>
+              </select>
+            </label>
+            <label class="career-field">
+              <span>Role or area of interest *</span>
+              <input type="text" name="role_interest" maxlength="255" placeholder="For example: reading specialist" required>
+            </label>
+          </div>
+          <label class="career-field mt-5">
+            <span>What would you bring to ClearCode? *</span>
+            <textarea class="min-h-40" name="notes" placeholder="Share what you teach, where you trained, and what you're looking for." required></textarea>
           </label>
-          <label class="block">
-            <span class="text-sm font-black">Email *</span>
-            <input class="focus-ring mt-2 w-full rounded-2xl border border-ink/15 px-4 py-4 focus:border-deepTeal focus:outline-none" type="email" name="email" autocomplete="email" required>
-          </label>
-          <label class="block">
-            <span class="text-sm font-black">Career path *</span>
-            <select class="focus-ring mt-2 w-full rounded-2xl border border-ink/15 bg-white px-4 py-4 focus:border-deepTeal focus:outline-none" name="career_path" required>
-              <option value="">Choose a path</option>
-              <option value="teacher">Teaching or reading specialist</option>
-              <option value="company">Company team</option>
-            </select>
-          </label>
-          <label class="block">
-            <span class="text-sm font-black">Role or area of interest *</span>
-            <input class="focus-ring mt-2 w-full rounded-2xl border border-ink/15 px-4 py-4 focus:border-deepTeal focus:outline-none" type="text" name="role_interest" maxlength="255" placeholder="For example: reading specialist or engineering" required>
-          </label>
-        </div>
-        <label class="mt-5 block">
-          <span class="text-sm font-black">What would you bring to ClearCode? *</span>
-          <textarea class="focus-ring mt-2 min-h-40 w-full rounded-2xl border border-ink/15 px-4 py-4 focus:border-deepTeal focus:outline-none" name="notes" placeholder="Share relevant experience, strengths, and the work you hope to do." required></textarea>
-        </label>
-        <button class="focus-ring mt-6 w-full rounded-full bg-deepTeal px-7 py-4 font-black text-white shadow-glow transition hover:-translate-y-0.5 hover:bg-[#176a6a]" type="submit">Share my interest</button>
-        <p class="mt-4 text-center text-xs leading-5 text-ink/55">This is an expression of interest, not an application to a currently open role or a promise of employment. We use your information only to evaluate potential career fit and follow up.</p>
-      </form>
-    </div>
-  </section>
+          <button class="career-button focus-ring mt-6 w-full bg-ink text-linen hover:bg-deepTeal" type="submit">Introduce Yourself</button>
+          <p class="mt-4 text-center text-[.68rem] leading-5 text-ink/50">This is an expression of interest, not an application to a currently open role or a promise of employment. We use your information only to evaluate potential career fit and follow up.</p>
+        </form>
+      </div>
+    </section>
+  </div>
 {% endblock %}
