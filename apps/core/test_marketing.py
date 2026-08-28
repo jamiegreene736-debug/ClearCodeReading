@@ -61,29 +61,33 @@ class MarketingPageTests(SimpleTestCase):
                 self.assertEqual(route.func.view_initkwargs["template_name"], template_name)
                 self.assertIn("<!doctype html>", self._render(route_name).lower())
 
-    def test_homepage_leads_with_intervention_and_consultation(self):
+    def test_homepage_matches_family_first_priority_waitlist_message(self):
         content = self._render("marketing_home")
 
-        self.assertIn("Reading intervention that shows clear progress", content)
         self.assertIn("Unlock Reading. Unlock Everything.", content)
-        self.assertIn("Schedule a consultation", content)
-        self.assertIn("Live parent dashboard", content)
-        self.assertNotIn("For schools &amp; teachers", content)
-        self.assertNotIn("4x more clarity", content)
+        self.assertIn("If reading feels like a nightly battle", content)
+        self.assertIn("Reading gaps don’t close on their own.", content)
+        self.assertIn("Join the Priority Waitlist", content)
+        self.assertIn("One connected path from placement to progress.", content)
+        self.assertIn("Why Families Choose ClearCode", content)
+        self.assertIn("Family Empowerment Scholarship", content)
 
-    def test_homepage_priority_waitlist_links_to_family_interest_survey(self):
+    def test_homepage_priority_waitlist_ctas_use_local_intake(self):
         content = self._render("marketing_home")
 
-        self.assertIn(
-            'href="https://docs.google.com/document/d/'
-            '1pu7xPbdj-Cn8MiBYmoxDefYpCNGSxH1EL59DMjleDxY/edit?usp=sharing"',
-            content,
+        self.assertGreaterEqual(
+            content.count('href="/contact/#consultation-form"'),
+            4,
         )
-        self.assertIn("Join the Priority Waitlist", content)
-        self.assertNotIn(
-            'href="/contact/#consultation-form"',
-            content,
-        )
+        self.assertNotIn("waitlist.html", content)
+        self.assertNotIn("docs.google.com", content)
+
+    def test_homepage_keeps_research_claims_attributed(self):
+        content = self._render("marketing_home")
+
+        self.assertIn("Florida Department of Education", content)
+        self.assertIn("Center for Research and Reform in Education", content)
+        self.assertIn("Rosenthal &amp; Jacobson", content)
 
     def test_shared_marketing_navigation_is_consistent(self):
         route_names = [
