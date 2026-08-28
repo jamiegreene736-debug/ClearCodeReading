@@ -460,6 +460,29 @@ class MarketingPageTests(SimpleTestCase):
                 self.assertIn("#0F2B35", content)
                 self.assertIn("#F7F2EA", content)
 
+    def test_portal_uses_a_readable_responsive_brand_lockup(self):
+        brand_partial = (
+            Path(settings.BASE_DIR) / "templates" / "portal" / "_brand.html"
+        ).read_text()
+
+        self.assertIn('data-testid="portal-brand-lockup"', brand_partial)
+        self.assertIn("cc-monogram-gold-teal.png", brand_partial)
+        self.assertIn("Clear", brand_partial)
+        self.assertIn("Code", brand_partial)
+        self.assertIn("Reading portal", brand_partial)
+        self.assertNotIn("cc-lockup-", brand_partial)
+
+        for relative_path in [
+            "templates/portal/_header.html",
+            "templates/registration/login.html",
+            "templates/sessions/rapid_log.html",
+        ]:
+            content = (Path(settings.BASE_DIR) / relative_path).read_text()
+            with self.subTest(template=relative_path):
+                self.assertIn('{% include "portal/_brand.html" %}', content)
+                self.assertNotIn("cc-lockup-", content)
+                self.assertNotIn("logo-plate", content)
+
     def test_root_favicon_uses_the_branded_icon(self):
         route = resolve("/favicon.ico")
         favicon_path = route.kwargs["document_root"] / route.kwargs["path"]

@@ -37,3 +37,8 @@ not a general-purpose light-background fill.
 Web runtime assets live in `marketing-website/assets/logo/`. The complete supplied PNG
 set is retained under `marketing-website/assets/logo/brand-kit/`; cropped `*-ui.png`
 lockups remove only unused canvas space.
+
+Authenticated portal headers use `templates/portal/_brand.html`, which pairs the
+supplied compact mark with live text. This keeps the ClearCode Reading name crisp and
+readable at responsive header sizes without placing a second plate around the supplied
+artwork.
