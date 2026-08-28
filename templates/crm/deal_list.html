@@ -1,0 +1,20 @@
+{% extends "crm/base.html" %}
+{% block title %}Deals{% endblock %}
+{% block extra_style %}
+  .pipeline-tabs { display:flex; gap:8px; overflow:auto; margin:22px 0; padding-bottom:4px; }
+  .pipeline-tab { white-space:nowrap; }
+  .pipeline-tab.active { color:white; border-color:var(--teal); background:var(--teal); }
+  .board { display:grid; grid-auto-flow:column; grid-auto-columns:minmax(250px,1fr); gap:14px; overflow:auto; padding-bottom:16px; }
+  .stage { min-height:300px; padding:13px; background:#edf2f5; border:1px solid var(--line); border-radius:7px; }
+  .stage-head { display:flex; justify-content:space-between; gap:8px; margin-bottom:12px; }
+  .deal-card { padding:14px; margin-bottom:10px; }
+  .deal-card h3 { margin-bottom:5px; color:var(--navy); }
+  .deal-card form { margin-top:12px; }
+{% endblock %}
+{% block content %}
+  <p class="eyebrow">Deal management</p><h1>{{ pipeline_label }}</h1><p class="subtle">{{ deal_count }} deal{{ deal_count|pluralize }} · ${{ pipeline_value|floatformat:2 }} total value</p>
+  <nav class="pipeline-tabs" aria-label="Deal pipelines">{% for value,label in pipeline_choices %}<a class="btn pipeline-tab {% if pipeline == value %}active{% endif %}" href="?pipeline={{ value }}">{{ label }}</a>{% endfor %}</nav>
+  <div class="board">
+    {% for column in stage_columns %}<section class="stage"><div class="stage-head"><strong>{{ column.label }}</strong><span class="badge badge-neutral">{{ column.deals|length }}</span></div>{% for deal in column.deals %}<article class="card deal-card"><h3>{{ deal.name }}</h3><p class="subtle">{% if deal.company %}<a href="{% url 'crm_company_detail' deal.company.pk %}">{{ deal.company.name }}</a>{% elif deal.lead %}<a href="{% url 'crm_contact_detail' deal.lead.pk %}">{{ deal.lead.contact_name }}</a>{% else %}Legacy school deal{% endif %}</p><p><strong>${{ deal.value|floatformat:2 }}</strong>{% if deal.expected_close_date %} · {{ deal.expected_close_date|date:"M j, Y" }}{% endif %}</p>{% if deal.related_deals.count %}<p class="subtle">Linked to {{ deal.related_deals.count }} other deal{{ deal.related_deals.count|pluralize }}</p>{% endif %}<form method="post" action="{% url 'crm_deal_stage_update' deal.pk %}">{% csrf_token %}<label class="field-label" for="deal-stage-{{ deal.pk }}">Move deal</label><select id="deal-stage-{{ deal.pk }}" name="stage">{% for target in stage_columns %}<option value="{{ target.stage }}" {% if deal.stage == target.stage %}selected{% endif %}>{{ target.label }}</option>{% endfor %}</select><button class="btn btn-small" type="submit">Update stage</button></form></article>{% empty %}<p class="subtle">No deals</p>{% endfor %}</section>{% endfor %}
+  </div>
+{% endblock %}

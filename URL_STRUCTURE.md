@@ -65,6 +65,8 @@
 - `/api/v1/leads/<id>/convert/`
 - `/api/v1/opportunities/`
 - `/api/v1/opportunities/<id>/advance/`
+- `/api/v1/companies/`
+- `/api/v1/deals/`
 
 ## Public marketing routes
 
@@ -80,7 +82,11 @@
 | `/assessment/` | Optional secondary reading survey |
 | `/blog/` | Published reading insights and resources |
 | `/blog/<slug>/` | Public article detail; drafts and scheduled posts return 404 |
-| `/crm/signup/` | POST-only CRM lead capture used by public inquiry forms |
+| `/crm/` | Central staff contact workspace |
+| `/crm/companies/` | Company records shared by contacts and deals |
+| `/crm/deals/` | Five pipeline-specific deal boards |
+| `/crm/triage/` | Human routing for ambiguous partner-interest intake |
+| `/crm/signup/` | POST-only validated intake; career submissions are stored outside CRM |
 | `/newsletter/subscribe/` | POST-only explicit-consent newsletter signup |
 | `/newsletter/unsubscribe/<signed-token>/` | Confirmation page and POST endpoint for signed opt-outs |
 
