@@ -55,14 +55,15 @@ class CrmTests(SimpleTestCase):
         self.assertIsNone(WebsiteSignupView._clean_positive_int("-1"))
         self.assertIsNone(WebsiteSignupView._clean_positive_int("many"))
 
-    def test_homepage_positions_clear_code_as_specialist_led_intervention(self):
+    def test_homepage_positions_clear_code_as_family_first_intervention(self):
         homepage = render_to_string("index.html")
 
-        self.assertIn("Reading intervention that shows clear progress", homepage)
+        self.assertIn("If reading feels like a nightly battle", homepage)
         self.assertIn("Specialist-led structured literacy", homepage)
-        self.assertIn("Schedule a consultation", homepage)
+        self.assertIn("Join the Priority Waitlist", homepage)
+        self.assertIn("Get Started", homepage)
         self.assertIn("Phonics for Reading", homepage)
-        self.assertIn("IMSE Orton-Gillingham+", homepage)
+        self.assertIn("Orton-Gillingham", homepage)
         self.assertNotIn("4x more clarity", homepage)
         self.assertNotIn("For schools &amp; teachers", homepage)
 
