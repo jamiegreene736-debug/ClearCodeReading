@@ -65,6 +65,8 @@
 - `/api/v1/leads/<id>/convert/`
 - `/api/v1/opportunities/`
 - `/api/v1/opportunities/<id>/advance/`
+- `/api/v1/companies/`
+- `/api/v1/deals/`
 
 ## Public marketing routes
 
@@ -74,13 +76,17 @@
 | `/how-it-works/` | Placement, sessions, parent dashboard, and decision-support flow |
 | `/families/` | Parent journey, dashboard visibility, and home-practice expectations |
 | `/approach/` | Structured-literacy, one-methodology, specialist-led, education-only stance |
-| `/careers/` | Teacher and company career paths with an expression-of-interest form |
+| `/careers/` | Teacher recruiting page with a document-upload expression-of-interest form |
 | `/privacy/` | Plain-language FERPA-oriented privacy and consent overview |
 | `/contact/` | Primary family consultation form |
 | `/assessment/` | Optional secondary reading survey |
-| `/blog/` | Published reading insights and resources |
+| `/blog/` | Published local insights plus cached entries from the ClearCode Reading Substack feed |
 | `/blog/<slug>/` | Public article detail; drafts and scheduled posts return 404 |
-| `/crm/signup/` | POST-only CRM lead capture used by public inquiry forms |
+| `/crm/` | Central staff contact workspace |
+| `/crm/companies/` | Company records shared by contacts and deals |
+| `/crm/deals/` | Five pipeline-specific deal boards |
+| `/crm/triage/` | Human routing for ambiguous partner-interest intake |
+| `/crm/signup/` | POST-only validated intake; career submissions sync to the recruiting communication queue outside sales CRM |
 | `/newsletter/subscribe/` | POST-only explicit-consent newsletter signup |
 | `/newsletter/unsubscribe/<signed-token>/` | Confirmation page and POST endpoint for signed opt-outs |
 

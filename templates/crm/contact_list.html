@@ -2,7 +2,7 @@
 {% block title %}Contacts{% endblock %}
 {% block extra_style %}
   .page-head { display:flex; align-items:flex-end; justify-content:space-between; gap:18px; }
-  .filters { display:grid; grid-template-columns:minmax(240px,1.8fr) repeat(4,minmax(130px,1fr)) auto; gap:10px; padding:16px; border-bottom:1px solid var(--line); }
+  .filters { display:grid; grid-template-columns:minmax(220px,1.6fr) repeat(5,minmax(130px,1fr)) auto; gap:10px; padding:16px; border-bottom:1px solid var(--line); }
   .table-wrap { overflow:auto; }
   table { width:100%; border-collapse:collapse; }
   th { padding:11px 14px; color:var(--muted); background:#f5f8fa; border-bottom:1px solid var(--line); font-size:11px; letter-spacing:.04em; text-align:left; text-transform:uppercase; white-space:nowrap; }
@@ -31,6 +31,7 @@
     <div class="card stat"><div class="stat-label">Unassigned</div><div class="stat-value">{{ unassigned_contacts }}</div></div>
     <div class="card stat"><div class="stat-label">Submissions · 30 days</div><div class="stat-value">{{ recent_submissions }}</div></div>
     <div class="card stat"><div class="stat-label">Overdue tasks</div><div class="stat-value">{{ overdue_tasks }}</div></div>
+    <div class="card stat"><div class="stat-label">Pending triage</div><div class="stat-value">{{ pending_triage }}</div></div>
   </section>
 
   <nav class="tabs" aria-label="Contact views">
@@ -43,25 +44,27 @@
       <div class="field"><label for="crm-search">Search contacts</label><input id="crm-search" name="q" type="search" value="{{ active_filters.q }}" placeholder="Name, email, phone, or organization"></div>
       <div class="field"><label for="crm-status">Lead status</label><select id="crm-status" name="status"><option value="">All statuses</option>{% for value,label in status_choices %}<option value="{{ value }}" {% if active_filters.status == value %}selected{% endif %}>{{ label }}</option>{% endfor %}</select></div>
       <div class="field"><label for="crm-audience">Audience</label><select id="crm-audience" name="audience"><option value="">All audiences</option>{% for value,label in audience_choices %}<option value="{{ value }}" {% if active_filters.audience == value %}selected{% endif %}>{{ label }}</option>{% endfor %}</select></div>
+      <div class="field"><label for="crm-relationship-interest">Relationship interest</label><select id="crm-relationship-interest" name="relationship_interest"><option value="">All interests</option>{% for value,label in relationship_interest_choices %}<option value="{{ value }}" {% if active_filters.relationship_interest == value %}selected{% endif %}>{{ label }}</option>{% endfor %}</select></div>
       <div class="field"><label for="crm-owner">Contact owner</label><select id="crm-owner" name="owner"><option value="">All owners</option><option value="unassigned" {% if active_filters.owner == 'unassigned' %}selected{% endif %}>Unassigned</option>{% for owner in owners %}<option value="{{ owner.pk }}" {% if active_filters.owner == owner.pk|stringformat:'s' %}selected{% endif %}>{{ owner.get_full_name|default:owner.email }}</option>{% endfor %}</select></div>
       <div class="field"><label for="crm-sort">Sort</label><select id="crm-sort" name="sort"><option value="recent" {% if active_filters.sort == 'recent' %}selected{% endif %}>Recent activity</option><option value="name" {% if active_filters.sort == 'name' %}selected{% endif %}>Contact name</option><option value="oldest" {% if active_filters.sort == 'oldest' %}selected{% endif %}>Oldest first</option></select></div>
       <div class="field"><span class="field-label">&nbsp;</span><button class="btn btn-primary" type="submit">Apply filters</button></div>
     </form>
     <div class="table-wrap">
       <table>
-        <thead><tr><th>Contact</th><th>Lead status</th><th>Audience</th><th>Organization</th><th>Contact owner</th><th>Form submissions</th><th>Last submission</th></tr></thead>
+        <thead><tr><th>Contact</th><th>Lead status</th><th>Audience</th><th>Relationship interests</th><th>Organization</th><th>Contact owner</th><th>Form submissions</th><th>Last submission</th></tr></thead>
         <tbody>
           {% for contact in contacts %}
             <tr>
               <td><div class="contact-cell"><span class="avatar">{{ contact.contact_name|slice:":1" }}</span><div><a class="contact-name" href="{% url 'crm_contact_detail' contact.pk %}">{{ contact.contact_name }}</a><div class="contact-email">{{ contact.contact_email }}</div></div></div></td>
               <td><span class="badge {% if contact.status == 'new' %}badge-warn{% endif %}">{{ contact.get_status_display }}</span></td>
               <td>{{ contact.get_audience_display }}</td>
+              <td>{% for label in contact.relationship_interest_labels %}<span class="badge">{{ label }}</span>{% empty %}<span class="subtle">—</span>{% endfor %}</td>
               <td>{{ contact.organization_name|default:contact.school_name }}</td>
               <td>{% if contact.assigned_to %}{{ contact.assigned_to.get_full_name|default:contact.assigned_to.email }}{% else %}<span class="subtle">Unassigned</span>{% endif %}</td>
               <td>{{ contact.submission_count }}</td>
               <td>{% if contact.last_submission_at %}{{ contact.last_submission_at|date:"M j, Y, g:i A" }}{% else %}<span class="subtle">No captured form</span>{% endif %}</td>
             </tr>
-          {% empty %}<tr><td class="empty" colspan="7"><strong>No contacts match this view.</strong><br>Try removing a filter or wait for the next website submission.</td></tr>{% endfor %}
+          {% empty %}<tr><td class="empty" colspan="8"><strong>No contacts match this view.</strong><br>Try removing a filter or wait for the next website submission.</td></tr>{% endfor %}
         </tbody>
       </table>
     </div>

@@ -2,11 +2,14 @@ import re
 from pathlib import Path
 
 from django.conf import settings
+from django.contrib.auth import get_user_model
+from django.core.files.uploadedfile import SimpleUploadedFile
 from django.template.loader import get_template
 from django.test import RequestFactory, SimpleTestCase, TestCase
 from django.urls import resolve, reverse
 
-from apps.crm.models import Lead
+from apps.core.models import RecruitingInterest
+from apps.crm.models import FormSubmission, Lead
 
 
 PUBLIC_PAGES = {
@@ -45,6 +48,17 @@ BRAND_KIT_FILES = {
     "cc-monogram-linen.png",
     "cc-wordmark-dark.png",
     "cc-wordmark-light.png",
+}
+
+LEARNING_PHOTOS_BY_PAGE = {
+    "marketing_home": {
+        "specialist-reading-session.jpg",
+        "family-reading-practice.jpg",
+    },
+    "marketing_how_it_works": {"specialist-reading-session.jpg"},
+    "marketing_families": {"family-reading-practice.jpg"},
+    "marketing_approach": {"inclusive-literacy-lesson.jpg"},
+    "marketing_careers": {"educator-team-collaboration.jpg"},
 }
 
 
@@ -170,11 +184,55 @@ class MarketingPageTests(SimpleTestCase):
                 with self.subTest(route_name=route_name, asset_path=asset_path):
                     self.assertTrue((marketing_root / asset_path.removeprefix("/")).is_file())
 
+    def test_key_pages_include_accessible_learning_photography(self):
+        for route_name, photo_names in LEARNING_PHOTOS_BY_PAGE.items():
+            content = self._render(route_name)
+            for photo_name in photo_names:
+                with self.subTest(route_name=route_name, photo_name=photo_name):
+                    image_tag = re.search(
+                        rf'<img[^>]+src="/assets/images/{re.escape(photo_name)}"[^>]*>',
+                        content,
+                    )
+                    self.assertIsNotNone(image_tag)
+                    self.assertRegex(image_tag.group(0), r'alt="[^"]+"')
+                    self.assertIn('width="1536"', image_tag.group(0))
+                    self.assertIn('height="1024"', image_tag.group(0))
+
     def test_assessment_is_positioned_as_optional_not_placement(self):
         content = self._render("reading_assessment")
         self.assertIn("Optional family reading survey", content)
         self.assertIn("not a PFR or OG+ placement instrument", content)
         self.assertIn('href="/contact/"', content)
+
+    def test_assessment_appends_complete_grade_routed_parent_inventory(self):
+        content = self._render("reading_assessment")
+
+        self.assertIn("One more step for the parent.", content)
+        self.assertIn("ZIP Code", content)
+        self.assertIn("Select your child’s grade", content)
+        self.assertIn("High School", content)
+        self.assertIn("Start Parent Inventory", content)
+        self.assertIn("Choose Yes or No.", content)
+        self.assertEqual(content.count("inventoryQuestion('kindergarten-"), 20)
+        self.assertEqual(content.count("inventoryQuestion('first-grade-"), 25)
+        self.assertEqual(content.count("inventoryQuestion('second-grade-"), 25)
+        self.assertEqual(content.count("inventoryQuestion('third-plus-"), 24)
+        self.assertIn("resourceAt: 13", content)
+        self.assertIn("resourceAt: 16", content)
+        self.assertEqual(content.count("resourceAt: 19"), 2)
+        self.assertIn("state.inventoryStoppedAtGroup = step.groupIndex", content)
+        self.assertIn("Consider reading support.", content)
+        self.assertIn("Comprehension and fluency resources", content)
+        self.assertIn("Age-appropriate book lists", content)
+
+    def test_assessment_support_interest_allows_three_independent_selections(self):
+        content = self._render("reading_assessment")
+
+        self.assertEqual(content.count('name="relationship_interests"'), 3)
+        self.assertIn('value="referral_partner"', content)
+        self.assertIn('value="donor"', content)
+        self.assertIn('value="advocate"', content)
+        self.assertIn("select all that apply", content)
 
     def test_about_page_preserves_the_supplied_positioning_and_sources(self):
         content = self._render("marketing_about")
@@ -189,6 +247,28 @@ class MarketingPageTests(SimpleTestCase):
         self.assertIn("A sustainable model built for students, educators, and families", content)
         self.assertIn("Florida Department of Education", content)
         self.assertIn('href="/contact/#consultation-form"', content)
+
+    def test_contact_page_uses_the_short_local_consultation_form(self):
+        content = self._render("marketing_contact")
+
+        self.assertNotIn("docs.google.com", content)
+        self.assertIn("Short consultation request", content)
+        self.assertIn('id="consultation-form"', content)
+        self.assertIn('name="name"', content)
+        self.assertIn('name="email"', content)
+        self.assertIn('name="audience"', content)
+        self.assertIn('name="notes"', content)
+        self.assertNotIn('name="phone"', content)
+        self.assertNotIn('name="child_age_grade"', content)
+
+    def test_about_principles_use_large_accessible_custom_pictograms(self):
+        content = self._render("marketing_about")
+
+        self.assertEqual(content.count('data-testid="principle-icon"'), 4)
+        self.assertEqual(content.count('viewBox="0 0 128 128"'), 4)
+        self.assertEqual(content.count('class="relative h-40 w-40 max-w-full'), 4)
+        self.assertEqual(content.count('aria-hidden="true" focusable="false"'), 4)
+        self.assertNotIn('class="mx-auto h-12 w-12', content)
 
     def test_careers_page_uses_supplied_clinical_team_positioning(self):
         content = self._render("marketing_careers")
@@ -205,6 +285,15 @@ class MarketingPageTests(SimpleTestCase):
         self.assertIn('id="career-interest-form"', content)
         self.assertIn('name="career_path"', content)
         self.assertIn('action="/crm/signup/"', content)
+        self.assertIn('enctype="multipart/form-data"', content)
+        self.assertIn('name="phone"', content)
+        self.assertIn('name="address"', content)
+        self.assertIn('name="email"', content)
+        self.assertIn('name="resume"', content)
+        self.assertIn('name="cover_letter"', content)
+        self.assertIn('name="how_heard"', content)
+        self.assertNotIn('name="role_interest"', content)
+        self.assertNotIn('name="notes"', content)
         self.assertEqual(content.count('href="#career-interest-form"'), 3)
 
     def test_approach_page_uses_the_full_family_pathway(self):
@@ -289,19 +378,33 @@ class MarketingPageTests(SimpleTestCase):
         self.assertTrue(favicon_path.is_file())
 
 
-class ConsultationFormTests(TestCase):
-    def test_contact_form_creates_family_lead_and_returns_to_contact_page(self):
+class ContactFormTests(TestCase):
+    @staticmethod
+    def _document(name):
+        return SimpleUploadedFile(name, b"%PDF-1.4\nClearCode test document", "application/pdf")
+
+    def _career_application(self, career_path="teacher"):
+        return {
+            "name": "Morgan Specialist",
+            "email": "morgan@example.com",
+            "phone": "555-0142",
+            "address": "123 Reading Lane\nOrlando, FL 32801",
+            "how_heard": "Teacher referral",
+            "career_path": career_path,
+            "resume": self._document("Morgan Resume.pdf"),
+            "cover_letter": self._document("Morgan Cover Letter.pdf"),
+            "redirect_to": "/careers/",
+        }
+
+    def test_contact_form_creates_generic_lead_and_returns_to_contact_page(self):
         response = self.client.post(
             reverse("crm_signup"),
             {
-                "name": "Jamie Parent",
-                "email": "parent@example.com",
-                "phone": "555-0102",
-                "audience": Lead.Audience.PARENT,
-                "organization_name": "Family consultation",
-                "estimated_students": "1",
-                "child_age_grade": "Age 7, grade 2",
-                "notes": "We would like help understanding current reading progress.",
+                "name": "Jamie Reader",
+                "email": "reader@example.com",
+                "audience": Lead.Audience.OTHER,
+                "organization_name": "Website contact",
+                "notes": "I have a question about ClearCode Reading.",
                 "redirect_to": "/contact/",
             },
         )
@@ -311,10 +414,13 @@ class ConsultationFormTests(TestCase):
             "/contact/?signup=thanks#consultation-form",
             fetch_redirect_response=False,
         )
-        lead = Lead.objects.get(contact_email="parent@example.com")
-        self.assertEqual(lead.audience, Lead.Audience.PARENT)
-        self.assertIn("Child age or grade: Age 7, grade 2", lead.notes)
-        self.assertIn("current reading progress", lead.notes)
+        lead = Lead.objects.get(contact_email="reader@example.com")
+        submission = FormSubmission.objects.get(lead=lead)
+        self.assertEqual(lead.audience, Lead.Audience.OTHER)
+        self.assertEqual(lead.notes, "I have a question about ClearCode Reading.")
+        self.assertEqual(submission.form_type, FormSubmission.FormType.WEBSITE)
+        self.assertEqual(submission.source_path, "/contact/")
+        self.assertFalse(lead.opportunities.exists())
 
     def test_contact_form_missing_required_contact_returns_to_form(self):
         response = self.client.post(
@@ -328,19 +434,33 @@ class ConsultationFormTests(TestCase):
             fetch_redirect_response=False,
         )
         self.assertFalse(Lead.objects.exists())
+        self.assertFalse(RecruitingInterest.objects.exists())
 
-    def test_career_interest_creates_teacher_lead_and_returns_to_careers(self):
+    def test_contact_form_requires_a_message(self):
         response = self.client.post(
             reverse("crm_signup"),
             {
-                "name": "Morgan Specialist",
-                "email": "morgan@example.com",
+                "name": "Jamie Reader",
+                "email": "reader@example.com",
                 "audience": Lead.Audience.OTHER,
-                "career_path": "teacher",
-                "role_interest": "Reading specialist",
-                "notes": "I have five years of structured literacy experience.",
-                "redirect_to": "/careers/",
+                "organization_name": "Website contact",
+                "notes": "   ",
+                "redirect_to": "/contact/",
             },
+        )
+
+        self.assertRedirects(
+            response,
+            "/contact/?signup=missing#consultation-form",
+            fetch_redirect_response=False,
+        )
+        self.assertFalse(Lead.objects.exists())
+        self.assertFalse(RecruitingInterest.objects.exists())
+
+    def test_career_interest_stays_in_recruiting_and_returns_to_careers(self):
+        response = self.client.post(
+            reverse("crm_signup"),
+            self._career_application(),
         )
 
         self.assertRedirects(
@@ -348,44 +468,78 @@ class ConsultationFormTests(TestCase):
             "/careers/?signup=thanks#career-interest-form",
             fetch_redirect_response=False,
         )
-        lead = Lead.objects.get(contact_email="morgan@example.com")
-        self.assertEqual(lead.audience, Lead.Audience.TEACHER)
-        self.assertEqual(lead.metadata["career_path"], "teacher")
-        self.assertIn("Role interest: Reading specialist", lead.notes)
+        interest = RecruitingInterest.objects.get(email="morgan@example.com")
+        self.assertEqual(interest.career_path, RecruitingInterest.CareerPath.TEACHER)
+        self.assertEqual(interest.role_interest, "Teaching or reading specialist")
+        self.assertEqual(interest.phone, "555-0142")
+        self.assertEqual(interest.address, "123 Reading Lane\nOrlando, FL 32801")
+        self.assertEqual(interest.how_heard, "Teacher referral")
+        self.assertEqual(interest.resume_original_name, "Morgan Resume.pdf")
+        self.assertEqual(interest.cover_letter_original_name, "Morgan Cover Letter.pdf")
+        self.assertIn(b"ClearCode test document", bytes(interest.resume_data))
+        self.assertIn(b"ClearCode test document", bytes(interest.cover_letter_data))
+        self.assertEqual(interest.resume_content_type, "application/pdf")
+        self.assertEqual(interest.cover_letter_content_type, "application/pdf")
+        self.assertFalse(interest.resume)
+        self.assertFalse(interest.cover_letter)
+        self.assertFalse(Lead.objects.filter(contact_email="morgan@example.com").exists())
 
-    def test_career_interest_creates_company_lead(self):
+    def test_company_career_interest_stays_out_of_crm(self):
+        application = self._career_application(career_path="company")
+        application.update(name="Avery Builder", email="avery@example.com")
         self.client.post(
             reverse("crm_signup"),
-            {
-                "name": "Avery Builder",
-                "email": "avery@example.com",
-                "career_path": "company",
-                "role_interest": "Product design",
-                "notes": "I build accessible education products.",
-                "redirect_to": "/careers/",
-            },
+            application,
         )
 
-        lead = Lead.objects.get(contact_email="avery@example.com")
-        self.assertEqual(lead.audience, Lead.Audience.OTHER)
-        self.assertEqual(lead.metadata["career_path"], "company")
-        self.assertIn("Role interest: Product design", lead.notes)
+        interest = RecruitingInterest.objects.get(email="avery@example.com")
+        self.assertEqual(interest.career_path, RecruitingInterest.CareerPath.COMPANY)
+        self.assertEqual(interest.role_interest, "Company team")
+        self.assertFalse(Lead.objects.filter(contact_email="avery@example.com").exists())
 
-    def test_career_interest_requires_a_valid_path_and_role(self):
+    def test_career_interest_rejects_an_unsafe_document_type(self):
+        application = self._career_application()
+        application["resume"] = SimpleUploadedFile(
+            "payload.exe",
+            b"not a document",
+            "application/octet-stream",
+        )
         response = self.client.post(
             reverse("crm_signup"),
-            {
-                "name": "Taylor Candidate",
-                "email": "taylor@example.com",
-                "career_path": "invalid",
-                "role_interest": "",
-                "redirect_to": "/careers/",
-            },
+            application,
         )
 
         self.assertRedirects(
             response,
-            "/careers/?signup=missing#career-interest-form",
+            "/careers/?signup=invalid#career-interest-form",
             fetch_redirect_response=False,
         )
         self.assertFalse(Lead.objects.exists())
+        self.assertFalse(RecruitingInterest.objects.exists())
+
+    def test_recruiting_documents_are_only_downloadable_by_authorized_staff(self):
+        self.client.post(reverse("crm_signup"), self._career_application())
+        interest = RecruitingInterest.objects.get()
+        download_url = reverse(
+            "admin:core_recruitinginterest_document",
+            args=(interest.pk, "resume"),
+        )
+
+        anonymous_response = self.client.get(download_url)
+        self.assertEqual(anonymous_response.status_code, 302)
+        self.assertIn("/admin/login/", anonymous_response.url)
+
+        admin_user = get_user_model().objects.create_superuser(
+            username="recruiting-admin",
+            email="recruiting-admin@example.com",
+            password="test-password",
+        )
+        self.client.force_login(admin_user)
+        response = self.client.get(download_url)
+
+        self.assertEqual(response.status_code, 200)
+        self.assertIn("private", response["Cache-Control"])
+        self.assertIn("no-store", response["Cache-Control"])
+        self.assertEqual(response["X-Content-Type-Options"], "nosniff")
+        self.assertIn('filename="Morgan Resume.pdf"', response["Content-Disposition"])
+        self.assertIn(b"ClearCode test document", b"".join(response.streaming_content))

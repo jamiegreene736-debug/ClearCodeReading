@@ -13,8 +13,10 @@ from rest_framework.test import APIClient
 
 from apps.crm.admin import NewsletterCampaignAdmin
 from apps.crm.models import (
+    Company,
     CrmActivity,
     FormSubmission,
+    IntakeTriage,
     Lead,
     NewsletterCampaign,
     NewsletterDelivery,
@@ -27,6 +29,7 @@ from apps.crm.newsletters import (
     send_newsletter_campaign,
 )
 from apps.crm.serializers import OpportunitySerializer
+from apps.crm.services import normalize_relationship_interests
 from apps.crm.views import NewsletterUnsubscribeView, WebsiteSignupView
 
 
@@ -35,14 +38,38 @@ class CrmTests(SimpleTestCase):
         self.assertIn(Lead.Status.NEW, Lead.Status.values)
         self.assertIn(Lead.Status.CONVERTED, Lead.Status.values)
 
-    def test_opportunity_terminal_stages_exist(self):
-        self.assertIn(Opportunity.Stage.WON, Opportunity.Stage.values)
-        self.assertIn(Opportunity.Stage.LOST, Opportunity.Stage.values)
+    def test_five_business_pipelines_have_distinct_stage_sets(self):
+        self.assertEqual(len(Opportunity.Pipeline.choices), 5)
+        self.assertIn(
+            Opportunity.Stage.STEWARDSHIP,
+            Opportunity.stage_values_for_pipeline(Opportunity.Pipeline.FOUNDATION_DONORS),
+        )
+        self.assertIn(
+            Opportunity.Stage.REPORTING_RENEWAL,
+            Opportunity.stage_values_for_pipeline(Opportunity.Pipeline.FOUNDATION_GRANTS),
+        )
+        self.assertNotIn(
+            Opportunity.Stage.STEWARDSHIP,
+            Opportunity.stage_values_for_pipeline(Opportunity.Pipeline.FOUNDATION_GRANTS),
+        )
 
     def test_opportunity_probability_validation(self):
         serializer = OpportunitySerializer()
         with self.assertRaisesMessage(Exception, "Probability must be between 0 and 100."):
             serializer.validate_probability(101)
+
+    def test_relationship_interests_are_allowlisted_and_deduplicated(self):
+        self.assertEqual(
+            normalize_relationship_interests(
+                [
+                    Lead.RelationshipInterest.DONOR,
+                    "unexpected",
+                    Lead.RelationshipInterest.DONOR,
+                    Lead.RelationshipInterest.ADVOCATE,
+                ]
+            ),
+            [Lead.RelationshipInterest.DONOR, Lead.RelationshipInterest.ADVOCATE],
+        )
 
     def test_website_signup_defaults_family_inquiry_for_parent(self):
         self.assertEqual(
@@ -376,6 +403,10 @@ class FormSubmissionIntakeTests(TestCase):
         self.assertEqual(lead.contact_phone, "555-0199")
         self.assertEqual(lead.form_submissions.count(), 2)
         self.assertEqual(
+            lead.opportunities.filter(pipeline=Opportunity.Pipeline.FAMILY_ENROLLMENT).count(),
+            1,
+        )
+        self.assertEqual(
             set(lead.form_submissions.values_list("form_type", flat=True)),
             {FormSubmission.FormType.CONSULTATION},
         )
@@ -405,6 +436,61 @@ class FormSubmissionIntakeTests(TestCase):
         self.assertEqual(response.status_code, 302)
         self.assertFalse(Lead.objects.exists())
         self.assertFalse(FormSubmission.objects.exists())
+
+    def test_family_partner_checkbox_creates_triage_without_three_automatic_deals(self):
+        self.client.post(
+            reverse("crm_signup"),
+            {
+                "name": "Partner Parent",
+                "email": "partner-parent@example.com",
+                "audience": Lead.Audience.PARENT,
+                "organization_name": "Reading assessment follow-up",
+                "partner_interest": "yes",
+            },
+        )
+
+        lead = Lead.objects.get(contact_email="partner-parent@example.com")
+        triage = IntakeTriage.objects.get(lead=lead)
+        self.assertEqual(triage.status, IntakeTriage.Status.PENDING)
+        self.assertEqual(triage.submission.submitted_data["partner_interest"], "yes")
+        self.assertEqual(lead.opportunities.count(), 1)
+        self.assertEqual(lead.opportunities.get().pipeline, Opportunity.Pipeline.FAMILY_ENROLLMENT)
+
+    def test_assessment_preserves_multiple_relationship_interests_in_one_triage_item(self):
+        selected_interests = [
+            Lead.RelationshipInterest.REFERRAL_PARTNER,
+            Lead.RelationshipInterest.DONOR,
+            Lead.RelationshipInterest.ADVOCATE,
+        ]
+
+        self.client.post(
+            reverse("crm_signup"),
+            {
+                "name": "Multi Interest Parent",
+                "email": "multi-interest@example.com",
+                "audience": Lead.Audience.PARENT,
+                "organization_name": "Reading assessment follow-up",
+                "relationship_interests": selected_interests,
+            },
+        )
+
+        lead = Lead.objects.get(contact_email="multi-interest@example.com")
+        triage = IntakeTriage.objects.get(lead=lead)
+        self.assertEqual(IntakeTriage.objects.filter(lead=lead).count(), 1)
+        self.assertEqual(
+            triage.submission.submitted_data["relationship_interests"],
+            selected_interests,
+        )
+        self.assertEqual(lead.metadata["relationship_interests"], selected_interests)
+        self.assertEqual(
+            lead.relationship_interest_labels,
+            ["Referral Partner", "Donor", "Advocate"],
+        )
+        self.assertEqual(lead.opportunities.count(), 1)
+        self.assertEqual(
+            lead.opportunities.get().pipeline,
+            Opportunity.Pipeline.FAMILY_ENROLLMENT,
+        )
 
 
 class CrmWorkspaceTests(TestCase):
@@ -495,6 +581,42 @@ class CrmWorkspaceTests(TestCase):
 
         self.assertEqual(response.context["contacts"][0].pk, self.lead.pk)
 
+    def test_contact_index_filters_each_relationship_interest_separately(self):
+        donor = Lead.objects.create(
+            school_name="Donor inquiry",
+            contact_name="Dana Donor",
+            contact_email="donor@example.com",
+            audience=Lead.Audience.OTHER,
+            metadata={
+                "relationship_interests": [
+                    Lead.RelationshipInterest.REFERRAL_PARTNER,
+                    Lead.RelationshipInterest.DONOR,
+                ]
+            },
+        )
+        Lead.objects.create(
+            school_name="Advocate inquiry",
+            contact_name="Avery Advocate",
+            contact_email="advocate@example.com",
+            audience=Lead.Audience.OTHER,
+            metadata={"relationship_interests": [Lead.RelationshipInterest.ADVOCATE]},
+        )
+        self.client.force_login(self.admin_user)
+
+        response = self.client.get(
+            reverse("crm_contact_list"),
+            {"relationship_interest": Lead.RelationshipInterest.DONOR},
+        )
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(list(response.context["contacts"]), [donor])
+        self.assertContains(response, "Dana Donor")
+        self.assertNotContains(response, "Avery Advocate")
+        self.assertEqual(
+            response.context["active_filters"]["relationship_interest"],
+            Lead.RelationshipInterest.DONOR,
+        )
+
     def test_contact_properties_notes_and_tasks_are_manageable(self):
         self.client.force_login(self.admin_user)
         detail_url = reverse("crm_contact_detail", args=[self.lead.pk])
@@ -551,3 +673,115 @@ class CrmWorkspaceTests(TestCase):
         self.assertEqual(response.status_code, 200)
         self.assertContains(response, "Consultation request submitted")
         self.assertContains(response, "Consultation booked for Friday.")
+
+    def test_one_company_can_hold_linked_grant_and_equity_deals(self):
+        company = Company.objects.create(name="North Star Foundation", owner=self.admin_user)
+        self.lead.company = company
+        self.lead.save(update_fields=["company", "updated_at"])
+        triage = IntakeTriage.objects.create(
+            lead=self.lead,
+            submission=self.lead.form_submissions.get(),
+            source_signal=IntakeTriage.SourceSignal.PARTNER_INTEREST,
+        )
+        self.client.force_login(self.admin_user)
+
+        triage_response = self.client.get(reverse("crm_triage_list"))
+
+        response = self.client.post(
+            reverse("crm_triage_resolve", args=[triage.pk]),
+            {
+                "pipelines": [
+                    Opportunity.Pipeline.FOUNDATION_GRANTS,
+                    Opportunity.Pipeline.EQUITY_INVESTMENT,
+                ],
+                "resolution_notes": "Institution is exploring both structures.",
+                "action": "resolve",
+            },
+        )
+
+        self.assertEqual(triage_response.status_code, 200)
+        self.assertContains(triage_response, "North Star Foundation")
+        self.assertRedirects(response, reverse("crm_triage_list"), fetch_redirect_response=False)
+        triage.refresh_from_db()
+        deals = list(company.deals.order_by("pipeline"))
+        self.assertEqual(triage.status, IntakeTriage.Status.RESOLVED)
+        self.assertEqual(len(deals), 2)
+        self.assertEqual({deal.pipeline for deal in deals}, {
+            Opportunity.Pipeline.FOUNDATION_GRANTS,
+            Opportunity.Pipeline.EQUITY_INVESTMENT,
+        })
+        self.assertEqual(deals[0].related_deals.get(), deals[1])
+
+    def test_pipeline_board_uses_only_stages_for_selected_pipeline(self):
+        Opportunity.objects.create(
+            lead=self.lead,
+            owner=self.admin_user,
+            name="Family enrollment",
+            pipeline=Opportunity.Pipeline.FAMILY_ENROLLMENT,
+            stage=Opportunity.Stage.NEW,
+        )
+        self.client.force_login(self.admin_user)
+
+        response = self.client.get(
+            reverse("crm_deal_list"),
+            {"pipeline": Opportunity.Pipeline.FOUNDATION_DONORS},
+        )
+
+        labels = [column["label"] for column in response.context["stage_columns"]]
+        self.assertEqual(response.status_code, 200)
+        self.assertIn("Stewardship", labels)
+        self.assertNotIn("Enrollment offered", labels)
+
+    def test_deal_rejects_a_stage_from_another_pipeline(self):
+        deal = Opportunity(
+            lead=self.lead,
+            name="Donor relationship",
+            pipeline=Opportunity.Pipeline.FOUNDATION_DONORS,
+            stage=Opportunity.Stage.ENROLLMENT_OFFERED,
+        )
+
+        with self.assertRaisesMessage(ValidationError, "Choose a stage that belongs"):
+            deal.full_clean()
+
+    def test_deal_advance_api_rejects_probability_outside_valid_range(self):
+        deal = Opportunity.objects.create(
+            lead=self.lead,
+            name="Donor relationship",
+            pipeline=Opportunity.Pipeline.FOUNDATION_DONORS,
+            stage=Opportunity.Stage.IDENTIFIED,
+            probability=10,
+        )
+        api_client = APIClient()
+        api_client.force_authenticate(self.admin_user)
+
+        response = api_client.post(
+            f"/api/v1/opportunities/{deal.pk}/advance/",
+            {"stage": Opportunity.Stage.CULTIVATING, "probability": 101},
+            format="json",
+        )
+
+        self.assertEqual(response.status_code, 400)
+        deal.refresh_from_db()
+        self.assertEqual(deal.stage, Opportunity.Stage.IDENTIFIED)
+        self.assertEqual(deal.probability, 10)
+
+    def test_company_workspace_shows_contacts_and_deals(self):
+        company = Company.objects.create(name="Community Partners LLC")
+        self.lead.company = company
+        self.lead.save(update_fields=["company", "updated_at"])
+        Opportunity.objects.create(
+            lead=self.lead,
+            company=company,
+            name="Referral relationship",
+            pipeline=Opportunity.Pipeline.REFERRAL_PARTNERS,
+            stage=Opportunity.Stage.IDENTIFIED,
+        )
+        self.client.force_login(self.admin_user)
+
+        response = self.client.get(reverse("crm_company_detail", args=[company.pk]))
+        list_response = self.client.get(reverse("crm_company_list"))
+
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "Alex Reader")
+        self.assertContains(response, "Referral relationship")
+        self.assertContains(list_response, "Community Partners LLC")

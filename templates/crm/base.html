@@ -38,7 +38,7 @@
     .subtle { color:var(--muted); }
     .flash { margin:0 28px 12px; padding:12px 15px; border:1px solid #8bc7bd; border-radius:5px; background:var(--teal-soft); font-weight:600; }
     .card { background:white; border:1px solid var(--line); border-radius:7px; box-shadow:0 1px 2px rgba(33,51,67,.05); }
-    .stats { display:grid; grid-template-columns:repeat(5,minmax(0,1fr)); gap:14px; margin:24px 0; }
+    .stats { display:grid; grid-template-columns:repeat(auto-fit,minmax(150px,1fr)); gap:14px; margin:24px 0; }
     .stat { padding:18px; }
     .stat-label { color:var(--muted); font-size:12px; font-weight:600; }
     .stat-value { margin-top:4px; color:var(--navy); font:800 28px Barlow Condensed,sans-serif; }
@@ -69,9 +69,10 @@
       <a class="brand" href="{% url 'crm_contact_list' %}"><span class="brand-mark">CC</span><span>ClearCode CRM</span></a>
       <p class="nav-label">CRM</p>
       <nav class="nav-group" aria-label="CRM navigation">
-        <a class="nav-link active" href="{% url 'crm_contact_list' %}"><span aria-hidden="true">◎</span> Contacts</a>
-        <a class="nav-link" href="{% url 'crm_contact_list' %}?status=new"><span aria-hidden="true">◇</span> New leads</a>
-        <a class="nav-link" href="{% url 'crm_contact_list' %}?owner=unassigned"><span aria-hidden="true">⌁</span> Unassigned</a>
+        <a class="nav-link {% if request.resolver_match.url_name == 'crm_contact_list' or request.resolver_match.url_name == 'crm_contact_detail' %}active{% endif %}" href="{% url 'crm_contact_list' %}"><span aria-hidden="true">◎</span> Contacts</a>
+        <a class="nav-link {% if request.resolver_match.url_name == 'crm_company_list' or request.resolver_match.url_name == 'crm_company_detail' %}active{% endif %}" href="{% url 'crm_company_list' %}"><span aria-hidden="true">▣</span> Companies</a>
+        <a class="nav-link {% if request.resolver_match.url_name == 'crm_deal_list' %}active{% endif %}" href="{% url 'crm_deal_list' %}"><span aria-hidden="true">◇</span> Deals</a>
+        <a class="nav-link {% if request.resolver_match.url_name == 'crm_triage_list' %}active{% endif %}" href="{% url 'crm_triage_list' %}"><span aria-hidden="true">⌁</span> Intake triage</a>
       </nav>
       <p class="nav-label">ClearCode</p>
       <nav class="nav-group">
@@ -81,7 +82,7 @@
     </aside>
     <div class="main">
       <header class="topbar">
-        <div><strong>CRM workspace</strong><br><small>Website form intake and follow-up</small></div>
+        <div><strong>CRM workspace</strong><br><small>Contacts, companies, deals, and intake triage</small></div>
         <div class="top-actions"><a href="/">View website</a><form method="post" action="{% url 'logout' %}">{% csrf_token %}<button class="logout" type="submit">Log out</button></form></div>
       </header>
       {% if messages %}{% for message in messages %}<div class="flash" role="status">{{ message }}</div>{% endfor %}{% endif %}

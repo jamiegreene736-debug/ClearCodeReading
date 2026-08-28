@@ -3,7 +3,7 @@ from dataclasses import dataclass, field
 from django.db import transaction
 from django.utils import timezone
 
-from apps.crm.models import FormSubmission, Lead
+from apps.crm.models import FormSubmission, IntakeTriage, Lead, Opportunity
 from apps.users.models import AuditLog, CustomUser
 
 
@@ -17,6 +17,8 @@ PUBLIC_SUBMISSION_FIELDS = {
     "name",
     "notes",
     "organization_name",
+    "partner_interest",
+    "relationship_interests",
     "phone",
     "role_interest",
 }
@@ -32,16 +34,35 @@ class LeadIntake:
     contact_phone: str = ""
     estimated_students: int | None = None
     notes: str = ""
-    metadata: dict[str, str] = field(default_factory=dict)
+    metadata: dict[str, object] = field(default_factory=dict)
 
 
-def sanitized_submission_data(post_data):
+def sanitized_submission_data(post_data) -> dict[str, str | list[str]]:
     """Keep only expected public fields; never persist CSRF or honeypot values."""
-    return {
-        key: str(post_data.get(key, ""))[:5000]
-        for key in PUBLIC_SUBMISSION_FIELDS
-        if key in post_data
-    }
+    sanitized = {}
+    for key in PUBLIC_SUBMISSION_FIELDS:
+        if key not in post_data:
+            continue
+        if key == "relationship_interests" and hasattr(post_data, "getlist"):
+            sanitized[key] = normalize_relationship_interests(post_data.getlist(key))
+        else:
+            sanitized[key] = str(post_data.get(key, ""))[:5000]
+    return sanitized
+
+
+def normalize_relationship_interests(values) -> list[str]:
+    if not values:
+        return []
+    if isinstance(values, str):
+        values = [values]
+    allowed = set(Lead.RelationshipInterest.values)
+    return list(
+        dict.fromkeys(
+            str(value).strip()
+            for value in values
+            if str(value).strip() in allowed
+        )
+    )
 
 
 @transaction.atomic
@@ -52,6 +73,12 @@ def record_form_submission(*, intake, form_type, source_path, submitted_data):
     ).first()
     linked_user = CustomUser.objects.filter(email=intake.contact_email, is_deleted=False).first()
     now = timezone.now()
+    previous_interests = normalize_relationship_interests(
+        ((lead.metadata if lead else {}) or {}).get("relationship_interests", [])
+    )
+    submitted_interests = normalize_relationship_interests(
+        intake.metadata.get("relationship_interests", [])
+    )
     metadata = {
         **((lead.metadata if lead else {}) or {}),
         **intake.metadata,
@@ -59,6 +86,9 @@ def record_form_submission(*, intake, form_type, source_path, submitted_data):
         "latest_signup_audience": intake.audience,
         "source_path": source_path,
     }
+    combined_interests = list(dict.fromkeys([*previous_interests, *submitted_interests]))
+    if combined_interests:
+        metadata["relationship_interests"] = combined_interests
 
     if lead is None:
         lead = Lead.objects.create(
@@ -106,3 +136,129 @@ def record_form_submission(*, intake, form_type, source_path, submitted_data):
         submitted_data=submitted_data,
     )
     return lead, submission
+
+
+TERMINAL_DEAL_STAGES = {
+    Opportunity.Stage.ENROLLED,
+    Opportunity.Stage.ACTIVE_PARTNER,
+    Opportunity.Stage.INACTIVE,
+    Opportunity.Stage.STEWARDSHIP,
+    Opportunity.Stage.LOST,
+    Opportunity.Stage.REPORTING_RENEWAL,
+    Opportunity.Stage.DECLINED,
+    Opportunity.Stage.FUNDED,
+    Opportunity.Stage.PASSED,
+}
+
+
+def partner_interest_is_selected(value):
+    return str(value).strip().lower() in {"1", "on", "true", "yes"}
+
+
+@transaction.atomic
+def ensure_family_enrollment_deal(*, lead, owner=None):
+    existing = (
+        Opportunity.objects.select_for_update()
+        .filter(
+            lead=lead,
+            pipeline=Opportunity.Pipeline.FAMILY_ENROLLMENT,
+            is_deleted=False,
+        )
+        .exclude(stage__in=TERMINAL_DEAL_STAGES)
+        .first()
+    )
+    if existing:
+        return existing, False
+    deal = Opportunity(
+        lead=lead,
+        company=lead.company,
+        owner=owner or lead.assigned_to,
+        name=f"{lead.contact_name} — Enrollment",
+        pipeline=Opportunity.Pipeline.FAMILY_ENROLLMENT,
+        stage=Opportunity.initial_stage_for_pipeline(Opportunity.Pipeline.FAMILY_ENROLLMENT),
+        probability=10,
+        metadata={"created_from_family_intake": True},
+    )
+    deal.full_clean()
+    deal.save()
+    return deal, True
+
+
+def create_partner_triage(*, lead, submission):
+    triage, _created = IntakeTriage.objects.get_or_create(
+        submission=submission,
+        defaults={
+            "lead": lead,
+            "source_signal": IntakeTriage.SourceSignal.PARTNER_INTEREST,
+        },
+    )
+    return triage
+
+
+@transaction.atomic
+def resolve_triage_item(*, triage, pipelines, actor, notes="", dismiss=False):
+    triage = IntakeTriage.objects.select_for_update().select_related("lead").get(pk=triage.pk)
+    if triage.status != IntakeTriage.Status.PENDING:
+        return triage
+
+    selected = list(dict.fromkeys(pipelines))
+    invalid = set(selected) - set(Opportunity.Pipeline.values)
+    if invalid:
+        raise ValueError("One or more selected pipelines are invalid.")
+    if not dismiss and not selected:
+        raise ValueError("Choose at least one destination pipeline or dismiss the triage item.")
+
+    created_deals = []
+    if not dismiss:
+        for pipeline in selected:
+            relationship_filter = (
+                {"company": triage.lead.company}
+                if triage.lead.company_id
+                else {"lead": triage.lead, "company__isnull": True}
+            )
+            deal = (
+                Opportunity.objects.select_for_update()
+                .filter(
+                    pipeline=pipeline,
+                    is_deleted=False,
+                    **relationship_filter,
+                )
+                .exclude(stage__in=TERMINAL_DEAL_STAGES)
+                .first()
+            )
+            if deal is None:
+                deal = Opportunity(
+                    lead=triage.lead,
+                    company=triage.lead.company,
+                    owner=triage.lead.assigned_to or actor,
+                    name=f"{triage.lead.contact_name} — {Opportunity.Pipeline(pipeline).label}",
+                    pipeline=pipeline,
+                    stage=Opportunity.initial_stage_for_pipeline(pipeline),
+                    probability=10,
+                    metadata={"created_from_triage_id": triage.pk},
+                )
+                deal.full_clean()
+                deal.save()
+            created_deals.append(deal)
+
+        for deal in created_deals:
+            deal.related_deals.add(*(other for other in created_deals if other.pk != deal.pk))
+
+    triage.status = IntakeTriage.Status.DISMISSED if dismiss else IntakeTriage.Status.RESOLVED
+    triage.selected_pipelines = [] if dismiss else selected
+    triage.resolution_notes = notes.strip()
+    triage.resolved_by = actor
+    triage.resolved_at = timezone.now()
+    triage.full_clean()
+    triage.save(
+        update_fields=[
+            "status",
+            "selected_pipelines",
+            "resolution_notes",
+            "resolved_by",
+            "resolved_at",
+            "updated_at",
+        ]
+    )
+    triage.created_deals.add(*created_deals)
+    return triage

@@ -25,6 +25,31 @@ class SoftDeleteModel(models.Model):
         self.save(update_fields=["is_deleted", "deleted_at", "updated_at"])
 
 
+class Company(TimestampedModel, SoftDeleteModel):
+    name = models.CharField(max_length=255, db_index=True)
+    website = models.URLField(blank=True)
+    owner = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="owned_crm_companies",
+    )
+    notes = models.TextField(blank=True)
+    metadata = models.JSONField(default=dict, blank=True)
+
+    class Meta:
+        ordering = ["name", "id"]
+        verbose_name_plural = "companies"
+        indexes = [
+            models.Index(fields=["owner", "name"], name="crm_company_owner_name"),
+            models.Index(fields=["is_deleted", "name"], name="crm_company_active_name"),
+        ]
+
+    def __str__(self):
+        return self.name
+
+
 class Lead(TimestampedModel, SoftDeleteModel):
     class Audience(models.TextChoices):
         PARENT = "parent", "Parent"
@@ -46,12 +71,24 @@ class Lead(TimestampedModel, SoftDeleteModel):
         UNQUALIFIED = "unqualified", "Unqualified"
         CONVERTED = "converted", "Converted"
 
+    class RelationshipInterest(models.TextChoices):
+        REFERRAL_PARTNER = "referral_partner", "Referral Partner"
+        DONOR = "donor", "Donor"
+        ADVOCATE = "advocate", "Advocate"
+
     school_name = models.CharField(max_length=255)
     contact_name = models.CharField(max_length=255)
     contact_email = models.EmailField()
     contact_phone = models.CharField(max_length=32, blank=True)
     audience = models.CharField(max_length=32, choices=Audience.choices, default=Audience.PARENT, db_index=True)
     organization_name = models.CharField(max_length=255, blank=True)
+    company = models.ForeignKey(
+        Company,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="contacts",
+    )
     source = models.CharField(max_length=32, choices=Source.choices, default=Source.WEBSITE, db_index=True)
     status = models.CharField(max_length=32, choices=Status.choices, default=Status.NEW, db_index=True)
     assigned_to = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, blank=True, related_name="assigned_leads")
@@ -68,27 +105,75 @@ class Lead(TimestampedModel, SoftDeleteModel):
             models.Index(fields=["source", "status"]),
             models.Index(fields=["linked_user", "status"]),
             models.Index(fields=["assigned_to", "status"]),
+            models.Index(fields=["company", "status"], name="crm_lead_company_status"),
             models.Index(fields=["is_deleted", "created_at"]),
         ]
 
     def __str__(self):
         return f"{self.school_name} - {self.contact_name}"
 
+    @property
+    def relationship_interest_labels(self) -> list[str]:
+        stored = (self.metadata or {}).get("relationship_interests", [])
+        selected = set(stored) if isinstance(stored, list) else set()
+        return [label for value, label in self.RelationshipInterest.choices if value in selected]
+
 
 class Opportunity(TimestampedModel, SoftDeleteModel):
+    class Pipeline(models.TextChoices):
+        FAMILY_ENROLLMENT = "family_enrollment", "Families / Enrollment"
+        REFERRAL_PARTNERS = "referral_partners", "Referral Partners"
+        FOUNDATION_DONORS = "foundation_donors", "Foundation Donors"
+        FOUNDATION_GRANTS = "foundation_grants", "Foundation Grants / PRIs"
+        EQUITY_INVESTMENT = "equity_investment", "Equity / Investment"
+
     class Stage(models.TextChoices):
-        DISCOVERY = "discovery", "Discovery"
-        DEMO = "demo", "Demo"
-        PROPOSAL = "proposal", "Proposal"
-        NEGOTIATION = "negotiation", "Negotiation"
-        WON = "won", "Won"
-        LOST = "lost", "Lost"
+        NEW = "new", "New inquiry"
+        CONSULTATION = "consultation", "Consultation scheduled"
+        QUALIFIED = "qualified", "Qualified"
+        ENROLLMENT_OFFERED = "enrollment_offered", "Enrollment offered"
+        ENROLLED = "enrolled", "Enrolled"
+        IDENTIFIED = "identified", "Identified"
+        CONTACTED = "contacted", "Contacted"
+        ACTIVE_PARTNER = "active_partner", "Active partner"
+        INACTIVE = "inactive", "Inactive"
+        CULTIVATING = "cultivating", "Cultivating"
+        ASK_PLANNED = "ask_planned", "Ask planned"
+        ASK_MADE = "ask_made", "Ask made"
+        PLEDGED = "pledged", "Pledged"
+        GIFT_RECEIVED = "gift_received", "Gift received"
+        STEWARDSHIP = "stewardship", "Stewardship"
+        LOI = "loi", "LOI"
+        APPLICATION = "application", "Application"
+        SUBMITTED = "submitted", "Submitted"
+        DUE_DILIGENCE = "due_diligence", "Due diligence"
+        AWARDED = "awarded", "Awarded"
+        REPORTING_RENEWAL = "reporting_renewal", "Reporting / renewal"
+        TERMS = "terms", "Terms"
+        COMMITTED = "committed", "Committed"
+        FUNDED = "funded", "Funded"
+        LOST = "lost", "Closed lost"
+        DECLINED = "declined", "Declined"
+        PASSED = "passed", "Passed"
 
     lead = models.ForeignKey(Lead, on_delete=models.SET_NULL, null=True, blank=True, related_name="opportunities")
+    company = models.ForeignKey(
+        Company,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="deals",
+    )
     school = models.ForeignKey("schools.School", on_delete=models.SET_NULL, null=True, blank=True, related_name="opportunities")
     owner = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, blank=True, related_name="owned_opportunities")
     name = models.CharField(max_length=255)
-    stage = models.CharField(max_length=32, choices=Stage.choices, default=Stage.DISCOVERY, db_index=True)
+    pipeline = models.CharField(
+        max_length=32,
+        choices=Pipeline.choices,
+        default=Pipeline.FAMILY_ENROLLMENT,
+        db_index=True,
+    )
+    stage = models.CharField(max_length=32, choices=Stage.choices, default=Stage.NEW, db_index=True)
     value = models.DecimalField(max_digits=12, decimal_places=2, default=0)
     probability = models.PositiveSmallIntegerField(default=0)
     expected_close_date = models.DateField(null=True, blank=True, db_index=True)
@@ -96,18 +181,102 @@ class Opportunity(TimestampedModel, SoftDeleteModel):
     lost_reason = models.TextField(blank=True)
     next_steps = models.TextField(blank=True)
     metadata = models.JSONField(default=dict, blank=True)
+    related_deals = models.ManyToManyField("self", blank=True)
 
     class Meta:
         ordering = ["expected_close_date", "-created_at"]
+        verbose_name = "deal"
+        verbose_name_plural = "deals"
         indexes = [
+            models.Index(fields=["pipeline", "stage"], name="crm_deal_pipeline_stage"),
             models.Index(fields=["stage", "expected_close_date"]),
             models.Index(fields=["owner", "stage"]),
+            models.Index(fields=["company", "pipeline"], name="crm_deal_company_pipeline"),
             models.Index(fields=["school", "stage"]),
             models.Index(fields=["is_deleted", "created_at"]),
         ]
 
     def __str__(self):
-        return f"{self.name} ({self.stage})"
+        return f"{self.name} ({self.get_pipeline_display()})"
+
+    @classmethod
+    def stage_choices_for_pipeline(cls, pipeline):
+        return PIPELINE_STAGE_CHOICES.get(pipeline, ())
+
+    @classmethod
+    def stage_values_for_pipeline(cls, pipeline):
+        return {value for value, _label in cls.stage_choices_for_pipeline(pipeline)}
+
+    @classmethod
+    def initial_stage_for_pipeline(cls, pipeline):
+        choices = cls.stage_choices_for_pipeline(pipeline)
+        return choices[0][0] if choices else cls.Stage.NEW
+
+    def clean(self):
+        super().clean()
+        errors = {}
+        if self.pipeline not in self.Pipeline.values:
+            errors["pipeline"] = "Choose a valid CRM pipeline."
+        elif self.stage not in self.stage_values_for_pipeline(self.pipeline):
+            errors["stage"] = "Choose a stage that belongs to this deal's pipeline."
+        if self.probability > 100:
+            errors["probability"] = "Probability must be between 0 and 100."
+        if self.lead_id and self.company_id and self.lead.company_id not in {None, self.company_id}:
+            errors["company"] = "The deal company must match the contact's company."
+        if not self.lead_id and not self.company_id and not self.school_id:
+            errors["lead"] = "Associate the deal with a contact or company."
+        if errors:
+            raise ValidationError(errors)
+
+
+PIPELINE_STAGE_CHOICES = {
+    Opportunity.Pipeline.FAMILY_ENROLLMENT: (
+        (Opportunity.Stage.NEW, "New inquiry"),
+        (Opportunity.Stage.CONSULTATION, "Consultation scheduled"),
+        (Opportunity.Stage.QUALIFIED, "Qualified"),
+        (Opportunity.Stage.ENROLLMENT_OFFERED, "Enrollment offered"),
+        (Opportunity.Stage.ENROLLED, "Enrolled"),
+        (Opportunity.Stage.LOST, "Closed lost"),
+    ),
+    Opportunity.Pipeline.REFERRAL_PARTNERS: (
+        (Opportunity.Stage.IDENTIFIED, "Identified"),
+        (Opportunity.Stage.CONTACTED, "Contacted"),
+        (Opportunity.Stage.QUALIFIED, "Qualified"),
+        (Opportunity.Stage.ACTIVE_PARTNER, "Active partner"),
+        (Opportunity.Stage.INACTIVE, "Inactive"),
+        (Opportunity.Stage.LOST, "Closed lost"),
+    ),
+    Opportunity.Pipeline.FOUNDATION_DONORS: (
+        (Opportunity.Stage.IDENTIFIED, "Identified"),
+        (Opportunity.Stage.CULTIVATING, "Cultivating"),
+        (Opportunity.Stage.ASK_PLANNED, "Ask planned"),
+        (Opportunity.Stage.ASK_MADE, "Ask made"),
+        (Opportunity.Stage.PLEDGED, "Pledged"),
+        (Opportunity.Stage.GIFT_RECEIVED, "Gift received"),
+        (Opportunity.Stage.STEWARDSHIP, "Stewardship"),
+        (Opportunity.Stage.LOST, "Closed lost"),
+    ),
+    Opportunity.Pipeline.FOUNDATION_GRANTS: (
+        (Opportunity.Stage.QUALIFIED, "Qualified"),
+        (Opportunity.Stage.LOI, "LOI"),
+        (Opportunity.Stage.APPLICATION, "Application"),
+        (Opportunity.Stage.SUBMITTED, "Submitted"),
+        (Opportunity.Stage.DUE_DILIGENCE, "Due diligence"),
+        (Opportunity.Stage.AWARDED, "Awarded"),
+        (Opportunity.Stage.REPORTING_RENEWAL, "Reporting / renewal"),
+        (Opportunity.Stage.DECLINED, "Declined"),
+    ),
+    Opportunity.Pipeline.EQUITY_INVESTMENT: (
+        (Opportunity.Stage.IDENTIFIED, "Identified"),
+        (Opportunity.Stage.CONTACTED, "Introduced / contacted"),
+        (Opportunity.Stage.QUALIFIED, "Qualified"),
+        (Opportunity.Stage.DUE_DILIGENCE, "Due diligence"),
+        (Opportunity.Stage.TERMS, "Terms"),
+        (Opportunity.Stage.COMMITTED, "Committed"),
+        (Opportunity.Stage.FUNDED, "Funded"),
+        (Opportunity.Stage.PASSED, "Passed"),
+    ),
+}
 
 
 class NewsletterSubscription(TimestampedModel):
@@ -250,6 +419,52 @@ class FormSubmission(TimestampedModel):
 
     def __str__(self):
         return f"{self.get_form_type_display()} at {self.created_at:%Y-%m-%d %H:%M}"
+
+
+class IntakeTriage(TimestampedModel):
+    class SourceSignal(models.TextChoices):
+        PARTNER_INTEREST = "partner_interest", "Family partner interest"
+
+    class Status(models.TextChoices):
+        PENDING = "pending", "Pending"
+        RESOLVED = "resolved", "Resolved"
+        DISMISSED = "dismissed", "Dismissed"
+
+    lead = models.ForeignKey(Lead, on_delete=models.CASCADE, related_name="triage_items")
+    submission = models.OneToOneField(
+        FormSubmission,
+        on_delete=models.CASCADE,
+        related_name="triage_item",
+    )
+    source_signal = models.CharField(max_length=32, choices=SourceSignal.choices, db_index=True)
+    status = models.CharField(max_length=16, choices=Status.choices, default=Status.PENDING, db_index=True)
+    selected_pipelines = models.JSONField(default=list, blank=True)
+    resolution_notes = models.TextField(blank=True)
+    resolved_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="resolved_crm_triage_items",
+    )
+    resolved_at = models.DateTimeField(null=True, blank=True)
+    created_deals = models.ManyToManyField(Opportunity, blank=True, related_name="source_triage_items")
+
+    class Meta:
+        ordering = ["-created_at"]
+        indexes = [
+            models.Index(fields=["status", "created_at"], name="crm_triage_status_created"),
+            models.Index(fields=["source_signal", "status"], name="crm_triage_signal_status"),
+        ]
+
+    def clean(self):
+        super().clean()
+        invalid_pipelines = set(self.selected_pipelines) - set(Opportunity.Pipeline.values)
+        if invalid_pipelines:
+            raise ValidationError({"selected_pipelines": "Choose only valid CRM pipelines."})
+
+    def __str__(self):
+        return f"{self.get_source_signal_display()} — {self.lead.contact_name}"
 
 
 class CrmActivity(TimestampedModel):

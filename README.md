@@ -83,7 +83,7 @@ Useful URLs:
 - ReDoc: `http://localhost:8000/api/redoc/`
 - OpenAPI schema: `http://localhost:8000/api/schema/`
 - Health check: `http://localhost:8000/api/v1/health/`
-- CRM contacts: `http://localhost:8000/crm/` (central staff only)
+- CRM contacts, companies, deals, and triage: `http://localhost:8000/crm/` (central staff only)
 
 Demo credentials:
 
@@ -106,6 +106,13 @@ shortcut in the administrator dashboard. New articles start as drafts. Set the s
 **Published** to publish immediately, or choose a future **Published at** time to schedule the
 article. Draft and future-dated articles are never returned by the public blog views. Cover
 images are optional; when one is supplied, its accessible image description is required.
+
+The public archive also includes Bethany Fleming's **ClearCode Reading** Substack posts.
+The server reads the publication's RSS feed, caches it for 15 minutes, and links each external
+entry to its canonical Substack article. If Substack is slow or unavailable, `/blog/` continues
+to serve locally published articles. Configure `BLOG_SUBSTACK_FEED_URL`,
+`BLOG_SUBSTACK_CACHE_SECONDS`, and `BLOG_SUBSTACK_TIMEOUT_SECONDS` in the environment; set the
+feed URL to an empty value to disable the integration.
 
 If `ELEVENLABS_API_KEY` and `ELEVENLABS_VOICE_ID` are set in Railway, predeploy also generates any missing cached assessment audio into PostgreSQL.
 
@@ -185,10 +192,15 @@ and capacity definitions are documented in
 CRM:
 
 - `/crm/` — staff contacts, form-submission activity, notes, and tasks
+- `/crm/companies/` — companies shared by contacts and deals
+- `/crm/deals/` — five pipeline-specific deal boards
+- `/crm/triage/` — human review for ambiguous intake routing
 - `/api/v1/leads/`
 - `/api/v1/leads/<id>/qualify/`
 - `/api/v1/leads/<id>/convert/`
 - `/api/v1/opportunities/`
+- `/api/v1/companies/`
+- `/api/v1/deals/`
 - `/api/v1/opportunities/<id>/advance/`
 
 See [`docs/CRM.md`](docs/CRM.md) for intake sources, data retention, authorization,
@@ -216,7 +228,12 @@ review determine PFR or OG+ placement.
 The browser experience at `/assessment/` is an optional, secondary marketing survey. The
 primary public journey is the specialist-intervention consultation at `/contact/`. The
 database-backed assessment workflow is available through the `/api/v1/assessments/` endpoints
-below.
+below. After the child-facing questions, the browser survey runs the grade-routed Parent Reading
+Inventory for Kindergarten, Grade 1, Grade 2, or Grade 3 and above. Each statement uses a Yes/No
+answer, checkpoint scores can end the inventory early with a reading-support recommendation, and
+completed inventories route families to either support or comprehension, fluency, and book-list
+resources. ZIP Code, grade, and inventory answers remain in the browser session and are not added
+to the consultation submission.
 
 Seed the starter question bank:
 
@@ -424,6 +441,10 @@ configuration, and example flag and prediction payloads.
 - Audit logs capture consent and assessment-status events for compliance review.
 
 Production deployments should connect real email/SMS providers, keep `PUBLIC_APP_URL` accurate, store secrets outside git, and review data-retention rules with counsel.
+
+### Careers intake
+
+The Careers form sends introductions to the dedicated recruiting communication queue, separate from sales CRM contacts. It captures contact details, referral source, resume, and cover letter; accepts PDF, DOC, and DOCX files up to 10 MB each; and stores new uploaded document contents with the recruiting record in PostgreSQL. Authorized staff review responses and download documents through the protected **Admin → Core → Recruiting interests** workflow.
 
 ### Newsletter workflow
 

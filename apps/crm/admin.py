@@ -9,8 +9,10 @@ from django.utils import timezone
 from django.utils.html import format_html
 
 from apps.crm.models import (
+    Company,
     CrmActivity,
     FormSubmission,
+    IntakeTriage,
     Lead,
     NewsletterCampaign,
     NewsletterDelivery,
@@ -27,8 +29,16 @@ from apps.crm.newsletters import (
 class OpportunityInline(admin.TabularInline):
     model = Opportunity
     extra = 0
-    autocomplete_fields = ("school", "owner")
-    fields = ("name", "stage", "value", "probability", "expected_close_date", "owner", "school")
+    autocomplete_fields = ("company", "school", "owner")
+    fields = ("name", "pipeline", "stage", "company", "value", "probability", "expected_close_date", "owner")
+
+
+class ContactInline(admin.TabularInline):
+    model = Lead
+    extra = 0
+    fields = ("contact_name", "contact_email", "status", "assigned_to")
+    readonly_fields = ("contact_email",)
+    autocomplete_fields = ("assigned_to",)
 
 
 class FormSubmissionInline(admin.TabularInline):
@@ -66,6 +76,7 @@ class LeadAdmin(admin.ModelAdmin):
         "school_name",
         "contact_name",
         "contact_email",
+        "company",
         "audience",
         "source",
         "status",
@@ -74,9 +85,9 @@ class LeadAdmin(admin.ModelAdmin):
         "estimated_students",
         "created_at",
     )
-    list_filter = ("status", "audience", "source", "assigned_to", "linked_user", "is_deleted", "created_at")
+    list_filter = ("status", "audience", "source", "company", "assigned_to", "linked_user", "is_deleted", "created_at")
     search_fields = ("school_name", "organization_name", "contact_name", "contact_email", "contact_phone", "notes")
-    autocomplete_fields = ("assigned_to", "linked_user")
+    autocomplete_fields = ("company", "assigned_to", "linked_user")
     readonly_fields = ("created_at", "updated_at", "deleted_at", "pipeline_link")
     actions = (mark_contacted, mark_qualified)
 
@@ -94,9 +105,9 @@ class LeadAdmin(admin.ModelAdmin):
         lead_rows = Lead.objects.filter(is_deleted=False).values("status").annotate(count=Count("id")).order_by("status")
         opportunity_rows = (
             Opportunity.objects.filter(is_deleted=False)
-            .values("stage")
+            .values("pipeline", "stage")
             .annotate(count=Count("id"), total_value=Sum("value"))
-            .order_by("stage")
+            .order_by("pipeline", "stage")
         )
         html = ["<html><head><title>CRM Pipeline</title></head><body><h1>CRM Lead Pipeline</h1>"]
         html.append('<p><a href="../">Back to leads</a></p>')
@@ -104,9 +115,9 @@ class LeadAdmin(admin.ModelAdmin):
         for row in lead_rows:
             html.append(f"<tr><td>{row['status']}</td><td>{row['count']}</td></tr>")
         html.append("</table>")
-        html.append("<h2>Opportunities by Stage</h2><table border='1' cellpadding='6' cellspacing='0'><tr><th>Stage</th><th>Count</th><th>Total Value</th></tr>")
+        html.append("<h2>Deals by Pipeline and Stage</h2><table border='1' cellpadding='6' cellspacing='0'><tr><th>Pipeline</th><th>Stage</th><th>Count</th><th>Total Value</th></tr>")
         for row in opportunity_rows:
-            html.append(f"<tr><td>{row['stage']}</td><td>{row['count']}</td><td>{row['total_value'] or 0}</td></tr>")
+            html.append(f"<tr><td>{row['pipeline']}</td><td>{row['stage']}</td><td>{row['count']}</td><td>{row['total_value'] or 0}</td></tr>")
         html.append("</table></body></html>")
         return HttpResponse("".join(html))
 
@@ -134,24 +145,47 @@ class CrmActivityAdmin(admin.ModelAdmin):
     readonly_fields = ("created_at", "updated_at")
 
 
-@admin.action(description="Mark selected opportunities as won")
-def mark_won(modeladmin, request, queryset):
-    queryset.update(stage=Opportunity.Stage.WON, closed_at=timezone.now(), updated_at=timezone.now())
-
-
-@admin.action(description="Mark selected opportunities as lost")
-def mark_lost(modeladmin, request, queryset):
-    queryset.update(stage=Opportunity.Stage.LOST, closed_at=timezone.now(), updated_at=timezone.now())
+@admin.action(description="Close selected deals unsuccessfully")
+def close_unsuccessful(modeladmin, request, queryset):
+    terminal_stage_by_pipeline = {
+        Opportunity.Pipeline.FAMILY_ENROLLMENT: Opportunity.Stage.LOST,
+        Opportunity.Pipeline.REFERRAL_PARTNERS: Opportunity.Stage.LOST,
+        Opportunity.Pipeline.FOUNDATION_DONORS: Opportunity.Stage.LOST,
+        Opportunity.Pipeline.FOUNDATION_GRANTS: Opportunity.Stage.DECLINED,
+        Opportunity.Pipeline.EQUITY_INVESTMENT: Opportunity.Stage.PASSED,
+    }
+    now = timezone.now()
+    for pipeline, terminal_stage in terminal_stage_by_pipeline.items():
+        queryset.filter(pipeline=pipeline).update(stage=terminal_stage, closed_at=now, updated_at=now)
 
 
 @admin.register(Opportunity)
 class OpportunityAdmin(admin.ModelAdmin):
-    list_display = ("name", "lead", "school", "owner", "stage", "value", "probability", "expected_close_date", "closed_at")
-    list_filter = ("stage", "owner", "school", "expected_close_date", "closed_at", "is_deleted", "created_at")
-    search_fields = ("name", "lead__school_name", "lead__contact_name", "school__name", "owner__email", "next_steps", "lost_reason")
-    autocomplete_fields = ("lead", "school", "owner")
+    list_display = ("name", "pipeline", "stage", "company", "lead", "owner", "value", "probability", "expected_close_date", "closed_at")
+    list_filter = ("pipeline", "stage", "owner", "company", "expected_close_date", "closed_at", "is_deleted", "created_at")
+    search_fields = ("name", "company__name", "lead__school_name", "lead__contact_name", "school__name", "owner__email", "next_steps", "lost_reason")
+    autocomplete_fields = ("lead", "company", "school", "owner", "related_deals")
     readonly_fields = ("created_at", "updated_at", "deleted_at")
-    actions = (mark_won, mark_lost)
+    actions = (close_unsuccessful,)
+
+
+@admin.register(Company)
+class CompanyAdmin(admin.ModelAdmin):
+    inlines = (ContactInline, OpportunityInline)
+    list_display = ("name", "owner", "website", "created_at")
+    list_filter = ("owner", "is_deleted", "created_at")
+    search_fields = ("name", "website", "notes")
+    autocomplete_fields = ("owner",)
+    readonly_fields = ("created_at", "updated_at", "deleted_at")
+
+
+@admin.register(IntakeTriage)
+class IntakeTriageAdmin(admin.ModelAdmin):
+    list_display = ("source_signal", "lead", "status", "resolved_by", "resolved_at", "created_at")
+    list_filter = ("source_signal", "status", "resolved_by", "created_at")
+    search_fields = ("lead__contact_name", "lead__contact_email", "resolution_notes")
+    autocomplete_fields = ("lead", "resolved_by", "created_deals")
+    readonly_fields = ("submission", "source_signal", "created_at", "updated_at", "resolved_at", "created_deals")
 
 
 @admin.action(description="Unsubscribe selected email addresses")

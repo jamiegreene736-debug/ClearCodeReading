@@ -1,4 +1,5 @@
 {% extends "crm/base.html" %}
+{% load crm_display %}
 {% block title %}{{ lead.contact_name }}{% endblock %}
 {% block extra_style %}
   .crumb { display:inline-block; margin-bottom:15px; color:var(--teal); font-weight:600; text-decoration:none; }
@@ -33,8 +34,11 @@
   .task-row:first-of-type { border-top:0; }
   .task-row form { margin-top:8px; }
   .property-form { display:grid; gap:11px; }
+  .deal-row { display:grid; grid-template-columns:minmax(0,1fr) auto; gap:12px; padding:12px 0; border-top:1px solid var(--line); }
+  .deal-row:first-of-type { border-top:0; }
+  .deal-form { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:10px; align-items:end; }
   @media (max-width:1150px) { .record-grid { grid-template-columns:220px minmax(0,1fr); } .record-side { grid-column:1/-1; } }
-  @media (max-width:760px) { .record-grid { grid-template-columns:1fr; } .record-side { grid-column:auto; } .composer-grid { grid-template-columns:1fr; } }
+  @media (max-width:760px) { .record-grid { grid-template-columns:1fr; } .record-side { grid-column:auto; } .composer-grid,.deal-form { grid-template-columns:1fr; } }
 {% endblock %}
 {% block content %}
   <a class="crumb" href="{% url 'crm_contact_list' %}">← Back to contacts</a>
@@ -48,6 +52,7 @@
       <dl class="properties">
         <div class="property"><dt>Lead status</dt><dd><span class="badge {% if lead.status == 'new' %}badge-warn{% endif %}">{{ lead.get_status_display }}</span></dd></div>
         <div class="property"><dt>Audience</dt><dd>{{ lead.get_audience_display }}</dd></div>
+        <div class="property"><dt>Company</dt><dd>{% if lead.company %}<a href="{% url 'crm_company_detail' lead.company.pk %}">{{ lead.company.name }}</a>{% else %}No company{% endif %}</dd></div>
         <div class="property"><dt>Contact owner</dt><dd>{% if lead.assigned_to %}{{ lead.assigned_to.get_full_name|default:lead.assigned_to.email }}{% else %}Unassigned{% endif %}</dd></div>
         <div class="property"><dt>First seen</dt><dd>{{ lead.created_at|date:"M j, Y, g:i A" }}</dd></div>
         <div class="property"><dt>Linked account</dt><dd>{% if lead.linked_user %}{{ lead.linked_user.get_full_name|default:lead.linked_user.email }}{% else %}No account yet{% endif %}</dd></div>
@@ -62,6 +67,22 @@
           <form method="post" action="{% url 'crm_task_create' lead.pk %}">{% csrf_token %}<div class="field"><label for="task-subject">Task</label><input id="task-subject" name="subject" required placeholder="Follow up with this contact"></div><div class="field"><label for="task-due">Due</label><input id="task-due" type="datetime-local" name="due_at" required></div><div class="field"><label for="task-owner">Assigned to</label><select id="task-owner" name="assigned_to">{% for owner in owners %}<option value="{{ owner.pk }}" {% if owner.pk == request.user.pk %}selected{% endif %}>{{ owner.get_full_name|default:owner.email }}</option>{% endfor %}</select></div><button class="btn btn-primary" type="submit">Create task</button></form>
         </div>
       </div>
+      <section class="card panel" style="margin-top:18px">
+        <h2>Deals</h2>
+        {% for deal in deals %}
+          <div class="deal-row"><div><strong>{{ deal.name }}</strong><div class="event-meta">{{ deal.get_pipeline_display }} · {{ deal.get_stage_display }}{% if deal.related_deals.count %} · linked to {{ deal.related_deals.count }} other deal{{ deal.related_deals.count|pluralize }}{% endif %}</div></div><a class="btn btn-small" href="{% url 'crm_deal_list' %}?pipeline={{ deal.pipeline }}">Open pipeline</a></div>
+        {% empty %}<p class="subtle">No deals are attached to this contact yet.</p>{% endfor %}
+        <form class="deal-form" method="post" action="{% url 'crm_deal_create' lead.pk %}" style="margin-top:16px">{% csrf_token %}
+          <div class="field"><label for="deal-name">Deal name</label><input id="deal-name" name="name" required placeholder="Relationship or funding opportunity"></div>
+          <div class="field"><label for="deal-pipeline">Pipeline</label><select id="deal-pipeline" name="pipeline" required>{% for value,label in pipeline_choices %}<option value="{{ value }}">{{ label }}</option>{% endfor %}</select></div>
+          <div class="field"><label for="deal-value">Value</label><input id="deal-value" name="value" type="number" min="0" step="0.01" value="0"></div>
+          <div class="field"><label for="deal-close">Expected close</label><input id="deal-close" name="expected_close_date" type="date"></div>
+          <div class="field"><label for="deal-company">Company</label><select id="deal-company" name="company"><option value="">No company</option>{% for company in companies %}<option value="{{ company.pk }}" {% if lead.company_id == company.pk %}selected{% endif %}>{{ company.name }}</option>{% endfor %}</select></div>
+          <div class="field"><label for="deal-company-name">Or new company</label><input id="deal-company-name" name="company_name" placeholder="Company name"></div>
+          <div class="field"><label for="related-deal">Link another deal</label><select id="related-deal" name="related_deal"><option value="">No linked deal</option>{% for related in related_deal_choices %}<option value="{{ related.pk }}">{{ related.name }}{% if related.company %} — {{ related.company.name }}{% endif %}</option>{% endfor %}</select></div>
+          <button class="btn btn-primary" type="submit">Create deal</button>
+        </form>
+      </section>
       <div class="timeline-title"><h2>Activity</h2><span class="subtle">Newest first</span></div>
       <div class="timeline">
         {% for event in timeline %}
@@ -70,7 +91,7 @@
             <div class="event-meta">{{ event.created_at|date:"M j, Y, g:i A" }}</div>
             {% if event.kind == 'submission' %}
               <h3>{{ event.item.get_form_type_display }} submitted</h3><p class="subtle">Source: {{ event.item.source_path|default:"Unknown page" }}</p>
-              <dl class="submission-data">{% for key,value in event.item.submitted_data.items %}<dt>{{ key|cut:"_" }}</dt><dd>{{ value|default:"—" }}</dd>{% endfor %}</dl>
+              <dl class="submission-data">{% for key,value in event.item.submitted_data.items %}<dt>{{ key|crm_field_label }}</dt><dd>{{ value|crm_field_value|default:"—" }}</dd>{% endfor %}</dl>
             {% elif event.kind == 'task' %}
               <h3>{{ event.item.subject }} {% if event.item.completed_at %}<span class="badge">Completed</span>{% else %}<span class="badge badge-warn">Open task</span>{% endif %}</h3>
               {% if event.item.body %}<p>{{ event.item.body|linebreaksbr }}</p>{% endif %}<p class="event-meta">Due {{ event.item.due_at|date:"M j, Y, g:i A" }} · Assigned to {% if event.item.assigned_to %}{{ event.item.assigned_to.get_full_name|default:event.item.assigned_to.email }}{% else %}Unassigned{% endif %}</p>
@@ -89,6 +110,8 @@
           <div class="field"><label for="detail-status">Lead status</label><select id="detail-status" name="status">{% for value,label in status_choices %}<option value="{{ value }}" {% if lead.status == value %}selected{% endif %}>{{ label }}</option>{% endfor %}</select></div>
           <div class="field"><label for="detail-audience">Audience</label><select id="detail-audience" name="audience">{% for value,label in audience_choices %}<option value="{{ value }}" {% if lead.audience == value %}selected{% endif %}>{{ label }}</option>{% endfor %}</select></div>
           <div class="field"><label for="detail-owner">Contact owner</label><select id="detail-owner" name="assigned_to"><option value="">Unassigned</option>{% for owner in owners %}<option value="{{ owner.pk }}" {% if lead.assigned_to_id == owner.pk %}selected{% endif %}>{{ owner.get_full_name|default:owner.email }}</option>{% endfor %}</select></div>
+          <div class="field"><label for="detail-company">Company</label><select id="detail-company" name="company"><option value="">No company</option>{% for company in companies %}<option value="{{ company.pk }}" {% if lead.company_id == company.pk %}selected{% endif %}>{{ company.name }}</option>{% endfor %}</select></div>
+          <div class="field"><label for="detail-company-name">Or create company</label><input id="detail-company-name" name="company_name" placeholder="Company name"></div>
           <button class="btn" type="submit">Save properties</button>
         </form>
       </section>
@@ -96,6 +119,7 @@
         <h2 class="side-title">Open tasks <span class="badge badge-neutral">{{ open_tasks|length }}</span></h2>
         {% for task in open_tasks %}<div class="task-row"><strong>{{ task.subject }}</strong><div class="event-meta">Due {{ task.due_at|date:"M j, g:i A" }}</div><form method="post" action="{% url 'crm_task_complete' lead.pk task.pk %}">{% csrf_token %}<button class="btn btn-small" type="submit">✓ Mark complete</button></form></div>{% empty %}<p class="subtle">No open follow-up tasks.</p>{% endfor %}
       </section>
+      {% if pending_triage_count %}<section class="card panel" style="margin-top:18px"><h2 class="side-title">Intake triage</h2><p><span class="badge badge-warn">{{ pending_triage_count }} pending</span></p><a class="btn btn-small" href="{% url 'crm_triage_list' %}">Review triage</a></section>{% endif %}
       {% if lead.notes %}<section class="card panel" style="margin-top:18px"><h2 class="side-title">Latest inquiry notes</h2><p>{{ lead.notes|linebreaksbr }}</p></section>{% endif %}
     </aside>
   </div>
