@@ -1,8 +1,11 @@
 from pathlib import Path
 from tempfile import TemporaryDirectory
 
+from django.contrib import admin
+from django.contrib.auth.models import AnonymousUser
 from django.core.management import call_command
 from django.http import HttpResponse
+from django.template.loader import render_to_string
 from django.test import RequestFactory, SimpleTestCase, override_settings
 from whitenoise.middleware import WhiteNoiseMiddleware
 
@@ -22,10 +25,21 @@ class StaticAssetDeploymentTests(SimpleTestCase):
                 call_command("collectstatic", interactive=False, verbosity=0)
                 middleware = WhiteNoiseMiddleware(lambda request: HttpResponse(status=404))
                 response = middleware(RequestFactory().get("/static/admin/css/base.css"))
+                brand_response = middleware(
+                    RequestFactory().get("/static/admin/css/clearcode_admin.css")
+                )
 
                 self.assertEqual(response.status_code, 200)
                 self.assertEqual(response["Content-Type"], 'text/css; charset="utf-8"')
+                self.assertEqual(brand_response.status_code, 200)
+                self.assertEqual(
+                    brand_response["Content-Type"],
+                    'text/css; charset="utf-8"',
+                )
                 self.assertTrue(Path(static_root, "admin/css/base.css").is_file())
+                self.assertTrue(
+                    Path(static_root, "admin/css/clearcode_admin.css").is_file()
+                )
 
     def test_container_image_collects_static_files_after_copying_source(self):
         dockerfile = Path("Dockerfile").read_text()
@@ -36,3 +50,33 @@ class StaticAssetDeploymentTests(SimpleTestCase):
 
         self.assertLess(copy_position, collect_position)
         self.assertLess(collect_position, entrypoint_position)
+
+
+class AdminBrandingTests(SimpleTestCase):
+    def test_admin_site_uses_clearcode_portal_name(self):
+        self.assertEqual(admin.site.site_header, "ClearCode Reading Admin Portal")
+        self.assertEqual(admin.site.site_title, "ClearCode Reading Admin Portal")
+        self.assertEqual(admin.site.index_title, "Admin Portal")
+
+    def test_admin_base_template_reuses_homepage_branding(self):
+        request = RequestFactory().get("/admin/")
+        request.user = AnonymousUser()
+        context = admin.site.each_context(request)
+        context.update(
+            {
+                "has_permission": False,
+                "is_nav_sidebar_enabled": False,
+                "is_popup": False,
+                "subtitle": None,
+                "title": admin.site.index_title,
+            }
+        )
+
+        html = render_to_string("admin/base_site.html", context, request=request)
+
+        self.assertIn("ClearCode Reading Admin Portal", html)
+        self.assertIn("Admin Portal", html)
+        self.assertIn('/assets/logo/cc-monogram-gold-teal.png', html)
+        self.assertIn('/static/admin/css/clearcode_admin.css', html)
+        self.assertIn('href="/admin/"', html)
+        self.assertNotIn("Django administration", html)
