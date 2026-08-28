@@ -6,6 +6,7 @@ from django.template.loader import get_template
 from django.test import RequestFactory, SimpleTestCase, TestCase
 from django.urls import resolve, reverse
 
+from apps.core.models import RecruitingInterest
 from apps.crm.models import Lead
 
 
@@ -294,8 +295,9 @@ class ConsultationFormTests(TestCase):
             fetch_redirect_response=False,
         )
         self.assertFalse(Lead.objects.exists())
+        self.assertFalse(RecruitingInterest.objects.exists())
 
-    def test_career_interest_creates_teacher_lead_and_returns_to_careers(self):
+    def test_career_interest_stays_in_recruiting_and_returns_to_careers(self):
         response = self.client.post(
             reverse("crm_signup"),
             {
@@ -314,12 +316,12 @@ class ConsultationFormTests(TestCase):
             "/careers/?signup=thanks#career-interest-form",
             fetch_redirect_response=False,
         )
-        lead = Lead.objects.get(contact_email="morgan@example.com")
-        self.assertEqual(lead.audience, Lead.Audience.TEACHER)
-        self.assertEqual(lead.metadata["career_path"], "teacher")
-        self.assertIn("Role interest: Reading specialist", lead.notes)
+        interest = RecruitingInterest.objects.get(email="morgan@example.com")
+        self.assertEqual(interest.career_path, RecruitingInterest.CareerPath.TEACHER)
+        self.assertEqual(interest.role_interest, "Reading specialist")
+        self.assertFalse(Lead.objects.filter(contact_email="morgan@example.com").exists())
 
-    def test_career_interest_creates_company_lead(self):
+    def test_company_career_interest_stays_out_of_crm(self):
         self.client.post(
             reverse("crm_signup"),
             {
@@ -332,10 +334,10 @@ class ConsultationFormTests(TestCase):
             },
         )
 
-        lead = Lead.objects.get(contact_email="avery@example.com")
-        self.assertEqual(lead.audience, Lead.Audience.OTHER)
-        self.assertEqual(lead.metadata["career_path"], "company")
-        self.assertIn("Role interest: Product design", lead.notes)
+        interest = RecruitingInterest.objects.get(email="avery@example.com")
+        self.assertEqual(interest.career_path, RecruitingInterest.CareerPath.COMPANY)
+        self.assertEqual(interest.role_interest, "Product design")
+        self.assertFalse(Lead.objects.filter(contact_email="avery@example.com").exists())
 
     def test_career_interest_requires_a_valid_path_and_role(self):
         response = self.client.post(
@@ -355,3 +357,4 @@ class ConsultationFormTests(TestCase):
             fetch_redirect_response=False,
         )
         self.assertFalse(Lead.objects.exists())
+        self.assertFalse(RecruitingInterest.objects.exists())
