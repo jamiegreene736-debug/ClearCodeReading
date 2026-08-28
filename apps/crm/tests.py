@@ -1,3 +1,4 @@
+import re
 from unittest.mock import MagicMock, patch
 
 from django.contrib import admin
@@ -535,6 +536,45 @@ class CrmWorkspaceTests(TestCase):
         self.assertEqual(response.status_code, 200)
         self.assertContains(response, 'data-testid="crm-header-link"')
         self.assertContains(response, f'href="{reverse("crm_contact_list")}"')
+
+    def test_dashboard_header_highlights_dashboard_instead_of_crm(self):
+        self.client.force_login(self.admin_user)
+
+        response = self.client.get(reverse("portal_dashboard"))
+
+        self.assertEqual(response.status_code, 200)
+        dashboard_link = re.search(
+            r'<a\s+[^>]*data-testid="dashboard-header-link"[^>]*>',
+            response.content.decode(),
+        )
+        crm_link = re.search(
+            r'<a\s+[^>]*data-testid="crm-header-link"[^>]*>',
+            response.content.decode(),
+        )
+        self.assertIsNotNone(dashboard_link)
+        self.assertIsNotNone(crm_link)
+        self.assertIn('aria-current="page"', dashboard_link.group())
+        self.assertNotIn('aria-current="page"', crm_link.group())
+        self.assertContains(response, "/assets/logo/cc-lockup-ink-ui.png")
+
+    def test_inbox_header_highlights_inbox_instead_of_dashboard(self):
+        self.client.force_login(self.admin_user)
+
+        response = self.client.get(reverse("portal_inbox"))
+
+        self.assertEqual(response.status_code, 200)
+        dashboard_link = re.search(
+            r'<a\s+[^>]*data-testid="dashboard-header-link"[^>]*>',
+            response.content.decode(),
+        )
+        inbox_link = re.search(
+            r'<a\s+[^>]*data-testid="inbox-header-link"[^>]*>',
+            response.content.decode(),
+        )
+        self.assertIsNotNone(dashboard_link)
+        self.assertIsNotNone(inbox_link)
+        self.assertNotIn('aria-current="page"', dashboard_link.group())
+        self.assertIn('aria-current="page"', inbox_link.group())
 
     def test_non_staff_school_admin_is_not_available_as_a_crm_owner(self):
         user_model = get_user_model()

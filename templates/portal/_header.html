@@ -1,0 +1,49 @@
+<header class="sticky top-0 z-40 border-b border-deepTeal/10 bg-linen/95 backdrop-blur-xl">
+  <nav aria-label="Portal navigation" class="mx-auto flex max-w-7xl items-center justify-between gap-3 px-4 py-3 sm:px-6 lg:px-8">
+    <a href="{% url 'portal_dashboard' %}" class="focus-ring shrink-0 overflow-hidden rounded-2xl bg-ink px-2 py-1 shadow-lg shadow-ink/15 ring-2 ring-gold/25">
+      <img src="/assets/logo/cc-lockup-ink-ui.png" alt="ClearCode Reading" class="h-10 w-auto max-w-[120px] object-contain sm:h-12 sm:max-w-[170px]">
+    </a>
+    <div class="flex items-center gap-1 sm:gap-2">
+      <a
+        data-testid="dashboard-header-link"
+        href="{% url 'portal_dashboard' %}"
+        aria-label="Dashboard"
+        {% if request.resolver_match.url_name == 'portal_dashboard' %}aria-current="page"{% endif %}
+        class="focus-ring inline-flex items-center gap-2 rounded-full px-3 py-3 text-sm font-black transition hover:-translate-y-0.5 sm:px-4 {% if request.resolver_match.url_name == 'portal_dashboard' %}bg-ink text-white shadow-lg shadow-ink/15{% else %}text-ink/70 hover:bg-white/70 hover:text-deepTeal{% endif %}"
+      >
+        <svg aria-hidden="true" class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.25" stroke-linecap="round" stroke-linejoin="round">
+          <path d="m3 10 9-7 9 7"></path>
+          <path d="M5 9v11h14V9"></path>
+          <path d="M9 20v-6h6v6"></path>
+        </svg>
+        <span class="hidden md:inline">Dashboard</span>
+      </a>
+      <a
+        data-testid="inbox-header-link"
+        href="{% url 'portal_inbox' %}"
+        aria-label="Inbox"
+        {% if request.resolver_match.url_name == 'portal_inbox' %}aria-current="page"{% endif %}
+        class="focus-ring inline-flex items-center gap-2 rounded-full px-3 py-3 text-sm font-black transition hover:-translate-y-0.5 sm:px-4 {% if request.resolver_match.url_name == 'portal_inbox' %}bg-ink text-white shadow-lg shadow-ink/15{% else %}text-ink/70 hover:bg-white/70 hover:text-deepTeal{% endif %}"
+      >
+        <svg aria-hidden="true" class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.25" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M4 4h16v16H4z"></path>
+          <path d="m4 6 8 7 8-7"></path>
+        </svg>
+        <span class="hidden md:inline">Inbox</span>
+      </a>
+      {% if request.user.is_staff %}
+        <a href="/admin/blog/blogpost/" class="focus-ring hidden rounded-full px-4 py-3 text-sm font-black text-ink/70 transition hover:-translate-y-0.5 hover:bg-white/70 hover:text-deepTeal lg:inline-flex">Blog posts</a>
+      {% endif %}
+      {% if request.user.is_staff or request.user.is_superuser or request.user.role == 'super_admin' %}
+        <a data-testid="crm-header-link" href="{% url 'crm_contact_list' %}" class="focus-ring hidden rounded-full px-4 py-3 text-sm font-black text-ink/70 transition hover:-translate-y-0.5 hover:bg-white/70 hover:text-deepTeal sm:inline-flex">CRM</a>
+      {% endif %}
+      {% if request.user.is_staff %}
+        <a href="/admin/" class="focus-ring hidden rounded-full px-4 py-3 text-sm font-black text-ink/70 transition hover:-translate-y-0.5 hover:bg-white/70 hover:text-deepTeal md:inline-flex">Admin</a>
+      {% endif %}
+      <form method="post" action="{% url 'logout' %}">
+        {% csrf_token %}
+        <button class="focus-ring rounded-full bg-mediumTeal px-4 py-3 text-sm font-extrabold text-white shadow-lg shadow-mediumTeal/25 transition hover:-translate-y-0.5 hover:bg-[#277f73] sm:px-5" type="submit">Logout</button>
+      </form>
+    </div>
+  </nav>
+</header>
