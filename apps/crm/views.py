@@ -1,5 +1,6 @@
 from pathlib import Path
 
+from django.conf import settings
 from django.contrib import messages
 from django.contrib.auth.mixins import LoginRequiredMixin, UserPassesTestMixin
 from django.contrib.auth.views import redirect_to_login
@@ -25,6 +26,7 @@ from rest_framework.response import Response
 
 from apps.core.forms import RecruitingInterestForm
 from apps.core.models import RecruitingInterest
+from apps.crm.forms import DealForm
 from apps.crm.models import Company, CrmActivity, FormSubmission, IntakeTriage, Lead, NewsletterSubscription, Opportunity
 from apps.crm.newsletters import resolve_unsubscribe_token
 from apps.crm.serializers import CompanySerializer, LeadSerializer, OpportunitySerializer
@@ -131,6 +133,12 @@ class WebsiteSignupView(View):
         resume = form.cleaned_data["resume"]
         cover_letter = form.cleaned_data["cover_letter"]
         how_heard = form.cleaned_data["how_heard"].strip()
+        owner_query = CustomUser.objects.filter(is_active=True, is_deleted=False)
+        owner = None
+        if settings.RECRUITING_OWNER_EMAIL:
+            owner = owner_query.filter(email__iexact=settings.RECRUITING_OWNER_EMAIL).first()
+        if owner is None:
+            owner = owner_query.filter(Q(is_superuser=True) | Q(is_staff=True)).order_by("pk").first()
         RecruitingInterest.objects.create(
             name=form.cleaned_data["name"].strip(),
             email=form.cleaned_data["email"],
@@ -147,6 +155,9 @@ class WebsiteSignupView(View):
             role_interest=dict(RecruitingInterest.CareerPath.choices)[career_path],
             notes=f"How they heard about us: {how_heard}",
             source_path="/careers/",
+            candidate_pool="ClearCode recruiting",
+            owner=owner,
+            status=RecruitingInterest.Status.REVIEWING if owner else RecruitingInterest.Status.NEW,
         )
         messages.success(request, "Thanks. Your interest is with the ClearCode recruiting team.")
         return redirect(self._redirect_target(request, "thanks"))
@@ -362,9 +373,15 @@ class LeadViewSet(viewsets.ModelViewSet):
                 lead=lead,
                 company=lead.company,
                 owner=request.user,
-                name=request.data.get("name", f"{lead.school_name} Deal"),
                 pipeline=pipeline,
                 stage=Opportunity.initial_stage_for_pipeline(pipeline),
+                student_name=request.data.get("student_name", ""),
+                term_year=request.data.get("term_year", ""),
+                campaign_year=request.data.get("campaign_year", ""),
+                program_name=request.data.get("program_name", ""),
+                cycle_year=request.data.get("cycle_year") or None,
+                investment_round=request.data.get("investment_round", ""),
+                capital_lane=request.data.get("capital_lane", ""),
                 value=request.data.get("value", 0),
                 probability=request.data.get("probability", 10),
                 expected_close_date=request.data.get("expected_close_date") or None,
@@ -432,7 +449,13 @@ class OpportunityViewSet(viewsets.ModelViewSet):
         opportunity.probability = probability
         opportunity.next_steps = request.data.get("next_steps", opportunity.next_steps)
         opportunity.closed_at = timezone.now() if stage in TERMINAL_DEAL_STAGES else None
-        if stage in {Opportunity.Stage.LOST, Opportunity.Stage.DECLINED, Opportunity.Stage.PASSED}:
+        if stage in {
+            Opportunity.Stage.FAMILY_LOST,
+            Opportunity.Stage.FAMILY_CHURNED,
+            Opportunity.Stage.DONOR_DECLINED,
+            Opportunity.Stage.GRANT_DECLINED,
+            Opportunity.Stage.EQUITY_PASSED,
+        }:
             opportunity.lost_reason = request.data.get("lost_reason", opportunity.lost_reason)
         school_id = request.data.get("school")
         if school_id:
@@ -554,71 +577,77 @@ class CrmDealListView(CrmAccessMixin, TemplateView):
 
 
 class CrmDealCreateView(CrmAccessMixin, View):
-    def post(self, request, pk):
-        lead = get_object_or_404(Lead.objects.select_related("company"), pk=pk, is_deleted=False)
-        pipeline = request.POST.get("pipeline", "")
-        name = request.POST.get("name", "").strip()[:255]
-        if pipeline not in Opportunity.Pipeline.values or not name:
-            messages.error(request, "Add a deal name and choose a valid pipeline.")
-            return redirect("crm_contact_detail", pk=lead.pk)
+    template_name = "crm/deal_form.html"
 
-        company = lead.company
-        company_id = request.POST.get("company", "")
-        company_name = request.POST.get("company_name", "").strip()[:255]
-        if company_id:
-            company = Company.objects.filter(pk=company_id, is_deleted=False).first()
-            if company is None:
-                messages.error(request, "Choose a valid company.")
-                return redirect("crm_contact_detail", pk=lead.pk)
-        elif company_name:
-            company, _created = Company.objects.get_or_create(
-                name__iexact=company_name,
+    def get(self, request, pk=None):
+        pipeline = request.GET.get("pipeline", Opportunity.Pipeline.FAMILY_ENROLLMENT)
+        initial = {"owner": request.user}
+        if pk is not None:
+            lead = get_object_or_404(
+                Lead.objects.select_related("company"),
+                pk=pk,
                 is_deleted=False,
-                defaults={"name": company_name, "owner": request.user},
             )
+            initial.update({"lead": lead, "company": lead.company})
+        form = DealForm(pipeline=pipeline, initial=initial)
+        return render(request, self.template_name, {"form": form, "deal": None})
 
-        if company and lead.company_id not in {None, company.pk}:
-            messages.error(request, "This contact already belongs to a different company.")
-            return redirect("crm_contact_detail", pk=lead.pk)
-        if company and lead.company_id is None:
-            lead.company = company
-            lead.save(update_fields=["company", "updated_at"])
+    def post(self, request, pk=None):
+        data = request.POST.copy()
+        if pk is not None:
+            lead = get_object_or_404(Lead, pk=pk, is_deleted=False)
+            data["lead"] = lead.pk
+        form = DealForm(data)
+        if form.is_valid():
+            deal = form.save()
+            AuditLog.objects.create(
+                actor=request.user,
+                action="crm.deal.created",
+                entity_type="Opportunity",
+                entity_id=str(deal.pk),
+                after={
+                    "lead_id": deal.lead_id,
+                    "company_id": deal.company_id,
+                    "pipeline": deal.pipeline,
+                    "stage": deal.stage,
+                    "name": deal.name,
+                },
+            )
+            messages.success(request, f"{deal.deal_label} created in {deal.get_pipeline_display()}.")
+            return redirect("crm_deal_detail", pk=deal.pk)
+        return render(request, self.template_name, {"form": form, "deal": None}, status=400)
 
-        deal = Opportunity(
-            lead=lead,
-            company=company,
-            owner=request.user,
-            name=name,
-            pipeline=pipeline,
-            stage=Opportunity.initial_stage_for_pipeline(pipeline),
-            value=request.POST.get("value") or 0,
-            probability=10,
-            expected_close_date=parse_date(request.POST.get("expected_close_date", "")),
+
+class CrmDealDetailView(CrmAccessMixin, View):
+    template_name = "crm/deal_form.html"
+
+    def get(self, request, pk):
+        deal = get_object_or_404(
+            Opportunity.objects.select_related("lead", "company", "owner", "school"),
+            pk=pk,
+            is_deleted=False,
         )
-        try:
-            deal.full_clean()
-        except ValidationError as exc:
-            messages.error(request, "; ".join(exc.messages))
-            return redirect("crm_contact_detail", pk=lead.pk)
-        deal.save()
+        return render(request, self.template_name, {"form": DealForm(instance=deal), "deal": deal})
 
-        related_deal_id = request.POST.get("related_deal", "")
-        if related_deal_id:
-            related = Opportunity.objects.filter(pk=related_deal_id, is_deleted=False).first()
-            if related and (
-                related.lead_id == lead.pk
-                or (company and related.company_id == company.pk)
-            ):
-                deal.related_deals.add(related)
-        AuditLog.objects.create(
-            actor=request.user,
-            action="crm.deal.created",
-            entity_type="Opportunity",
-            entity_id=str(deal.pk),
-            after={"lead_id": lead.pk, "company_id": company.pk if company else None, "pipeline": pipeline},
-        )
-        messages.success(request, "Deal created in the selected pipeline.")
-        return redirect(f"{reverse('crm_deal_list')}?pipeline={pipeline}")
+    def post(self, request, pk):
+        deal = get_object_or_404(Opportunity, pk=pk, is_deleted=False)
+        before = {"pipeline": deal.pipeline, "stage": deal.stage, "name": deal.name}
+        form = DealForm(request.POST, instance=deal)
+        if form.is_valid():
+            deal = form.save()
+            deal.closed_at = timezone.now() if deal.stage in TERMINAL_DEAL_STAGES else None
+            deal.save(update_fields=["closed_at", "updated_at"])
+            AuditLog.objects.create(
+                actor=request.user,
+                action="crm.deal.updated",
+                entity_type="Opportunity",
+                entity_id=str(deal.pk),
+                before=before,
+                after={"pipeline": deal.pipeline, "stage": deal.stage, "name": deal.name},
+            )
+            messages.success(request, f"{deal.deal_label} updated.")
+            return redirect("crm_deal_detail", pk=deal.pk)
+        return render(request, self.template_name, {"form": form, "deal": deal}, status=400)
 
 
 class CrmDealStageUpdateView(CrmAccessMixin, View):
@@ -671,6 +700,7 @@ class CrmTriageResolveView(CrmAccessMixin, View):
                 actor=request.user,
                 notes=request.POST.get("resolution_notes", ""),
                 dismiss=dismiss,
+                advocate=request.POST.get("advocate") == "yes",
             )
         except ValueError as exc:
             messages.error(request, str(exc))
@@ -680,7 +710,10 @@ class CrmTriageResolveView(CrmAccessMixin, View):
             action="crm.triage.dismissed" if dismiss else "crm.triage.resolved",
             entity_type="IntakeTriage",
             entity_id=str(resolved.pk),
-            after={"pipelines": resolved.selected_pipelines},
+            after={
+                "pipelines": resolved.selected_pipelines,
+                "advocate": resolved.advocate_selected,
+            },
         )
         messages.success(request, "Triage item dismissed." if dismiss else "Triage complete and selected deal records are ready.")
         return redirect("crm_triage_list")

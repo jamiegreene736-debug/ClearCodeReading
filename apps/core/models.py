@@ -1,6 +1,7 @@
 from pathlib import Path
 from uuid import uuid4
 
+from django.conf import settings
 from django.db import models
 
 
@@ -45,6 +46,14 @@ class RecruitingInterest(TimeStampedModel):
     notes = models.TextField()
     source_path = models.CharField(max_length=255, default="/careers/")
     status = models.CharField(max_length=16, choices=Status.choices, default=Status.NEW, db_index=True)
+    candidate_pool = models.CharField(max_length=255, default="ClearCode recruiting")
+    owner = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="owned_recruiting_interests",
+    )
 
     class Meta:
         ordering = ["-created_at"]

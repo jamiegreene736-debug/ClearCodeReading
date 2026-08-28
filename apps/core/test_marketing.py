@@ -5,7 +5,7 @@ from django.conf import settings
 from django.contrib.auth import get_user_model
 from django.core.files.uploadedfile import SimpleUploadedFile
 from django.template.loader import get_template
-from django.test import RequestFactory, SimpleTestCase, TestCase
+from django.test import RequestFactory, SimpleTestCase, TestCase, override_settings
 from django.urls import resolve, reverse
 
 from apps.core.models import RecruitingInterest
@@ -456,6 +456,24 @@ class ContactFormTests(TestCase):
         self.assertFalse(interest.resume)
         self.assertFalse(interest.cover_letter)
         self.assertFalse(Lead.objects.filter(contact_email="morgan@example.com").exists())
+
+    @override_settings(RECRUITING_OWNER_EMAIL="recruiting-owner@example.com")
+    def test_career_interest_is_handed_to_named_recruiting_owner(self):
+        owner = get_user_model().objects.create_superuser(
+            username="recruiting-owner",
+            email="recruiting-owner@example.com",
+            password="test-password",
+        )
+
+        application = self._career_application()
+        application["email"] = "morgan-owner@example.com"
+        self.client.post(reverse("crm_signup"), application)
+
+        interest = RecruitingInterest.objects.get(email="morgan-owner@example.com")
+        self.assertEqual(interest.candidate_pool, "ClearCode recruiting")
+        self.assertEqual(interest.owner, owner)
+        self.assertEqual(interest.status, RecruitingInterest.Status.REVIEWING)
+        self.assertFalse(Lead.objects.filter(contact_email="morgan-owner@example.com").exists())
 
     def test_company_career_interest_stays_out_of_crm(self):
         application = self._career_application(career_path="company")

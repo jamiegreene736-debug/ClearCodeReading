@@ -1,0 +1,80 @@
+{% extends "crm/base.html" %}
+{% block title %}{% if deal %}{{ deal.name }}{% else %}Create deal{% endif %}{% endblock %}
+{% block extra_style %}
+  .form-shell { max-width:980px; margin:0 auto; }
+  .form-head { display:flex; align-items:end; justify-content:space-between; gap:16px; margin-bottom:18px; }
+  .deal-form { padding:22px; }
+  .form-grid { display:grid; grid-template-columns:1fr 1fr; gap:15px; }
+  .form-section { grid-column:1/-1; margin-top:8px; padding-top:18px; border-top:1px solid var(--line); }
+  .form-section h2 { margin-bottom:5px; }
+  .full { grid-column:1/-1; }
+  .errors { margin-bottom:15px; padding:12px 16px; color:#7b1f1f; background:#fff0f0; border:1px solid #e3a5a5; border-radius:5px; }
+  .errorlist { margin:4px 0 0; padding-left:18px; color:#a02323; }
+  .help { color:var(--muted); font-size:12px; }
+  [data-pipeline-fields] { display:none; }
+  @media (max-width:700px) { .form-grid { grid-template-columns:1fr; } .full,.form-section { grid-column:auto; } .form-head { align-items:start; flex-direction:column; } }
+{% endblock %}
+{% block content %}
+  <div class="form-shell">
+    <div class="form-head"><div><p class="eyebrow">{% if deal %}{{ deal.deal_label }}{% else %}New pipeline record{% endif %}</p><h1>{% if deal %}{{ deal.name }}{% else %}Create a deal{% endif %}</h1><p class="subtle">Names are generated from the master convention. Use a second deal for separate students, pipelines, cycles, or rounds.</p></div><a class="btn" href="{% url 'crm_deal_list' %}{% if deal %}?pipeline={{ deal.pipeline }}{% endif %}">Back to pipelines</a></div>
+    {% if deal.needs_naming_review %}<div class="errors"><strong>Naming review required.</strong> This record came from intake or triage. Complete the pipeline-specific naming fields before saving.</div>{% endif %}
+    <form class="card deal-form" method="post" novalidate>{% csrf_token %}
+      {% if form.non_field_errors %}<div class="errors">{{ form.non_field_errors }}</div>{% endif %}
+      <div class="form-grid">
+        <div class="field"><label for="{{ form.lead.id_for_label }}">Contact</label>{{ form.lead }}{{ form.lead.errors }}<span class="help">A person appears once; add deals for each distinct opportunity.</span></div>
+        <div class="field"><label for="{{ form.company.id_for_label }}">Company</label>{{ form.company }}{{ form.company.errors }}<span class="help">One company can have separate grant and investment deals.</span></div>
+        <div class="field"><label for="{{ form.pipeline.id_for_label }}">Pipeline</label>{{ form.pipeline }}{{ form.pipeline.errors }}</div>
+        <div class="field"><label for="{{ form.stage.id_for_label }}">Stage</label>{{ form.stage }}{{ form.stage.errors }}</div>
+        <div class="field"><label for="{{ form.owner.id_for_label }}">Owner</label>{{ form.owner }}{{ form.owner.errors }}</div>
+        <div class="field"><label for="{{ form.priority.id_for_label }}">Priority</label>{{ form.priority }}{{ form.priority.errors }}<span class="help">High, medium, or low is a property—not a stage.</span></div>
+
+        <div class="form-section" data-pipeline-fields="family_enrollment"><h2>Enrollment naming and properties</h2><p class="help">One deal per student. Name format: Student name — term/year.</p></div>
+        <div class="field" data-pipeline-fields="family_enrollment"><label for="{{ form.student_name.id_for_label }}">Student name</label>{{ form.student_name }}{{ form.student_name.errors }}</div>
+        <div class="field" data-pipeline-fields="family_enrollment"><label for="{{ form.term_year.id_for_label }}">Term/year</label>{{ form.term_year }}{{ form.term_year.errors }}</div>
+        <div class="field" data-pipeline-fields="family_enrollment"><label for="{{ form.funding_type.id_for_label }}">Funding type</label>{{ form.funding_type }}{{ form.funding_type.errors }}</div>
+        <div class="field" data-pipeline-fields="family_enrollment"><label for="{{ form.esa_program.id_for_label }}">ESA program</label>{{ form.esa_program }}{{ form.esa_program.errors }}</div>
+        <div class="field" data-pipeline-fields="family_enrollment"><label for="{{ form.grade_band.id_for_label }}">Grade band</label>{{ form.grade_band }}{{ form.grade_band.errors }}</div>
+        <div class="field" data-pipeline-fields="family_enrollment"><label for="{{ form.in_catchment_zip.id_for_label }}">In-catchment ZIP</label>{{ form.in_catchment_zip }}{{ form.in_catchment_zip.errors }}</div>
+        <div class="field" data-pipeline-fields="family_enrollment"><label for="{{ form.referral_source.id_for_label }}">Referral source</label>{{ form.referral_source }}{{ form.referral_source.errors }}</div>
+        <div class="field" data-pipeline-fields="family_enrollment"><label for="{{ form.referral_partner.id_for_label }}">Referral partner</label>{{ form.referral_partner }}{{ form.referral_partner.errors }}</div>
+
+        <div class="form-section" data-pipeline-fields="referral_partners"><h2>Partnership naming and properties</h2><p class="help">One deal per referring organization. The company name becomes the deal name.</p></div>
+        <div class="field" data-pipeline-fields="referral_partners"><label for="{{ form.partner_type.id_for_label }}">Partner type</label>{{ form.partner_type }}{{ form.partner_type.errors }}</div>
+
+        <div class="form-section" data-pipeline-fields="foundation_donors"><h2>Gift naming and properties</h2><p class="help">Name format: Donor — campaign/year.</p></div>
+        <div class="field" data-pipeline-fields="foundation_donors"><label for="{{ form.campaign_year.id_for_label }}">Campaign/year</label>{{ form.campaign_year }}{{ form.campaign_year.errors }}</div>
+        <div class="field" data-pipeline-fields="foundation_donors"><label for="{{ form.donor_type.id_for_label }}">Donor type</label>{{ form.donor_type }}{{ form.donor_type.errors }}</div>
+        <div class="field" data-pipeline-fields="foundation_donors"><label for="{{ form.gift_level.id_for_label }}">Gift level</label>{{ form.gift_level }}{{ form.gift_level.errors }}</div>
+
+        <div class="form-section" data-pipeline-fields="foundation_grants"><h2>Application naming and properties</h2><p class="help">One application per cycle. Name format: Funder — program — cycle year.</p></div>
+        <div class="field" data-pipeline-fields="foundation_grants"><label for="{{ form.program_name.id_for_label }}">Program</label>{{ form.program_name }}{{ form.program_name.errors }}</div>
+        <div class="field" data-pipeline-fields="foundation_grants"><label for="{{ form.cycle_year.id_for_label }}">Cycle year</label>{{ form.cycle_year }}{{ form.cycle_year.errors }}</div>
+        <div class="field" data-pipeline-fields="foundation_grants"><label for="{{ form.grant_cycle_application_date.id_for_label }}">Grant cycle / application date</label>{{ form.grant_cycle_application_date }}{{ form.grant_cycle_application_date.errors }}</div>
+
+        <div class="form-section" data-pipeline-fields="equity_investment"><h2>Investment naming and properties</h2><p class="help">One firm conversation per round. Name format: Firm — round.</p></div>
+        <div class="field" data-pipeline-fields="equity_investment"><label for="{{ form.investment_round.id_for_label }}">Round</label>{{ form.investment_round }}{{ form.investment_round.errors }}</div>
+        <div class="field" data-pipeline-fields="capital"><label for="{{ form.capital_lane.id_for_label }}">Capital lane</label>{{ form.capital_lane }}{{ form.capital_lane.errors }}</div>
+        <div class="field" data-pipeline-fields="capital"><label for="{{ form.bucket.id_for_label }}">Bucket</label>{{ form.bucket }}{{ form.bucket.errors }}</div>
+
+        <div class="form-section"><h2>Commercial details</h2></div>
+        <div class="field"><label for="{{ form.value.id_for_label }}">Value</label>{{ form.value }}{{ form.value.errors }}</div>
+        <div class="field"><label for="{{ form.expected_close_date.id_for_label }}">Expected close</label>{{ form.expected_close_date }}{{ form.expected_close_date.errors }}</div>
+        <div class="field full"><label for="{{ form.next_steps.id_for_label }}">Next steps</label>{{ form.next_steps }}{{ form.next_steps.errors }}</div>
+        <div class="field full"><label for="{{ form.related_deals.id_for_label }}">Linked deals</label>{{ form.related_deals }}{{ form.related_deals.errors }}<span class="help">Use this when one identity has coordinated opportunities in multiple pipelines.</span></div>
+        <div class="field full"><label for="{{ form.segment_tags.id_for_label }}">Segment tags</label>{{ form.segment_tags }}{{ form.segment_tags.errors }}<span class="help">Examples: Title I density, IEP density, bilingual. These remain properties—not new pipelines.</span></div>
+      </div>
+      <p style="margin-top:20px"><button class="btn btn-primary" type="submit">{% if deal %}Save {{ deal.deal_label|lower }}{% else %}Create deal{% endif %}</button></p>
+    </form>
+  </div>
+  <script>
+    (() => {
+      const pipeline = document.getElementById('{{ form.pipeline.id_for_label }}');
+      const updateFields = () => document.querySelectorAll('[data-pipeline-fields]').forEach((node) => {
+        const capital = node.dataset.pipelineFields === 'capital' && ['foundation_grants', 'equity_investment'].includes(pipeline.value);
+        node.style.display = node.dataset.pipelineFields === pipeline.value || capital ? 'block' : 'none';
+      });
+      updateFields();
+      {% if not deal %}pipeline.addEventListener('change', () => { window.location.search = new URLSearchParams({pipeline: pipeline.value}).toString(); });{% endif %}
+    })();
+  </script>
+{% endblock %}

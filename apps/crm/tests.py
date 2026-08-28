@@ -41,15 +41,15 @@ class CrmTests(SimpleTestCase):
     def test_five_business_pipelines_have_distinct_stage_sets(self):
         self.assertEqual(len(Opportunity.Pipeline.choices), 5)
         self.assertIn(
-            Opportunity.Stage.STEWARDSHIP,
+            Opportunity.Stage.DONOR_STEWARDSHIP,
             Opportunity.stage_values_for_pipeline(Opportunity.Pipeline.FOUNDATION_DONORS),
         )
         self.assertIn(
-            Opportunity.Stage.REPORTING_RENEWAL,
+            Opportunity.Stage.GRANT_AWARDED,
             Opportunity.stage_values_for_pipeline(Opportunity.Pipeline.FOUNDATION_GRANTS),
         )
         self.assertNotIn(
-            Opportunity.Stage.STEWARDSHIP,
+            Opportunity.Stage.DONOR_STEWARDSHIP,
             Opportunity.stage_values_for_pipeline(Opportunity.Pipeline.FOUNDATION_GRANTS),
         )
 
@@ -712,13 +712,37 @@ class CrmWorkspaceTests(TestCase):
         })
         self.assertEqual(deals[0].related_deals.get(), deals[1])
 
+    def test_partner_interest_can_route_to_advocate_without_creating_a_pipeline(self):
+        triage = IntakeTriage.objects.create(
+            lead=self.lead,
+            submission=self.lead.form_submissions.get(),
+            source_signal=IntakeTriage.SourceSignal.PARTNER_INTEREST,
+        )
+        self.client.force_login(self.admin_user)
+
+        response = self.client.post(
+            reverse("crm_triage_resolve", args=[triage.pk]),
+            {
+                "advocate": "yes",
+                "resolution_notes": "Community advocate; no active deal process.",
+                "action": "resolve",
+            },
+        )
+
+        triage.refresh_from_db()
+        self.assertRedirects(response, reverse("crm_triage_list"), fetch_redirect_response=False)
+        self.assertEqual(triage.status, IntakeTriage.Status.RESOLVED)
+        self.assertTrue(triage.advocate_selected)
+        self.assertEqual(triage.selected_pipelines, [])
+        self.assertFalse(Opportunity.objects.exists())
+
     def test_pipeline_board_uses_only_stages_for_selected_pipeline(self):
         Opportunity.objects.create(
             lead=self.lead,
             owner=self.admin_user,
             name="Family enrollment",
             pipeline=Opportunity.Pipeline.FAMILY_ENROLLMENT,
-            stage=Opportunity.Stage.NEW,
+            stage=Opportunity.Stage.FAMILY_LEAD_NURTURE,
         )
         self.client.force_login(self.admin_user)
 
@@ -730,14 +754,14 @@ class CrmWorkspaceTests(TestCase):
         labels = [column["label"] for column in response.context["stage_columns"]]
         self.assertEqual(response.status_code, 200)
         self.assertIn("Stewardship", labels)
-        self.assertNotIn("Enrollment offered", labels)
+        self.assertNotIn("Assessment", labels)
 
     def test_deal_rejects_a_stage_from_another_pipeline(self):
         deal = Opportunity(
             lead=self.lead,
             name="Donor relationship",
             pipeline=Opportunity.Pipeline.FOUNDATION_DONORS,
-            stage=Opportunity.Stage.ENROLLMENT_OFFERED,
+            stage=Opportunity.Stage.FAMILY_ENROLLED,
         )
 
         with self.assertRaisesMessage(ValidationError, "Choose a stage that belongs"):
@@ -748,7 +772,7 @@ class CrmWorkspaceTests(TestCase):
             lead=self.lead,
             name="Donor relationship",
             pipeline=Opportunity.Pipeline.FOUNDATION_DONORS,
-            stage=Opportunity.Stage.IDENTIFIED,
+            stage=Opportunity.Stage.DONOR_IDENTIFIED,
             probability=10,
         )
         api_client = APIClient()
@@ -756,13 +780,13 @@ class CrmWorkspaceTests(TestCase):
 
         response = api_client.post(
             f"/api/v1/opportunities/{deal.pk}/advance/",
-            {"stage": Opportunity.Stage.CULTIVATING, "probability": 101},
+            {"stage": Opportunity.Stage.DONOR_CULTIVATION, "probability": 101},
             format="json",
         )
 
         self.assertEqual(response.status_code, 400)
         deal.refresh_from_db()
-        self.assertEqual(deal.stage, Opportunity.Stage.IDENTIFIED)
+        self.assertEqual(deal.stage, Opportunity.Stage.DONOR_IDENTIFIED)
         self.assertEqual(deal.probability, 10)
 
     def test_company_workspace_shows_contacts_and_deals(self):
@@ -774,7 +798,7 @@ class CrmWorkspaceTests(TestCase):
             company=company,
             name="Referral relationship",
             pipeline=Opportunity.Pipeline.REFERRAL_PARTNERS,
-            stage=Opportunity.Stage.IDENTIFIED,
+            stage=Opportunity.Stage.PARTNER_IDENTIFIED,
         )
         self.client.force_login(self.admin_user)
 
@@ -783,5 +807,98 @@ class CrmWorkspaceTests(TestCase):
 
         self.assertEqual(response.status_code, 200)
         self.assertContains(response, "Alex Reader")
-        self.assertContains(response, "Referral relationship")
+        self.assertContains(response, "Community Partners LLC")
         self.assertContains(list_response, "Community Partners LLC")
+
+    def test_family_deals_are_named_per_student_and_term(self):
+        first = Opportunity(
+            lead=self.lead,
+            pipeline=Opportunity.Pipeline.FAMILY_ENROLLMENT,
+            stage=Opportunity.Stage.FAMILY_LEAD_NURTURE,
+            student_name="Jacob Reader",
+            term_year="Fall 2027",
+        )
+        second = Opportunity(
+            lead=self.lead,
+            pipeline=Opportunity.Pipeline.FAMILY_ENROLLMENT,
+            stage=Opportunity.Stage.FAMILY_WAITLIST,
+            student_name="Maya Reader",
+            term_year="Fall 2027",
+        )
+        first.full_clean()
+        first.save()
+        second.full_clean()
+        second.save()
+
+        self.assertEqual(self.lead.opportunities.count(), 2)
+        self.assertEqual(first.name, "Jacob Reader — Fall 2027")
+        self.assertEqual(second.name, "Maya Reader — Fall 2027")
+
+    def test_one_company_can_have_separate_named_grant_and_equity_deals(self):
+        company = Company.objects.create(name="North Star Foundation")
+        grant = Opportunity(
+            company=company,
+            pipeline=Opportunity.Pipeline.FOUNDATION_GRANTS,
+            stage=Opportunity.Stage.GRANT_NEED_INTRO,
+            program_name="Reading Access",
+            cycle_year=2027,
+            capital_lane=Opportunity.CapitalLane.FOUNDATION,
+        )
+        investment = Opportunity(
+            company=company,
+            pipeline=Opportunity.Pipeline.EQUITY_INVESTMENT,
+            stage=Opportunity.Stage.EQUITY_NEED_INTRO,
+            investment_round="Seed",
+            capital_lane=Opportunity.CapitalLane.COMPANY,
+        )
+        grant.full_clean()
+        grant.save()
+        investment.full_clean()
+        investment.save()
+        grant.related_deals.add(investment)
+
+        self.assertEqual(company.deals.count(), 2)
+        self.assertEqual(grant.name, "North Star Foundation — Reading Access — 2027")
+        self.assertEqual(investment.name, "North Star Foundation — Seed")
+        self.assertEqual(grant.related_deals.get(), investment)
+
+    def test_deal_form_enforces_and_generates_master_naming_convention(self):
+        self.client.force_login(self.admin_user)
+
+        response = self.client.post(
+            reverse("crm_deal_new"),
+            {
+                "lead": self.lead.pk,
+                "pipeline": Opportunity.Pipeline.FAMILY_ENROLLMENT,
+                "stage": Opportunity.Stage.FAMILY_CONSULTATION,
+                "owner": self.admin_user.pk,
+                "priority": Opportunity.Priority.HIGH,
+                "student_name": "Jacob Reader",
+                "term_year": "Fall 2027",
+                "funding_type": Opportunity.FundingType.ESA,
+                "esa_program": Opportunity.EsaProgram.FES_UA,
+                "grade_band": Opportunity.GradeBand.PREK_2,
+                "in_catchment_zip": "32801",
+                "referral_source": "North Star Pediatrics",
+                "segment_tags": "bilingual, IEP density",
+                "value": "0",
+            },
+        )
+
+        deal = Opportunity.objects.get()
+        self.assertRedirects(response, reverse("crm_deal_detail", args=[deal.pk]))
+        self.assertEqual(deal.name, "Jacob Reader — Fall 2027")
+        self.assertEqual(deal.priority, Opportunity.Priority.HIGH)
+        self.assertEqual(deal.segment_tags, "bilingual, IEP density")
+
+    def test_recurring_deal_name_requires_a_four_digit_year(self):
+        deal = Opportunity(
+            lead=self.lead,
+            pipeline=Opportunity.Pipeline.FAMILY_ENROLLMENT,
+            stage=Opportunity.Stage.FAMILY_WAITLIST,
+            student_name="Jacob Reader",
+            term_year="Fall",
+        )
+
+        with self.assertRaisesMessage(ValidationError, "Include a four-digit year"):
+            deal.full_clean()
