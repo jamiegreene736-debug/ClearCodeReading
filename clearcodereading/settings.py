@@ -9,17 +9,36 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 SECRET_KEY = os.getenv("DJANGO_SECRET_KEY", "dev-only-change-me")
 DEBUG = os.getenv("DJANGO_DEBUG", "0") == "1"
 
-ALLOWED_HOSTS = [
-    host.strip()
-    for host in os.getenv("DJANGO_ALLOWED_HOSTS", "localhost,127.0.0.1,0.0.0.0,.up.railway.app,healthcheck.railway.app").split(",")
-    if host.strip()
-]
+PUBLIC_HOSTS = ["clearcodereading.com", "www.clearcodereading.com"]
+ALLOWED_HOSTS = list(
+    dict.fromkeys(
+        [
+            *PUBLIC_HOSTS,
+            *[
+                host.strip()
+                for host in os.getenv(
+                    "DJANGO_ALLOWED_HOSTS",
+                    "localhost,127.0.0.1,0.0.0.0,.up.railway.app,healthcheck.railway.app",
+                ).split(",")
+                if host.strip()
+            ],
+        ]
+    )
+)
 
-CSRF_TRUSTED_ORIGINS = [
-    origin.strip()
-    for origin in os.getenv("DJANGO_CSRF_TRUSTED_ORIGINS", "").split(",")
-    if origin.strip()
-]
+CSRF_TRUSTED_ORIGINS = list(
+    dict.fromkeys(
+        [
+            "https://clearcodereading.com",
+            "https://www.clearcodereading.com",
+            *[
+                origin.strip()
+                for origin in os.getenv("DJANGO_CSRF_TRUSTED_ORIGINS", "").split(",")
+                if origin.strip()
+            ],
+        ]
+    )
+)
 
 SHARED_APPS = [
     "django_tenants",

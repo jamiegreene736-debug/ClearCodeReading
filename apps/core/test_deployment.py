@@ -6,8 +6,16 @@ from django.http import HttpResponse
 from django.test import RequestFactory, SimpleTestCase, override_settings
 from whitenoise.middleware import WhiteNoiseMiddleware
 
+from clearcodereading import settings
+
 
 class StaticAssetDeploymentTests(SimpleTestCase):
+    def test_public_domain_is_allowed_and_csrf_trusted(self):
+        self.assertIn("clearcodereading.com", settings.ALLOWED_HOSTS)
+        self.assertIn("www.clearcodereading.com", settings.ALLOWED_HOSTS)
+        self.assertIn("https://clearcodereading.com", settings.CSRF_TRUSTED_ORIGINS)
+        self.assertIn("https://www.clearcodereading.com", settings.CSRF_TRUSTED_ORIGINS)
+
     def test_collected_admin_css_is_served_by_whitenoise(self):
         with TemporaryDirectory() as static_root:
             with override_settings(STATIC_ROOT=static_root):

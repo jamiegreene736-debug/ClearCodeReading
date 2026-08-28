@@ -17,6 +17,7 @@ PUBLIC_PAGES = {
     "marketing_about": "about.html",
     "marketing_how_it_works": "how-it-works.html",
     "marketing_families": "families.html",
+    "marketing_foundation": "foundation.html",
     "marketing_careers": "careers.html",
     "marketing_contact": "contact.html",
     "marketing_privacy": "privacy.html",
@@ -75,18 +76,19 @@ class MarketingPageTests(SimpleTestCase):
                 self.assertEqual(route.func.view_initkwargs["template_name"], template_name)
                 self.assertIn("<!doctype html>", self._render(route_name).lower())
 
-    def test_homepage_matches_family_first_priority_waitlist_message(self):
+    def test_homepage_matches_family_first_consultation_flow(self):
         content = self._render("marketing_home")
 
         self.assertIn("Unlock Reading. Unlock Everything.", content)
-        self.assertIn("If reading feels like a nightly battle", content)
-        self.assertIn("Reading gaps don’t close on their own.", content)
-        self.assertIn("Join the Priority Waitlist", content)
-        self.assertIn("One connected path from placement to progress.", content)
-        self.assertIn("Why Families Choose ClearCode", content)
-        self.assertIn("Family Empowerment Scholarship", content)
+        self.assertIn("Reading intervention with progress families can see.", content)
+        self.assertIn("Request a consultation", content)
+        self.assertIn("Three steps. One connected reading path.", content)
+        self.assertIn("For schools and specialists", content)
+        self.assertIn("Illustrative data", content)
+        self.assertIn("Frequently asked questions", content)
+        self.assertIn("Explore the Foundation", content)
 
-    def test_homepage_priority_waitlist_ctas_use_local_intake(self):
+    def test_homepage_consultation_ctas_use_local_intake(self):
         content = self._render("marketing_home")
 
         self.assertGreaterEqual(
@@ -100,8 +102,17 @@ class MarketingPageTests(SimpleTestCase):
         content = self._render("marketing_home")
 
         self.assertIn("Florida Department of Education", content)
-        self.assertIn("Center for Research and Reform in Education", content)
-        self.assertIn("Rosenthal &amp; Jacobson", content)
+        self.assertIn("Juel, C.", content)
+        self.assertIn("G. Reid Lyon", content)
+
+    def test_homepage_uses_a_local_optimized_hero_photo(self):
+        content = self._render("marketing_home")
+
+        self.assertIn('/assets/images/hero-reading-specialist.jpg', content)
+        self.assertIn('fetchpriority="high"', content)
+        hero_path = Path(settings.BASE_DIR) / "marketing-website/assets/images/hero-reading-specialist.jpg"
+        self.assertTrue(hero_path.is_file())
+        self.assertLess(hero_path.stat().st_size, 500_000)
 
     def test_shared_marketing_navigation_is_consistent(self):
         route_names = [
@@ -109,6 +120,7 @@ class MarketingPageTests(SimpleTestCase):
             "marketing_about",
             "marketing_how_it_works",
             "marketing_families",
+            "marketing_foundation",
             "marketing_careers",
             "marketing_contact",
             "marketing_privacy",
@@ -118,6 +130,7 @@ class MarketingPageTests(SimpleTestCase):
             "/about/",
             "/how-it-works/",
             "/families/",
+            "/foundation/",
             "/approach/",
             "/blog/",
             "/careers/",
@@ -130,6 +143,27 @@ class MarketingPageTests(SimpleTestCase):
             for link in expected_links:
                 with self.subTest(route_name=route_name, link=link):
                     self.assertIn(f'href="{link}"', content)
+
+    def test_foundation_is_a_secondary_path_with_explicit_updates_opt_in(self):
+        homepage = self._render("marketing_home")
+        foundation = self._render("marketing_foundation")
+
+        self.assertGreater(homepage.index("Frequently asked questions"), homepage.index("For families"))
+        self.assertGreater(homepage.index("Explore the Foundation"), homepage.index("Frequently asked questions"))
+        self.assertIn("Help more children find their way into reading.", foundation)
+        self.assertIn('href="#newsletter-signup"', foundation)
+        self.assertIn('name="consent"', foundation)
+
+    def test_contact_form_is_short_and_supports_audience_routing(self):
+        content = self._render("marketing_contact")
+
+        self.assertIn("Request a consultation", content)
+        self.assertIn('name="audience"', content)
+        self.assertIn('value="parent"', content)
+        self.assertIn('value="school"', content)
+        self.assertIn('value="teacher"', content)
+        self.assertNotIn('name="child_age_grade"', content)
+        self.assertNotIn('name="phone"', content)
 
     def test_public_pages_include_explicit_consent_newsletter_signup(self):
         for route_name in PUBLIC_PAGES:
@@ -214,18 +248,15 @@ class MarketingPageTests(SimpleTestCase):
         self.assertIn("Florida Department of Education", content)
         self.assertIn('href="/contact/#consultation-form"', content)
 
-    def test_contact_page_links_to_family_survey_and_has_generic_contact_form(self):
+    def test_contact_page_uses_the_short_local_consultation_form(self):
         content = self._render("marketing_contact")
 
-        self.assertIn(
-            'href="https://docs.google.com/document/d/'
-            '1pu7xPbdj-Cn8MiBYmoxDefYpCNGSxH1EL59DMjleDxY/edit?usp=sharing"',
-            content,
-        )
-        self.assertIn("Complete the family interest survey", content)
+        self.assertNotIn("docs.google.com", content)
+        self.assertIn("Short consultation request", content)
         self.assertIn('id="consultation-form"', content)
         self.assertIn('name="name"', content)
         self.assertIn('name="email"', content)
+        self.assertIn('name="audience"', content)
         self.assertIn('name="notes"', content)
         self.assertNotIn('name="phone"', content)
         self.assertNotIn('name="child_age_grade"', content)
