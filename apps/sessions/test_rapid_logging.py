@@ -1,3 +1,4 @@
+import uuid
 from unittest.mock import patch
 
 from django.test import RequestFactory, TestCase
@@ -108,6 +109,23 @@ class RapidSessionLoggingTests(TestCase):
         self.assertEqual(session.accuracy_rate, 90)
         self.assertTrue(session.item_sets["sound_drill"]["aggregate_only"])
         self.assertEqual(session.revision_history.count(), 1)
+
+    def test_mobile_retry_with_same_request_id_returns_one_session(self):
+        request_id = uuid.uuid4()
+        payload = {
+            "child": self.child.id,
+            "client_request_id": str(request_id),
+            "accuracy_numerator": 9,
+            "accuracy_denominator": 10,
+        }
+
+        first = self.api.post("/api/v1/sessions/rapid-log/", payload, format="json")
+        second = self.api.post("/api/v1/sessions/rapid-log/", payload, format="json")
+
+        self.assertEqual(first.status_code, 201, first.data)
+        self.assertEqual(second.status_code, 200, second.data)
+        self.assertEqual(first.data["id"], second.data["id"])
+        self.assertEqual(Session.objects.filter(client_request_id=request_id).count(), 1)
 
     def test_next_pfr_defaults_to_session_1b(self):
         first = self.api.post(

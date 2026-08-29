@@ -16,3 +16,8 @@ node_modules/
 staticfiles/
 playwright-report/
 test-results/
+
+# Xcode user-local state and build products
+ios/**/xcuserdata/
+ios/**/*.xcuserstate
+ios/DerivedData/
