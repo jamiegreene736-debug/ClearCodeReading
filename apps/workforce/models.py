@@ -247,6 +247,9 @@ class Agreement(TimestampedModel):
     expires_on = models.DateField(null=True, blank=True)
     external_document_id = models.CharField(max_length=255, blank=True)
 
+    def __str__(self) -> str:
+        return f"{self.get_kind_display()} — {self.engagement.worker}"
+
 
 class Credential(TimestampedModel):
     class Kind(models.TextChoices):

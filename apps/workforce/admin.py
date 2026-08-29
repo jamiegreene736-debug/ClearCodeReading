@@ -110,8 +110,37 @@ class ProviderEventAdmin(admin.ModelAdmin):
         return False
 
 
+@admin.register(Agreement)
+class AgreementAdmin(admin.ModelAdmin):
+    list_display = [
+        "worker_name",
+        "agreement_type",
+        "status",
+        "effective_on",
+        "expires_on",
+    ]
+    list_filter = ["kind", "status"]
+    search_fields = [
+        "engagement__worker__user__email",
+        "engagement__worker__user__first_name",
+        "engagement__worker__user__last_name",
+    ]
+    list_select_related = ["engagement__worker__user"]
+    ordering = ["-effective_on", "-created_at"]
+
+    @admin.display(
+        description="Worker",
+        ordering="engagement__worker__user__last_name",
+    )
+    def worker_name(self, obj: Agreement) -> str:
+        return str(obj.engagement.worker)
+
+    @admin.display(description="Agreement type", ordering="kind")
+    def agreement_type(self, obj: Agreement) -> str:
+        return obj.get_kind_display()
+
+
 admin.site.register(WorkerAssignment)
-admin.site.register(Agreement)
 admin.site.register(Credential)
 admin.site.register(ComplianceTask)
 admin.site.register(TaxYearSummary)
