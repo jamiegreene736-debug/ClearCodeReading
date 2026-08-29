@@ -137,6 +137,11 @@ class MarketingPageTests(SimpleTestCase):
         hero_path = Path(settings.BASE_DIR) / "marketing-website/assets/images/homepage-hero-specialist-student.jpg"
         self.assertTrue(hero_path.is_file())
         self.assertLess(hero_path.stat().st_size, 500_000)
+        self.assertIn("homepage-hero-specialist-student-640.webp 640w", content)
+        self.assertIn("homepage-hero-specialist-student-1024.webp 1024w", content)
+        image_root = hero_path.parent
+        self.assertTrue((image_root / "homepage-hero-specialist-student-640.webp").is_file())
+        self.assertTrue((image_root / "homepage-hero-specialist-student-1024.webp").is_file())
 
     def test_homepage_carousels_are_manual_accessible_and_use_local_photos(self):
         content = self._render("marketing_home")
@@ -154,6 +159,8 @@ class MarketingPageTests(SimpleTestCase):
         self.assertIn("event.key === 'ArrowLeft'", content)
         self.assertIn("event.key === 'ArrowRight'", content)
         self.assertNotIn("setInterval", content)
+        self.assertIn("data-mobile-deep-dive", content)
+        self.assertIn("Explore a full ClearCode session", content)
 
         image_root = Path(settings.BASE_DIR) / "marketing-website/assets/images"
         session_image_names = sorted(
@@ -164,6 +171,38 @@ class MarketingPageTests(SimpleTestCase):
         for image_name in session_image_names:
             with self.subTest(image_name=image_name):
                 self.assertLess((image_root / image_name).stat().st_size, 500_000)
+                self.assertTrue((image_root / image_name.replace(".jpg", "-640.webp")).is_file())
+                self.assertTrue((image_root / image_name.replace(".jpg", "-1024.webp")).is_file())
+
+    def test_frontend_uses_compiled_tailwind_instead_of_the_play_cdn(self):
+        template_paths = [
+            "marketing-website/base_marketing.html",
+            "marketing-website/assessment.html",
+            "templates/registration/login.html",
+            "templates/portal/dashboard.html",
+            "templates/portal/inbox.html",
+            "templates/sessions/rapid_log.html",
+        ]
+
+        for template_path in template_paths:
+            content = Path(template_path).read_text()
+            with self.subTest(template_path=template_path):
+                self.assertIn("css/clearcode-tailwind.css", content)
+                self.assertNotIn("cdn.tailwindcss.com", content)
+                self.assertNotIn("tailwind.config =", content)
+
+    def test_mobile_survey_context_appears_before_questions(self):
+        content = self._render("reading_assessment")
+
+        self.assertLess(content.index("education-side snapshot"), content.index('id="assessment-app"'))
+        self.assertIn('aside class="order-1', content)
+
+    def test_mobile_forms_and_footer_targets_avoid_small_controls(self):
+        careers = self._render("marketing_careers")
+        homepage = self._render("marketing_home")
+
+        self.assertIn('font: 400 1rem/1.6', careers)
+        self.assertIn('inline-flex min-h-11 items-center', homepage)
 
     def test_shared_marketing_navigation_is_consistent(self):
         route_names = [
@@ -437,9 +476,12 @@ class MarketingPageTests(SimpleTestCase):
                 self.assertNotIn("logo-plate", content)
 
         homepage = self._render("marketing_home")
+        tailwind_config = Path(settings.BASE_DIR, "tailwind.config.js").read_text()
         for color in BRAND_COLORS:
             with self.subTest(color=color):
-                self.assertIn(color, homepage)
+                self.assertIn(color, tailwind_config)
+        self.assertIn("text-ink", homepage)
+        self.assertIn("bg-linen", homepage)
 
     def test_supplied_brand_kit_is_retained(self):
         brand_kit = (
@@ -469,8 +511,9 @@ class MarketingPageTests(SimpleTestCase):
                 self.assertIn("Plus+Jakarta+Sans", content)
                 self.assertIn("cc-favicon-gold-teal-32.png", content)
                 self.assertIn("cc-apple-touch-icon-gold-teal-180.png", content)
-                self.assertIn("#0F2B35", content)
-                self.assertIn("#F7F2EA", content)
+                self.assertIn("css/clearcode-tailwind.css", content)
+                self.assertIn("text-ink", content)
+                self.assertIn("bg-linen", content)
 
     def test_portal_uses_a_readable_responsive_brand_lockup(self):
         brand_partial = (

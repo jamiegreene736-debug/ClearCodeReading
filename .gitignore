@@ -12,3 +12,7 @@ staticfiles/
 media/
 .DS_Store
 .pytest_cache/
+node_modules/
+staticfiles/
+playwright-report/
+test-results/

@@ -9,6 +9,7 @@
   <style>
     .approach-copy, .approach-eyebrow { font-family: "Plus Jakarta Sans", ui-sans-serif, system-ui, sans-serif; }
     .approach-card { box-shadow: 0 1px 8px rgba(15, 43, 53, .08); }
+    @media (max-width: 639px) { .approach-copy > section { padding-bottom: 3.5rem; padding-top: 3.5rem; } }
   </style>
 {% endblock %}
 
@@ -22,10 +23,18 @@
           <p class="mx-auto mt-6 max-w-3xl text-sm leading-7 text-white/65 sm:text-base sm:leading-8 lg:mx-0">Your child’s learning evidence determines the program and exactly where in it they begin. Our technology helps place them in a group of their peers and keeps instruction paced to their progress.</p>
         </div>
         <figure class="overflow-hidden rounded-[2rem] bg-white p-2 shadow-2xl shadow-black/25 ring-1 ring-white/10 sm:p-3">
-          <img src="/assets/images/inclusive-literacy-lesson.jpg" alt="A reading specialist guides a student wearing a hearing aid through a multisensory literacy lesson." class="aspect-[3/2] w-full rounded-[1.55rem] object-cover" width="1536" height="1024" loading="eager" fetchpriority="high">
+          <img src="/assets/images/inclusive-literacy-lesson.jpg" srcset="/assets/images/inclusive-literacy-lesson-640.webp 640w, /assets/images/inclusive-literacy-lesson-1024.webp 1024w, /assets/images/inclusive-literacy-lesson.jpg 1536w" sizes="(max-width: 1023px) 100vw, 45vw" alt="A reading specialist guides a student wearing a hearing aid through a multisensory literacy lesson." class="aspect-[3/2] w-full rounded-[1.55rem] object-cover" width="1536" height="1024" loading="eager" fetchpriority="high">
         </figure>
       </div>
     </section>
+
+    <nav class="sticky top-[4.75rem] z-30 flex gap-2 overflow-x-auto border-y border-ink/10 bg-white/95 px-4 py-2 shadow-sm backdrop-blur" aria-label="Approach steps">
+      <a class="focus-ring min-h-11 shrink-0 rounded-full bg-linen px-4 py-3 text-sm font-bold text-deepTeal" href="#assessment-heading">Assessment</a>
+      <a class="focus-ring min-h-11 shrink-0 rounded-full bg-linen px-4 py-3 text-sm font-bold text-deepTeal" href="#placement-heading">Placement</a>
+      <a class="focus-ring min-h-11 shrink-0 rounded-full bg-linen px-4 py-3 text-sm font-bold text-deepTeal" href="#sessions-heading">Sessions</a>
+      <a class="focus-ring min-h-11 shrink-0 rounded-full bg-linen px-4 py-3 text-sm font-bold text-deepTeal" href="#progress-heading">Progress</a>
+      <a class="focus-ring min-h-11 shrink-0 rounded-full bg-linen px-4 py-3 text-sm font-bold text-deepTeal" href="#specialists-heading">Specialists</a>
+    </nav>
 
     <section class="bg-white px-4 py-20 sm:px-6 sm:py-24" aria-labelledby="assessment-heading">
       <div class="mx-auto max-w-6xl">

@@ -1,3 +1,4 @@
+{% load static %}
 <!doctype html>
 <html lang="en">
 <head>
@@ -10,29 +11,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-  <script src="https://cdn.tailwindcss.com"></script>
-  <script>
-    tailwind.config = {
-      theme: {
-        extend: {
-          colors: {
-            forest: '#2C4A45',
-            deepTeal: '#1A7A7A',
-            mediumTeal: '#2EB8B8',
-            eucalyptus: '#5A9E8F',
-            ink: '#0F2B35',
-            gold: '#F5A623',
-            linen: '#F7F2EA',
-            seafoam: '#A8CFC4',
-            sand: '#E8D5B0'
-          },
-          fontFamily: {
-            sans: ['Plus Jakarta Sans', 'ui-sans-serif', 'system-ui', 'sans-serif']
-          }
-        }
-      }
-    };
-  </script>
+  <link rel="stylesheet" href="{% static 'css/clearcode-tailwind.css' %}">
   <style>
     .focus-ring:focus-visible { outline: 4px solid rgba(245, 166, 35, .75); outline-offset: 3px; }
     .page-bg {
@@ -49,7 +28,7 @@
   <main class="mx-auto max-w-5xl px-4 py-10 sm:px-6 lg:px-8">
     {% if messages %}
       <div class="mb-6 space-y-2">
-        {% for message in thread_messages %}
+        {% for message in messages %}
           <p class="rounded-2xl bg-white px-4 py-3 text-sm font-bold text-ink shadow-sm ring-1 ring-deepTeal/10">{{ message }}</p>
         {% endfor %}
       </div>
@@ -64,8 +43,8 @@
         Use this thread to coordinate reading practice, human-review notes, questions, and the child’s next steps.
       </p>
 
-      <div class="mt-8 space-y-4">
-        {% for message in messages %}
+      <div class="mt-8 space-y-4" aria-live="polite">
+        {% for message in thread_messages %}
           <article class="max-w-3xl rounded-3xl p-5 {% if message.audience == request.user.role %}ml-auto bg-seafoam ring-1 ring-deepTeal/15{% else %}bg-linen ring-1 ring-gold/20{% endif %}">
             <div class="flex items-center justify-between gap-3">
               <p class="font-black">{{ message.sender }}</p>
@@ -73,6 +52,11 @@
             </div>
             <p class="mt-2 leading-7 text-ink/75">{{ message.body }}</p>
           </article>
+        {% empty %}
+          <div class="rounded-3xl bg-linen p-6 text-center ring-1 ring-ink/10">
+            <h2 class="text-xl font-black">No messages yet</h2>
+            <p class="mt-2 text-ink/65">Start the conversation below. New messages will appear in this thread.</p>
+          </div>
         {% endfor %}
       </div>
 

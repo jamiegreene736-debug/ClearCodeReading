@@ -265,13 +265,74 @@ input[type="submit"],
 input[type="button"],
 .submit-row input,
 a.button {
+    min-height: 44px;
     border-radius: 999px;
     font-weight: 700;
 }
 
+select,
+textarea,
+input[type="text"],
+input[type="password"],
+input[type="email"],
+input[type="url"],
+input[type="number"],
+input[type="search"] {
+    min-height: 44px;
+}
+
+@media (max-width: 1024px) {
+    .dashboard #content,
+    .dashboard #content-main,
+    .dashboard #content-related {
+        box-sizing: border-box;
+        max-width: none;
+        width: 100%;
+    }
+
+    .dashboard #content-related {
+        margin: 24px 0 0;
+    }
+
+    .dashboard #content-related .module {
+        margin-bottom: 0;
+    }
+
+    .change-list .results,
+    .inline-group .tabular,
+    #changelist-form {
+        max-width: 100%;
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
+    }
+}
+
+@media (max-width: 900px) {
+    #header {
+        display: grid !important;
+        grid-template-columns: minmax(0, 1fr);
+    }
+
+    #branding,
+    #header #user-tools {
+        box-sizing: border-box;
+        min-width: 0;
+        width: 100%;
+        margin-left: 0 !important;
+    }
+}
+
 @media (max-width: 767px) {
     #header {
+        align-items: center;
+        flex-wrap: wrap;
+        gap: 8px 12px;
+        min-height: 64px;
         padding: 10px 16px;
+    }
+
+    #branding {
+        min-width: 0;
     }
 
     #site-name a.clearcode-admin-brand {
@@ -290,5 +351,103 @@ a.button {
     .clearcode-admin-brand__portal {
         padding-left: 10px;
         font-size: 13px;
+    }
+
+    #header #user-tools {
+        box-sizing: border-box;
+        flex: 0 0 100% !important;
+        width: 100%;
+        margin: 0 !important;
+        padding-top: 8px;
+        border-top: 1px solid rgba(247, 242, 234, 0.2);
+        font-size: 12px;
+        line-height: 1.8;
+        text-align: left;
+    }
+
+    #user-tools a,
+    #logout-form button,
+    .breadcrumbs a,
+    .object-tools a,
+    .paginator a,
+    .action-counter {
+        display: inline-flex;
+        min-height: 44px;
+        align-items: center;
+    }
+
+    div.breadcrumbs {
+        min-height: 44px;
+        padding: 8px 16px;
+        overflow-x: auto;
+        white-space: nowrap;
+    }
+
+    #content,
+    .dashboard #content {
+        padding: 20px 14px;
+    }
+
+    #content-main,
+    #content-related,
+    .colMS,
+    .colM,
+    .flex-container,
+    .form-row,
+    .fieldBox {
+        box-sizing: border-box;
+        min-width: 0;
+        max-width: 100%;
+        width: 100%;
+    }
+
+    .object-tools {
+        display: flex;
+        float: none;
+        flex-wrap: wrap;
+        gap: 8px;
+        margin: 0 0 16px;
+        padding: 0;
+    }
+
+    .object-tools li {
+        float: none;
+        height: auto;
+        margin: 0;
+    }
+
+    .submit-row {
+        display: grid;
+        gap: 8px;
+    }
+
+    .submit-row p.deletelink-box,
+    .submit-row input,
+    .submit-row a.deletelink {
+        box-sizing: border-box;
+        float: none;
+        width: 100%;
+        margin: 0;
+        text-align: center;
+    }
+
+    select,
+    textarea,
+    input[type="text"],
+    input[type="password"],
+    input[type="email"],
+    input[type="url"],
+    input[type="number"],
+    input[type="search"] {
+        max-width: 100%;
+        font-size: 16px;
+    }
+
+    .selector,
+    .selector-available,
+    .selector-chosen {
+        box-sizing: border-box;
+        float: none;
+        width: 100%;
     }
 }

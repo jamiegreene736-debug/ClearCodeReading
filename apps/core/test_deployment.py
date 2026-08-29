@@ -28,10 +28,14 @@ class StaticAssetDeploymentTests(SimpleTestCase):
                 brand_response = middleware(
                     RequestFactory().get("/static/admin/css/clearcode_admin.css")
                 )
+                frontend_response = middleware(
+                    RequestFactory().get("/static/css/clearcode-tailwind.css")
+                )
 
                 self.assertEqual(response.status_code, 200)
                 self.assertEqual(response["Content-Type"], 'text/css; charset="utf-8"')
                 self.assertEqual(brand_response.status_code, 200)
+                self.assertEqual(frontend_response.status_code, 200)
                 self.assertEqual(
                     brand_response["Content-Type"],
                     'text/css; charset="utf-8"',
@@ -40,16 +44,27 @@ class StaticAssetDeploymentTests(SimpleTestCase):
                 self.assertTrue(
                     Path(static_root, "admin/css/clearcode_admin.css").is_file()
                 )
+                self.assertTrue(Path(static_root, "css/clearcode-tailwind.css").is_file())
 
     def test_container_image_collects_static_files_after_copying_source(self):
         dockerfile = Path("Dockerfile").read_text()
 
         copy_position = dockerfile.index("COPY . .")
+        css_build_position = dockerfile.index("RUN npm run build:css")
         collect_position = dockerfile.index("RUN python manage.py collectstatic --noinput")
         entrypoint_position = dockerfile.index('ENTRYPOINT ["/app/scripts/entrypoint.sh"]')
 
+        self.assertLess(css_build_position, collect_position)
         self.assertLess(copy_position, collect_position)
         self.assertLess(collect_position, entrypoint_position)
+
+    def test_admin_styles_include_mobile_reflow_and_zoom_guards(self):
+        css = Path("apps/core/static/admin/css/clearcode_admin.css").read_text()
+
+        self.assertIn("@media (max-width: 1024px)", css)
+        self.assertIn(".dashboard #content-related", css)
+        self.assertIn("overflow-x: auto", css)
+        self.assertIn("font-size: 16px", css)
 
 
 class AdminBrandingTests(SimpleTestCase):

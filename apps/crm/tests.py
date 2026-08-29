@@ -729,6 +729,8 @@ class CrmWorkspaceTests(TestCase):
 
         self.assertEqual(response.status_code, 200)
         self.assertContains(response, 'data-testid="crm-header-link"')
+        self.assertContains(response, 'data-testid="mobile-crm-header-link"')
+        self.assertContains(response, 'aria-label="Workspace sections"')
         self.assertContains(response, f'href="{reverse("crm_dashboard")}"')
 
     def test_crm_opens_on_an_actionable_overview(self):
@@ -884,6 +886,22 @@ class CrmWorkspaceTests(TestCase):
         self.assertIsNotNone(inbox_link)
         self.assertNotIn('aria-current="page"', dashboard_link.group())
         self.assertIn('aria-current="page"', inbox_link.group())
+        self.assertContains(response, "Fluency first")
+        self.assertContains(response, 'aria-live="polite"')
+
+    def test_crm_workspaces_include_phone_specific_navigation_and_views(self):
+        self.client.force_login(self.admin_user)
+
+        contacts = self.client.get(reverse("crm_contact_list"))
+        companies = self.client.get(reverse("crm_company_list"))
+        deals = self.client.get(reverse("crm_deal_list"))
+
+        self.assertContains(contacts, 'class="mobile-nav"')
+        self.assertContains(contacts, 'class="contact-cards"')
+        self.assertContains(contacts, "font-size:16px")
+        self.assertContains(companies, ".page-head > div,.search")
+        self.assertContains(deals, 'class="mobile-pipeline-picker"')
+        self.assertContains(deals, "grid-auto-flow:row")
 
     def test_non_staff_school_admin_is_not_available_as_a_crm_owner(self):
         user_model = get_user_model()

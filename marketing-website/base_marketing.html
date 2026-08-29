@@ -1,3 +1,4 @@
+{% load static %}
 <!doctype html>
 <html lang="en" class="scroll-smooth">
 <head>
@@ -14,34 +15,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-  <script src="https://cdn.tailwindcss.com"></script>
-  <script>
-    tailwind.config = {
-      theme: {
-        extend: {
-          colors: {
-            forest: '#2C4A45',
-            deepTeal: '#1A7A7A',
-            mediumTeal: '#2EB8B8',
-            eucalyptus: '#5A9E8F',
-            ink: '#0F2B35',
-            gold: '#F5A623',
-            linen: '#F7F2EA',
-            seafoam: '#A8CFC4',
-            sand: '#E8D5B0'
-          },
-          boxShadow: {
-            glow: '0 24px 80px rgba(26, 122, 122, 0.22)',
-            mediumTealGlow: '0 22px 70px rgba(46, 184, 184, 0.18)'
-          },
-          fontFamily: {
-            sans: ['Plus Jakarta Sans', 'ui-sans-serif', 'system-ui', 'sans-serif'],
-            display: ['Plus Jakarta Sans', 'ui-sans-serif', 'system-ui', 'sans-serif']
-          }
-        }
-      }
-    };
-  </script>
+  <link rel="stylesheet" href="{% static 'css/clearcode-tailwind.css' %}">
   <style>
     .focus-ring:focus-visible { outline: 4px solid rgba(245, 166, 35, .78); outline-offset: 3px; }
     .hero-wash {
@@ -74,6 +48,9 @@
     .brand-lockup__clear { color: #F7F2EA; }
     .brand-lockup__code { color: #F5A623; margin-left: .28rem; }
     .brand-lockup__reading { color: #2EB8B8; font-size: .58rem; font-weight: 700; letter-spacing: .3em; text-transform: uppercase; }
+    @media (max-width: 639px) {
+      #top > section[class*="py-"] { padding-bottom: 3.5rem; padding-top: 3.5rem; }
+    }
   </style>
   {% block extra_head %}{% endblock %}
 </head>
@@ -140,18 +117,18 @@
         <p class="mt-2 text-sm font-bold text-gold">Unlock Reading. Unlock Everything.</p>
       </div>
       <div class="grid grid-cols-2 gap-x-8 gap-y-4 text-sm font-bold text-white/75 sm:grid-cols-3">
-        <a href="/about/" class="focus-ring rounded hover:text-gold">About</a>
-        <a href="/how-it-works/" class="focus-ring rounded hover:text-gold">How it works</a>
-        <a href="/families/" class="focus-ring rounded hover:text-gold">For Families</a>
-        <a href="/approach/" class="focus-ring rounded hover:text-gold">Our Approach</a>
-        <a href="/blog/" class="focus-ring rounded hover:text-gold">Blog</a>
-        <a href="/careers/" class="focus-ring rounded hover:text-gold">Careers</a>
-        <a href="/foundation/" class="focus-ring rounded hover:text-gold">Foundation</a>
-        <a href="/privacy/" class="focus-ring rounded hover:text-gold">Privacy</a>
-        <a href="/contact/" class="focus-ring rounded hover:text-gold">Contact</a>
-        <a href="/survey/" class="focus-ring rounded hover:text-gold">Interest survey</a>
-        <a href="/assessment/" class="focus-ring rounded hover:text-gold">Reading survey</a>
-        <a href="/login/" class="focus-ring rounded hover:text-gold">Login</a>
+        <a href="/about/" class="focus-ring inline-flex min-h-11 items-center rounded hover:text-gold">About</a>
+        <a href="/how-it-works/" class="focus-ring inline-flex min-h-11 items-center rounded hover:text-gold">How it works</a>
+        <a href="/families/" class="focus-ring inline-flex min-h-11 items-center rounded hover:text-gold">For Families</a>
+        <a href="/approach/" class="focus-ring inline-flex min-h-11 items-center rounded hover:text-gold">Our Approach</a>
+        <a href="/blog/" class="focus-ring inline-flex min-h-11 items-center rounded hover:text-gold">Blog</a>
+        <a href="/careers/" class="focus-ring inline-flex min-h-11 items-center rounded hover:text-gold">Careers</a>
+        <a href="/foundation/" class="focus-ring inline-flex min-h-11 items-center rounded hover:text-gold">Foundation</a>
+        <a href="/privacy/" class="focus-ring inline-flex min-h-11 items-center rounded hover:text-gold">Privacy</a>
+        <a href="/contact/" class="focus-ring inline-flex min-h-11 items-center rounded hover:text-gold">Contact</a>
+        <a href="/survey/" class="focus-ring inline-flex min-h-11 items-center rounded hover:text-gold">Interest survey</a>
+        <a href="/assessment/" class="focus-ring inline-flex min-h-11 items-center rounded hover:text-gold">Reading survey</a>
+        <a href="/login/" class="focus-ring inline-flex min-h-11 items-center rounded hover:text-gold">Login</a>
       </div>
     </div>
     <div class="mx-auto mt-9 max-w-7xl border-t border-white/10 pt-6 text-sm text-white/55">

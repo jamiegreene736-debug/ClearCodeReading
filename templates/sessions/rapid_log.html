@@ -10,29 +10,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-  <script src="https://cdn.tailwindcss.com"></script>
-  <script>
-    tailwind.config = {
-      theme: {
-        extend: {
-          colors: {
-            ink: '#0F2B35',
-            forest: '#2C4A45',
-            deepTeal: '#1A7A7A',
-            mediumTeal: '#2EB8B8',
-            eucalyptus: '#5A9E8F',
-            seafoam: '#A8CFC4',
-            linen: '#F7F2EA',
-            sand: '#E8D5B0',
-            gold: '#F5A623'
-          },
-          fontFamily: {
-            sans: ['Plus Jakarta Sans', 'ui-sans-serif', 'system-ui', 'sans-serif']
-          }
-        }
-      }
-    };
-  </script>
+  <link rel="stylesheet" href="{% static 'css/clearcode-tailwind.css' %}">
   <style>
     .chip input:checked + span { background:#1a7a7a; border-color:#1a7a7a; color:white; }
     .focus-ring:focus-visible { outline:4px solid #f5a623; outline-offset:3px; }
