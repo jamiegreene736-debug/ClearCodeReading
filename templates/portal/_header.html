@@ -35,7 +35,7 @@
         <a href="/admin/blog/blogpost/" class="focus-ring hidden rounded-full px-4 py-3 text-sm font-black text-ink/70 transition hover:-translate-y-0.5 hover:bg-white/70 hover:text-deepTeal lg:inline-flex">Blog posts</a>
       {% endif %}
       {% if request.user.is_staff or request.user.is_superuser or request.user.role == 'super_admin' %}
-        <a data-testid="crm-header-link" href="{% url 'crm_contact_list' %}" class="focus-ring hidden rounded-full px-4 py-3 text-sm font-black text-ink/70 transition hover:-translate-y-0.5 hover:bg-white/70 hover:text-deepTeal sm:inline-flex">CRM</a>
+        <a data-testid="crm-header-link" href="{% url 'crm_dashboard' %}" class="focus-ring hidden rounded-full px-4 py-3 text-sm font-black text-ink/70 transition hover:-translate-y-0.5 hover:bg-white/70 hover:text-deepTeal sm:inline-flex">CRM</a>
       {% endif %}
       {% if request.user.is_staff %}
         <a href="/admin/" class="focus-ring hidden rounded-full px-4 py-3 text-sm font-black text-ink/70 transition hover:-translate-y-0.5 hover:bg-white/70 hover:text-deepTeal md:inline-flex">Admin</a>

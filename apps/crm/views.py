@@ -26,7 +26,7 @@ from rest_framework.response import Response
 
 from apps.core.forms import RecruitingInterestForm
 from apps.core.models import RecruitingInterest
-from apps.crm.forms import DealForm
+from apps.crm.forms import CompanyForm, ContactForm, DealForm
 from apps.crm.models import Company, CrmActivity, FormSubmission, IntakeTriage, Lead, NewsletterSubscription, Opportunity
 from apps.crm.newsletters import resolve_unsubscribe_token
 from apps.crm.serializers import CompanySerializer, LeadSerializer, OpportunitySerializer
@@ -546,6 +546,143 @@ class CrmAccessMixin(LoginRequiredMixin, UserPassesTestMixin):
         raise PermissionDenied(self.get_permission_denied_message())
 
 
+class CrmDashboardView(CrmAccessMixin, TemplateView):
+    template_name = "crm/dashboard.html"
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        now = timezone.now()
+        contacts = Lead.objects.filter(is_deleted=False)
+        deals = Opportunity.objects.filter(is_deleted=False)
+        pipeline_rows = {
+            row["pipeline"]: row
+            for row in deals.values("pipeline").annotate(
+                deal_count=Count("id"),
+                total_value=Sum("value"),
+            )
+        }
+        pipeline_summaries = []
+        for pipeline, label in Opportunity.Pipeline.choices:
+            row = pipeline_rows.get(pipeline, {})
+            pipeline_summaries.append(
+                {
+                    "value": pipeline,
+                    "label": label,
+                    "deal_count": row.get("deal_count", 0),
+                    "total_value": row.get("total_value") or 0,
+                }
+            )
+
+        open_tasks = list(
+            CrmActivity.objects.filter(
+                activity_type=CrmActivity.ActivityType.TASK,
+                completed_at__isnull=True,
+            )
+            .select_related("lead", "assigned_to")
+            .order_by(F("due_at").asc(nulls_last=True), "created_at")[:6]
+        )
+        task_rows = [
+            {"task": task, "is_overdue": bool(task.due_at and task.due_at < now)}
+            for task in open_tasks
+        ]
+        context.update(
+            {
+                "total_contacts": contacts.count(),
+                "new_contacts": contacts.filter(status=Lead.Status.NEW).count(),
+                "unassigned_contacts": contacts.filter(assigned_to__isnull=True).count(),
+                "overdue_tasks": CrmActivity.objects.filter(
+                    activity_type=CrmActivity.ActivityType.TASK,
+                    completed_at__isnull=True,
+                    due_at__lt=now,
+                ).count(),
+                "pending_triage": IntakeTriage.objects.filter(
+                    status=IntakeTriage.Status.PENDING
+                ).count(),
+                "recent_submissions": FormSubmission.objects.filter(
+                    created_at__gte=now - timezone.timedelta(days=30)
+                ).count(),
+                "recent_contacts": contacts.select_related("assigned_to", "company").annotate(
+                    last_submission_at=Max("form_submissions__created_at")
+                ).order_by(F("last_submission_at").desc(nulls_last=True), "-created_at")[:6],
+                "task_rows": task_rows,
+                "triage_items": IntakeTriage.objects.filter(
+                    status=IntakeTriage.Status.PENDING
+                ).select_related("lead", "submission").order_by("created_at")[:5],
+                "pipeline_summaries": pipeline_summaries,
+            }
+        )
+        return context
+
+
+class CrmContactCreateView(CrmAccessMixin, View):
+    template_name = "crm/contact_form.html"
+
+    def get(self, request):
+        form = ContactForm(
+            initial={
+                "assigned_to": request.user,
+                "source": Lead.Source.OTHER,
+                "status": Lead.Status.NEW,
+            }
+        )
+        return render(request, self.template_name, {"form": form})
+
+    def post(self, request):
+        form = ContactForm(request.POST)
+        if not form.is_valid():
+            return render(request, self.template_name, {"form": form}, status=400)
+
+        existing_contact = Lead.objects.filter(
+            contact_email__iexact=form.cleaned_data["contact_email"],
+            is_deleted=False,
+        ).first()
+        if existing_contact:
+            messages.info(
+                request,
+                "That email is already in the CRM. We opened the existing contact instead of creating a duplicate.",
+            )
+            return redirect("crm_contact_detail", pk=existing_contact.pk)
+
+        with transaction.atomic():
+            contact = form.save(commit=False)
+            company_name = form.cleaned_data["company_name"].strip()
+            if company_name:
+                company = Company.objects.filter(
+                    name__iexact=company_name,
+                    is_deleted=False,
+                ).first()
+                if company is None:
+                    company = Company.objects.create(name=company_name, owner=request.user)
+                contact.company = company
+            if contact.company and not contact.organization_name:
+                contact.organization_name = contact.company.name
+            contact.school_name = contact.organization_name or dict(Lead.Audience.choices)[contact.audience]
+            contact.full_clean()
+            contact.save()
+            if contact.notes:
+                CrmActivity.objects.create(
+                    lead=contact,
+                    activity_type=CrmActivity.ActivityType.NOTE,
+                    body=contact.notes,
+                    created_by=request.user,
+                )
+            AuditLog.objects.create(
+                actor=request.user,
+                action="crm.contact.created",
+                entity_type="Lead",
+                entity_id=str(contact.pk),
+                after={
+                    "contact_email": contact.contact_email,
+                    "audience": contact.audience,
+                    "source": contact.source,
+                    "assigned_to_id": contact.assigned_to_id,
+                    "company_id": contact.company_id,
+                },
+            )
+        messages.success(request, "Contact created. Add a follow-up task or create a deal when the opportunity is clear.")
+        return redirect("crm_contact_detail", pk=contact.pk)
+
+
 class CrmCompanyListView(CrmAccessMixin, TemplateView):
     template_name = "crm/company_list.html"
 
@@ -575,6 +712,39 @@ class CrmCompanyListView(CrmAccessMixin, TemplateView):
         return context
 
 
+class CrmCompanyCreateView(CrmAccessMixin, View):
+    template_name = "crm/company_form.html"
+
+    def get(self, request):
+        return render(
+            request,
+            self.template_name,
+            {"form": CompanyForm(initial={"owner": request.user}), "company": None},
+        )
+
+    def post(self, request):
+        form = CompanyForm(request.POST)
+        if not form.is_valid():
+            return render(request, self.template_name, {"form": form, "company": None}, status=400)
+        duplicate = Company.objects.filter(
+            name__iexact=form.cleaned_data["name"],
+            is_deleted=False,
+        ).first()
+        if duplicate:
+            messages.info(request, "That company is already in the CRM. We opened the existing record.")
+            return redirect("crm_company_detail", pk=duplicate.pk)
+        company = form.save()
+        AuditLog.objects.create(
+            actor=request.user,
+            action="crm.company.created",
+            entity_type="Company",
+            entity_id=str(company.pk),
+            after={"name": company.name, "owner_id": company.owner_id},
+        )
+        messages.success(request, "Company created. You can now attach contacts and deals to it.")
+        return redirect("crm_company_detail", pk=company.pk)
+
+
 class CrmCompanyDetailView(CrmAccessMixin, TemplateView):
     template_name = "crm/company_detail.html"
 
@@ -592,6 +762,38 @@ class CrmCompanyDetailView(CrmAccessMixin, TemplateView):
             }
         )
         return context
+
+
+class CrmCompanyUpdateView(CrmAccessMixin, View):
+    template_name = "crm/company_form.html"
+
+    def get(self, request, pk):
+        company = get_object_or_404(Company, pk=pk, is_deleted=False)
+        return render(request, self.template_name, {"form": CompanyForm(instance=company), "company": company})
+
+    def post(self, request, pk):
+        company = get_object_or_404(Company, pk=pk, is_deleted=False)
+        before = {"name": company.name, "website": company.website, "owner_id": company.owner_id}
+        form = CompanyForm(request.POST, instance=company)
+        if not form.is_valid():
+            return render(request, self.template_name, {"form": form, "company": company}, status=400)
+        if Company.objects.filter(
+            name__iexact=form.cleaned_data["name"],
+            is_deleted=False,
+        ).exclude(pk=company.pk).exists():
+            form.add_error("name", "Another active company already uses this name.")
+            return render(request, self.template_name, {"form": form, "company": company}, status=400)
+        company = form.save()
+        AuditLog.objects.create(
+            actor=request.user,
+            action="crm.company.updated",
+            entity_type="Company",
+            entity_id=str(company.pk),
+            before=before,
+            after={"name": company.name, "website": company.website, "owner_id": company.owner_id},
+        )
+        messages.success(request, "Company details updated.")
+        return redirect("crm_company_detail", pk=company.pk)
 
 
 class CrmDealListView(CrmAccessMixin, TemplateView):

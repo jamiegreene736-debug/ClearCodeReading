@@ -22,7 +22,7 @@
 {% block content %}
   <div class="page-head">
     <div><p class="eyebrow">Customer relationship management</p><h1>Contacts</h1><p class="subtle">Every valid website submission becomes a contact activity, without losing repeat inquiries.</p></div>
-    <a class="btn" href="/admin/crm/lead/add/">+ Create contact</a>
+    <a class="btn btn-primary" href="{% url 'crm_contact_create' %}">+ Add contact</a>
   </div>
 
   <section class="stats" aria-label="CRM summary">

@@ -1,0 +1,83 @@
+{% extends "crm/base.html" %}
+{% block title %}CRM overview{% endblock %}
+{% block extra_style %}
+  .page-head { display:flex; align-items:flex-end; justify-content:space-between; gap:18px; }
+  .overview-grid { display:grid; grid-template-columns:minmax(0,1.35fr) minmax(300px,.65fr); gap:18px; align-items:start; }
+  .section-card { padding:20px; }
+  .section-head { display:flex; align-items:center; justify-content:space-between; gap:12px; margin-bottom:14px; }
+  .section-head h2 { margin:0; }
+  .action-list { display:grid; gap:10px; }
+  .action-row { display:flex; align-items:center; justify-content:space-between; gap:14px; padding:13px; border:1px solid #e2e9ee; border-radius:6px; text-decoration:none; }
+  .action-row:hover { border-color:#8ca5b7; background:#fbfdfe; }
+  .action-row strong { color:var(--navy); }
+  .action-meta { color:var(--muted); font-size:12px; }
+  .pipeline-grid { display:grid; grid-template-columns:repeat(5,minmax(175px,1fr)); gap:12px; overflow:auto; padding-bottom:4px; }
+  .pipeline-card { min-width:175px; padding:16px; text-decoration:none; }
+  .pipeline-card:hover { border-color:#8ca5b7; }
+  .pipeline-card h3 { min-height:42px; margin-bottom:12px; font-size:15px; }
+  .pipeline-value { color:var(--navy); font-size:20px; font-weight:800; }
+  .step-list { margin:0; padding-left:20px; }
+  .step-list li { margin:10px 0; }
+  @media (max-width:1000px) { .overview-grid { grid-template-columns:1fr; } }
+  @media (max-width:650px) { .page-head { align-items:start; flex-direction:column; } }
+{% endblock %}
+{% block content %}
+  <div class="page-head">
+    <div><p class="eyebrow">CRM command center</p><h1>What needs attention</h1><p class="subtle">Start here, work the queue, and keep every relationship moving.</p></div>
+    <a class="btn btn-primary" href="{% url 'crm_contact_create' %}">+ Add contact</a>
+  </div>
+
+  <section class="stats" aria-label="CRM summary">
+    <a class="card stat" href="{% url 'crm_contact_list' %}" style="text-decoration:none"><div class="stat-label">All contacts</div><div class="stat-value">{{ total_contacts }}</div></a>
+    <a class="card stat" href="{% url 'crm_contact_list' %}?status=new" style="text-decoration:none"><div class="stat-label">New to review</div><div class="stat-value">{{ new_contacts }}</div></a>
+    <a class="card stat" href="{% url 'crm_contact_list' %}?owner=unassigned" style="text-decoration:none"><div class="stat-label">Unassigned</div><div class="stat-value">{{ unassigned_contacts }}</div></a>
+    <div class="card stat"><div class="stat-label">Overdue tasks</div><div class="stat-value">{{ overdue_tasks }}</div></div>
+    <a class="card stat" href="{% url 'crm_triage_list' %}" style="text-decoration:none"><div class="stat-label">Pending triage</div><div class="stat-value">{{ pending_triage }}</div></a>
+    <div class="card stat"><div class="stat-label">Submissions · 30 days</div><div class="stat-value">{{ recent_submissions }}</div></div>
+  </section>
+
+  <div class="overview-grid">
+    <section class="card section-card">
+      <div class="section-head"><h2>Follow-up queue</h2><a href="{% url 'crm_contact_list' %}">View contacts</a></div>
+      <div class="action-list">
+        {% for row in task_rows %}
+          <a class="action-row" href="{% url 'crm_contact_detail' row.task.lead.pk %}#activity"><span><strong>{{ row.task.subject }}</strong><br><span class="action-meta">{{ row.task.lead.contact_name }}{% if row.task.assigned_to %} · {{ row.task.assigned_to.get_full_name|default:row.task.assigned_to.email }}{% endif %}</span></span><span class="badge {% if row.is_overdue %}badge-warn{% else %}badge-neutral{% endif %}">{% if row.task.due_at %}{% if row.is_overdue %}Overdue · {% endif %}{{ row.task.due_at|date:"M j, g:i A" }}{% else %}No due date{% endif %}</span></a>
+        {% empty %}<div class="empty"><strong>No open follow-up tasks.</strong><br>Create one from any contact record.</div>{% endfor %}
+      </div>
+    </section>
+
+    <aside class="card section-card">
+      <div class="section-head"><h2>Simple CRM flow</h2></div>
+      <ol class="step-list">
+        <li><strong>Capture or add a contact.</strong><br><span class="subtle">Website forms arrive automatically; manual contacts use Add contact.</span></li>
+        <li><strong>Assign the next action.</strong><br><span class="subtle">Set an owner, add a note, and create a follow-up task.</span></li>
+        <li><strong>Qualify the opportunity.</strong><br><span class="subtle">Create a deal only when there is a real enrollment, partner, grant, donor, or investment path.</span></li>
+        <li><strong>Move the deal.</strong><br><span class="subtle">Keep the stage and next steps current until it closes.</span></li>
+      </ol>
+    </aside>
+
+    <section class="card section-card">
+      <div class="section-head"><h2>Recent contacts</h2><a href="{% url 'crm_contact_list' %}">See all</a></div>
+      <div class="action-list">
+        {% for contact in recent_contacts %}
+          <a class="action-row" href="{% url 'crm_contact_detail' contact.pk %}"><span><strong>{{ contact.contact_name }}</strong><br><span class="action-meta">{{ contact.contact_email }} · {{ contact.organization_name|default:contact.school_name }}</span></span><span class="badge {% if contact.status == 'new' %}badge-warn{% endif %}">{{ contact.get_status_display }}</span></a>
+        {% empty %}<div class="empty">No contacts yet.</div>{% endfor %}
+      </div>
+    </section>
+
+    <aside class="card section-card">
+      <div class="section-head"><h2>Intake triage</h2><a href="{% url 'crm_triage_list' %}">Open queue</a></div>
+      <div class="action-list">
+        {% for item in triage_items %}<a class="action-row" href="{% url 'crm_triage_list' %}"><span><strong>{{ item.lead.contact_name }}</strong><br><span class="action-meta">{{ item.get_source_signal_display }}</span></span><span class="badge badge-warn">Pending</span></a>
+        {% empty %}<div class="empty">Nothing needs routing.</div>{% endfor %}
+      </div>
+    </aside>
+  </div>
+
+  <section style="margin-top:18px">
+    <div class="section-head"><h2>Opportunity pipelines</h2><a href="{% url 'crm_deal_list' %}">Open pipeline board</a></div>
+    <div class="pipeline-grid">
+      {% for pipeline in pipeline_summaries %}<a class="card pipeline-card" href="{% url 'crm_deal_list' %}?pipeline={{ pipeline.value }}"><h3>{{ pipeline.label }}</h3><div class="pipeline-value">{{ pipeline.deal_count }} deal{{ pipeline.deal_count|pluralize }}</div><div class="action-meta">${{ pipeline.total_value|floatformat:2 }} total value</div></a>{% endfor %}
+    </div>
+  </section>
+{% endblock %}

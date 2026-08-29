@@ -1,8 +1,79 @@
 from django import forms
 from django.db.models import Q
 
-from apps.crm.models import Company, Opportunity
+from apps.crm.models import Company, Lead, Opportunity
 from apps.users.models import CustomUser
+
+
+class ContactForm(forms.ModelForm):
+    company_name = forms.CharField(
+        max_length=255,
+        required=False,
+        label="Or create a company",
+        help_text="Leave this blank when selecting an existing company.",
+    )
+
+    class Meta:
+        model = Lead
+        fields = [
+            "contact_name",
+            "contact_email",
+            "contact_phone",
+            "audience",
+            "organization_name",
+            "company",
+            "source",
+            "status",
+            "assigned_to",
+            "estimated_students",
+            "notes",
+        ]
+        widgets = {
+            "contact_email": forms.EmailInput(attrs={"autocomplete": "email"}),
+            "contact_phone": forms.TextInput(attrs={"autocomplete": "tel"}),
+            "notes": forms.Textarea(attrs={"rows": 4}),
+        }
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.fields["company"].queryset = Company.objects.filter(is_deleted=False).order_by("name")
+        self.fields["assigned_to"].queryset = CustomUser.objects.filter(
+            is_active=True,
+            is_deleted=False,
+        ).filter(
+            Q(is_superuser=True) | Q(is_staff=True) | Q(role=CustomUser.Role.SUPER_ADMIN)
+        ).distinct().order_by("first_name", "last_name", "email")
+        self.fields["company"].required = False
+        self.fields["assigned_to"].required = False
+
+    def clean_contact_email(self):
+        return self.cleaned_data["contact_email"].strip().lower()
+
+    def clean(self):
+        cleaned_data = super().clean()
+        if cleaned_data.get("company") and cleaned_data.get("company_name", "").strip():
+            self.add_error("company_name", "Choose an existing company or create a new one, not both.")
+        return cleaned_data
+
+
+class CompanyForm(forms.ModelForm):
+    class Meta:
+        model = Company
+        fields = ["name", "website", "owner", "notes"]
+        widgets = {"notes": forms.Textarea(attrs={"rows": 5})}
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.fields["owner"].queryset = CustomUser.objects.filter(
+            is_active=True,
+            is_deleted=False,
+        ).filter(
+            Q(is_superuser=True) | Q(is_staff=True) | Q(role=CustomUser.Role.SUPER_ADMIN)
+        ).distinct().order_by("first_name", "last_name", "email")
+        self.fields["owner"].required = False
+
+    def clean_name(self):
+        return self.cleaned_data["name"].strip()
 
 
 class DealForm(forms.ModelForm):
