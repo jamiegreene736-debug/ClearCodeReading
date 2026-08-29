@@ -13,6 +13,9 @@ from apps.core.models import RecruitingInterest
 admin.site.site_header = "ClearCode Reading Admin Portal"
 admin.site.site_title = "ClearCode Reading Admin Portal"
 admin.site.index_title = "Admin Portal"
+admin.site.enable_nav_sidebar = False
+admin.site.index_template = "admin/clearcode_index.html"
+admin.site.app_index_template = "admin/clearcode_app_index.html"
 
 
 @admin.register(RecruitingInterest)

@@ -1,5 +1,5 @@
 {% extends "admin/base.html" %}
-{% load i18n static %}
+{% load admin_navigation i18n static %}
 
 {% block title %}{% if subtitle %}{{ subtitle }} | {% endif %}{{ title }} | {{ site_title|default:"ClearCode Reading Admin Portal" }}{% endblock %}
 
@@ -9,7 +9,7 @@
 
 {% block responsive %}
   {{ block.super }}
-  <link rel="stylesheet" href="{% static 'admin/css/clearcode_admin.css' %}">
+  <link rel="stylesheet" href="{% static 'admin/css/clearcode_admin.css' %}?v=20260829-admin-nav-2">
 {% endblock %}
 
 {% block extrahead %}
@@ -38,4 +38,97 @@
   {% endif %}
 {% endblock %}
 
-{% block nav-global %}{% endblock %}
+{% block nav-global %}
+  {% if has_permission %}
+    {% admin_navigation_groups available_apps as navigation_groups %}
+    <nav class="clearcode-admin-nav" aria-label="Admin portal navigation" data-admin-navigation>
+      <ul class="clearcode-admin-nav__list">
+        <li><a class="clearcode-admin-nav__direct" href="{% url 'portal_dashboard' %}">Portal dashboard</a></li>
+        <li><a class="clearcode-admin-nav__direct" href="{% url 'admin:index' %}">Admin home</a></li>
+        <li><a class="clearcode-admin-nav__direct" href="{% url 'crm_dashboard' %}">CRM workspace</a></li>
+        {% for group in navigation_groups %}
+          <li class="clearcode-admin-nav__item">
+            <div data-admin-disclosure>
+              <button
+                type="button"
+                class="clearcode-admin-nav__summary"
+                aria-expanded="false"
+                aria-controls="admin-nav-{{ group.key }}"
+              >
+                <span>{{ group.label }}</span>
+                <svg aria-hidden="true" viewBox="0 0 12 8" width="12" height="8"><path d="m1 1.5 5 5 5-5" /></svg>
+              </button>
+              <div class="clearcode-admin-nav__panel" id="admin-nav-{{ group.key }}" hidden>
+                <div class="clearcode-admin-nav__panel-heading">
+                  <strong>{{ group.label }}</strong>
+                  <span>{{ group.model_count }} tool{{ group.model_count|pluralize }}</span>
+                </div>
+                <div class="clearcode-admin-nav__apps">
+                  {% for app in group.apps %}
+                    <section class="clearcode-admin-nav__app{% if app.app_label == app_label or app.app_label == opts.app_label %} is-current{% endif %}">
+                      <a class="clearcode-admin-nav__app-link" href="{{ app.app_url }}">
+                        {{ app.name }} overview
+                      </a>
+                      <ul class="clearcode-admin-nav__models">
+                        {% for model in app.models %}
+                          {% if model.admin_url %}
+                            <li>
+                              <a href="{{ model.admin_url }}"{% if model.admin_url in request.path|urlencode %} aria-current="page"{% endif %}>
+                                {{ model.name }}
+                              </a>
+                            </li>
+                          {% endif %}
+                        {% endfor %}
+                      </ul>
+                    </section>
+                  {% endfor %}
+                </div>
+              </div>
+            </div>
+          </li>
+        {% endfor %}
+      </ul>
+    </nav>
+    <script>
+      (() => {
+        const navigation = document.currentScript.previousElementSibling;
+        if (!navigation?.matches("[data-admin-navigation]")) return;
+        const disclosures = [...navigation.querySelectorAll("[data-admin-disclosure]")];
+        const setOpen = (disclosure, isOpen) => {
+          const button = disclosure.querySelector("button[aria-expanded]");
+          const panel = disclosure.querySelector(".clearcode-admin-nav__panel");
+          button.setAttribute("aria-expanded", String(isOpen));
+          panel.hidden = !isOpen;
+        };
+        const closeAll = (except = null) => disclosures.forEach((disclosure) => {
+          if (disclosure !== except) setOpen(disclosure, false);
+        });
+
+        disclosures.forEach((disclosure) => {
+          const button = disclosure.querySelector("button[aria-expanded]");
+          button.addEventListener("click", () => {
+            const shouldOpen = button.getAttribute("aria-expanded") !== "true";
+            closeAll(disclosure);
+            setOpen(disclosure, shouldOpen);
+          });
+          disclosure.querySelectorAll("a").forEach((link) => {
+            link.addEventListener("click", () => setOpen(disclosure, false));
+          });
+        });
+        navigation.addEventListener("keydown", (event) => {
+          if (event.key !== "Escape") return;
+          const openDisclosure = disclosures.find((disclosure) =>
+            disclosure.querySelector("button[aria-expanded='true']")
+          );
+          if (!openDisclosure) return;
+          event.preventDefault();
+          setOpen(openDisclosure, false);
+          openDisclosure.querySelector("button")?.focus();
+        });
+        document.addEventListener("click", (event) => {
+          if (!navigation.contains(event.target)) closeAll();
+        });
+      })();
+    </script>
+  {% endif %}
+{% endblock %}

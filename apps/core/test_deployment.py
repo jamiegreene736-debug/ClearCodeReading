@@ -1,5 +1,6 @@
 from pathlib import Path
 from tempfile import TemporaryDirectory
+from types import SimpleNamespace
 
 from django.contrib import admin
 from django.contrib.auth.models import AnonymousUser
@@ -17,6 +18,7 @@ from django.urls import reverse
 from django.utils.crypto import get_random_string
 from whitenoise.middleware import WhiteNoiseMiddleware
 
+from apps.core.templatetags.admin_navigation import admin_navigation_groups
 from clearcodereading import settings
 
 
@@ -73,6 +75,9 @@ class StaticAssetDeploymentTests(SimpleTestCase):
         self.assertIn(".dashboard #content-related", css)
         self.assertIn("overflow-x: auto", css)
         self.assertIn("font-size: 16px", css)
+        self.assertIn(".clearcode-admin-nav__panel", css)
+        self.assertIn(".clearcode-admin-model-grid", css)
+        self.assertIn("flex-shrink: 0", css)
 
 
 class LoginCsrfRecoveryTests(TestCase):
@@ -159,6 +164,12 @@ class AdminBrandingTests(SimpleTestCase):
         self.assertEqual(admin.site.site_header, "ClearCode Reading Admin Portal")
         self.assertEqual(admin.site.site_title, "ClearCode Reading Admin Portal")
         self.assertEqual(admin.site.index_title, "Admin Portal")
+        self.assertFalse(admin.site.enable_nav_sidebar)
+        self.assertEqual(admin.site.index_template, "admin/clearcode_index.html")
+        self.assertEqual(
+            admin.site.app_index_template,
+            "admin/clearcode_app_index.html",
+        )
 
     def test_admin_base_template_reuses_homepage_branding(self):
         request = RequestFactory().get("/admin/")
@@ -182,3 +193,104 @@ class AdminBrandingTests(SimpleTestCase):
         self.assertIn('/static/admin/css/clearcode_admin.css', html)
         self.assertIn('href="/admin/"', html)
         self.assertNotIn("Django administration", html)
+
+    def test_admin_navigation_uses_permission_filtered_horizontal_groups(self):
+        request = RequestFactory().get("/admin/workforce/")
+        request.user = SimpleNamespace(
+            is_active=True,
+            is_staff=True,
+            is_authenticated=True,
+            get_short_name=lambda: "Demo",
+            get_username=lambda: "demo@example.com",
+            has_usable_password=lambda: True,
+        )
+        context = {
+            "app_label": "workforce",
+            "available_apps": [
+                {
+                    "app_label": "workforce",
+                    "app_url": "/admin/workforce/",
+                    "name": "Workforce",
+                    "models": [
+                        {
+                            "admin_url": "/admin/workforce/paymentrun/",
+                            "name": "Payment runs",
+                        }
+                    ],
+                }
+            ],
+            "has_permission": True,
+            "is_nav_sidebar_enabled": False,
+            "is_popup": False,
+            "opts": SimpleNamespace(app_label="workforce"),
+            "site_header": admin.site.site_header,
+            "site_title": admin.site.site_title,
+            "site_url": "/",
+            "subtitle": None,
+            "title": "Workforce administration",
+            "user": request.user,
+        }
+
+        html = render_to_string("admin/base_site.html", context, request=request)
+
+        self.assertIn('aria-label="Admin portal navigation"', html)
+        self.assertIn("Scheduling &amp; payments", html)
+        self.assertIn("Workforce overview", html)
+        self.assertIn('/admin/workforce/paymentrun/', html)
+        self.assertIn('href="/dashboard/"', html)
+        self.assertIn('href="/crm/"', html)
+        self.assertNotIn("People &amp; access", html)
+        self.assertNotIn('role="menu"', html)
+        self.assertIn('aria-expanded="false"', html)
+        self.assertIn('aria-controls="admin-nav-operations"', html)
+        self.assertIn('event.key !== "Escape"', html)
+
+    def test_admin_app_list_uses_responsive_model_cards(self):
+        request = RequestFactory().get("/admin/workforce/")
+        html = render_to_string(
+            "admin/_clearcode_app_list.html",
+            {
+                "app_list": [
+                    {
+                        "app_label": "workforce",
+                        "app_url": "/admin/workforce/",
+                        "name": "Workforce",
+                        "models": [
+                            {
+                                "add_url": "/admin/workforce/paymentrun/add/",
+                                "admin_url": "/admin/workforce/paymentrun/",
+                                "name": "Payment runs",
+                                "object_name": "PaymentRun",
+                                "view_only": False,
+                            }
+                        ],
+                    }
+                ],
+                "request": request,
+                "show_changelinks": True,
+            },
+            request=request,
+        )
+
+        self.assertIn('class="clearcode-admin-model-grid"', html)
+        self.assertIn("Payment runs", html)
+        self.assertIn("Manage", html)
+        self.assertNotIn("<table", html)
+
+
+class AdminNavigationGroupingTests(SimpleTestCase):
+    def test_groups_known_apps_and_keeps_unknown_apps_available(self):
+        groups = admin_navigation_groups(
+            [
+                {"app_label": "assessments", "models": [{"name": "Assessments"}]},
+                {"app_label": "workforce", "models": [{"name": "Payments"}]},
+                {"app_label": "custom_tools", "models": [{"name": "Imports"}]},
+            ]
+        )
+
+        self.assertEqual(
+            [group["label"] for group in groups],
+            ["Readers & teaching", "Scheduling & payments", "System"],
+        )
+        self.assertEqual(groups[1]["model_count"], 1)
+        self.assertEqual(groups[2]["apps"][0]["app_label"], "custom_tools")

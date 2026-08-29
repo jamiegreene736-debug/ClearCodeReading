@@ -1,0 +1,46 @@
+{% load i18n %}
+
+{% if app_list %}
+  <div class="clearcode-admin-app-list">
+    {% for app in app_list %}
+      <section class="clearcode-admin-app app-{{ app.app_label }} module{% if app.app_url in request.path|urlencode %} current-app{% endif %}">
+        <header class="clearcode-admin-app__heading">
+          <div>
+            <p>Backend workspace</p>
+            <h2>
+              <a href="{{ app.app_url }}" title="{% blocktranslate with name=app.name %}Models in the {{ name }} application{% endblocktranslate %}">{{ app.name }}</a>
+            </h2>
+          </div>
+          <span>{{ app.models|length }} tool{{ app.models|length|pluralize }}</span>
+        </header>
+        <ul class="clearcode-admin-model-grid">
+          {% for model in app.models %}
+            {% with model_name=model.object_name|lower %}
+              <li class="clearcode-admin-model model-{{ model_name }}{% if model.admin_url in request.path|urlencode %} current-model{% endif %}">
+                <div class="clearcode-admin-model__name" id="{{ app.app_label }}-{{ model_name }}">
+                  {% if model.admin_url %}
+                    <a href="{{ model.admin_url }}"{% if model.admin_url in request.path|urlencode %} aria-current="page"{% endif %}>{{ model.name }}</a>
+                  {% else %}
+                    <span>{{ model.name }}</span>
+                  {% endif %}
+                </div>
+                <div class="clearcode-admin-model__actions">
+                  {% if model.add_url %}
+                    <a href="{{ model.add_url }}" class="addlink" aria-describedby="{{ app.app_label }}-{{ model_name }}">{% translate 'Add' %}</a>
+                  {% endif %}
+                  {% if model.admin_url and show_changelinks %}
+                    <a href="{{ model.admin_url }}" class="{% if model.view_only %}viewlink{% else %}changelink{% endif %}" aria-describedby="{{ app.app_label }}-{{ model_name }}">
+                      {% if model.view_only %}{% translate 'View' %}{% else %}{% translate 'Manage' %}{% endif %}
+                    </a>
+                  {% endif %}
+                </div>
+              </li>
+            {% endwith %}
+          {% endfor %}
+        </ul>
+      </section>
+    {% endfor %}
+  </div>
+{% else %}
+  <p>{% translate 'You don’t have permission to view or edit anything.' %}</p>
+{% endif %}
