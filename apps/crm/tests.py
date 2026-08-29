@@ -722,14 +722,14 @@ class CrmWorkspaceTests(TestCase):
         self.assertEqual(anonymous_response.status_code, 302)
         self.assertEqual(guardian_response.status_code, 403)
 
-    def test_admin_dashboard_header_has_direct_crm_button(self):
+    def test_admin_dashboard_header_exposes_crm_in_business_menu(self):
         self.client.force_login(self.admin_user)
 
         response = self.client.get(reverse("portal_dashboard"))
 
         self.assertEqual(response.status_code, 200)
+        self.assertContains(response, 'data-testid="business-menu-button"')
         self.assertContains(response, 'data-testid="crm-header-link"')
-        self.assertContains(response, 'data-testid="mobile-crm-header-link"')
         self.assertContains(response, 'aria-label="Workspace sections"')
         self.assertContains(response, f'href="{reverse("crm_dashboard")}"')
 

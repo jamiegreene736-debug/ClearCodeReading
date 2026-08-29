@@ -35,7 +35,7 @@
     {% endif %}
 
     <section class="grid min-w-0 gap-6 lg:grid-cols-[.85fr_1.15fr] lg:items-start">
-      <aside class="min-w-0 rounded-[2rem] bg-white/90 p-6 shadow-2xl shadow-deepTeal/10 ring-1 ring-deepTeal/10 lg:sticky lg:top-28">
+      <aside id="portal-overview" class="min-w-0 scroll-mt-40 rounded-[2rem] bg-white/90 p-6 shadow-2xl shadow-deepTeal/10 ring-1 ring-deepTeal/10 lg:sticky lg:top-28">
         <p class="text-sm font-black uppercase tracking-[0.18em] text-mediumTeal">
           {% if is_admin %}Administrator workspace{% elif is_parent %}Parent workspace{% elif is_child %}Reader workspace{% else %}Teacher workspace{% endif %}
         </p>
@@ -83,7 +83,7 @@
         </nav>
         {% if is_parent %}
           {% for dashboard in parent_dashboards %}
-            <section id="progress-overview" class="scroll-mt-40 rounded-[2rem] bg-white p-5 shadow-xl shadow-deepTeal/10 ring-1 ring-deepTeal/10 sm:p-7">
+            <section {% if forloop.first %}id="progress-overview"{% endif %} class="scroll-mt-40 rounded-[2rem] bg-white p-5 shadow-xl shadow-deepTeal/10 ring-1 ring-deepTeal/10 sm:p-7">
               <p class="text-sm font-black uppercase tracking-[0.18em] text-deepTeal">This week's reading growth</p>
               <div class="mt-2 flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
                 <div>
@@ -150,7 +150,7 @@
               </div>
             </section>
           {% empty %}
-            <section class="rounded-[2rem] bg-white p-6 shadow-xl ring-1 ring-mediumTeal/15"><h2 class="text-2xl font-black">Progress dashboard unavailable</h2><p class="mt-2 text-ink/65">Active guardian consent and dashboard access are required. Contact your center if this looks unexpected.</p></section>
+            <section id="progress-overview" class="scroll-mt-40 rounded-[2rem] bg-white p-6 shadow-xl ring-1 ring-mediumTeal/15"><h2 class="text-2xl font-black">Progress dashboard unavailable</h2><p class="mt-2 text-ink/65">Active guardian consent and dashboard access are required. Contact your center if this looks unexpected.</p></section>
           {% endfor %}
         {% endif %}
 
@@ -182,7 +182,7 @@
         {% endif %}
 
         {% if is_admin and operations_metrics %}
-          <section class="rounded-[2rem] bg-ink p-6 text-white shadow-xl">
+          <section id="operations" class="scroll-mt-36 rounded-[2rem] bg-ink p-6 text-white shadow-xl">
             <p class="text-sm font-black uppercase tracking-[0.18em] text-gold">Operations intelligence</p>
             <h2 class="mt-2 text-3xl font-black">Capacity and demand</h2>
             <div class="mt-5 grid gap-3 sm:grid-cols-3">
@@ -199,7 +199,7 @@
         {% endif %}
 
         {% if is_teacher or is_admin %}
-          <section class="rounded-[2rem] bg-white p-6 shadow-xl shadow-ink/8 ring-1 ring-deepTeal/10">
+          <section id="placement-review" class="scroll-mt-36 rounded-[2rem] bg-white p-6 shadow-xl shadow-ink/8 ring-1 ring-deepTeal/10">
             <p class="text-sm font-black uppercase tracking-[0.18em] text-deepTeal">Intervention placement</p>
             <h2 class="mt-2 text-3xl font-black">Review recommended sequences</h2>
             <p class="mt-2 text-sm leading-6 text-ink/65">Recommendations are advisory until you confirm or override them.</p>
@@ -274,7 +274,7 @@
             </form>
           </section>
 
-          <section class="rounded-[2rem] bg-white p-6 shadow-xl shadow-ink/8 ring-1 ring-ink/10">
+          <section id="lesson-library" class="scroll-mt-36 rounded-[2rem] bg-white p-6 shadow-xl shadow-ink/8 ring-1 ring-ink/10">
             <div>
               <p class="text-sm font-black uppercase tracking-[0.18em] text-deepTeal">Lesson library</p>
               <h2 class="mt-2 text-3xl font-black">Assign lesson templates to teachers</h2>
@@ -318,7 +318,7 @@
             </div>
           </section>
 
-          <section class="rounded-[2rem] bg-white p-6 shadow-xl shadow-ink/8 ring-1 ring-ink/10">
+          <section id="website-signups" class="scroll-mt-36 rounded-[2rem] bg-white p-6 shadow-xl shadow-ink/8 ring-1 ring-ink/10">
             <div class="flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
               <div>
                 <p class="text-sm font-black uppercase tracking-[0.18em] text-deepTeal">CRM intake</p>
@@ -364,7 +364,7 @@
             </div>
           </section>
 
-          <section class="rounded-[2rem] bg-white p-6 shadow-xl shadow-ink/8 ring-1 ring-ink/10">
+          <section id="account-creation" class="scroll-mt-36 rounded-[2rem] bg-white p-6 shadow-xl shadow-ink/8 ring-1 ring-ink/10">
             <div>
               <p class="text-sm font-black uppercase tracking-[0.18em] text-mediumTeal">Account creation</p>
               <h2 class="mt-2 text-3xl font-black">Create a parent or teacher login</h2>
@@ -431,7 +431,7 @@
         </section>
 
         {% if is_teacher %}
-          <section class="rounded-[2rem] bg-white p-6 shadow-xl shadow-ink/8 ring-1 ring-ink/10">
+          <section id="lesson-planning" class="scroll-mt-36 rounded-[2rem] bg-white p-6 shadow-xl shadow-ink/8 ring-1 ring-ink/10">
             <div class="flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
               <div>
                 <p class="text-sm font-black uppercase tracking-[0.18em] text-deepTeal">Assigned students</p>
@@ -496,7 +496,7 @@
             </div>
           </section>
 
-          <section class="rounded-[2rem] bg-white p-6 shadow-xl shadow-ink/8 ring-1 ring-ink/10">
+          <section id="assessment-review" class="scroll-mt-36 rounded-[2rem] bg-white p-6 shadow-xl shadow-ink/8 ring-1 ring-ink/10">
             <div class="flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
               <div>
                 <p class="text-sm font-black uppercase tracking-[0.18em] text-mediumTeal">Human review queue</p>
@@ -525,7 +525,7 @@
         {% endif %}
 
         {% if is_parent or is_child %}
-          <section class="rounded-[2rem] bg-white p-6 shadow-xl shadow-ink/8 ring-1 ring-ink/10">
+          <section id="teacher-plan" class="scroll-mt-36 rounded-[2rem] bg-white p-6 shadow-xl shadow-ink/8 ring-1 ring-ink/10">
             <p class="text-sm font-black uppercase tracking-[0.18em] text-deepTeal">Assigned lessons</p>
             <h2 class="mt-2 text-3xl font-black">Your child's teacher plan</h2>
             <div class="mt-5 grid gap-3">
@@ -592,7 +592,7 @@
           </div>
         </section>
 
-        <section class="rounded-[2rem] bg-white p-6 shadow-xl shadow-ink/8 ring-1 ring-ink/10">
+        <section id="next-tasks" class="scroll-mt-36 rounded-[2rem] bg-white p-6 shadow-xl shadow-ink/8 ring-1 ring-ink/10">
           <p class="text-sm font-black uppercase tracking-[0.18em] text-mediumTeal">Next tasks</p>
           <div class="mt-5 grid gap-3 md:grid-cols-3">
             <a class="focus-ring rounded-3xl bg-seafoam p-5 transition hover:-translate-y-1 hover:shadow-xl" href="/assessment/">

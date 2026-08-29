@@ -530,13 +530,19 @@ class MarketingPageTests(SimpleTestCase):
         for relative_path in [
             "templates/portal/_header.html",
             "templates/registration/login.html",
-            "templates/sessions/rapid_log.html",
         ]:
             content = (Path(settings.BASE_DIR) / relative_path).read_text()
             with self.subTest(template=relative_path):
                 self.assertIn('{% include "portal/_brand.html" %}', content)
                 self.assertNotIn("cc-lockup-", content)
                 self.assertNotIn("logo-plate", content)
+
+        rapid_log = (
+            Path(settings.BASE_DIR) / "templates" / "sessions" / "rapid_log.html"
+        ).read_text()
+        self.assertIn('{% include "portal/_header.html" %}', rapid_log)
+        self.assertNotIn("cc-lockup-", rapid_log)
+        self.assertNotIn("logo-plate", rapid_log)
 
     def test_root_favicon_uses_the_branded_icon(self):
         route = resolve("/favicon.ico")
