@@ -328,7 +328,7 @@
                 <span class="rounded-full bg-seafoam px-4 py-2 text-deepTeal">{{ lead_count }} total</span>
                 <span class="rounded-full bg-sand px-4 py-2 text-mediumTeal">{{ new_lead_count }} new</span>
                 {% if request.user.is_staff or request.user.is_superuser or request.user.role == 'super_admin' %}
-                  <a class="focus-ring rounded-full bg-ink px-4 py-2 text-white transition hover:bg-deepTeal" href="{% url 'crm_contact_list' %}">Open CRM</a>
+                  <a class="focus-ring rounded-full bg-ink px-4 py-2 text-white transition hover:bg-deepTeal" href="{% url 'crm_dashboard' %}">Open CRM</a>
                 {% endif %}
               </div>
             </div>

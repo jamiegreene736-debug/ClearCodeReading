@@ -1,7 +1,5 @@
 from django.contrib import admin, messages
 from django.core.exceptions import PermissionDenied
-from django.db.models import Count, Sum
-from django.http import HttpResponse
 from django.shortcuts import get_object_or_404, redirect
 from django.template.response import TemplateResponse
 from django.urls import path, reverse
@@ -93,38 +91,11 @@ class LeadAdmin(admin.ModelAdmin):
     list_filter = ("status", "audience", "source", "company", "assigned_to", "linked_user", "is_deleted", "created_at")
     search_fields = ("school_name", "organization_name", "contact_name", "contact_email", "contact_phone", "notes")
     autocomplete_fields = ("company", "assigned_to", "linked_user")
-    readonly_fields = ("created_at", "updated_at", "deleted_at", "pipeline_link")
+    readonly_fields = ("created_at", "updated_at", "deleted_at")
     actions = (mark_contacted, mark_qualified)
 
-    def get_urls(self):
-        return [
-            path("pipeline/", self.admin_site.admin_view(self.pipeline_view), name="crm_lead_pipeline"),
-        ] + super().get_urls()
-
-    def pipeline_link(self, obj=None):
-        return format_html('<a class="button" href="{}">Open CRM pipeline</a>', reverse("admin:crm_lead_pipeline"))
-
-    pipeline_link.short_description = "CRM pipeline"
-
-    def pipeline_view(self, request):
-        lead_rows = Lead.objects.filter(is_deleted=False).values("status").annotate(count=Count("id")).order_by("status")
-        opportunity_rows = (
-            Opportunity.objects.filter(is_deleted=False)
-            .values("pipeline", "stage")
-            .annotate(count=Count("id"), total_value=Sum("value"))
-            .order_by("pipeline", "stage")
-        )
-        html = ["<html><head><title>CRM Pipeline</title></head><body><h1>CRM Lead Pipeline</h1>"]
-        html.append('<p><a href="../">Back to leads</a></p>')
-        html.append("<h2>Leads by Status</h2><table border='1' cellpadding='6' cellspacing='0'><tr><th>Status</th><th>Count</th></tr>")
-        for row in lead_rows:
-            html.append(f"<tr><td>{row['status']}</td><td>{row['count']}</td></tr>")
-        html.append("</table>")
-        html.append("<h2>Deals by Pipeline and Stage</h2><table border='1' cellpadding='6' cellspacing='0'><tr><th>Pipeline</th><th>Stage</th><th>Count</th><th>Total Value</th></tr>")
-        for row in opportunity_rows:
-            html.append(f"<tr><td>{row['pipeline']}</td><td>{row['stage']}</td><td>{row['count']}</td><td>{row['total_value'] or 0}</td></tr>")
-        html.append("</table></body></html>")
-        return HttpResponse("".join(html))
+    def has_add_permission(self, request):
+        return False
 
 
 @admin.register(FormSubmission)

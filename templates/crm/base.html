@@ -25,11 +25,12 @@
     .nav-link { display:flex; min-height:44px; align-items:center; gap:10px; margin:3px 0; padding:10px 12px; border-radius:5px; color:#eaf0f4; text-decoration:none; font-weight:600; }
     .nav-link:hover,.nav-link.active { color:white; background:#3d5264; }
     .main { min-width:0; }
-    .topbar { height:64px; display:flex; align-items:center; justify-content:space-between; gap:20px; padding:0 28px; border-bottom:1px solid var(--line); background:white; }
+    .topbar { min-height:72px; display:flex; align-items:center; justify-content:space-between; gap:20px; padding:10px 28px; border-bottom:1px solid var(--line); background:white; }
     .topbar small { color:var(--muted); }
-    .top-actions { display:flex; align-items:center; gap:14px; }
-    .top-actions a { color:var(--teal); font-weight:600; text-decoration:none; }
-    .logout { min-height:44px; padding:7px 12px; color:var(--ink); background:white; border:1px solid var(--line); border-radius:5px; }
+    .top-actions { display:flex; flex-wrap:wrap; align-items:center; gap:10px; }
+    .top-actions a { color:var(--teal); font-weight:600; text-decoration:none; white-space:nowrap; }
+    .top-actions .btn-primary { color:white; }
+    .logout { min-height:44px; padding:7px 12px; color:var(--ink); background:white; border:1px solid var(--line); border-radius:5px; white-space:nowrap; }
     .content { padding:28px; }
     .eyebrow { margin:0 0 5px; color:var(--teal); font-size:12px; font-weight:700; letter-spacing:.08em; text-transform:uppercase; }
     h1,h2,h3,p { margin-top:0; }
@@ -71,9 +72,9 @@
       .mobile-nav summary::after { content:'+'; font-size:20px; }
       .mobile-nav[open] summary::after { content:'−'; }
       .mobile-nav .nav-group { display:grid; margin-top:8px; }
-      .topbar { height:auto; min-height:64px; align-items:center; padding:10px 14px; }
+      .topbar { height:auto; min-height:64px; align-items:center; flex-wrap:wrap; padding:10px 14px; }
       .topbar small { display:none; }
-      .top-actions { gap:8px; }
+      .top-actions { width:100%; gap:8px; }
       .top-actions a { min-height:44px; display:inline-flex; align-items:center; }
       .content { padding:20px 14px; }
       .stats { grid-template-columns:1fr 1fr; }
@@ -82,8 +83,10 @@
     }
     @media (max-width:420px) {
       .stats { grid-template-columns:1fr; }
-      .topbar > div:first-child { max-width:8.5rem; }
-      .top-actions a { font-size:12px; }
+      .top-actions { display:grid; grid-template-columns:1fr 1fr; }
+      .top-actions .btn-primary { grid-column:1 / -1; }
+      .top-actions a { font-size:13px; }
+      .top-actions form,.top-actions .logout { width:100%; }
     }
     {% block extra_style %}{% endblock %}
   </style>
@@ -92,37 +95,39 @@
   <a class="skip" href="#main-content">Skip to content</a>
   <div class="shell">
     <aside class="sidebar">
-      <a class="brand" href="{% url 'crm_contact_list' %}"><span class="brand-mark">CC</span><span>ClearCode CRM</span></a>
+      <a class="brand" href="{% url 'crm_dashboard' %}"><span class="brand-mark">CC</span><span>ClearCode CRM</span></a>
       <div class="desktop-nav">
         <p class="nav-label">CRM</p>
         <nav class="nav-group" aria-label="CRM navigation">
-          <a class="nav-link {% if request.resolver_match.url_name == 'crm_contact_list' or request.resolver_match.url_name == 'crm_contact_detail' %}active{% endif %}" href="{% url 'crm_contact_list' %}"><span aria-hidden="true">◎</span> Contacts</a>
-          <a class="nav-link {% if request.resolver_match.url_name == 'crm_company_list' or request.resolver_match.url_name == 'crm_company_detail' %}active{% endif %}" href="{% url 'crm_company_list' %}"><span aria-hidden="true">▣</span> Companies</a>
-          <a class="nav-link {% if request.resolver_match.url_name == 'crm_deal_list' %}active{% endif %}" href="{% url 'crm_deal_list' %}"><span aria-hidden="true">◇</span> Deals</a>
+          <a class="nav-link {% if request.resolver_match.url_name == 'crm_dashboard' %}active{% endif %}" href="{% url 'crm_dashboard' %}"><span aria-hidden="true">⌂</span> Overview</a>
+          <a class="nav-link {% if request.resolver_match.url_name == 'crm_contact_list' or request.resolver_match.url_name == 'crm_contact_create' or request.resolver_match.url_name == 'crm_contact_detail' %}active{% endif %}" href="{% url 'crm_contact_list' %}"><span aria-hidden="true">◎</span> Contacts</a>
+          <a class="nav-link {% if request.resolver_match.url_name == 'crm_company_list' or request.resolver_match.url_name == 'crm_company_create' or request.resolver_match.url_name == 'crm_company_detail' or request.resolver_match.url_name == 'crm_company_update' %}active{% endif %}" href="{% url 'crm_company_list' %}"><span aria-hidden="true">▣</span> Companies</a>
+          <a class="nav-link {% if request.resolver_match.url_name == 'crm_deal_list' or request.resolver_match.url_name == 'crm_deal_new' or request.resolver_match.url_name == 'crm_deal_create' or request.resolver_match.url_name == 'crm_deal_detail' %}active{% endif %}" href="{% url 'crm_deal_list' %}"><span aria-hidden="true">◇</span> Deals</a>
           <a class="nav-link {% if request.resolver_match.url_name == 'crm_triage_list' %}active{% endif %}" href="{% url 'crm_triage_list' %}"><span aria-hidden="true">⌁</span> Intake triage</a>
         </nav>
         <p class="nav-label">ClearCode</p>
         <nav class="nav-group" aria-label="ClearCode navigation">
-          <a class="nav-link" href="{% url 'portal_dashboard' %}"><span aria-hidden="true">▦</span> Dashboard</a>
+          <a class="nav-link" href="{% url 'portal_dashboard' %}"><span aria-hidden="true">▦</span> Back to portal</a>
           <a class="nav-link" href="/admin/"><span aria-hidden="true">⚙</span> Admin</a>
         </nav>
       </div>
       <details class="mobile-nav">
         <summary>Workspace menu</summary>
         <nav class="nav-group" aria-label="Mobile CRM navigation">
-          <a class="nav-link {% if request.resolver_match.url_name == 'crm_contact_list' or request.resolver_match.url_name == 'crm_contact_detail' %}active{% endif %}" href="{% url 'crm_contact_list' %}">Contacts</a>
-          <a class="nav-link {% if request.resolver_match.url_name == 'crm_company_list' or request.resolver_match.url_name == 'crm_company_detail' %}active{% endif %}" href="{% url 'crm_company_list' %}">Companies</a>
-          <a class="nav-link {% if request.resolver_match.url_name == 'crm_deal_list' %}active{% endif %}" href="{% url 'crm_deal_list' %}">Deals</a>
+          <a class="nav-link {% if request.resolver_match.url_name == 'crm_dashboard' %}active{% endif %}" href="{% url 'crm_dashboard' %}">Overview</a>
+          <a class="nav-link {% if request.resolver_match.url_name == 'crm_contact_list' or request.resolver_match.url_name == 'crm_contact_create' or request.resolver_match.url_name == 'crm_contact_detail' %}active{% endif %}" href="{% url 'crm_contact_list' %}">Contacts</a>
+          <a class="nav-link {% if request.resolver_match.url_name == 'crm_company_list' or request.resolver_match.url_name == 'crm_company_create' or request.resolver_match.url_name == 'crm_company_detail' or request.resolver_match.url_name == 'crm_company_update' %}active{% endif %}" href="{% url 'crm_company_list' %}">Companies</a>
+          <a class="nav-link {% if request.resolver_match.url_name == 'crm_deal_list' or request.resolver_match.url_name == 'crm_deal_new' or request.resolver_match.url_name == 'crm_deal_create' or request.resolver_match.url_name == 'crm_deal_detail' %}active{% endif %}" href="{% url 'crm_deal_list' %}">Deals</a>
           <a class="nav-link {% if request.resolver_match.url_name == 'crm_triage_list' %}active{% endif %}" href="{% url 'crm_triage_list' %}">Intake triage</a>
-          <a class="nav-link" href="{% url 'portal_dashboard' %}">Dashboard</a>
+          <a class="nav-link" href="{% url 'portal_dashboard' %}">Back to portal</a>
           <a class="nav-link" href="/admin/">Admin</a>
         </nav>
       </details>
     </aside>
     <div class="main">
       <header class="topbar">
-        <div><strong>CRM workspace</strong><br><small>Contacts, companies, deals, and intake triage</small></div>
-        <div class="top-actions"><a href="/">View website</a><form method="post" action="{% url 'logout' %}">{% csrf_token %}<button class="logout" type="submit">Log out</button></form></div>
+        <div><strong>CRM workspace</strong><br><small>From first inquiry to next action</small></div>
+        <div class="top-actions"><a class="btn btn-primary" href="{% url 'crm_contact_create' %}">+ Add contact</a><a href="/">View website</a><form method="post" action="{% url 'logout' %}">{% csrf_token %}<button class="logout" type="submit">Log out</button></form></div>
       </header>
       {% if messages %}{% for message in messages %}<div class="flash" role="status">{{ message }}</div>{% endfor %}{% endif %}
       <main class="content" id="main-content">{% block content %}{% endblock %}</main>

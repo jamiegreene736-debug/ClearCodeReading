@@ -7,10 +7,12 @@
   .company-card h2 { margin-bottom:4px; }
   .company-card h2 a { color:var(--teal); text-decoration:none; }
   .company-meta { display:flex; flex-wrap:wrap; gap:8px; margin-top:16px; }
+  .list-actions { display:flex; align-items:flex-end; gap:10px; }
   .search { display:flex; gap:8px; min-width:min(420px,100%); }
-  @media (max-width:900px) {
+  @media (max-width:1100px) {
     .page-head { align-items:stretch; flex-direction:column; }
     .page-head > div,.search { min-width:0; width:100%; }
+    .list-actions { width:100%; align-items:stretch; flex-direction:column; }
     .search input { min-width:0; }
     .company-grid { grid-template-columns:minmax(0,1fr); }
     .company-card { min-width:0; overflow-wrap:anywhere; }
@@ -18,7 +20,7 @@
   @media (max-width:420px) { .search { flex-direction:column; } }
 {% endblock %}
 {% block content %}
-  <div class="page-head"><div><p class="eyebrow">Relationship records</p><h1>Companies</h1><p class="subtle">One company can hold multiple contacts and multiple deals across different pipelines.</p></div><form class="search" method="get"><input name="q" type="search" value="{{ query }}" placeholder="Search companies or contacts"><button class="btn btn-primary" type="submit">Search</button></form></div>
+  <div class="page-head"><div><p class="eyebrow">Relationship records</p><h1>Companies</h1><p class="subtle">One company can hold multiple contacts and multiple deals across different pipelines.</p></div><div class="list-actions"><form class="search" method="get"><input name="q" type="search" value="{{ query }}" placeholder="Search companies or contacts"><button class="btn" type="submit">Search</button></form><a class="btn btn-primary" href="{% url 'crm_company_create' %}">+ Add company</a></div></div>
   <div class="company-grid">
     {% for company in companies %}<article class="card company-card"><h2><a href="{% url 'crm_company_detail' company.pk %}">{{ company.name }}</a></h2><p class="subtle">{% if company.website %}<a href="{{ company.website }}">{{ company.website }}</a>{% else %}No website recorded{% endif %}</p><div class="company-meta"><span class="badge">{{ company.contact_count }} contact{{ company.contact_count|pluralize }}</span><span class="badge badge-neutral">{{ company.deal_count }} deal{{ company.deal_count|pluralize }}</span><span class="badge badge-neutral">${{ company.total_deal_value|default:0|floatformat:2 }}</span></div></article>
     {% empty %}<div class="card empty">No companies match this view. Attach or create a company from a contact record.</div>{% endfor %}

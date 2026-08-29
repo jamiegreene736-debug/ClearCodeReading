@@ -141,6 +141,24 @@ Schools:
 - `/api/v1/schools/<id>/invite/`
 - `/api/v1/memberships/`
 
+ClearCode workforce and contractor payments:
+
+- `/api/v1/workforce/workers/`
+- `/api/v1/workforce/engagements/`
+- `POST /api/v1/workforce/engagements/<id>/classification-review/`
+- `POST /api/v1/workforce/engagements/<id>/invite/`
+- `POST /api/v1/workforce/engagements/<id>/sync-onboarding/`
+- `/api/v1/workforce/rates/`
+- `POST /api/v1/workforce/payables/from-session/`
+- `POST /api/v1/workforce/payables/<id>/approve/`
+- `/api/v1/workforce/payment-runs/`
+
+The phase-one workforce system stores operational status and opaque third-party references,
+not tax IDs, bank details, identity documents, or signed tax forms. Provider onboarding and
+payment submission fail closed until `WORKFORCE_PROVIDER_ADAPTER` is configured. See
+[`docs/WORKFORCE_PAYMENTS.md`](docs/WORKFORCE_PAYMENTS.md) for the Florida compliance workflow,
+security boundary, roles, approvals, and future restricted-vault design.
+
 Assessments:
 
 - `/api/v1/assessments/`

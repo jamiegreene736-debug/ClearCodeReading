@@ -1,0 +1,42 @@
+{% extends "crm/base.html" %}
+{% block title %}Add contact{% endblock %}
+{% block extra_style %}
+  .form-shell { max-width:900px; margin:0 auto; }
+  .form-head { display:flex; align-items:flex-end; justify-content:space-between; gap:16px; margin-bottom:18px; }
+  .contact-form { padding:24px; }
+  .form-grid { display:grid; grid-template-columns:1fr 1fr; gap:16px; }
+  .full { grid-column:1/-1; }
+  .form-section { grid-column:1/-1; margin-top:6px; padding-top:18px; border-top:1px solid var(--line); }
+  .form-section h2 { margin-bottom:4px; }
+  .help { color:var(--muted); font-size:12px; }
+  .errorlist { margin:5px 0 0; padding-left:18px; color:var(--red); }
+  .form-actions { display:flex; align-items:center; gap:10px; margin-top:22px; }
+  @media (max-width:700px) { .form-grid { grid-template-columns:1fr; } .full,.form-section { grid-column:auto; } .form-head { align-items:start; flex-direction:column; } }
+{% endblock %}
+{% block content %}
+  <div class="form-shell">
+    <div class="form-head"><div><p class="eyebrow">New relationship</p><h1>Add a contact</h1><p class="subtle">Capture the person once. Add notes and follow-up tasks from their record, then create a deal only when there is a qualified opportunity.</p></div><a class="btn" href="{% url 'crm_contact_list' %}">Back to contacts</a></div>
+    <form class="card contact-form" method="post" novalidate>{% csrf_token %}
+      {% if form.non_field_errors %}<div class="flash">{{ form.non_field_errors }}</div>{% endif %}
+      <div class="form-grid">
+        <div class="field"><label for="{{ form.contact_name.id_for_label }}">Contact name</label>{{ form.contact_name }}{{ form.contact_name.errors }}</div>
+        <div class="field"><label for="{{ form.contact_email.id_for_label }}">Email address</label>{{ form.contact_email }}{{ form.contact_email.errors }}<span class="help">Used to prevent duplicate contact records.</span></div>
+        <div class="field"><label for="{{ form.contact_phone.id_for_label }}">Phone</label>{{ form.contact_phone }}{{ form.contact_phone.errors }}</div>
+        <div class="field"><label for="{{ form.audience.id_for_label }}">Relationship type</label>{{ form.audience }}{{ form.audience.errors }}</div>
+
+        <div class="form-section"><h2>Organization</h2><p class="help">Optional for families; useful for schools, referral partners, funders, and investors.</p></div>
+        <div class="field"><label for="{{ form.organization_name.id_for_label }}">Organization name</label>{{ form.organization_name }}{{ form.organization_name.errors }}</div>
+        <div class="field"><label for="{{ form.company.id_for_label }}">Existing company</label>{{ form.company }}{{ form.company.errors }}</div>
+        <div class="field full"><label for="{{ form.company_name.id_for_label }}">{{ form.company_name.label }}</label>{{ form.company_name }}{{ form.company_name.errors }}<span class="help">{{ form.company_name.help_text }}</span></div>
+
+        <div class="form-section"><h2>Ownership and context</h2><p class="help">Set the starting point now; the contact record becomes the working history.</p></div>
+        <div class="field"><label for="{{ form.source.id_for_label }}">How they found us</label>{{ form.source }}{{ form.source.errors }}</div>
+        <div class="field"><label for="{{ form.status.id_for_label }}">Status</label>{{ form.status }}{{ form.status.errors }}</div>
+        <div class="field"><label for="{{ form.assigned_to.id_for_label }}">Contact owner</label>{{ form.assigned_to }}{{ form.assigned_to.errors }}</div>
+        <div class="field"><label for="{{ form.estimated_students.id_for_label }}">Estimated students</label>{{ form.estimated_students }}{{ form.estimated_students.errors }}</div>
+        <div class="field full"><label for="{{ form.notes.id_for_label }}">Initial note</label>{{ form.notes }}{{ form.notes.errors }}<span class="help">This is also added to the contact activity timeline.</span></div>
+      </div>
+      <div class="form-actions"><button class="btn btn-primary" type="submit">Create contact</button><a class="btn" href="{% url 'crm_contact_list' %}">Cancel</a></div>
+    </form>
+  </div>
+{% endblock %}

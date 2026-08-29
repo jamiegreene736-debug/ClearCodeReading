@@ -715,9 +715,9 @@ class CrmWorkspaceTests(TestCase):
         )
 
     def test_workspace_requires_central_crm_access(self):
-        anonymous_response = self.client.get(reverse("crm_contact_list"))
+        anonymous_response = self.client.get(reverse("crm_dashboard"))
         self.client.force_login(self.guardian)
-        guardian_response = self.client.get(reverse("crm_contact_list"))
+        guardian_response = self.client.get(reverse("crm_dashboard"))
 
         self.assertEqual(anonymous_response.status_code, 302)
         self.assertEqual(guardian_response.status_code, 403)
@@ -730,8 +730,123 @@ class CrmWorkspaceTests(TestCase):
         self.assertEqual(response.status_code, 200)
         self.assertContains(response, 'data-testid="crm-header-link"')
         self.assertContains(response, 'data-testid="mobile-crm-header-link"')
-        self.assertContains(response, f'href="{reverse("crm_contact_list")}"')
         self.assertContains(response, 'aria-label="Workspace sections"')
+        self.assertContains(response, f'href="{reverse("crm_dashboard")}"')
+
+    def test_crm_opens_on_an_actionable_overview(self):
+        CrmActivity.objects.create(
+            lead=self.lead,
+            activity_type=CrmActivity.ActivityType.TASK,
+            subject="Call Alex",
+            due_at=timezone.now() - timezone.timedelta(hours=1),
+            assigned_to=self.admin_user,
+            created_by=self.admin_user,
+        )
+        Opportunity.objects.create(
+            lead=self.lead,
+            owner=self.admin_user,
+            name="Family enrollment",
+            pipeline=Opportunity.Pipeline.FAMILY_ENROLLMENT,
+            stage=Opportunity.Stage.FAMILY_LEAD_NURTURE,
+        )
+        self.client.force_login(self.admin_user)
+
+        response = self.client.get(reverse("crm_dashboard"))
+
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "What needs attention")
+        self.assertContains(response, "Call Alex")
+        self.assertContains(response, "Overdue")
+        self.assertContains(response, "Families / Enrollment")
+        self.assertContains(response, "Simple CRM flow")
+
+    def test_contact_is_created_inside_the_crm_without_admin_fields(self):
+        self.client.force_login(self.admin_user)
+
+        get_response = self.client.get(reverse("crm_contact_create"))
+        response = self.client.post(
+            reverse("crm_contact_create"),
+            {
+                "contact_name": "Jordan Teacher",
+                "contact_email": " JORDAN@EXAMPLE.COM ",
+                "contact_phone": "555-0100",
+                "audience": Lead.Audience.TEACHER,
+                "company_name": "Pine School",
+                "source": Lead.Source.REFERRAL,
+                "status": Lead.Status.NEW,
+                "assigned_to": self.admin_user.pk,
+                "estimated_students": 12,
+                "notes": "Met at a literacy event.",
+            },
+        )
+
+        contact = Lead.objects.get(contact_email="jordan@example.com")
+        self.assertEqual(get_response.status_code, 200)
+        self.assertContains(get_response, "Add a contact")
+        self.assertNotContains(get_response, "Is deleted")
+        self.assertNotContains(get_response, "/admin/crm/lead/add/")
+        self.assertRedirects(response, reverse("crm_contact_detail", args=[contact.pk]))
+        self.assertEqual(contact.company.name, "Pine School")
+        self.assertEqual(contact.organization_name, "Pine School")
+        self.assertEqual(contact.assigned_to, self.admin_user)
+        self.assertEqual(contact.crm_activities.get().body, "Met at a literacy event.")
+
+    def test_contact_creation_opens_an_existing_email_instead_of_duplicating(self):
+        self.client.force_login(self.admin_user)
+
+        response = self.client.post(
+            reverse("crm_contact_create"),
+            {
+                "contact_name": "Alex Duplicate",
+                "contact_email": "ALEX@example.com",
+                "audience": Lead.Audience.PARENT,
+                "source": Lead.Source.OTHER,
+                "status": Lead.Status.NEW,
+            },
+        )
+
+        self.assertRedirects(response, reverse("crm_contact_detail", args=[self.lead.pk]))
+        self.assertEqual(Lead.objects.filter(contact_email__iexact="alex@example.com").count(), 1)
+
+    def test_generic_admin_cannot_create_leads(self):
+        self.client.force_login(self.admin_user)
+
+        contact_list = self.client.get(reverse("crm_contact_list"))
+        admin_add = self.client.get(reverse("admin:crm_lead_add"))
+
+        self.assertNotContains(contact_list, "/admin/crm/lead/add/")
+        self.assertEqual(admin_add.status_code, 403)
+
+    def test_company_create_and_edit_stay_inside_the_crm(self):
+        self.client.force_login(self.admin_user)
+
+        create_response = self.client.post(
+            reverse("crm_company_create"),
+            {
+                "name": "North Star Learning",
+                "website": "https://northstar.example.com",
+                "owner": self.admin_user.pk,
+                "notes": "School partnership prospect.",
+            },
+        )
+        company = Company.objects.get(name="North Star Learning")
+        detail_response = self.client.get(reverse("crm_company_detail", args=[company.pk]))
+        update_response = self.client.post(
+            reverse("crm_company_update", args=[company.pk]),
+            {
+                "name": "North Star Learning Center",
+                "website": "https://northstar.example.com",
+                "owner": self.admin_user.pk,
+                "notes": "Qualified school partnership prospect.",
+            },
+        )
+
+        self.assertRedirects(create_response, reverse("crm_company_detail", args=[company.pk]))
+        self.assertContains(detail_response, reverse("crm_company_update", args=[company.pk]))
+        self.assertNotContains(detail_response, f"/admin/crm/company/{company.pk}/change/")
+        self.assertRedirects(update_response, reverse("crm_company_detail", args=[company.pk]))
+        company.refresh_from_db()
+        self.assertEqual(company.name, "North Star Learning Center")
 
     def test_dashboard_header_highlights_dashboard_instead_of_crm(self):
         self.client.force_login(self.admin_user)
