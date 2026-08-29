@@ -1,0 +1,23 @@
+{% extends "crm/base.html" %}
+{% block title %}{% if company %}Edit {{ company.name }}{% else %}Add company{% endif %}{% endblock %}
+{% block extra_style %}
+  .form-shell { max-width:760px; margin:0 auto; }
+  .form-head { display:flex; align-items:flex-end; justify-content:space-between; gap:16px; margin-bottom:18px; }
+  .company-form { display:grid; gap:16px; padding:24px; }
+  .errorlist { margin:5px 0 0; padding-left:18px; color:var(--red); }
+  .form-actions { display:flex; gap:10px; }
+  @media (max-width:650px) { .form-head { align-items:start; flex-direction:column; } }
+{% endblock %}
+{% block content %}
+  <div class="form-shell">
+    <div class="form-head"><div><p class="eyebrow">Organization record</p><h1>{% if company %}Edit company{% else %}Add a company{% endif %}</h1><p class="subtle">Keep the organization in one record, then attach its contacts and distinct opportunities.</p></div><a class="btn" href="{% if company %}{% url 'crm_company_detail' company.pk %}{% else %}{% url 'crm_company_list' %}{% endif %}">Cancel</a></div>
+    <form class="card company-form" method="post" novalidate>{% csrf_token %}
+      {% if form.non_field_errors %}<div class="flash">{{ form.non_field_errors }}</div>{% endif %}
+      <div class="field"><label for="{{ form.name.id_for_label }}">Company name</label>{{ form.name }}{{ form.name.errors }}</div>
+      <div class="field"><label for="{{ form.website.id_for_label }}">Website</label>{{ form.website }}{{ form.website.errors }}</div>
+      <div class="field"><label for="{{ form.owner.id_for_label }}">Company owner</label>{{ form.owner }}{{ form.owner.errors }}</div>
+      <div class="field"><label for="{{ form.notes.id_for_label }}">Notes</label>{{ form.notes }}{{ form.notes.errors }}</div>
+      <div class="form-actions"><button class="btn btn-primary" type="submit">{% if company %}Save company{% else %}Create company{% endif %}</button><a class="btn" href="{% if company %}{% url 'crm_company_detail' company.pk %}{% else %}{% url 'crm_company_list' %}{% endif %}">Cancel</a></div>
+    </form>
+  </div>
+{% endblock %}
