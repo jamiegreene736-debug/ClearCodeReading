@@ -4,11 +4,8 @@ set -eu
 echo "Running Clear Code Reading shared migrations..."
 python manage.py migrate_schemas --shared --noinput
 
-echo "Seeding Reading Survey question bank..."
-python -u manage.py seed_reading_survey_questions
-
-echo "Seeding demo login credentials..."
-python -u manage.py seed_demo_login
+echo "Seeding demo logins and representative admin data..."
+python -u manage.py seed_admin_demo_data
 
 if { [ -n "${ELEVENLABS_API_KEY:-}" ] || [ -n "${XI_API_KEY:-}" ]; } && [ -n "${ELEVENLABS_VOICE_ID:-}" ]; then
   echo "Generating missing ElevenLabs assessment audio..."
