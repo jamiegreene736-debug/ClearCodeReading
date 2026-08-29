@@ -22,4 +22,5 @@ urlpatterns = [
     path("v1/", include("apps.scheduling.urls")),
     path("v1/", include("apps.progress.urls")),
     path("v1/", include("apps.crm.urls")),
+    path("v1/", include("apps.workforce.urls")),
 ]
