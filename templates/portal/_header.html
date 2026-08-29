@@ -1,61 +1,183 @@
-<header class="sticky top-0 z-40 border-b border-deepTeal/10 bg-linen/95 backdrop-blur-xl">
-  <nav aria-label="Portal navigation" class="mx-auto flex max-w-7xl items-center justify-between gap-3 px-4 py-3 sm:px-6 lg:px-8">
+<header data-portal-header class="sticky top-0 z-40 border-b border-deepTeal/10 bg-linen/95 backdrop-blur-xl">
+  <nav aria-label="Portal navigation" class="mx-auto flex max-w-7xl flex-wrap items-center justify-between gap-3 px-4 py-3 sm:px-6 lg:flex-nowrap lg:px-8">
     <a href="{% url 'portal_dashboard' %}" aria-label="ClearCode Reading portal home" class="focus-ring shrink-0 rounded-xl">
       {% include "portal/_brand.html" %}
     </a>
-    <div class="flex items-center gap-1 sm:gap-2">
-      <a
-        data-testid="dashboard-header-link"
-        href="{% url 'portal_dashboard' %}"
-        aria-label="Dashboard"
-        {% if request.resolver_match.url_name == 'portal_dashboard' %}aria-current="page"{% endif %}
-        class="focus-ring inline-flex items-center gap-2 rounded-full px-3 py-3 text-sm font-black transition hover:-translate-y-0.5 sm:px-4 {% if request.resolver_match.url_name == 'portal_dashboard' %}bg-ink text-white shadow-lg shadow-ink/15{% else %}text-ink/70 hover:bg-white/70 hover:text-deepTeal{% endif %}"
-      >
-        <svg aria-hidden="true" class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.25" stroke-linecap="round" stroke-linejoin="round">
-          <path d="m3 10 9-7 9 7"></path>
-          <path d="M5 9v11h14V9"></path>
-          <path d="M9 20v-6h6v6"></path>
-        </svg>
-        <span class="hidden md:inline">Dashboard</span>
-      </a>
-      <a
-        data-testid="inbox-header-link"
-        href="{% url 'portal_inbox' %}"
-        aria-label="Inbox"
-        {% if request.resolver_match.url_name == 'portal_inbox' %}aria-current="page"{% endif %}
-        class="focus-ring inline-flex items-center gap-2 rounded-full px-3 py-3 text-sm font-black transition hover:-translate-y-0.5 sm:px-4 {% if request.resolver_match.url_name == 'portal_inbox' %}bg-ink text-white shadow-lg shadow-ink/15{% else %}text-ink/70 hover:bg-white/70 hover:text-deepTeal{% endif %}"
-      >
-        <svg aria-hidden="true" class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.25" stroke-linecap="round" stroke-linejoin="round">
-          <path d="M4 4h16v16H4z"></path>
-          <path d="m4 6 8 7 8-7"></path>
-        </svg>
-        <span class="hidden md:inline">Inbox</span>
-      </a>
-      {% if request.user.is_staff %}
-        <a href="/admin/blog/blogpost/" class="focus-ring hidden rounded-full px-4 py-3 text-sm font-black text-ink/70 transition hover:-translate-y-0.5 hover:bg-white/70 hover:text-deepTeal lg:inline-flex">Blog posts</a>
-      {% endif %}
-      {% if request.user.is_staff or request.user.is_superuser or request.user.role == 'super_admin' %}
-        <a data-testid="crm-header-link" href="{% url 'crm_dashboard' %}" class="focus-ring hidden rounded-full px-4 py-3 text-sm font-black text-ink/70 transition hover:-translate-y-0.5 hover:bg-white/70 hover:text-deepTeal sm:inline-flex">CRM</a>
-      {% endif %}
-      {% if request.user.is_staff %}
-        <a href="/admin/" class="focus-ring hidden rounded-full px-4 py-3 text-sm font-black text-ink/70 transition hover:-translate-y-0.5 hover:bg-white/70 hover:text-deepTeal md:inline-flex">Admin</a>
-      {% endif %}
-      {% if request.user.is_staff or request.user.is_superuser or request.user.role == 'super_admin' %}
-        <details class="relative sm:hidden">
-          <summary class="focus-ring flex min-h-11 cursor-pointer list-none items-center rounded-full px-3 text-sm font-black text-ink/70 hover:bg-white/70">More</summary>
-          <div class="absolute right-0 top-14 z-50 grid min-w-48 gap-1 rounded-2xl bg-white p-2 shadow-2xl ring-1 ring-ink/10">
-            <a data-testid="mobile-crm-header-link" href="{% url 'crm_contact_list' %}" class="focus-ring rounded-xl px-4 py-3 text-sm font-black text-ink hover:bg-linen">CRM</a>
-            {% if request.user.is_staff %}
-              <a href="/admin/" class="focus-ring rounded-xl px-4 py-3 text-sm font-black text-ink hover:bg-linen">Admin portal</a>
-              <a href="/admin/blog/blogpost/" class="focus-ring rounded-xl px-4 py-3 text-sm font-black text-ink hover:bg-linen">Blog posts</a>
-            {% endif %}
+
+    <ul class="order-3 flex w-full flex-wrap items-center justify-center gap-1 border-t border-deepTeal/10 pt-3 lg:order-none lg:w-auto lg:flex-nowrap lg:justify-end lg:border-0 lg:pt-0">
+      <li>
+        <a
+          data-testid="dashboard-header-link"
+          href="{% url 'portal_dashboard' %}"
+          {% if request.resolver_match.url_name == 'portal_dashboard' %}aria-current="page"{% endif %}
+          class="focus-ring inline-flex min-h-11 items-center rounded-full px-3 py-2 text-sm font-black transition hover:-translate-y-0.5 sm:px-4 {% if request.resolver_match.url_name == 'portal_dashboard' %}bg-ink text-white shadow-lg shadow-ink/15{% else %}text-ink/70 hover:bg-white/70 hover:text-deepTeal{% endif %}"
+        >Dashboard</a>
+      </li>
+
+      {% if request.user.is_superuser or request.user.role == 'super_admin' or request.user.role == 'school_admin' %}
+        <li class="static lg:relative" data-portal-disclosure>
+          <button id="program-navigation-button" data-testid="program-menu-button" class="focus-ring inline-flex min-h-11 items-center gap-2 rounded-full px-3 py-2 text-sm font-black text-ink/70 transition hover:-translate-y-0.5 hover:bg-white/70 hover:text-deepTeal sm:px-4" type="button" aria-expanded="false" aria-controls="program-navigation-panel">
+            Program
+            <svg aria-hidden="true" class="h-3 w-3 transition-transform" data-disclosure-chevron viewBox="0 0 12 8" fill="none" stroke="currentColor" stroke-width="2"><path d="m1 1.5 5 5 5-5" /></svg>
+          </button>
+          <div id="program-navigation-panel" class="absolute left-4 right-4 top-[calc(100%+.65rem)] z-50 hidden max-h-[70vh] overflow-y-auto rounded-3xl bg-white p-3 shadow-2xl shadow-ink/20 ring-1 ring-ink/10 lg:left-0 lg:right-auto lg:w-[21rem]" aria-labelledby="program-navigation-button">
+            <p class="px-3 pb-2 text-xs font-black uppercase tracking-[0.16em] text-mediumTeal">Program workspace</p>
+            <ul class="grid gap-1">
+              <li><a href="{% url 'portal_dashboard' %}#session-launchpad" class="focus-ring block rounded-2xl px-3 py-3 hover:bg-linen"><span class="block font-black">Readers &amp; sessions</span><span class="mt-1 block text-xs text-ink/60">Current instruction and upcoming work</span></a></li>
+              <li><a href="{% url 'portal_dashboard' %}#placement-review" class="focus-ring block rounded-2xl px-3 py-3 hover:bg-linen"><span class="block font-black">Placement review</span><span class="mt-1 block text-xs text-ink/60">Confirm or adjust recommendations</span></a></li>
+              <li><a href="{% url 'portal_dashboard' %}#latest-kpis" class="focus-ring block rounded-2xl px-3 py-3 hover:bg-linen"><span class="block font-black">Reading results</span><span class="mt-1 block text-xs text-ink/60">Latest KPI snapshots</span></a></li>
+            </ul>
           </div>
-        </details>
+        </li>
+
+        <li class="static lg:relative" data-portal-disclosure>
+          <button id="manage-navigation-button" data-testid="manage-menu-button" class="focus-ring inline-flex min-h-11 items-center gap-2 rounded-full px-3 py-2 text-sm font-black text-ink/70 transition hover:-translate-y-0.5 hover:bg-white/70 hover:text-deepTeal sm:px-4" type="button" aria-expanded="false" aria-controls="manage-navigation-panel">
+            Manage
+            <svg aria-hidden="true" class="h-3 w-3 transition-transform" data-disclosure-chevron viewBox="0 0 12 8" fill="none" stroke="currentColor" stroke-width="2"><path d="m1 1.5 5 5 5-5" /></svg>
+          </button>
+          <div id="manage-navigation-panel" class="absolute left-4 right-4 top-[calc(100%+.65rem)] z-50 hidden max-h-[70vh] overflow-y-auto rounded-3xl bg-white p-3 shadow-2xl shadow-ink/20 ring-1 ring-ink/10 lg:left-0 lg:right-auto lg:w-[21rem]" aria-labelledby="manage-navigation-button">
+            <p class="px-3 pb-2 text-xs font-black uppercase tracking-[0.16em] text-mediumTeal">People &amp; instruction</p>
+            <ul class="grid gap-1">
+              <li><a href="{% url 'portal_dashboard' %}#admin-actions" class="focus-ring block rounded-2xl px-3 py-3 font-black hover:bg-linen">Teacher assignments</a></li>
+              <li><a href="{% url 'portal_dashboard' %}#lesson-library" class="focus-ring block rounded-2xl px-3 py-3 font-black hover:bg-linen">Lesson library</a></li>
+              <li><a href="{% url 'portal_dashboard' %}#account-creation" class="focus-ring block rounded-2xl px-3 py-3 font-black hover:bg-linen">Parent &amp; teacher accounts</a></li>
+            </ul>
+          </div>
+        </li>
+
+        <li class="static lg:relative" data-portal-disclosure>
+          <button id="business-navigation-button" data-testid="business-menu-button" class="focus-ring inline-flex min-h-11 items-center gap-2 rounded-full px-3 py-2 text-sm font-black text-ink/70 transition hover:-translate-y-0.5 hover:bg-white/70 hover:text-deepTeal sm:px-4" type="button" aria-expanded="false" aria-controls="business-navigation-panel">
+            Business
+            <svg aria-hidden="true" class="h-3 w-3 transition-transform" data-disclosure-chevron viewBox="0 0 12 8" fill="none" stroke="currentColor" stroke-width="2"><path d="m1 1.5 5 5 5-5" /></svg>
+          </button>
+          <div id="business-navigation-panel" class="absolute left-4 right-4 top-[calc(100%+.65rem)] z-50 hidden max-h-[70vh] overflow-y-auto rounded-3xl bg-white p-3 shadow-2xl shadow-ink/20 ring-1 ring-ink/10 lg:left-auto lg:right-0 lg:w-[21rem]" aria-labelledby="business-navigation-button">
+            <p class="px-3 pb-2 text-xs font-black uppercase tracking-[0.16em] text-mediumTeal">Business tools</p>
+            <ul class="grid gap-1">
+              {% if request.user.is_staff or request.user.is_superuser or request.user.role == 'super_admin' %}
+                <li><a data-testid="crm-header-link" href="{% url 'crm_dashboard' %}" class="focus-ring block rounded-2xl px-3 py-3 font-black hover:bg-linen">CRM workspace</a></li>
+                <li><a href="{% url 'crm_contact_list' %}" class="focus-ring block rounded-2xl px-3 py-3 font-black hover:bg-linen">Contacts &amp; pipeline</a></li>
+              {% endif %}
+              <li><a href="{% url 'portal_dashboard' %}#website-signups" class="focus-ring block rounded-2xl px-3 py-3 font-black hover:bg-linen">Website signups</a></li>
+              {% if request.user.is_staff %}
+                <li><a href="/admin/blog/blogpost/" class="focus-ring block rounded-2xl px-3 py-3 font-black hover:bg-linen">Blog posts</a></li>
+                <li><a href="/admin/" class="focus-ring block rounded-2xl px-3 py-3 font-black hover:bg-linen">Django admin</a></li>
+              {% endif %}
+            </ul>
+          </div>
+        </li>
+      {% elif request.user.role == 'teacher' %}
+        <li class="static lg:relative" data-portal-disclosure>
+          <button id="teaching-navigation-button" data-testid="teaching-menu-button" class="focus-ring inline-flex min-h-11 items-center gap-2 rounded-full px-3 py-2 text-sm font-black transition hover:-translate-y-0.5 sm:px-4 {% if request.resolver_match.url_name == 'rapid_session_log' %}bg-ink text-white shadow-lg shadow-ink/15{% else %}text-ink/70 hover:bg-white/70 hover:text-deepTeal{% endif %}" type="button" aria-expanded="false" aria-controls="teaching-navigation-panel">
+            Teaching
+            <svg aria-hidden="true" class="h-3 w-3 transition-transform" data-disclosure-chevron viewBox="0 0 12 8" fill="none" stroke="currentColor" stroke-width="2"><path d="m1 1.5 5 5 5-5" /></svg>
+          </button>
+          <div id="teaching-navigation-panel" class="absolute left-4 right-4 top-[calc(100%+.65rem)] z-50 hidden max-h-[70vh] overflow-y-auto rounded-3xl bg-white p-3 shadow-2xl shadow-ink/20 ring-1 ring-ink/10 lg:left-0 lg:right-auto lg:w-[22rem]" aria-labelledby="teaching-navigation-button">
+            <p class="px-3 pb-2 text-xs font-black uppercase tracking-[0.16em] text-mediumTeal">Teacher workspace</p>
+            <ul class="grid gap-1">
+              <li><a href="{% url 'portal_dashboard' %}#session-launchpad" class="focus-ring block rounded-2xl px-3 py-3 hover:bg-linen"><span class="block font-black">Learners &amp; sessions</span><span class="mt-1 block text-xs text-ink/60">Current instruction and schedule</span></a></li>
+              <li><a href="{% url 'rapid_session_log' %}" class="focus-ring block rounded-2xl px-3 py-3 hover:bg-linen"><span class="block font-black">Rapid session log</span><span class="mt-1 block text-xs text-ink/60">Record a completed lesson</span></a></li>
+              <li><a href="{% url 'portal_dashboard' %}#lesson-planning" class="focus-ring block rounded-2xl px-3 py-3 font-black hover:bg-linen">Lesson planning</a></li>
+              <li><a href="{% url 'portal_dashboard' %}#assessment-review" class="focus-ring block rounded-2xl px-3 py-3 font-black hover:bg-linen">Assessment review</a></li>
+              <li><a href="{% url 'portal_dashboard' %}#latest-kpis" class="focus-ring block rounded-2xl px-3 py-3 font-black hover:bg-linen">Reading results</a></li>
+            </ul>
+          </div>
+        </li>
+      {% elif request.user.role == 'guardian' %}
+        <li class="static lg:relative" data-portal-disclosure>
+          <button id="family-navigation-button" data-testid="family-menu-button" class="focus-ring inline-flex min-h-11 items-center gap-2 rounded-full px-3 py-2 text-sm font-black text-ink/70 transition hover:-translate-y-0.5 hover:bg-white/70 hover:text-deepTeal sm:px-4" type="button" aria-expanded="false" aria-controls="family-navigation-panel">
+            My child
+            <svg aria-hidden="true" class="h-3 w-3 transition-transform" data-disclosure-chevron viewBox="0 0 12 8" fill="none" stroke="currentColor" stroke-width="2"><path d="m1 1.5 5 5 5-5" /></svg>
+          </button>
+          <div id="family-navigation-panel" class="absolute left-4 right-4 top-[calc(100%+.65rem)] z-50 hidden max-h-[70vh] overflow-y-auto rounded-3xl bg-white p-3 shadow-2xl shadow-ink/20 ring-1 ring-ink/10 lg:left-0 lg:right-auto lg:w-[22rem]" aria-labelledby="family-navigation-button">
+            <p class="px-3 pb-2 text-xs font-black uppercase tracking-[0.16em] text-mediumTeal">Parent workspace</p>
+            <ul class="grid gap-1">
+              <li><a href="{% url 'portal_dashboard' %}#progress-overview" class="focus-ring block rounded-2xl px-3 py-3 hover:bg-linen"><span class="block font-black">Weekly progress</span><span class="mt-1 block text-xs text-ink/60">Growth, fluency, and specialist notes</span></a></li>
+              <li><a href="{% url 'portal_dashboard' %}#teacher-plan" class="focus-ring block rounded-2xl px-3 py-3 font-black hover:bg-linen">Teacher plan</a></li>
+              <li><a href="{% url 'portal_dashboard' %}#latest-kpis" class="focus-ring block rounded-2xl px-3 py-3 font-black hover:bg-linen">Reading results</a></li>
+              <li><a href="/assessment/" class="focus-ring block rounded-2xl px-3 py-3 font-black hover:bg-linen">Start an assessment</a></li>
+            </ul>
+          </div>
+        </li>
+      {% elif request.user.role == 'student' %}
+        <li class="static lg:relative" data-portal-disclosure>
+          <button id="learning-navigation-button" data-testid="learning-menu-button" class="focus-ring inline-flex min-h-11 items-center gap-2 rounded-full px-3 py-2 text-sm font-black text-ink/70 transition hover:-translate-y-0.5 hover:bg-white/70 hover:text-deepTeal sm:px-4" type="button" aria-expanded="false" aria-controls="learning-navigation-panel">
+            My learning
+            <svg aria-hidden="true" class="h-3 w-3 transition-transform" data-disclosure-chevron viewBox="0 0 12 8" fill="none" stroke="currentColor" stroke-width="2"><path d="m1 1.5 5 5 5-5" /></svg>
+          </button>
+          <div id="learning-navigation-panel" class="absolute left-4 right-4 top-[calc(100%+.65rem)] z-50 hidden max-h-[70vh] overflow-y-auto rounded-3xl bg-white p-3 shadow-2xl shadow-ink/20 ring-1 ring-ink/10 lg:left-0 lg:right-auto lg:w-80" aria-labelledby="learning-navigation-button">
+            <ul class="grid gap-1">
+              <li><a href="{% url 'portal_dashboard' %}#teacher-plan" class="focus-ring block rounded-2xl px-3 py-3 font-black hover:bg-linen">My teacher plan</a></li>
+              <li><a href="{% url 'portal_dashboard' %}#latest-kpis" class="focus-ring block rounded-2xl px-3 py-3 font-black hover:bg-linen">My reading results</a></li>
+            </ul>
+          </div>
+        </li>
       {% endif %}
-      <form method="post" action="{% url 'logout' %}">
-        {% csrf_token %}
-        <button class="focus-ring rounded-full bg-mediumTeal px-4 py-3 text-sm font-extrabold text-white shadow-lg shadow-mediumTeal/25 transition hover:-translate-y-0.5 hover:bg-[#277f73] sm:px-5" type="submit">Logout</button>
-      </form>
+      <li>
+        <a data-testid="inbox-header-link" href="{% url 'portal_inbox' %}" {% if request.resolver_match.url_name == 'portal_inbox' %}aria-current="page"{% endif %} class="focus-ring inline-flex min-h-11 items-center rounded-full px-3 py-2 text-sm font-black transition hover:-translate-y-0.5 sm:px-4 {% if request.resolver_match.url_name == 'portal_inbox' %}bg-ink text-white shadow-lg shadow-ink/15{% else %}text-ink/70 hover:bg-white/70 hover:text-deepTeal{% endif %}">Inbox</a>
+      </li>
+    </ul>
+
+    <div class="relative shrink-0" data-portal-disclosure>
+      <button id="account-navigation-button" data-testid="account-menu-button" class="focus-ring inline-flex min-h-11 items-center gap-2 rounded-full bg-mediumTeal px-4 py-2 text-sm font-extrabold text-white shadow-lg shadow-mediumTeal/25 transition hover:-translate-y-0.5 hover:bg-[#277f73]" type="button" aria-expanded="false" aria-controls="account-navigation-panel">
+        Account
+        <svg aria-hidden="true" class="h-3 w-3 transition-transform" data-disclosure-chevron viewBox="0 0 12 8" fill="none" stroke="currentColor" stroke-width="2"><path d="m1 1.5 5 5 5-5" /></svg>
+      </button>
+      <div id="account-navigation-panel" class="absolute right-0 top-[calc(100%+.65rem)] z-50 hidden w-[min(18rem,calc(100vw-2rem))] rounded-3xl bg-white p-3 text-ink shadow-2xl shadow-ink/20 ring-1 ring-ink/10" aria-labelledby="account-navigation-button">
+        <p class="truncate px-3 pb-3 text-xs font-bold text-ink/60">Signed in as {{ request.user.email }}</p>
+        <a href="/" class="focus-ring block rounded-2xl px-3 py-3 font-black hover:bg-linen">View public website</a>
+        <form method="post" action="{% url 'logout' %}">
+          {% csrf_token %}
+          <button class="focus-ring mt-1 w-full rounded-2xl bg-ink px-3 py-3 text-left font-black text-white transition hover:bg-deepTeal" type="submit">Log out</button>
+        </form>
+      </div>
     </div>
   </nav>
+
+  <script>
+    (() => {
+      const header = document.currentScript.closest('[data-portal-header]');
+      if (!header) return;
+
+      const disclosures = [...header.querySelectorAll('[data-portal-disclosure]')];
+      const setOpen = (disclosure, open, restoreFocus = false) => {
+        const button = disclosure.querySelector(':scope > button');
+        const panel = disclosure.querySelector(':scope > div');
+        const chevron = button?.querySelector('[data-disclosure-chevron]');
+        if (!button || !panel) return;
+        button.setAttribute('aria-expanded', String(open));
+        panel.classList.toggle('hidden', !open);
+        chevron?.classList.toggle('rotate-180', open);
+        if (restoreFocus) button.focus();
+      };
+      const closeAll = (except = null) => disclosures.forEach((disclosure) => {
+        if (disclosure !== except) setOpen(disclosure, false);
+      });
+
+      disclosures.forEach((disclosure) => {
+        const button = disclosure.querySelector(':scope > button');
+        if (!button) return;
+        button.addEventListener('click', () => {
+          const willOpen = button.getAttribute('aria-expanded') !== 'true';
+          closeAll(disclosure);
+          setOpen(disclosure, willOpen);
+        });
+        disclosure.querySelectorAll('a').forEach((link) => link.addEventListener('click', () => setOpen(disclosure, false)));
+      });
+
+      header.addEventListener('keydown', (event) => {
+        if (event.key !== 'Escape') return;
+        const openDisclosure = disclosures.find((disclosure) => disclosure.querySelector(':scope > button')?.getAttribute('aria-expanded') === 'true');
+        if (openDisclosure) {
+          event.preventDefault();
+          setOpen(openDisclosure, false, true);
+        }
+      });
+      header.addEventListener('focusout', () => window.setTimeout(() => {
+        if (!header.contains(document.activeElement)) closeAll();
+      }, 0));
+      document.addEventListener('click', (event) => {
+        if (!header.contains(event.target)) closeAll();
+      });
+    })();
+  </script>
 </header>
