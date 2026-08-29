@@ -64,6 +64,7 @@ SHARED_APPS = [
     "apps.sessions.apps.InterventionSessionsConfig",
     "apps.decision_support.apps.DecisionSupportConfig",
     "apps.scheduling.apps.SchedulingConfig",
+    "apps.workforce.apps.WorkforceConfig",
     "apps.assessments",
     "apps.progress",
     "apps.outcomes",
@@ -289,6 +290,11 @@ try:
     ACUITY_CALENDAR_IDS = json.loads(os.getenv("ACUITY_CALENDAR_IDS", "{}"))
 except json.JSONDecodeError:
     ACUITY_CALENDAR_IDS = {}
+
+WORKFORCE_PROVIDER_ADAPTER = os.getenv("WORKFORCE_PROVIDER_ADAPTER", "")
+WORKFORCE_ALLOW_STUB_PROVIDER = os.getenv("WORKFORCE_ALLOW_STUB_PROVIDER", "0") == "1"
+WORKFORCE_FLORIDA_REPORTING_THRESHOLD = os.getenv("WORKFORCE_FLORIDA_REPORTING_THRESHOLD", "600.00")
+WORKFORCE_FEDERAL_1099_THRESHOLD_2026 = os.getenv("WORKFORCE_FEDERAL_1099_THRESHOLD_2026", "2000.00")
 
 SPECTACULAR_SETTINGS = {
     "TITLE": "Clear Code Reading API",
