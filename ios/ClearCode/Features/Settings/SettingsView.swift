@@ -2,6 +2,7 @@ import SwiftUI
 
 struct SettingsView: View {
     @EnvironmentObject private var appState: AppState
+    @State private var confirmsDiscardingPendingLogs = false
 
     private var version: String {
         let short = Bundle.main.object(forInfoDictionaryKey: "CFBundleShortVersionString") as? String ?? "—"
@@ -55,7 +56,11 @@ struct SettingsView: View {
 
             Section {
                 Button(role: .destructive) {
-                    Task { await appState.signOut() }
+                    if appState.pendingLogs.isEmpty {
+                        Task { await appState.signOut() }
+                    } else {
+                        confirmsDiscardingPendingLogs = true
+                    }
                 } label: {
                     HStack {
                         Spacer()
@@ -69,5 +74,21 @@ struct SettingsView: View {
             }
         }
         .navigationTitle("Settings")
+        .confirmationDialog(
+            "Discard unsent session logs?",
+            isPresented: $confirmsDiscardingPendingLogs,
+            titleVisibility: .visible
+        ) {
+            Button("Discard Logs and Sign Out", role: .destructive) {
+                Task { await appState.signOut() }
+            }
+            Button("Keep Working", role: .cancel) {}
+        } message: {
+            Text(
+                "\(appState.pendingLogs.count) unsent session "
+                    + (appState.pendingLogs.count == 1 ? "log will" : "logs will")
+                    + " be removed from this device. Retry them before signing out if they must be saved."
+            )
+        }
     }
 }

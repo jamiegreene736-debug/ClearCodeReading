@@ -4,6 +4,10 @@ struct HomeView: View {
     @EnvironmentObject private var appState: AppState
 
     private var user: AppUser? { appState.bootstrap?.user }
+    private var greetingName: String {
+        guard let user else { return "Reader" }
+        return user.firstName.isEmpty ? user.displayName : user.firstName
+    }
 
     var body: some View {
         ScrollView {
@@ -34,7 +38,7 @@ struct HomeView: View {
                             .frame(width: 58, height: 58)
                             .accessibilityHidden(true)
                         VStack(alignment: .leading, spacing: 3) {
-                            Text("Welcome, \(user?.firstName.isEmpty == false ? user!.firstName : user?.displayName ?? "Reader")")
+                            Text("Welcome, \(greetingName)")
                                 .font(.title2.bold())
                                 .foregroundStyle(Brand.ink)
                             Text(user?.role.rawValue.clearCodeLabel ?? "")
