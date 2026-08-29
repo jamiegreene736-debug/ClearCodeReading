@@ -100,6 +100,18 @@ class MarketingPageTests(SimpleTestCase):
         self.assertIn("Frequently asked questions", content)
         self.assertIn("Explore the Foundation", content)
 
+    def test_blog_is_prominent_in_shared_navigation_and_homepage_body(self):
+        content = self._render("marketing_home")
+
+        self.assertIn('data-testid="desktop-blog-link"', content)
+        self.assertIn('data-testid="mobile-blog-link"', content)
+        self.assertIn('<details class="relative lg:hidden">', content)
+        self.assertIn('aria-labelledby="reading-insights-title"', content)
+        self.assertIn("From the ClearCode blog", content)
+        self.assertIn("Reading insights, made clear.", content)
+        self.assertIn('href="/blog/"', content)
+        self.assertLess(content.index("From the ClearCode blog"), content.index("Beyond one family"))
+
     def test_homepage_consultation_ctas_use_local_intake(self):
         content = self._render("marketing_home")
 
