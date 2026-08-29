@@ -9,7 +9,7 @@ open ClearCode.xcodeproj
 ```
 
 The Debug build talks to `http://127.0.0.1:8000`; the Release build talks to
-`https://clearcodereading.com`. Override `API_BASE_URL` in an uncommitted local Xcode
+`https://clearcodereading-production.up.railway.app`. Override `API_BASE_URL` in an uncommitted local Xcode
 configuration when testing another environment.
 
 Build and test without signing:

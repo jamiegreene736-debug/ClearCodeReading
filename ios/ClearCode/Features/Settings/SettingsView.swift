@@ -49,8 +49,8 @@ struct SettingsView: View {
 
             Section("About") {
                 LabeledContent("Version", value: version)
-                Link("Privacy policy", destination: URL(string: "https://clearcodereading.com/privacy/")!)
-                Link("Open web portal", destination: URL(string: "https://clearcodereading.com/login/")!)
+                Link("Privacy policy", destination: URL(string: "https://clearcodereading-production.up.railway.app/privacy/")!)
+                Link("Open web portal", destination: URL(string: "https://clearcodereading-production.up.railway.app/login/")!)
             }
 
             Section {

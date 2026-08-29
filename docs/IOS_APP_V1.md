@@ -26,7 +26,7 @@ decisions to server-provided capabilities and never grants itself access.
 - iOS 17 or newer
 - SwiftUI with no third-party runtime dependencies
 - Debug API: `http://127.0.0.1:8000`
-- Release API: `https://clearcodereading.com`
+- Release API: `https://clearcodereading-production.up.railway.app`
 - Bundle identifier: `com.clearcodereading.ios`
 
 The API base URL is a build setting and may be overridden without changing source code.
@@ -50,7 +50,7 @@ Before TestFlight or App Store submission:
 1. Set the Apple Development Team and create the matching App ID.
 2. Enable Push Notifications for that App ID and create development/production APNs
    credentials for the server when notifications are enabled.
-3. Confirm `https://clearcodereading.com/api/v1/health/` and mobile endpoints are live.
+3. Confirm `https://clearcodereading-production.up.railway.app/api/v1/health/` and mobile endpoints are live.
 4. Apply shared and tenant migrations before allowing mobile sign-ins.
 5. Replace demo credentials and confirm production password policy/rate limiting.
 6. Complete App Store privacy labels, support URL, screenshots, age rating, and review notes.
