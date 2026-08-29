@@ -80,6 +80,12 @@
     <section class="min-w-0 rounded-[2rem] bg-white p-6 shadow-2xl shadow-ink/10 ring-1 ring-ink/10 sm:p-8">
       <h2 class="text-3xl font-black">Sign in</h2>
 
+      {% if request.GET.csrf == "refreshed" %}
+        <p class="mt-5 rounded-2xl bg-sand px-4 py-3 text-sm font-bold text-ink">
+          Your sign-in form had expired. We refreshed it securely; please submit your login again.
+        </p>
+      {% endif %}
+
       {% if messages %}
         <div class="mt-5 space-y-2">
           {% for message in messages %}

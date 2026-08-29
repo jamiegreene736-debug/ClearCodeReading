@@ -102,6 +102,7 @@ MIDDLEWARE = [
     "django.contrib.messages.middleware.MessageMiddleware",
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
 ]
+CSRF_FAILURE_VIEW = "apps.core.security.csrf_failure"
 
 ROOT_URLCONF = "clearcodereading.urls"
 PUBLIC_SCHEMA_URLCONF = "clearcodereading.urls"

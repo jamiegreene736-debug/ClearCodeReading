@@ -6,7 +6,15 @@ from django.contrib.auth.models import AnonymousUser
 from django.core.management import call_command
 from django.http import HttpResponse
 from django.template.loader import render_to_string
-from django.test import RequestFactory, SimpleTestCase, override_settings
+from django.test import (
+    Client,
+    RequestFactory,
+    SimpleTestCase,
+    TestCase,
+    override_settings,
+)
+from django.urls import reverse
+from django.utils.crypto import get_random_string
 from whitenoise.middleware import WhiteNoiseMiddleware
 
 from clearcodereading import settings
@@ -65,6 +73,85 @@ class StaticAssetDeploymentTests(SimpleTestCase):
         self.assertIn(".dashboard #content-related", css)
         self.assertIn("overflow-x: auto", css)
         self.assertIn("font-size: 16px", css)
+
+
+class LoginCsrfRecoveryTests(TestCase):
+    def setUp(self):
+        self.client = Client(enforce_csrf_checks=True)
+
+    def _stale_token(self) -> str:
+        self.client.get(reverse("login"))
+        stale_token = self.client.cookies["csrftoken"].value
+        self.client.cookies["csrftoken"] = get_random_string(32)
+        return stale_token
+
+    def test_stale_portal_login_redirects_to_a_fresh_form(self):
+        response = self.client.post(
+            reverse("login"),
+            {
+                "username": "admin@example.com",
+                "password": "not-persisted",
+                "csrfmiddlewaretoken": self._stale_token(),
+            },
+        )
+
+        self.assertRedirects(
+            response,
+            f"{reverse('login')}?csrf=refreshed",
+            fetch_redirect_response=False,
+        )
+        refreshed = self.client.get(response.url)
+        self.assertContains(refreshed, "Your sign-in form had expired.")
+
+    def test_stale_demo_login_uses_the_same_safe_recovery(self):
+        response = self.client.post(
+            reverse("demo_login", args=("admin",)),
+            {"csrfmiddlewaretoken": self._stale_token()},
+        )
+
+        self.assertRedirects(
+            response,
+            f"{reverse('login')}?csrf=refreshed",
+            fetch_redirect_response=False,
+        )
+
+    def test_stale_django_admin_login_preserves_a_local_destination(self):
+        response = self.client.post(
+            reverse("admin:login"),
+            {
+                "next": "/admin/users/customuser/",
+                "csrfmiddlewaretoken": self._stale_token(),
+            },
+        )
+
+        self.assertRedirects(
+            response,
+            f"{reverse('login')}?csrf=refreshed&next=%2Fadmin%2Fusers%2Fcustomuser%2F",
+            fetch_redirect_response=False,
+        )
+
+    def test_stale_login_drops_an_external_destination(self):
+        response = self.client.post(
+            reverse("login"),
+            {
+                "next": "https://attacker.example/steal",
+                "csrfmiddlewaretoken": self._stale_token(),
+            },
+        )
+
+        self.assertRedirects(
+            response,
+            f"{reverse('login')}?csrf=refreshed",
+            fetch_redirect_response=False,
+        )
+
+    def test_non_login_csrf_failures_remain_forbidden(self):
+        response = self.client.post(
+            reverse("logout"),
+            {"csrfmiddlewaretoken": self._stale_token()},
+        )
+
+        self.assertEqual(response.status_code, 403)
 
 
 class AdminBrandingTests(SimpleTestCase):
