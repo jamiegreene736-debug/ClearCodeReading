@@ -1,3 +1,4 @@
+{% load static %}
 <!doctype html>
 <html lang="en">
 <head>
@@ -10,29 +11,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-  <script src="https://cdn.tailwindcss.com"></script>
-  <script>
-    tailwind.config = {
-      theme: {
-        extend: {
-          colors: {
-            forest: '#2C4A45',
-            deepTeal: '#1A7A7A',
-            mediumTeal: '#2EB8B8',
-            eucalyptus: '#5A9E8F',
-            ink: '#0F2B35',
-            gold: '#F5A623',
-            linen: '#F7F2EA',
-            seafoam: '#A8CFC4',
-            sand: '#E8D5B0'
-          },
-          fontFamily: {
-            sans: ['Plus Jakarta Sans', 'ui-sans-serif', 'system-ui', 'sans-serif']
-          }
-        }
-      }
-    };
-  </script>
+  <link rel="stylesheet" href="{% static 'css/clearcode-tailwind.css' %}">
   <style>
     .focus-ring:focus-visible { outline: 4px solid rgba(245, 166, 35, .75); outline-offset: 3px; }
     .page-bg {
@@ -56,8 +35,8 @@
     </nav>
   </header>
 
-  <main class="mx-auto grid max-w-6xl gap-8 px-4 py-10 sm:px-6 lg:grid-cols-[.9fr_1.1fr] lg:px-8 lg:py-16">
-    <section class="rounded-[2rem] bg-white/88 p-7 shadow-2xl shadow-deepTeal/10 ring-1 ring-deepTeal/10">
+  <main class="mx-auto grid min-w-0 max-w-6xl gap-8 px-4 py-10 sm:px-6 lg:grid-cols-[.9fr_1.1fr] lg:px-8 lg:py-16">
+    <section class="min-w-0 rounded-[2rem] bg-white/88 p-7 shadow-2xl shadow-deepTeal/10 ring-1 ring-deepTeal/10">
       <p class="text-sm font-black uppercase tracking-[0.18em] text-mediumTeal">Backend portal</p>
       <h1 class="mt-3 text-4xl font-black leading-tight sm:text-5xl">Welcome back to ClearCode Reading.</h1>
       <p class="mt-5 text-lg leading-8 text-ink/70">
@@ -98,7 +77,7 @@
       </p>
     </section>
 
-    <section class="rounded-[2rem] bg-white p-6 shadow-2xl shadow-ink/10 ring-1 ring-ink/10 sm:p-8">
+    <section class="min-w-0 rounded-[2rem] bg-white p-6 shadow-2xl shadow-ink/10 ring-1 ring-ink/10 sm:p-8">
       <h2 class="text-3xl font-black">Sign in</h2>
 
       {% if messages %}
@@ -133,7 +112,7 @@
 
       <div class="mt-7 rounded-3xl bg-linen p-5">
         <p class="text-sm font-black uppercase tracking-[0.16em] text-deepTeal">Sample credentials</p>
-        <div class="mt-3 grid gap-2 text-sm font-bold text-ink/70">
+        <div class="mt-3 grid gap-2 break-all text-sm font-bold text-ink/70">
           <p>Parent: parent@clearcodereading.com</p>
           <p>Teacher: teacher@clearcodereading.com</p>
           <p>Administrator: admin@clearcodereading.com</p>

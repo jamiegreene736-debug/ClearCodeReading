@@ -1,0 +1,51 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  html {
+    font-size: 16px;
+  }
+
+  button,
+  input,
+  select,
+  textarea {
+    font-size: 1rem;
+  }
+}
+
+@layer components {
+  .carousel-dot {
+    min-height: 2.75rem;
+    min-width: 2.75rem;
+    position: relative;
+  }
+
+  .carousel-dot::after {
+    background: currentColor;
+    border-radius: 9999px;
+    content: '';
+    height: .75rem;
+    inset: 50% auto auto 50%;
+    position: absolute;
+    transform: translate(-50%, -50%);
+    width: .75rem;
+  }
+
+  .carousel-dot[aria-current='true']::after {
+    background: #1A7A7A;
+  }
+}
+
+@media (max-width: 639px) {
+  [data-mobile-collapsible] > summary {
+    display: flex;
+  }
+}
+
+@media (min-width: 640px) {
+  [data-mobile-collapsible] > summary {
+    display: none;
+  }
+}

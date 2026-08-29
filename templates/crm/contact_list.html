@@ -16,8 +16,21 @@
   .tab { padding:10px 2px; color:var(--muted); border-bottom:3px solid transparent; font-weight:600; text-decoration:none; }
   .tab.active { color:var(--teal); border-color:var(--teal); }
   .pagination { display:flex; align-items:center; justify-content:center; gap:10px; padding:16px; }
+  .contact-cards { display:none; }
   @media (max-width:1100px) { .filters { grid-template-columns:1fr 1fr 1fr; } }
-  @media (max-width:650px) { .page-head { align-items:start; flex-direction:column; } .filters { grid-template-columns:1fr; } }
+  @media (max-width:650px) {
+    .page-head { align-items:stretch; flex-direction:column; }
+    .filters { grid-template-columns:1fr; }
+    .tabs { gap:6px; overflow-x:auto; }
+    .tab { min-height:44px; display:inline-flex; align-items:center; padding:10px 8px; white-space:nowrap; }
+    .table-wrap { display:none; }
+    .contact-cards { display:grid; gap:12px; padding:12px; }
+    .contact-card { padding:16px; }
+    .contact-card dl { display:grid; grid-template-columns:minmax(0,1fr) minmax(0,1fr); gap:12px; margin:16px 0 0; }
+    .contact-card dt { color:var(--muted); font-size:11px; font-weight:700; letter-spacing:.04em; text-transform:uppercase; }
+    .contact-card dd { margin:3px 0 0; overflow-wrap:anywhere; }
+  }
+  @media (max-width:420px) { .contact-card dl { grid-template-columns:1fr; } }
 {% endblock %}
 {% block content %}
   <div class="page-head">
@@ -67,6 +80,21 @@
           {% empty %}<tr><td class="empty" colspan="8"><strong>No contacts match this view.</strong><br>Try removing a filter or wait for the next website submission.</td></tr>{% endfor %}
         </tbody>
       </table>
+    </div>
+    <div class="contact-cards" aria-label="Contacts">
+      {% for contact in contacts %}
+        <article class="card contact-card">
+          <div class="contact-cell"><span class="avatar">{{ contact.contact_name|slice:":1" }}</span><div><a class="contact-name" href="{% url 'crm_contact_detail' contact.pk %}">{{ contact.contact_name }}</a><div class="contact-email">{{ contact.contact_email }}</div></div></div>
+          <dl>
+            <div><dt>Status</dt><dd><span class="badge {% if contact.status == 'new' %}badge-warn{% endif %}">{{ contact.get_status_display }}</span></dd></div>
+            <div><dt>Audience</dt><dd>{{ contact.get_audience_display }}</dd></div>
+            <div><dt>Organization</dt><dd>{{ contact.organization_name|default:contact.school_name|default:"—" }}</dd></div>
+            <div><dt>Owner</dt><dd>{% if contact.assigned_to %}{{ contact.assigned_to.get_full_name|default:contact.assigned_to.email }}{% else %}Unassigned{% endif %}</dd></div>
+            <div><dt>Submissions</dt><dd>{{ contact.submission_count }}</dd></div>
+            <div><dt>Last submission</dt><dd>{% if contact.last_submission_at %}{{ contact.last_submission_at|date:"M j, Y" }}{% else %}No captured form{% endif %}</dd></div>
+          </dl>
+        </article>
+      {% empty %}<div class="empty"><strong>No contacts match this view.</strong><br>Try removing a filter or wait for the next website submission.</div>{% endfor %}
     </div>
     {% if page_obj.paginator.num_pages > 1 %}<nav class="pagination" aria-label="Pagination">{% if page_obj.has_previous %}<a class="btn btn-small" href="?{% if filter_query %}{{ filter_query }}&{% endif %}page={{ page_obj.previous_page_number }}">Previous</a>{% endif %}<span>Page {{ page_obj.number }} of {{ page_obj.paginator.num_pages }}</span>{% if page_obj.has_next %}<a class="btn btn-small" href="?{% if filter_query %}{{ filter_query }}&{% endif %}page={{ page_obj.next_page_number }}">Next</a>{% endif %}</nav>{% endif %}
   </section>

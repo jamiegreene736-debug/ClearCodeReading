@@ -22,14 +22,14 @@
     .brand { display:flex; align-items:center; gap:10px; padding:0 8px 24px; text-decoration:none; font:800 19px "Plus Jakarta Sans",sans-serif; letter-spacing:-.02em; }
     .brand-mark { width:32px; height:32px; display:grid; place-items:center; color:var(--navy); background:var(--orange); border-radius:7px; }
     .nav-label { margin:16px 10px 8px; color:#9fb4c5; font-size:11px; font-weight:700; letter-spacing:.1em; text-transform:uppercase; }
-    .nav-link { display:flex; align-items:center; gap:10px; margin:3px 0; padding:10px 12px; border-radius:5px; color:#eaf0f4; text-decoration:none; font-weight:600; }
+    .nav-link { display:flex; min-height:44px; align-items:center; gap:10px; margin:3px 0; padding:10px 12px; border-radius:5px; color:#eaf0f4; text-decoration:none; font-weight:600; }
     .nav-link:hover,.nav-link.active { color:white; background:#3d5264; }
     .main { min-width:0; }
     .topbar { height:64px; display:flex; align-items:center; justify-content:space-between; gap:20px; padding:0 28px; border-bottom:1px solid var(--line); background:white; }
     .topbar small { color:var(--muted); }
     .top-actions { display:flex; align-items:center; gap:14px; }
     .top-actions a { color:var(--teal); font-weight:600; text-decoration:none; }
-    .logout { padding:7px 12px; color:var(--ink); background:white; border:1px solid var(--line); border-radius:5px; }
+    .logout { min-height:44px; padding:7px 12px; color:var(--ink); background:white; border:1px solid var(--line); border-radius:5px; }
     .content { padding:28px; }
     .eyebrow { margin:0 0 5px; color:var(--teal); font-size:12px; font-weight:700; letter-spacing:.08em; text-transform:uppercase; }
     h1,h2,h3,p { margin-top:0; }
@@ -42,14 +42,14 @@
     .stat { padding:18px; }
     .stat-label { color:var(--muted); font-size:12px; font-weight:600; }
     .stat-value { margin-top:4px; color:var(--navy); font:800 28px "Plus Jakarta Sans",sans-serif; letter-spacing:-.03em; }
-    .btn { display:inline-flex; align-items:center; justify-content:center; gap:7px; min-height:36px; padding:8px 14px; border:1px solid var(--line); border-radius:5px; color:var(--ink); background:white; font-weight:600; text-decoration:none; }
+    .btn { display:inline-flex; align-items:center; justify-content:center; gap:7px; min-height:44px; padding:8px 14px; border:1px solid var(--line); border-radius:5px; color:var(--ink); background:white; font-weight:600; text-decoration:none; }
     .btn:hover { border-color:#8ca5b7; background:#f7fafc; }
     .btn-primary { color:white; border-color:var(--teal); background:var(--teal); }
     .btn-primary:hover { background:#146969; }
-    .btn-small { min-height:30px; padding:5px 10px; font-size:12px; }
+    .btn-small { min-height:44px; padding:7px 12px; font-size:12px; }
     .field { display:grid; gap:6px; }
     .field label,.field-label { color:var(--ink); font-size:12px; font-weight:700; }
-    input,select,textarea { width:100%; padding:9px 10px; color:var(--ink); border:1px solid #99afbf; border-radius:4px; background:white; }
+    input,select,textarea { width:100%; min-height:44px; padding:9px 10px; color:var(--ink); border:1px solid #99afbf; border-radius:4px; background:white; }
     input:focus,select:focus,textarea:focus { outline:3px solid rgba(26,122,122,.2); border-color:var(--teal); }
     textarea { min-height:100px; resize:vertical; }
     .badge { display:inline-flex; align-items:center; padding:4px 9px; border-radius:999px; color:#24564e; background:var(--teal-soft); font-size:11px; font-weight:700; white-space:nowrap; }
@@ -58,7 +58,33 @@
     .avatar { width:40px; height:40px; flex:0 0 auto; display:grid; place-items:center; color:white; background:var(--teal); border-radius:50%; font-weight:700; text-transform:uppercase; }
     .empty { padding:45px 20px; text-align:center; color:var(--muted); }
     @media (max-width:1000px) { .stats { grid-template-columns:repeat(2,minmax(0,1fr)); } }
-    @media (max-width:760px) { .shell { display:block; } .sidebar { position:static; width:100%; height:auto; padding:12px; } .brand { padding-bottom:8px; } .nav-label { display:none; } .nav-group { display:flex; overflow:auto; } .nav-link { white-space:nowrap; } .topbar { padding:0 16px; } .content { padding:20px 14px; } .stats { grid-template-columns:1fr 1fr; } .flash { margin:0 14px 10px; } }
+    .mobile-nav { display:none; }
+    @media (max-width:760px) {
+      body { font-size:15px; }
+      .shell { display:block; }
+      .sidebar { position:static; width:100%; height:auto; padding:10px 12px; }
+      .brand { min-height:44px; padding:0 4px; }
+      .desktop-nav { display:none; }
+      .mobile-nav { display:block; margin-top:8px; }
+      .mobile-nav summary { min-height:44px; display:flex; cursor:pointer; list-style:none; align-items:center; justify-content:space-between; padding:8px 12px; color:white; border:1px solid rgba(255,255,255,.22); border-radius:6px; font-weight:700; }
+      .mobile-nav summary::-webkit-details-marker { display:none; }
+      .mobile-nav summary::after { content:'+'; font-size:20px; }
+      .mobile-nav[open] summary::after { content:'−'; }
+      .mobile-nav .nav-group { display:grid; margin-top:8px; }
+      .topbar { height:auto; min-height:64px; align-items:center; padding:10px 14px; }
+      .topbar small { display:none; }
+      .top-actions { gap:8px; }
+      .top-actions a { min-height:44px; display:inline-flex; align-items:center; }
+      .content { padding:20px 14px; }
+      .stats { grid-template-columns:1fr 1fr; }
+      .flash { margin:0 14px 10px; }
+      input,select,textarea { font-size:16px; }
+    }
+    @media (max-width:420px) {
+      .stats { grid-template-columns:1fr; }
+      .topbar > div:first-child { max-width:8.5rem; }
+      .top-actions a { font-size:12px; }
+    }
     {% block extra_style %}{% endblock %}
   </style>
 </head>
@@ -67,18 +93,31 @@
   <div class="shell">
     <aside class="sidebar">
       <a class="brand" href="{% url 'crm_contact_list' %}"><span class="brand-mark">CC</span><span>ClearCode CRM</span></a>
-      <p class="nav-label">CRM</p>
-      <nav class="nav-group" aria-label="CRM navigation">
-        <a class="nav-link {% if request.resolver_match.url_name == 'crm_contact_list' or request.resolver_match.url_name == 'crm_contact_detail' %}active{% endif %}" href="{% url 'crm_contact_list' %}"><span aria-hidden="true">◎</span> Contacts</a>
-        <a class="nav-link {% if request.resolver_match.url_name == 'crm_company_list' or request.resolver_match.url_name == 'crm_company_detail' %}active{% endif %}" href="{% url 'crm_company_list' %}"><span aria-hidden="true">▣</span> Companies</a>
-        <a class="nav-link {% if request.resolver_match.url_name == 'crm_deal_list' %}active{% endif %}" href="{% url 'crm_deal_list' %}"><span aria-hidden="true">◇</span> Deals</a>
-        <a class="nav-link {% if request.resolver_match.url_name == 'crm_triage_list' %}active{% endif %}" href="{% url 'crm_triage_list' %}"><span aria-hidden="true">⌁</span> Intake triage</a>
-      </nav>
-      <p class="nav-label">ClearCode</p>
-      <nav class="nav-group">
-        <a class="nav-link" href="{% url 'portal_dashboard' %}"><span aria-hidden="true">▦</span> Dashboard</a>
-        <a class="nav-link" href="/admin/"><span aria-hidden="true">⚙</span> Admin</a>
-      </nav>
+      <div class="desktop-nav">
+        <p class="nav-label">CRM</p>
+        <nav class="nav-group" aria-label="CRM navigation">
+          <a class="nav-link {% if request.resolver_match.url_name == 'crm_contact_list' or request.resolver_match.url_name == 'crm_contact_detail' %}active{% endif %}" href="{% url 'crm_contact_list' %}"><span aria-hidden="true">◎</span> Contacts</a>
+          <a class="nav-link {% if request.resolver_match.url_name == 'crm_company_list' or request.resolver_match.url_name == 'crm_company_detail' %}active{% endif %}" href="{% url 'crm_company_list' %}"><span aria-hidden="true">▣</span> Companies</a>
+          <a class="nav-link {% if request.resolver_match.url_name == 'crm_deal_list' %}active{% endif %}" href="{% url 'crm_deal_list' %}"><span aria-hidden="true">◇</span> Deals</a>
+          <a class="nav-link {% if request.resolver_match.url_name == 'crm_triage_list' %}active{% endif %}" href="{% url 'crm_triage_list' %}"><span aria-hidden="true">⌁</span> Intake triage</a>
+        </nav>
+        <p class="nav-label">ClearCode</p>
+        <nav class="nav-group" aria-label="ClearCode navigation">
+          <a class="nav-link" href="{% url 'portal_dashboard' %}"><span aria-hidden="true">▦</span> Dashboard</a>
+          <a class="nav-link" href="/admin/"><span aria-hidden="true">⚙</span> Admin</a>
+        </nav>
+      </div>
+      <details class="mobile-nav">
+        <summary>Workspace menu</summary>
+        <nav class="nav-group" aria-label="Mobile CRM navigation">
+          <a class="nav-link {% if request.resolver_match.url_name == 'crm_contact_list' or request.resolver_match.url_name == 'crm_contact_detail' %}active{% endif %}" href="{% url 'crm_contact_list' %}">Contacts</a>
+          <a class="nav-link {% if request.resolver_match.url_name == 'crm_company_list' or request.resolver_match.url_name == 'crm_company_detail' %}active{% endif %}" href="{% url 'crm_company_list' %}">Companies</a>
+          <a class="nav-link {% if request.resolver_match.url_name == 'crm_deal_list' %}active{% endif %}" href="{% url 'crm_deal_list' %}">Deals</a>
+          <a class="nav-link {% if request.resolver_match.url_name == 'crm_triage_list' %}active{% endif %}" href="{% url 'crm_triage_list' %}">Intake triage</a>
+          <a class="nav-link" href="{% url 'portal_dashboard' %}">Dashboard</a>
+          <a class="nav-link" href="/admin/">Admin</a>
+        </nav>
+      </details>
     </aside>
     <div class="main">
       <header class="topbar">

@@ -5,6 +5,10 @@
 
 {% block extrastyle %}
   {{ block.super }}
+{% endblock %}
+
+{% block responsive %}
+  {{ block.super }}
   <link rel="stylesheet" href="{% static 'admin/css/clearcode_admin.css' %}">
 {% endblock %}
 

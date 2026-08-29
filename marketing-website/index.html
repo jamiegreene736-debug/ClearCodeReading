@@ -10,7 +10,14 @@
     .home-eyebrow { letter-spacing: .18em; }
     .hero-photo { object-position: 54% center; }
     .carousel-slide[hidden] { display: none; }
-    .carousel-dot[aria-current="true"] { background: #0F2B35; transform: scale(1.18); }
+    .carousel-dot { background: transparent !important; color: rgba(15, 43, 53, .28); }
+    .carousel-dot[aria-current="true"] { background: transparent !important; color: #0F2B35; transform: scale(1.08); }
+    .mobile-deep-dive > summary { display: none; }
+    @media (max-width: 639px) {
+      .mobile-deep-dive > summary { align-items: center; background: #0F2B35; color: white; cursor: pointer; display: flex; font-weight: 800; justify-content: space-between; min-height: 56px; padding: 1rem 1.25rem; }
+      .mobile-deep-dive > summary::after { color: #F5A623; content: '+'; font-size: 1.5rem; }
+      .mobile-deep-dive[open] > summary::after { content: '−'; }
+    }
     @media (max-width: 1023px) { .hero-photo { object-position: 52% 44%; } }
   </style>
 {% endblock %}
@@ -34,7 +41,7 @@
 
         <div class="relative mx-auto w-full max-w-2xl lg:mx-0">
           <div class="overflow-hidden rounded-[2.2rem] bg-ink shadow-2xl shadow-ink/20 ring-1 ring-ink/10">
-            <img class="hero-photo aspect-[4/4.15] w-full object-cover sm:aspect-[4/3.6] lg:aspect-[5/4]" src="/assets/images/homepage-hero-specialist-student.jpg" alt="A reading specialist and elementary-age student read together at a table with letter tiles." width="1536" height="1024" fetchpriority="high">
+            <img class="hero-photo aspect-[4/4.15] w-full object-cover sm:aspect-[4/3.6] lg:aspect-[5/4]" src="/assets/images/homepage-hero-specialist-student.jpg" srcset="/assets/images/homepage-hero-specialist-student-640.webp 640w, /assets/images/homepage-hero-specialist-student-1024.webp 1024w, /assets/images/homepage-hero-specialist-student.jpg 1536w" sizes="(max-width: 1023px) 100vw, 50vw" alt="A reading specialist and elementary-age student read together at a table with letter tiles." width="1536" height="1024" fetchpriority="high">
           </div>
           <div class="relative mx-4 -mt-16 rounded-[1.6rem] bg-white p-5 shadow-2xl ring-1 ring-ink/10 sm:mx-8 sm:-mt-20 sm:p-6">
             <div class="flex items-center justify-between gap-4">
@@ -73,7 +80,7 @@
         <div class="mt-10" data-carousel role="region" aria-roledescription="carousel" aria-label="ClearCode learning experiences">
           <div id="learning-carousel-slides" class="overflow-hidden rounded-[2rem] bg-white shadow-xl ring-1 ring-ink/10" aria-live="polite">
             <figure class="carousel-slide grid lg:grid-cols-[1.3fr_.7fr]" data-carousel-slide role="group" aria-roledescription="slide" aria-label="1 of 3">
-              <img src="/assets/images/learning-carousel-small-group.jpg" alt="A reading specialist leads three elementary students through a small-group literacy lesson." class="aspect-[3/2] h-full w-full object-cover" width="1536" height="1024" loading="lazy">
+              <img src="/assets/images/learning-carousel-small-group.jpg" srcset="/assets/images/learning-carousel-small-group-640.webp 640w, /assets/images/learning-carousel-small-group-1024.webp 1024w, /assets/images/learning-carousel-small-group.jpg 1536w" sizes="(max-width: 1023px) 100vw, 65vw" alt="A reading specialist leads three elementary students through a small-group literacy lesson." class="aspect-[3/2] h-full w-full object-cover" width="1536" height="1024" loading="lazy">
               <figcaption class="flex flex-col justify-center bg-white p-7 sm:p-9 lg:p-10">
                 <p class="home-eyebrow text-xs font-bold uppercase text-deepTeal">Small-group instruction</p>
                 <h3 class="mt-4 text-3xl font-extrabold leading-tight text-ink">Focused enough to notice every reader.</h3>
@@ -81,7 +88,7 @@
               </figcaption>
             </figure>
             <figure class="carousel-slide grid lg:grid-cols-[1.3fr_.7fr]" data-carousel-slide role="group" aria-roledescription="slide" aria-label="2 of 3" hidden>
-              <img src="/assets/images/learning-carousel-one-to-one.jpg" alt="A reading specialist supports an older elementary student as he reads and works with syllable cards." class="aspect-[3/2] h-full w-full object-cover" width="1536" height="1024" loading="lazy">
+              <img src="/assets/images/learning-carousel-one-to-one.jpg" srcset="/assets/images/learning-carousel-one-to-one-640.webp 640w, /assets/images/learning-carousel-one-to-one-1024.webp 1024w, /assets/images/learning-carousel-one-to-one.jpg 1536w" sizes="(max-width: 1023px) 100vw, 65vw" alt="A reading specialist supports an older elementary student as he reads and works with syllable cards." class="aspect-[3/2] h-full w-full object-cover" width="1536" height="1024" loading="lazy">
               <figcaption class="flex flex-col justify-center bg-white p-7 sm:p-9 lg:p-10">
                 <p class="home-eyebrow text-xs font-bold uppercase text-deepTeal">Individual attention</p>
                 <h3 class="mt-4 text-3xl font-extrabold leading-tight text-ink">Challenge without losing confidence.</h3>
@@ -89,7 +96,7 @@
               </figcaption>
             </figure>
             <figure class="carousel-slide grid lg:grid-cols-[1.3fr_.7fr]" data-carousel-slide role="group" aria-roledescription="slide" aria-label="3 of 3" hidden>
-              <img src="/assets/images/learning-carousel-educator-collaboration.jpg" alt="Two reading specialists collaborate at a table using lesson and phonics materials." class="aspect-[3/2] h-full w-full object-cover" width="1536" height="1024" loading="lazy">
+              <img src="/assets/images/learning-carousel-educator-collaboration.jpg" srcset="/assets/images/learning-carousel-educator-collaboration-640.webp 640w, /assets/images/learning-carousel-educator-collaboration-1024.webp 1024w, /assets/images/learning-carousel-educator-collaboration.jpg 1536w" sizes="(max-width: 1023px) 100vw, 65vw" alt="Two reading specialists collaborate at a table using lesson and phonics materials." class="aspect-[3/2] h-full w-full object-cover" width="1536" height="1024" loading="lazy">
               <figcaption class="flex flex-col justify-center bg-white p-7 sm:p-9 lg:p-10">
                 <p class="home-eyebrow text-xs font-bold uppercase text-deepTeal">Specialist collaboration</p>
                 <h3 class="mt-4 text-3xl font-extrabold leading-tight text-ink">A plan that stays connected.</h3>
@@ -143,7 +150,7 @@
           <p class="mt-5 text-lg leading-8 text-ink/65">Specialists make the instructional decisions. ClearCode keeps the evidence and family communication connected.</p>
         </div>
         <figure class="mt-10 overflow-hidden rounded-[2rem] bg-white p-2 shadow-lg ring-1 ring-ink/5">
-          <img src="/assets/images/specialist-reading-session.jpg" alt="A reading specialist and student sound out a word together using letter tiles." class="aspect-[16/7] w-full rounded-[1.65rem] object-cover object-[center_38%]" width="1536" height="1024" loading="lazy">
+          <img src="/assets/images/specialist-reading-session.jpg" srcset="/assets/images/specialist-reading-session-640.webp 640w, /assets/images/specialist-reading-session-1024.webp 1024w, /assets/images/specialist-reading-session.jpg 1536w" sizes="100vw" alt="A reading specialist and student sound out a word together using letter tiles." class="aspect-[16/7] w-full rounded-[1.65rem] object-cover object-[center_38%]" width="1536" height="1024" loading="lazy">
         </figure>
         <ol class="mt-12 grid gap-6 lg:grid-cols-3">
           <li class="rounded-[2rem] bg-white p-7 shadow-sm ring-1 ring-ink/5 sm:p-8"><span class="display-type grid h-12 w-12 place-items-center rounded-full bg-gold text-xl font-black text-ink">1</span><h3 class="mt-6 text-3xl font-bold text-ink">Consultation and placement</h3><p class="mt-3 leading-7 text-ink/65">We learn about the reader, review the available evidence, and identify the appropriate methodology and starting point.</p></li>
@@ -154,6 +161,8 @@
       </div>
     </section>
 
+    <details class="mobile-deep-dive" data-mobile-deep-dive open>
+      <summary>Explore a full ClearCode session</summary>
     <section class="bg-ink px-4 py-20 text-white sm:px-6 sm:py-24 lg:px-8" aria-labelledby="session-story-title">
       <div class="mx-auto max-w-6xl">
         <div class="grid gap-6 lg:grid-cols-[1fr_auto] lg:items-end">
@@ -168,7 +177,7 @@
         <div class="mt-10" data-carousel role="region" aria-roledescription="carousel" aria-label="A ClearCode session from welcome to wrap-up">
           <div id="session-story-carousel-slides" class="overflow-hidden rounded-[2rem] bg-white text-ink shadow-2xl shadow-black/25 ring-1 ring-white/10" aria-live="polite">
             <figure class="carousel-slide grid lg:grid-cols-[1.3fr_.7fr]" data-carousel-slide role="group" aria-roledescription="slide" aria-label="1 of 5">
-              <img src="/assets/images/session-carousel-arrival.jpg" alt="Five elementary students wait near an open classroom door while a reading specialist welcomes the first student." class="aspect-[3/2] h-full w-full object-cover" width="1536" height="1024" loading="lazy">
+              <img src="/assets/images/session-carousel-arrival.jpg" srcset="/assets/images/session-carousel-arrival-640.webp 640w, /assets/images/session-carousel-arrival-1024.webp 1024w, /assets/images/session-carousel-arrival.jpg 1536w" sizes="(max-width: 1023px) 100vw, 65vw" alt="Five elementary students wait near an open classroom door while a reading specialist welcomes the first student." class="aspect-[3/2] h-full w-full object-cover" width="1536" height="1024" loading="lazy">
               <figcaption class="flex flex-col justify-center bg-white p-7 sm:p-9 lg:p-10">
                 <p class="home-eyebrow text-xs font-bold uppercase text-deepTeal">Arrival</p>
                 <h3 class="mt-4 text-3xl font-extrabold leading-tight text-ink">A warm, organized welcome.</h3>
@@ -176,7 +185,7 @@
               </figcaption>
             </figure>
             <figure class="carousel-slide grid lg:grid-cols-[1.3fr_.7fr]" data-carousel-slide role="group" aria-roledescription="slide" aria-label="2 of 5" hidden>
-              <img src="/assets/images/session-carousel-settle-in.jpg" alt="Students put away backpacks, choose books, and collect literacy materials as their specialist helps them settle in." class="aspect-[3/2] h-full w-full object-cover" width="1536" height="1024" loading="lazy">
+              <img src="/assets/images/session-carousel-settle-in.jpg" srcset="/assets/images/session-carousel-settle-in-640.webp 640w, /assets/images/session-carousel-settle-in-1024.webp 1024w, /assets/images/session-carousel-settle-in.jpg 1536w" sizes="(max-width: 1023px) 100vw, 65vw" alt="Students put away backpacks, choose books, and collect literacy materials as their specialist helps them settle in." class="aspect-[3/2] h-full w-full object-cover" width="1536" height="1024" loading="lazy">
               <figcaption class="flex flex-col justify-center bg-white p-7 sm:p-9 lg:p-10">
                 <p class="home-eyebrow text-xs font-bold uppercase text-deepTeal">Transition</p>
                 <h3 class="mt-4 text-3xl font-extrabold leading-tight text-ink">Ready to learn without the rush.</h3>
@@ -184,7 +193,7 @@
               </figcaption>
             </figure>
             <figure class="carousel-slide grid lg:grid-cols-[1.3fr_.7fr]" data-carousel-slide role="group" aria-roledescription="slide" aria-label="3 of 5" hidden>
-              <img src="/assets/images/session-carousel-multiple-groups.jpg" alt="Two reading specialists lead separate small groups at different tables in the same literacy classroom." class="aspect-[3/2] h-full w-full object-cover" width="1536" height="1024" loading="lazy">
+              <img src="/assets/images/session-carousel-multiple-groups.jpg" srcset="/assets/images/session-carousel-multiple-groups-640.webp 640w, /assets/images/session-carousel-multiple-groups-1024.webp 1024w, /assets/images/session-carousel-multiple-groups.jpg 1536w" sizes="(max-width: 1023px) 100vw, 65vw" alt="Two reading specialists lead separate small groups at different tables in the same literacy classroom." class="aspect-[3/2] h-full w-full object-cover" width="1536" height="1024" loading="lazy">
               <figcaption class="flex flex-col justify-center bg-white p-7 sm:p-9 lg:p-10">
                 <p class="home-eyebrow text-xs font-bold uppercase text-deepTeal">Personal attention</p>
                 <h3 class="mt-4 text-3xl font-extrabold leading-tight text-ink">Separate groups. Focused support.</h3>
@@ -192,7 +201,7 @@
               </figcaption>
             </figure>
             <figure class="carousel-slide grid lg:grid-cols-[1.3fr_.7fr]" data-carousel-slide role="group" aria-roledescription="slide" aria-label="4 of 5" hidden>
-              <img src="/assets/images/session-carousel-hands-on.jpg" alt="A reading specialist guides three students using letter tiles, syllable cards, and a short reading passage." class="aspect-[3/2] h-full w-full object-cover" width="1536" height="1024" loading="lazy">
+              <img src="/assets/images/session-carousel-hands-on.jpg" srcset="/assets/images/session-carousel-hands-on-640.webp 640w, /assets/images/session-carousel-hands-on-1024.webp 1024w, /assets/images/session-carousel-hands-on.jpg 1536w" sizes="(max-width: 1023px) 100vw, 65vw" alt="A reading specialist guides three students using letter tiles, syllable cards, and a short reading passage." class="aspect-[3/2] h-full w-full object-cover" width="1536" height="1024" loading="lazy">
               <figcaption class="flex flex-col justify-center bg-white p-7 sm:p-9 lg:p-10">
                 <p class="home-eyebrow text-xs font-bold uppercase text-deepTeal">Active instruction</p>
                 <h3 class="mt-4 text-3xl font-extrabold leading-tight text-ink">Practice with a clear purpose.</h3>
@@ -200,7 +209,7 @@
               </figcaption>
             </figure>
             <figure class="carousel-slide grid lg:grid-cols-[1.3fr_.7fr]" data-carousel-slide role="group" aria-roledescription="slide" aria-label="5 of 5" hidden>
-              <img src="/assets/images/session-carousel-wrap-up.jpg" alt="A student high-fives his reading specialist at the classroom door while his father joins the positive wrap-up." class="aspect-[3/2] h-full w-full object-cover" width="1536" height="1024" loading="lazy">
+              <img src="/assets/images/session-carousel-wrap-up.jpg" srcset="/assets/images/session-carousel-wrap-up-640.webp 640w, /assets/images/session-carousel-wrap-up-1024.webp 1024w, /assets/images/session-carousel-wrap-up.jpg 1536w" sizes="(max-width: 1023px) 100vw, 65vw" alt="A student high-fives his reading specialist at the classroom door while his father joins the positive wrap-up." class="aspect-[3/2] h-full w-full object-cover" width="1536" height="1024" loading="lazy">
               <figcaption class="flex flex-col justify-center bg-white p-7 sm:p-9 lg:p-10">
                 <p class="home-eyebrow text-xs font-bold uppercase text-deepTeal">Wrap-up</p>
                 <h3 class="mt-4 text-3xl font-extrabold leading-tight text-ink">Leave with a clear next step.</h3>
@@ -226,6 +235,7 @@
         </div>
       </div>
     </section>
+    </details>
 
     <section class="bg-white px-4 py-20 sm:px-6 sm:py-24 lg:px-8">
       <div class="mx-auto max-w-6xl">
@@ -235,7 +245,7 @@
           <article class="rounded-[2rem] bg-ink p-8 text-white sm:p-10"><p class="home-eyebrow text-xs font-bold uppercase text-gold">For schools and specialists</p><h3 class="mt-4 text-3xl font-black">Keep evidence and next steps connected.</h3><p class="mt-4 leading-7 text-white/70">Give specialists a disciplined workflow while instructional leaders retain control of every placement and support decision.</p><a href="/contact/?audience=school#consultation-form" class="focus-ring mt-7 inline-flex font-bold text-gold underline decoration-gold/40 decoration-2 underline-offset-8">Talk with the ClearCode team</a></article>
         </div>
         <figure class="mt-8 overflow-hidden rounded-[2rem] bg-linen p-2 shadow-sm ring-1 ring-ink/5">
-          <img src="/assets/images/family-reading-practice.jpg" alt="A father and daughter share a book and celebrate reading practice at home." class="aspect-[16/7] w-full rounded-[1.65rem] object-cover object-[center_32%]" width="1536" height="1024" loading="lazy">
+          <img src="/assets/images/family-reading-practice.jpg" srcset="/assets/images/family-reading-practice-640.webp 640w, /assets/images/family-reading-practice-1024.webp 1024w, /assets/images/family-reading-practice.jpg 1536w" sizes="100vw" alt="A father and daughter share a book and celebrate reading practice at home." class="aspect-[16/7] w-full rounded-[1.65rem] object-cover object-[center_32%]" width="1536" height="1024" loading="lazy">
         </figure>
         <div class="mt-8 grid gap-6 md:grid-cols-2">
           <article class="rounded-[2rem] border border-ink/10 bg-linen p-8"><p class="home-eyebrow text-xs font-bold uppercase text-deepTeal">Grades K–2</p><h3 class="mt-3 text-3xl font-black text-ink">Orton-Gillingham Plus</h3><p class="mt-3 leading-7 text-ink/65">Explicit, multisensory, cumulative structured-literacy instruction for developing readers.</p></article>
@@ -255,12 +265,15 @@
       </div>
     </section>
 
+    <details class="mobile-deep-dive" data-mobile-deep-dive open>
+      <summary>See an example family journey</summary>
     <section class="bg-linen px-4 py-20 sm:px-6 sm:py-24 lg:px-8">
       <div class="mx-auto grid max-w-6xl gap-10 lg:grid-cols-[.72fr_1.28fr] lg:items-center">
         <div><p class="home-eyebrow text-sm font-bold uppercase text-deepTeal">What the journey can look like</p><h2 class="mt-4 text-4xl font-black leading-tight text-ink sm:text-5xl">A family story they can actually follow.</h2><p class="mt-4 text-sm leading-6 text-ink/50">Illustrative journey—not a testimonial or promised outcome.</p></div>
         <div class="rounded-[2rem] bg-white p-7 shadow-sm sm:p-9"><div class="grid gap-6 sm:grid-cols-3"><div><p class="home-eyebrow text-[10px] font-bold uppercase text-deepTeal">At the beginning</p><p class="mt-3 leading-7 text-ink/65">A family brings scattered reports, unanswered questions, and concern about confidence.</p></div><div><p class="home-eyebrow text-[10px] font-bold uppercase text-deepTeal">During instruction</p><p class="mt-3 leading-7 text-ink/65">The specialist follows one structured sequence and records evidence while it is fresh.</p></div><div><p class="home-eyebrow text-[10px] font-bold uppercase text-deepTeal">At home</p><p class="mt-3 leading-7 text-ink/65">The family can see what changed, what comes next, and which short practice reinforces the lesson.</p></div></div></div>
       </div>
     </section>
+    </details>
 
     <section class="bg-white px-4 py-20 sm:px-6 sm:py-24 lg:px-8">
       <div class="mx-auto max-w-4xl">
@@ -313,6 +326,9 @@
 
 {% block scripts %}
   <script>
+    if (window.matchMedia('(max-width: 639px)').matches) {
+      document.querySelectorAll('[data-mobile-deep-dive]').forEach((section) => section.removeAttribute('open'));
+    }
     document.querySelectorAll('[data-carousel]').forEach((carousel) => {
       const slides = Array.from(carousel.querySelectorAll('[data-carousel-slide]'));
       const dots = Array.from(carousel.querySelectorAll('[data-carousel-dot]'));

@@ -1,3 +1,4 @@
+{% load static %}
 <!doctype html>
 <html lang="en">
 <head>
@@ -10,29 +11,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-  <script src="https://cdn.tailwindcss.com"></script>
-  <script>
-    tailwind.config = {
-      theme: {
-        extend: {
-          colors: {
-            forest: '#2C4A45',
-            deepTeal: '#1A7A7A',
-            mediumTeal: '#2EB8B8',
-            eucalyptus: '#5A9E8F',
-            ink: '#0F2B35',
-            gold: '#F5A623',
-            linen: '#F7F2EA',
-            seafoam: '#A8CFC4',
-            sand: '#E8D5B0'
-          },
-          fontFamily: {
-            sans: ['Plus Jakarta Sans', 'ui-sans-serif', 'system-ui', 'sans-serif']
-          }
-        }
-      }
-    };
-  </script>
+  <link rel="stylesheet" href="{% static 'css/clearcode-tailwind.css' %}">
   <style>
     .focus-ring:focus-visible { outline: 4px solid rgba(245, 166, 35, .75); outline-offset: 3px; }
     .page-bg {
@@ -55,8 +34,8 @@
       </div>
     {% endif %}
 
-    <section class="grid gap-6 lg:grid-cols-[.85fr_1.15fr] lg:items-start">
-      <aside class="rounded-[2rem] bg-white/90 p-6 shadow-2xl shadow-deepTeal/10 ring-1 ring-deepTeal/10 lg:sticky lg:top-28">
+    <section class="grid min-w-0 gap-6 lg:grid-cols-[.85fr_1.15fr] lg:items-start">
+      <aside class="min-w-0 rounded-[2rem] bg-white/90 p-6 shadow-2xl shadow-deepTeal/10 ring-1 ring-deepTeal/10 lg:sticky lg:top-28">
         <p class="text-sm font-black uppercase tracking-[0.18em] text-mediumTeal">
           {% if is_admin %}Administrator workspace{% elif is_parent %}Parent workspace{% elif is_child %}Reader workspace{% else %}Teacher workspace{% endif %}
         </p>
@@ -94,10 +73,17 @@
         </div>
       </aside>
 
-      <section class="space-y-6">
+      <section class="min-w-0 space-y-6">
+        <nav class="sticky top-[4.75rem] z-30 flex gap-2 overflow-x-auto rounded-2xl bg-white/95 p-2 shadow-lg ring-1 ring-ink/10 backdrop-blur" aria-label="Workspace sections">
+          {% if is_parent or is_child %}<a class="focus-ring min-h-11 shrink-0 rounded-xl bg-linen px-4 py-3 text-sm font-black text-deepTeal" href="#progress-overview">Progress</a>{% endif %}
+          {% if is_teacher or is_admin %}<a class="focus-ring min-h-11 shrink-0 rounded-xl bg-linen px-4 py-3 text-sm font-black text-deepTeal" href="#session-launchpad">Sessions</a>{% endif %}
+          {% if is_admin %}<a class="focus-ring min-h-11 shrink-0 rounded-xl bg-linen px-4 py-3 text-sm font-black text-deepTeal" href="#admin-actions">Admin actions</a>{% endif %}
+          <a class="focus-ring min-h-11 shrink-0 rounded-xl bg-linen px-4 py-3 text-sm font-black text-deepTeal" href="#support-thread">Inbox</a>
+          <a class="focus-ring min-h-11 shrink-0 rounded-xl bg-linen px-4 py-3 text-sm font-black text-deepTeal" href="#latest-kpis">KPI snapshots</a>
+        </nav>
         {% if is_parent %}
           {% for dashboard in parent_dashboards %}
-            <section class="rounded-[2rem] bg-white p-5 shadow-xl shadow-deepTeal/10 ring-1 ring-deepTeal/10 sm:p-7">
+            <section id="progress-overview" class="scroll-mt-40 rounded-[2rem] bg-white p-5 shadow-xl shadow-deepTeal/10 ring-1 ring-deepTeal/10 sm:p-7">
               <p class="text-sm font-black uppercase tracking-[0.18em] text-deepTeal">This week's reading growth</p>
               <div class="mt-2 flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
                 <div>
@@ -169,7 +155,7 @@
         {% endif %}
 
         {% if is_teacher or is_admin %}
-          <section class="rounded-[2rem] bg-white p-6 shadow-xl ring-1 ring-deepTeal/10">
+          <section id="session-launchpad" class="scroll-mt-40 rounded-[2rem] bg-white p-6 shadow-xl ring-1 ring-deepTeal/10">
             <p class="text-sm font-black uppercase tracking-[0.18em] text-deepTeal">Specialist launchpad</p>
             <h2 class="mt-2 text-3xl font-black">Upcoming sessions and current instruction</h2>
             <div class="mt-5 grid gap-3 md:grid-cols-2">
@@ -258,7 +244,7 @@
           </section>
         {% endif %}
         {% if is_admin %}
-          <section class="rounded-[2rem] bg-white p-6 shadow-xl shadow-ink/8 ring-1 ring-ink/10">
+          <section id="admin-actions" class="scroll-mt-40 rounded-[2rem] bg-white p-6 shadow-xl shadow-ink/8 ring-1 ring-ink/10">
             <div class="flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
               <div>
                 <p class="text-sm font-black uppercase tracking-[0.18em] text-mediumTeal">Program administration</p>
@@ -423,7 +409,7 @@
           </section>
         {% endif %}
 
-        <section class="rounded-[2rem] bg-white p-6 shadow-xl shadow-ink/8 ring-1 ring-ink/10">
+        <section id="support-thread" class="scroll-mt-40 rounded-[2rem] bg-white p-6 shadow-xl shadow-ink/8 ring-1 ring-ink/10">
           <div class="flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
             <div>
               <p class="text-sm font-black uppercase tracking-[0.18em] text-deepTeal">Family-teacher inbox</p>
@@ -570,7 +556,7 @@
           </section>
         {% endif %}
 
-        <section class="rounded-[2rem] bg-white p-6 shadow-xl shadow-ink/8 ring-1 ring-ink/10">
+        <section id="latest-kpis" class="scroll-mt-40 rounded-[2rem] bg-white p-6 shadow-xl shadow-ink/8 ring-1 ring-ink/10">
           <p class="text-sm font-black uppercase tracking-[0.18em] text-deepTeal">Reading results</p>
           <h2 class="mt-2 text-3xl font-black">Latest KPI snapshots</h2>
           <div class="mt-5 grid gap-4">

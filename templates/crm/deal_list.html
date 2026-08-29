@@ -10,10 +10,25 @@
   .deal-card { padding:14px; margin-bottom:10px; }
   .deal-card h3 { margin-bottom:5px; color:var(--navy); }
   .deal-card form { margin-top:12px; }
+  .mobile-pipeline-picker { display:none; }
+  @media (max-width:760px) {
+    .pipeline-tabs { display:none; }
+    .mobile-pipeline-picker { display:grid; grid-template-columns:minmax(0,1fr) auto; gap:8px; margin:20px 0; }
+    .mobile-pipeline-picker label { grid-column:1/-1; }
+    .board { display:grid; grid-auto-flow:row; grid-auto-columns:auto; overflow:visible; }
+    .stage { min-height:0; }
+    .deal-card form { display:grid; gap:8px; }
+    .deal-card .btn { width:100%; }
+  }
 {% endblock %}
 {% block content %}
   <p class="eyebrow">Deal management</p><h1>{{ pipeline_label }}</h1><p class="subtle">{{ deal_count }} deal{{ deal_count|pluralize }} · ${{ pipeline_value|floatformat:2 }} total value</p><p><a class="btn btn-primary" href="{% url 'crm_deal_new' %}?pipeline={{ pipeline }}">Create {{ pipeline_label }} deal</a></p>
   <nav class="pipeline-tabs" aria-label="Deal pipelines">{% for value,label in pipeline_choices %}<a class="btn pipeline-tab {% if pipeline == value %}active{% endif %}" href="?pipeline={{ value }}">{{ label }}</a>{% endfor %}</nav>
+  <form class="mobile-pipeline-picker" method="get">
+    <label class="field-label" for="mobile-pipeline">Choose pipeline</label>
+    <select id="mobile-pipeline" name="pipeline">{% for value,label in pipeline_choices %}<option value="{{ value }}" {% if pipeline == value %}selected{% endif %}>{{ label }}</option>{% endfor %}</select>
+    <button class="btn btn-primary" type="submit">View</button>
+  </form>
   <div class="board">
     {% for column in stage_columns %}<section class="stage"><div class="stage-head"><strong>{{ column.label }}</strong><span class="badge badge-neutral">{{ column.deals|length }}</span></div>{% for deal in column.deals %}<article class="card deal-card"><h3><a href="{% url 'crm_deal_detail' deal.pk %}">{{ deal.name }}</a></h3><p class="subtle">{{ deal.deal_label }}{% if deal.priority %} · {{ deal.get_priority_display }} priority{% endif %}{% if deal.needs_naming_review %} · <strong>Naming review required</strong>{% endif %}<br>{% if deal.company %}<a href="{% url 'crm_company_detail' deal.company.pk %}">{{ deal.company.name }}</a>{% elif deal.lead %}<a href="{% url 'crm_contact_detail' deal.lead.pk %}">{{ deal.lead.contact_name }}</a>{% else %}Legacy school deal{% endif %}</p><p><strong>${{ deal.value|floatformat:2 }}</strong>{% if deal.expected_close_date %} · {{ deal.expected_close_date|date:"M j, Y" }}{% endif %}</p>{% if deal.related_deals.count %}<p class="subtle">Linked to {{ deal.related_deals.count }} other deal{{ deal.related_deals.count|pluralize }}</p>{% endif %}<form method="post" action="{% url 'crm_deal_stage_update' deal.pk %}">{% csrf_token %}<label class="field-label" for="deal-stage-{{ deal.pk }}">Move deal</label><select id="deal-stage-{{ deal.pk }}" name="stage">{% for target in stage_columns %}<option value="{{ target.stage }}" {% if deal.stage == target.stage %}selected{% endif %}>{{ target.label }}</option>{% endfor %}</select><button class="btn btn-small" type="submit">Update stage</button></form><p><a href="{% url 'crm_deal_detail' deal.pk %}">Edit details</a></p></article>{% empty %}<p class="subtle">No deals</p>{% endfor %}</section>{% endfor %}
   </div>

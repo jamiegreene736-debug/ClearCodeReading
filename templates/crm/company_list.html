@@ -8,6 +8,14 @@
   .company-card h2 a { color:var(--teal); text-decoration:none; }
   .company-meta { display:flex; flex-wrap:wrap; gap:8px; margin-top:16px; }
   .search { display:flex; gap:8px; min-width:min(420px,100%); }
+  @media (max-width:900px) {
+    .page-head { align-items:stretch; flex-direction:column; }
+    .page-head > div,.search { min-width:0; width:100%; }
+    .search input { min-width:0; }
+    .company-grid { grid-template-columns:minmax(0,1fr); }
+    .company-card { min-width:0; overflow-wrap:anywhere; }
+  }
+  @media (max-width:420px) { .search { flex-direction:column; } }
 {% endblock %}
 {% block content %}
   <div class="page-head"><div><p class="eyebrow">Relationship records</p><h1>Companies</h1><p class="subtle">One company can hold multiple contacts and multiple deals across different pipelines.</p></div><form class="search" method="get"><input name="q" type="search" value="{{ query }}" placeholder="Search companies or contacts"><button class="btn btn-primary" type="submit">Search</button></form></div>
