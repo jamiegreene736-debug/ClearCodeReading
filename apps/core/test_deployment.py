@@ -78,6 +78,8 @@ class StaticAssetDeploymentTests(SimpleTestCase):
         self.assertIn(".clearcode-admin-nav__panel", css)
         self.assertIn(".clearcode-admin-model-grid", css)
         self.assertIn("flex-shrink: 0", css)
+        self.assertIn(".clearcode-admin-nav__models > li", css)
+        self.assertIn("list-style: none", css)
 
 
 class LoginCsrfRecoveryTests(TestCase):
@@ -243,6 +245,8 @@ class AdminBrandingTests(SimpleTestCase):
         self.assertNotIn('role="menu"', html)
         self.assertIn('aria-expanded="false"', html)
         self.assertIn('aria-controls="admin-nav-operations"', html)
+        self.assertIn('class="clearcode-admin-nav__model-label"', html)
+        self.assertIn('class="clearcode-admin-nav__model-arrow"', html)
         self.assertIn('event.key !== "Escape"', html)
 
     def test_admin_app_list_uses_responsive_model_cards(self):

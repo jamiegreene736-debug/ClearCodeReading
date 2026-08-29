@@ -3,6 +3,7 @@ from __future__ import annotations
 from datetime import date, datetime, timedelta
 from decimal import Decimal
 
+from django.contrib import admin as django_admin
 from django.core.exceptions import PermissionDenied, ValidationError
 from django.test import SimpleTestCase, TestCase, override_settings
 from django.utils import timezone
@@ -194,6 +195,33 @@ class WorkforceWorkflowTests(TestCase):
             effective_on=date(2026, 8, 28),
         )
         self.engagement.refresh_from_db()
+
+    def test_agreement_uses_a_human_readable_worker_label(self):
+        agreement = Agreement(
+            engagement=self.engagement,
+            kind=Agreement.Kind.CONTRACTOR,
+            status=Agreement.Status.SIGNED,
+        )
+
+        self.assertEqual(
+            str(agreement),
+            "Independent contractor agreement — fl-teacher@example.com",
+        )
+
+    def test_agreement_admin_surfaces_the_meaningful_record_fields(self):
+        model_admin = django_admin.site._registry[Agreement]
+
+        self.assertEqual(
+            model_admin.list_display,
+            [
+                "worker_name",
+                "agreement_type",
+                "status",
+                "effective_on",
+                "expires_on",
+            ],
+        )
+        self.assertEqual(model_admin.list_filter, ["kind", "status"])
 
     def test_teacher_role_does_not_classify_worker(self):
         self.assertEqual(self.worker_user.role, CustomUser.Role.TEACHER)

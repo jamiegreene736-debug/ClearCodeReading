@@ -368,6 +368,7 @@ body {
 }
 
 .clearcode-admin-nav__app {
+    overflow: hidden;
     padding: 12px;
     border: 1px solid var(--hairline-color);
     border-radius: 14px;
@@ -391,27 +392,68 @@ body {
 .clearcode-admin-nav__models {
     display: grid;
     grid-template-columns: repeat(2, minmax(0, 1fr));
-    gap: 4px 10px;
-    margin-top: 6px;
+    gap: 8px 10px;
+    margin-top: 8px;
+}
+
+.clearcode-admin-nav__models > li {
+    min-width: 0;
+    margin: 0;
+    overflow: hidden;
+    list-style: none;
 }
 
 .clearcode-admin-nav__models a {
     box-sizing: border-box;
     display: flex;
-    min-height: 40px;
+    width: 100%;
+    min-width: 0;
+    min-height: 44px;
     align-items: center;
+    justify-content: space-between;
+    gap: 10px;
     padding: 8px 10px;
+    border: 1px solid transparent;
     border-radius: 9px;
     color: var(--link-fg) !important;
     font-size: 13px;
     font-weight: 700;
+    overflow: hidden;
+}
+
+.clearcode-admin-nav__model-label {
+    min-width: 0;
+    overflow-wrap: anywhere;
+}
+
+.clearcode-admin-nav__model-arrow {
+    flex: 0 0 auto;
+    fill: none;
+    stroke: var(--body-quiet-color);
+    stroke-linecap: round;
+    stroke-linejoin: round;
+    stroke-width: 1.8;
+    transition: transform 160ms ease, stroke 160ms ease;
 }
 
 .clearcode-admin-nav__models a:hover,
 .clearcode-admin-nav__models a:focus,
 .clearcode-admin-nav__models a[aria-current="page"] {
+    border-color: var(--primary);
     background: var(--selected-bg);
     color: var(--link-hover-color) !important;
+    box-shadow: inset 3px 0 0 var(--primary);
+}
+
+.clearcode-admin-nav__models a:hover .clearcode-admin-nav__model-arrow,
+.clearcode-admin-nav__models a:focus .clearcode-admin-nav__model-arrow,
+.clearcode-admin-nav__models a[aria-current="page"] .clearcode-admin-nav__model-arrow {
+    stroke: currentColor;
+    transform: translateX(2px);
+}
+
+.clearcode-admin-nav__models a:focus-visible {
+    outline-offset: -3px;
 }
 
 #content-start {

@@ -9,7 +9,7 @@
 
 {% block responsive %}
   {{ block.super }}
-  <link rel="stylesheet" href="{% static 'admin/css/clearcode_admin.css' %}?v=20260829-admin-nav-2">
+  <link rel="stylesheet" href="{% static 'admin/css/clearcode_admin.css' %}?v=20260829-admin-nav-3">
 {% endblock %}
 
 {% block extrahead %}
@@ -74,7 +74,10 @@
                           {% if model.admin_url %}
                             <li>
                               <a href="{{ model.admin_url }}"{% if model.admin_url in request.path|urlencode %} aria-current="page"{% endif %}>
-                                {{ model.name }}
+                                <span class="clearcode-admin-nav__model-label">{{ model.name }}</span>
+                                <svg class="clearcode-admin-nav__model-arrow" aria-hidden="true" viewBox="0 0 16 16" width="16" height="16">
+                                  <path d="m6 3.5 4.5 4.5L6 12.5" />
+                                </svg>
                               </a>
                             </li>
                           {% endif %}
