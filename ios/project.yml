@@ -1,0 +1,92 @@
+name: ClearCode
+options:
+  bundleIdPrefix: com.clearcodereading
+  deploymentTarget:
+    iOS: "17.0"
+  xcodeVersion: "26.0"
+  createIntermediateGroups: true
+settings:
+  base:
+    SWIFT_VERSION: "5.0"
+    MARKETING_VERSION: "1.0.0"
+    CURRENT_PROJECT_VERSION: "1"
+    DEVELOPMENT_TEAM: ""
+    CODE_SIGN_STYLE: Automatic
+    ENABLE_USER_SCRIPT_SANDBOXING: YES
+  configs:
+    Debug:
+      API_BASE_URL: "http://127.0.0.1:8000"
+      APS_ENVIRONMENT: development
+    Release:
+      API_BASE_URL: "https://clearcodereading.com"
+      APS_ENVIRONMENT: production
+targets:
+  ClearCode:
+    type: application
+    platform: iOS
+    sources:
+      - path: ClearCode
+        excludes:
+          - Info.plist
+          - ClearCode.entitlements
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.clearcodereading.ios
+        PRODUCT_NAME: ClearCode
+        ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
+        ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME: AccentColor
+        CODE_SIGN_ENTITLEMENTS: ClearCode/ClearCode.entitlements
+        TARGETED_DEVICE_FAMILY: "1,2"
+        SUPPORTS_MACCATALYST: NO
+    info:
+      path: ClearCode/Info.plist
+      properties:
+        CFBundleDisplayName: ClearCode Reading
+        CFBundleShortVersionString: $(MARKETING_VERSION)
+        CFBundleVersion: $(CURRENT_PROJECT_VERSION)
+        ClearCodeAPIBaseURL: $(API_BASE_URL)
+        ITSAppUsesNonExemptEncryption: false
+        LSApplicationCategoryType: public.app-category.education
+        NSAppTransportSecurity:
+          NSAllowsLocalNetworking: true
+        UIApplicationSceneManifest:
+          UIApplicationSupportsMultipleScenes: false
+        UILaunchScreen:
+          UIColorName: LaunchBackground
+        UISupportedInterfaceOrientations:
+          - UIInterfaceOrientationPortrait
+        UISupportedInterfaceOrientations~ipad:
+          - UIInterfaceOrientationPortrait
+          - UIInterfaceOrientationPortraitUpsideDown
+          - UIInterfaceOrientationLandscapeLeft
+          - UIInterfaceOrientationLandscapeRight
+    entitlements:
+      path: ClearCode/ClearCode.entitlements
+      properties:
+        aps-environment: $(APS_ENVIRONMENT)
+  ClearCodeTests:
+    type: bundle.unit-test
+    platform: iOS
+    sources:
+      - path: ClearCodeTests
+    dependencies:
+      - target: ClearCode
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.clearcodereading.ios.tests
+        GENERATE_INFOPLIST_FILE: YES
+        CODE_SIGNING_ALLOWED: NO
+schemes:
+  ClearCode:
+    build:
+      targets:
+        ClearCode: all
+        ClearCodeTests: [test]
+    test:
+      gatherCoverageData: true
+      targets:
+        - ClearCodeTests
+    run:
+      config: Debug
+    archive:
+      config: Release
