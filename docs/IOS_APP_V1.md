@@ -25,13 +25,15 @@ decisions to server-provided capabilities and never grants itself access.
 
 - iOS 17 or newer
 - SwiftUI with no third-party runtime dependencies
-- Debug API: `http://127.0.0.1:8000`
+- Debug API: `https://clearcodereading-production.up.railway.app`
 - Release API: `https://clearcodereading-production.up.railway.app`
 - Bundle identifier: `com.clearcodereading.ios`
 - Privacy URL: `https://clearcodereading-production.up.railway.app/privacy/`
 - Support URL: `https://clearcodereading-production.up.railway.app/support/`
 
 The API base URL is a build setting and may be overridden without changing source code.
+Simulator-only local development may use `http://127.0.0.1:8000`; physical-device
+builds must use a network-reachable HTTPS endpoint.
 
 ## Security and privacy boundary
 

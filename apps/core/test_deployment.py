@@ -56,6 +56,19 @@ class StaticAssetDeploymentTests(SimpleTestCase):
                 )
                 self.assertTrue(Path(static_root, "css/clearcode-tailwind.css").is_file())
 
+    def test_ios_debug_build_defaults_to_the_reachable_production_api(self):
+        project_spec = Path("ios/project.yml").read_text()
+        generated_project = Path("ios/ClearCode.xcodeproj/project.pbxproj").read_text()
+        production_api = "https://clearcodereading-production.up.railway.app"
+
+        self.assertNotIn('API_BASE_URL: "http://127.0.0.1:8000"', project_spec)
+        self.assertEqual(project_spec.count(f'API_BASE_URL: "{production_api}"'), 2)
+        self.assertNotIn('API_BASE_URL = "http://127.0.0.1:8000";', generated_project)
+        self.assertEqual(
+            generated_project.count(f'API_BASE_URL = "{production_api}";'),
+            2,
+        )
+
     def test_container_image_collects_static_files_after_copying_source(self):
         dockerfile = Path("Dockerfile").read_text()
 
