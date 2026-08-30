@@ -54,6 +54,15 @@ from apps.users.models import AuditLog, CustomUser
 
 
 class WebsiteSignupView(View):
+    SUPPORT_TOPICS = {
+        "app_access": "App or portal access",
+        "technical": "Technical problem",
+        "privacy": "Privacy question",
+        "data_request": "Access, correction, or deletion request",
+        "security": "Security concern",
+        "other": "Other support request",
+    }
+
     def post(self, request):
         if request.POST.get("redirect_to") == "/careers/":
             return self._record_recruiting_interest(request)
@@ -62,14 +71,13 @@ class WebsiteSignupView(View):
         contact_email = request.POST.get("email", "").strip().lower()
         organization_name = request.POST.get("organization_name", "").strip()[:255]
         submitted_notes = request.POST.get("notes", "").strip()
-        is_generic_contact = (
-            request.POST.get("redirect_to") == "/contact/"
-            and organization_name == "Website contact"
-        )
+        redirect_to = request.POST.get("redirect_to")
+        is_generic_contact = redirect_to == "/contact/" and organization_name == "Website contact"
+        is_support_request = redirect_to == "/support/"
         required_fields_are_missing = (
             not contact_name
             or not contact_email
-            or (is_generic_contact and not submitted_notes)
+            or ((is_generic_contact or is_support_request) and not submitted_notes)
         )
         if required_fields_are_missing:
             messages.error(request, "Please complete the required fields so we can follow up.")
@@ -88,6 +96,12 @@ class WebsiteSignupView(View):
 
         contact_phone = request.POST.get("phone", "").strip()[:32]
         notes = submitted_notes
+        support_topic = ""
+        if is_support_request:
+            support_topic = request.POST.get("support_topic", "")
+            if support_topic not in self.SUPPORT_TOPICS:
+                support_topic = "other"
+            notes = f"Support topic: {self.SUPPORT_TOPICS[support_topic]}\n{submitted_notes}"
         child_age_grade = request.POST.get("child_age_grade", "").strip()
         if child_age_grade:
             notes = "\n".join(part for part in [f"Child age or grade: {child_age_grade}", notes] if part)
@@ -110,6 +124,8 @@ class WebsiteSignupView(View):
             "relationship_interests": relationship_interests,
         }
         submitted_data = sanitized_submission_data(request.POST)
+        if is_support_request:
+            submitted_data["support_topic"] = support_topic
         if assessment_data:
             intake_metadata.update(
                 {
@@ -205,6 +221,8 @@ class WebsiteSignupView(View):
             return f"/careers/?signup={result}#career-interest-form"
         if request.POST.get("redirect_to") == "/contact/":
             return f"/contact/?signup={result}#consultation-form"
+        if request.POST.get("redirect_to") == "/support/":
+            return f"/support/?signup={result}#support-form"
         return f"/?signup={result}#top"
 
     @staticmethod
@@ -235,6 +253,8 @@ class WebsiteSignupView(View):
             return FormSubmission.FormType.ASSESSMENT
         if organization_name == "Website contact":
             return FormSubmission.FormType.WEBSITE
+        if request.POST.get("redirect_to") == "/support/":
+            return FormSubmission.FormType.WEBSITE
         if request.POST.get("redirect_to") == "/contact/":
             return FormSubmission.FormType.CONSULTATION
         return FormSubmission.FormType.WEBSITE
@@ -244,7 +264,7 @@ class WebsiteSignupView(View):
         if organization_name == "Reading assessment follow-up":
             return "/assessment/"
         candidate = request.POST.get("redirect_to", "/")
-        return candidate if candidate in {"/", "/careers/", "/contact/"} else "/"
+        return candidate if candidate in {"/", "/careers/", "/contact/", "/support/"} else "/"
 
 
 class SurveySubmissionView(View):

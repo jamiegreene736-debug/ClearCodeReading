@@ -61,6 +61,7 @@ urlpatterns = [
     path("foundation/", TemplateView.as_view(template_name="foundation.html"), name="marketing_foundation"),
     path("careers/", TemplateView.as_view(template_name="careers.html"), name="marketing_careers"),
     path("contact/", TemplateView.as_view(template_name="contact.html"), name="marketing_contact"),
+    path("support/", TemplateView.as_view(template_name="support.html"), name="marketing_support"),
     path("privacy/", TemplateView.as_view(template_name="privacy.html"), name="marketing_privacy"),
     path("approach/", TemplateView.as_view(template_name="approach.html"), name="marketing_approach"),
     path("assessment/", TemplateView.as_view(template_name="assessment.html"), name="reading_assessment"),

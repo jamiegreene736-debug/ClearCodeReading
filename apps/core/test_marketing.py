@@ -22,6 +22,7 @@ PUBLIC_PAGES = {
     "marketing_foundation": "foundation.html",
     "marketing_careers": "careers.html",
     "marketing_contact": "contact.html",
+    "marketing_support": "support.html",
     "marketing_privacy": "privacy.html",
     "marketing_approach": "approach.html",
     "reading_assessment": "assessment.html",
@@ -213,6 +214,7 @@ class MarketingPageTests(SimpleTestCase):
             "marketing_foundation",
             "marketing_careers",
             "marketing_contact",
+            "marketing_support",
             "marketing_privacy",
             "marketing_approach",
         ]
@@ -225,6 +227,7 @@ class MarketingPageTests(SimpleTestCase):
             "/blog/",
             "/careers/",
             "/privacy/",
+            "/support/",
             "/contact/",
             "/survey/",
             "/login/",
@@ -255,6 +258,43 @@ class MarketingPageTests(SimpleTestCase):
         self.assertIn('value="teacher"', content)
         self.assertNotIn('name="child_age_grade"', content)
         self.assertNotIn('name="phone"', content)
+
+    def test_privacy_notice_covers_mobile_student_data_and_user_choices(self):
+        content = self._render("marketing_privacy")
+
+        for heading in (
+            "Scope and roles",
+            "Information we handle",
+            "How we use information",
+            "When we disclose information",
+            "Student and children’s privacy",
+            "Security and retention",
+            "Your privacy choices",
+            "Changes and contact",
+        ):
+            with self.subTest(heading=heading):
+                self.assertIn(heading, content)
+        self.assertIn("Effective August 30, 2026", content)
+        self.assertIn("public website, authenticated portal, and iOS app", content)
+        self.assertIn("does not sell personal or student information", content)
+        self.assertIn("Children’s Online Privacy Protection Act", content)
+        self.assertIn("Sensitive tax, banking, identity, and tax-form details", content)
+        self.assertIn("device Keychain", content)
+        self.assertIn('id="privacy-choices"', content)
+        self.assertIn('href="/support/#support-form"', content)
+
+    def test_support_page_routes_app_privacy_and_security_help(self):
+        content = self._render("marketing_support")
+
+        self.assertIn("Help for the app, portal, and your information.", content)
+        self.assertIn('id="support-form"', content)
+        self.assertIn('name="redirect_to" value="/support/"', content)
+        self.assertIn('name="support_topic"', content)
+        self.assertIn('value="app_access"', content)
+        self.assertIn('value="data_request"', content)
+        self.assertIn('value="security"', content)
+        self.assertIn("Never send a password", content)
+        self.assertIn('href="/privacy/#privacy-choices"', content)
 
     def test_public_pages_include_explicit_consent_newsletter_signup(self):
         for route_name in PUBLIC_PAGES:
@@ -596,6 +636,55 @@ class ContactFormTests(TestCase):
         self.assertEqual(submission.form_type, FormSubmission.FormType.WEBSITE)
         self.assertEqual(submission.source_path, "/contact/")
         self.assertFalse(lead.opportunities.exists())
+
+    def test_support_form_records_a_routed_request_without_creating_a_deal(self):
+        response = self.client.post(
+            reverse("crm_signup"),
+            {
+                "name": "Taylor Specialist",
+                "email": "taylor@example.com",
+                "audience": Lead.Audience.TEACHER,
+                "organization_name": "ClearCode support",
+                "support_topic": "technical",
+                "notes": "The session queue is not clearing after reconnecting.",
+                "redirect_to": "/support/",
+            },
+        )
+
+        self.assertRedirects(
+            response,
+            "/support/?signup=thanks#support-form",
+            fetch_redirect_response=False,
+        )
+        lead = Lead.objects.get(contact_email="taylor@example.com")
+        submission = FormSubmission.objects.get(lead=lead)
+        self.assertEqual(
+            lead.notes,
+            "Support topic: Technical problem\nThe session queue is not clearing after reconnecting.",
+        )
+        self.assertEqual(submission.form_type, FormSubmission.FormType.WEBSITE)
+        self.assertEqual(submission.source_path, "/support/")
+        self.assertEqual(submission.submitted_data["support_topic"], "technical")
+        self.assertFalse(lead.opportunities.exists())
+
+    def test_support_form_normalizes_an_unknown_topic(self):
+        self.client.post(
+            reverse("crm_signup"),
+            {
+                "name": "Avery Guardian",
+                "email": "avery@example.com",
+                "audience": Lead.Audience.PARENT,
+                "organization_name": "ClearCode support",
+                "support_topic": "not-a-real-topic",
+                "notes": "I need help with my account.",
+                "redirect_to": "/support/",
+            },
+        )
+
+        lead = Lead.objects.get(contact_email="avery@example.com")
+        self.assertTrue(lead.notes.startswith("Support topic: Other support request\n"))
+        submission = FormSubmission.objects.get(lead=lead)
+        self.assertEqual(submission.submitted_data["support_topic"], "other")
 
     def test_contact_form_missing_required_contact_returns_to_form(self):
         response = self.client.post(
