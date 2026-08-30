@@ -15,7 +15,9 @@ settings:
     ENABLE_USER_SCRIPT_SANDBOXING: YES
   configs:
     Debug:
-      API_BASE_URL: "http://127.0.0.1:8000"
+      # Debug builds run on physical devices during release testing, where
+      # 127.0.0.1 points back to the device rather than the developer's Mac.
+      API_BASE_URL: "https://clearcodereading-production.up.railway.app"
       APS_ENVIRONMENT: development
     Release:
       API_BASE_URL: "https://clearcodereading-production.up.railway.app"
