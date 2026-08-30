@@ -28,6 +28,8 @@ decisions to server-provided capabilities and never grants itself access.
 - Debug API: `http://127.0.0.1:8000`
 - Release API: `https://clearcodereading-production.up.railway.app`
 - Bundle identifier: `com.clearcodereading.ios`
+- Privacy URL: `https://clearcodereading-production.up.railway.app/privacy/`
+- Support URL: `https://clearcodereading-production.up.railway.app/support/`
 
 The API base URL is a build setting and may be overridden without changing source code.
 
@@ -53,7 +55,8 @@ Before TestFlight or App Store submission:
 3. Confirm `https://clearcodereading-production.up.railway.app/api/v1/health/` and mobile endpoints are live.
 4. Apply shared and tenant migrations before allowing mobile sign-ins.
 5. Replace demo credentials and confirm production password policy/rate limiting.
-6. Complete App Store privacy labels, support URL, screenshots, age rating, and review notes.
+6. Complete App Store privacy labels using the published privacy notice, use the dedicated
+   support URL, and add screenshots, age rating, and review notes.
 7. Archive the Release configuration, validate it in Xcode Organizer, and upload to
    TestFlight for role-by-role acceptance testing.
 

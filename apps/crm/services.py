@@ -21,6 +21,7 @@ PUBLIC_SUBMISSION_FIELDS = {
     "relationship_interests",
     "phone",
     "role_interest",
+    "support_topic",
 }
 
 
