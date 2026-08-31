@@ -20,6 +20,89 @@ final class AppStateTests: XCTestCase {
         XCTAssertEqual(state.pendingLogs.map(\.id), [request.clientRequestId])
         try? FileManager.default.removeItem(at: directory)
     }
+
+    func testRefreshNotificationAuthorizationShowsExistingPermission() async {
+        let authorizer = NotificationAuthorizerStub(state: .authorized)
+        let state = AppState(
+            api: RetryableFailureAPI(),
+            offlineStore: OfflineStore(protectedWrites: false),
+            notificationAuthorizer: authorizer
+        )
+
+        await state.refreshNotificationAuthorization()
+
+        XCTAssertEqual(state.notificationAuthorizationState, .authorized)
+    }
+
+    func testGrantedNotificationRequestUpdatesStateAndRegistersDevice() async {
+        let authorizer = NotificationAuthorizerStub(state: .notDetermined, requestedState: .authorized)
+        let registration = RemoteNotificationRegistrationSpy()
+        let state = AppState(
+            api: RetryableFailureAPI(),
+            offlineStore: OfflineStore(protectedWrites: false),
+            notificationAuthorizer: authorizer,
+            registerForRemoteNotifications: { registration.register() }
+        )
+
+        await state.requestPushNotifications()
+        let requestCount = await authorizer.requestCount
+
+        XCTAssertEqual(state.notificationAuthorizationState, .authorized)
+        XCTAssertEqual(registration.callCount, 1)
+        XCTAssertEqual(requestCount, 1)
+    }
+
+    func testDeniedNotificationPermissionDoesNotPromptAgain() async {
+        let authorizer = NotificationAuthorizerStub(state: .denied)
+        let registration = RemoteNotificationRegistrationSpy()
+        let state = AppState(
+            api: RetryableFailureAPI(),
+            offlineStore: OfflineStore(protectedWrites: false),
+            notificationAuthorizer: authorizer,
+            registerForRemoteNotifications: { registration.register() }
+        )
+
+        await state.requestPushNotifications()
+        let requestCount = await authorizer.requestCount
+
+        XCTAssertEqual(state.notificationAuthorizationState, .denied)
+        XCTAssertEqual(registration.callCount, 0)
+        XCTAssertEqual(requestCount, 0)
+        XCTAssertEqual(state.alertMessage, "Notifications remain off. You can enable them later in iOS Settings.")
+    }
+}
+
+private actor NotificationAuthorizerStub: NotificationAuthorizing {
+    private var state: NotificationAuthorizationState
+    private let requestedState: NotificationAuthorizationState
+    private(set) var requestCount = 0
+
+    init(
+        state: NotificationAuthorizationState,
+        requestedState: NotificationAuthorizationState = .denied
+    ) {
+        self.state = state
+        self.requestedState = requestedState
+    }
+
+    func authorizationState() -> NotificationAuthorizationState {
+        state
+    }
+
+    func requestAuthorization() -> Bool {
+        requestCount += 1
+        state = requestedState
+        return requestedState.isEnabled
+    }
+}
+
+@MainActor
+private final class RemoteNotificationRegistrationSpy {
+    private(set) var callCount = 0
+
+    func register() {
+        callCount += 1
+    }
 }
 
 private actor RetryableFailureAPI: ClearCodeAPI {
