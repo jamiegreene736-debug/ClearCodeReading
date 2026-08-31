@@ -2,6 +2,53 @@ import Foundation
 import UIKit
 import UserNotifications
 
+enum NotificationAuthorizationState: Equatable, Sendable {
+    case notDetermined
+    case denied
+    case authorized
+    case provisional
+    case ephemeral
+    case unknown
+
+    var isEnabled: Bool {
+        switch self {
+        case .authorized, .provisional, .ephemeral:
+            true
+        case .notDetermined, .denied, .unknown:
+            false
+        }
+    }
+}
+
+protocol NotificationAuthorizing: Sendable {
+    func authorizationState() async -> NotificationAuthorizationState
+    func requestAuthorization() async throws -> Bool
+}
+
+struct SystemNotificationAuthorizer: NotificationAuthorizing {
+    func authorizationState() async -> NotificationAuthorizationState {
+        let settings = await UNUserNotificationCenter.current().notificationSettings()
+        switch settings.authorizationStatus {
+        case .notDetermined:
+            return .notDetermined
+        case .denied:
+            return .denied
+        case .authorized:
+            return .authorized
+        case .provisional:
+            return .provisional
+        case .ephemeral:
+            return .ephemeral
+        @unknown default:
+            return .unknown
+        }
+    }
+
+    func requestAuthorization() async throws -> Bool {
+        try await UNUserNotificationCenter.current().requestAuthorization(options: [.alert, .badge, .sound])
+    }
+}
+
 @MainActor
 final class AppState: ObservableObject {
     enum Phase: Equatable {
@@ -19,22 +66,35 @@ final class AppState: ObservableObject {
     @Published private(set) var bootstrap: MobileBootstrap?
     @Published private(set) var isOffline = false
     @Published private(set) var pendingLogs: [PendingSessionLog] = []
+    @Published private(set) var notificationAuthorizationState: NotificationAuthorizationState = .unknown
     @Published var alertMessage: String?
     @Published var isBusy = false
 
     let api: any ClearCodeAPI
     private let offlineStore: OfflineStore
+    private let notificationAuthorizer: any NotificationAuthorizing
+    private let registerForRemoteNotifications: @MainActor @Sendable () -> Void
     private var pushToken: String?
 
-    init(api: any ClearCodeAPI = APIClient.configured(), offlineStore: OfflineStore = OfflineStore()) {
+    init(
+        api: any ClearCodeAPI = APIClient.configured(),
+        offlineStore: OfflineStore = OfflineStore(),
+        notificationAuthorizer: any NotificationAuthorizing = SystemNotificationAuthorizer(),
+        registerForRemoteNotifications: @escaping @MainActor @Sendable () -> Void = {
+            UIApplication.shared.registerForRemoteNotifications()
+        }
+    ) {
         self.api = api
         self.offlineStore = offlineStore
+        self.notificationAuthorizer = notificationAuthorizer
+        self.registerForRemoteNotifications = registerForRemoteNotifications
     }
 
     var capabilities: AppCapabilities? { bootstrap?.capabilities }
 
     func start() async {
         guard phase == .starting else { return }
+        await refreshNotificationAuthorization()
         guard await api.hasCredentials() else {
             phase = .signedOut
             return
@@ -70,6 +130,7 @@ final class AppState: ObservableObject {
     }
 
     func refresh() async {
+        await refreshNotificationAuthorization()
         guard phase == .signedIn else { return }
         await loadAuthenticatedSession()
     }
@@ -115,15 +176,38 @@ final class AppState: ObservableObject {
 
     func requestPushNotifications() async {
         do {
-            let granted = try await UNUserNotificationCenter.current().requestAuthorization(options: [.alert, .badge, .sound])
-            guard granted else {
+            await refreshNotificationAuthorization()
+
+            if notificationAuthorizationState.isEnabled {
+                registerForRemoteNotifications()
+                return
+            }
+
+            guard notificationAuthorizationState != .denied else {
                 alertMessage = "Notifications remain off. You can enable them later in iOS Settings."
                 return
             }
-            UIApplication.shared.registerForRemoteNotifications()
+
+            let granted = try await notificationAuthorizer.requestAuthorization()
+            await refreshNotificationAuthorization()
+
+            if granted && !notificationAuthorizationState.isEnabled {
+                notificationAuthorizationState = .authorized
+            }
+
+            guard notificationAuthorizationState.isEnabled else {
+                alertMessage = "Notifications remain off. You can enable them later in iOS Settings."
+                return
+            }
+
+            registerForRemoteNotifications()
         } catch {
             alertMessage = "Notifications could not be enabled: \(error.localizedDescription)"
         }
+    }
+
+    func refreshNotificationAuthorization() async {
+        notificationAuthorizationState = await notificationAuthorizer.authorizationState()
     }
 
     func receivedPushToken(_ token: String) async {

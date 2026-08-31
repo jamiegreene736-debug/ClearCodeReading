@@ -2,6 +2,7 @@ import SwiftUI
 
 struct SettingsView: View {
     @EnvironmentObject private var appState: AppState
+    @Environment(\.openURL) private var openURL
     @State private var confirmsDiscardingPendingLogs = false
 
     private var version: String {
@@ -21,12 +22,24 @@ struct SettingsView: View {
             }
 
             Section("Notifications") {
-                Button {
-                    Task { await appState.requestPushNotifications() }
-                } label: {
-                    Label("Enable notifications", systemImage: "bell.badge.fill")
+                switch appState.notificationAuthorizationState {
+                case .authorized, .provisional, .ephemeral:
+                    Label("Notifications enabled", systemImage: "checkmark.circle.fill")
+                        .foregroundStyle(.green)
+                case .denied:
+                    Button {
+                        openNotificationSettings()
+                    } label: {
+                        Label("Open notification settings", systemImage: "gear")
+                    }
+                case .notDetermined, .unknown:
+                    Button {
+                        Task { await appState.requestPushNotifications() }
+                    } label: {
+                        Label("Enable notifications", systemImage: "bell.badge.fill")
+                    }
                 }
-                Text("ClearCode registers only this installation and its Apple push token. Notification delivery requires server-side APNs configuration.")
+                Text(notificationHelpText)
                     .font(.footnote).foregroundStyle(.secondary)
             }
 
@@ -74,6 +87,9 @@ struct SettingsView: View {
             }
         }
         .navigationTitle("Settings")
+        .task {
+            await appState.refreshNotificationAuthorization()
+        }
         .confirmationDialog(
             "Discard unsent session logs?",
             isPresented: $confirmsDiscardingPendingLogs,
@@ -90,5 +106,21 @@ struct SettingsView: View {
                     + " be removed from this device. Retry them before signing out if they must be saved."
             )
         }
+    }
+
+    private var notificationHelpText: String {
+        switch appState.notificationAuthorizationState {
+        case .authorized, .provisional, .ephemeral:
+            "Alerts are allowed for this device. ClearCode registers only this installation and its Apple push token."
+        case .denied:
+            "Notifications are turned off for ClearCode. Open iOS Settings to allow alerts."
+        case .notDetermined, .unknown:
+            "Enable alerts for important ClearCode updates on this device."
+        }
+    }
+
+    private func openNotificationSettings() {
+        guard let url = URL(string: UIApplication.openNotificationSettingsURLString) else { return }
+        openURL(url)
     }
 }
