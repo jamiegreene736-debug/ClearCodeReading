@@ -5,6 +5,7 @@
 - `/`
 - `/how-it-works/`
 - `/families/`
+- `/resources/`
 - `/approach/`
 - `/privacy/`
 - `/contact/`
@@ -75,6 +76,7 @@
 | `/` | Intervention Intelligence Platform homepage |
 | `/how-it-works/` | Placement, sessions, parent dashboard, and decision-support flow |
 | `/families/` | Parent journey, dashboard visibility, and home-practice expectations |
+| `/resources/` | Free family tools for observing reading patterns, preparing questions, and calmer home practice |
 | `/approach/` | Structured-literacy, one-methodology, specialist-led, education-only stance |
 | `/careers/` | Teacher recruiting page with a document-upload expression-of-interest form |
 | `/privacy/` | Plain-language FERPA-oriented privacy and consent overview |

@@ -19,6 +19,7 @@ PUBLIC_PAGES = {
     "marketing_about": "about.html",
     "marketing_how_it_works": "how-it-works.html",
     "marketing_families": "families.html",
+    "marketing_resources": "resources.html",
     "marketing_faq": "faq.html",
     "marketing_foundation": "foundation.html",
     "marketing_careers": "careers.html",
@@ -128,7 +129,8 @@ class MarketingPageTests(SimpleTestCase):
             with self.subTest(text=text):
                 self.assertNotIn(text, content)
         self.assertNotIn("Frequently asked questions", content)
-        self.assertIn("Explore the Foundation", content)
+        self.assertIn("A little clarity can change the whole conversation.", content)
+        self.assertEqual(content.count('data-testid="homepage-next-step-tile"'), 3)
 
     def test_homepage_omits_the_reading_team_path_section(self):
         content = self._render("marketing_home")
@@ -148,24 +150,32 @@ class MarketingPageTests(SimpleTestCase):
         self.assertIn("Who does ClearCode serve?", faq)
         self.assertIn("How do we begin?", faq)
 
-    def test_blog_is_prominent_in_shared_navigation_and_homepage_body(self):
+    def test_three_primary_next_steps_are_prominent_in_the_homepage_body(self):
         content = self._render("marketing_home")
 
         self.assertIn('data-testid="desktop-blog-link"', content)
         self.assertIn('data-testid="mobile-blog-link"', content)
         self.assertIn('<details class="relative lg:hidden">', content)
-        self.assertIn('aria-labelledby="reading-insights-title"', content)
-        self.assertIn("From the ClearCode blog", content)
-        self.assertIn("Reading insights, made clear.", content)
+        self.assertIn('aria-labelledby="next-step-title"', content)
+        self.assertIn("Choose your next step", content)
+        self.assertIn("Read smarter. Support with confidence.", content)
+        self.assertIn("Be first in line for focused support.", content)
+        self.assertIn("Less guessing. More useful next steps.", content)
         self.assertIn('href="/blog/"', content)
-        self.assertLess(content.index("From the ClearCode blog"), content.index("Beyond one family"))
+        self.assertIn('href="/survey/"', content)
+        self.assertIn('href="/resources/"', content)
+        self.assertIn('data-testid="homepage-blog-cta">Explore the Blog</a>', content)
+        self.assertIn('data-testid="homepage-waitlist-cta">Join the Priority Waitlist</a>', content)
+        self.assertIn('data-testid="homepage-resources-cta">Free Family Resources</a>', content)
+        self.assertNotIn("Beyond one family", content)
+        self.assertNotIn("Start with a conversation", content)
 
     def test_homepage_consultation_ctas_use_local_intake(self):
         content = self._render("marketing_home")
 
         self.assertGreaterEqual(
             content.count('href="/contact/#consultation-form"'),
-            4,
+            3,
         )
         self.assertNotIn("waitlist.html", content)
         self.assertNotIn("docs.google.com", content)
@@ -267,6 +277,7 @@ class MarketingPageTests(SimpleTestCase):
             "marketing_about",
             "marketing_how_it_works",
             "marketing_families",
+            "marketing_resources",
             "marketing_faq",
             "marketing_foundation",
             "marketing_careers",
@@ -279,6 +290,7 @@ class MarketingPageTests(SimpleTestCase):
             "/about/",
             "/how-it-works/",
             "/families/",
+            "/resources/",
             "/faq/",
             "/foundation/",
             "/approach/",
@@ -300,10 +312,27 @@ class MarketingPageTests(SimpleTestCase):
         homepage = self._render("marketing_home")
         foundation = self._render("marketing_foundation")
 
-        self.assertGreater(homepage.index("Explore the Foundation"), homepage.index("From the ClearCode blog"))
+        self.assertNotIn("Explore the Foundation", homepage)
+        self.assertIn('href="/foundation/"', homepage)
         self.assertIn("Help more children find their way into reading.", foundation)
         self.assertIn('href="#newsletter-signup"', foundation)
         self.assertIn('name="consent"', foundation)
+
+    def test_family_resources_page_offers_free_actionable_paths(self):
+        content = self._render("marketing_resources")
+
+        self.assertIn("Less guessing. More useful next steps.", content)
+        self.assertIn("Choose the question you need answered today.", content)
+        self.assertIn("Three moves for a calmer reading week.", content)
+        self.assertIn("Take the Reading Inventory", content)
+        self.assertIn("Bring Better Questions", content)
+        self.assertIn("See the Full Pathway", content)
+        self.assertIn('href="/assessment/"', content)
+        self.assertIn('href="/faq/"', content)
+        self.assertIn('href="/approach/"', content)
+        self.assertIn('href="/blog/"', content)
+        self.assertIn('href="/survey/"', content)
+        self.assertIn("not a diagnosis", content)
 
     def test_contact_form_is_short_and_supports_audience_routing(self):
         content = self._render("marketing_contact")
