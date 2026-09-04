@@ -1,6 +1,10 @@
 from django import forms
-from django.db.models import Q
+from django.contrib.auth import password_validation
+from django.core.exceptions import ValidationError
+from django.utils import timezone
+from django.utils.crypto import get_random_string
 
+from apps.crm.access import crm_owner_queryset
 from apps.crm.models import Company, Lead, Opportunity
 from apps.users.models import CustomUser
 
@@ -37,12 +41,7 @@ class ContactForm(forms.ModelForm):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.fields["company"].queryset = Company.objects.filter(is_deleted=False).order_by("name")
-        self.fields["assigned_to"].queryset = CustomUser.objects.filter(
-            is_active=True,
-            is_deleted=False,
-        ).filter(
-            Q(is_superuser=True) | Q(is_staff=True) | Q(role=CustomUser.Role.SUPER_ADMIN)
-        ).distinct().order_by("first_name", "last_name", "email")
+        self.fields["assigned_to"].queryset = crm_owner_queryset()
         self.fields["company"].required = False
         self.fields["assigned_to"].required = False
 
@@ -64,12 +63,7 @@ class CompanyForm(forms.ModelForm):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        self.fields["owner"].queryset = CustomUser.objects.filter(
-            is_active=True,
-            is_deleted=False,
-        ).filter(
-            Q(is_superuser=True) | Q(is_staff=True) | Q(role=CustomUser.Role.SUPER_ADMIN)
-        ).distinct().order_by("first_name", "last_name", "email")
+        self.fields["owner"].queryset = crm_owner_queryset()
         self.fields["owner"].required = False
 
     def clean_name(self):
@@ -144,12 +138,7 @@ class DealForm(forms.ModelForm):
         company_queryset = Company.objects.filter(is_deleted=False).order_by("name")
         self.fields["company"].queryset = company_queryset
         self.fields["referral_partner"].queryset = company_queryset
-        self.fields["owner"].queryset = CustomUser.objects.filter(
-            is_active=True,
-            is_deleted=False,
-        ).filter(
-            Q(is_superuser=True) | Q(is_staff=True) | Q(role=CustomUser.Role.SUPER_ADMIN)
-        ).distinct().order_by("first_name", "last_name", "email")
+        self.fields["owner"].queryset = crm_owner_queryset()
         related = Opportunity.objects.filter(is_deleted=False).order_by("pipeline", "name")
         if self.instance.pk:
             related = related.exclude(pk=self.instance.pk)
@@ -167,3 +156,87 @@ class DealForm(forms.ModelForm):
         elif pipeline == Opportunity.Pipeline.EQUITY_INVESTMENT and capital_lane == Opportunity.CapitalLane.FOUNDATION:
             self.add_error("capital_lane", "Use ClearCode, Inc. or Both for an investment deal.")
         return cleaned_data
+
+
+class CrmTeamMemberForm(forms.Form):
+    first_name = forms.CharField(max_length=150, label="First name")
+    last_name = forms.CharField(max_length=150, required=False, label="Last name")
+    email = forms.EmailField(max_length=254, label="Work email")
+    password1 = forms.CharField(
+        required=False,
+        label="Temporary password",
+        widget=forms.PasswordInput(attrs={"autocomplete": "new-password"}),
+        help_text="Leave both password fields blank to generate a secure temporary password.",
+    )
+    password2 = forms.CharField(
+        required=False,
+        label="Confirm temporary password",
+        widget=forms.PasswordInput(attrs={"autocomplete": "new-password"}),
+    )
+
+    def clean_email(self):
+        email = self.cleaned_data["email"].strip().lower()
+        if CustomUser.objects.filter(email__iexact=email).exists():
+            raise forms.ValidationError("A user with this email already exists.")
+        return email
+
+    def clean(self):
+        cleaned_data = super().clean()
+        password1 = cleaned_data.get("password1", "")
+        password2 = cleaned_data.get("password2", "")
+        if bool(password1) != bool(password2) or (password1 and password1 != password2):
+            self.add_error("password2", "The two password fields must match.")
+            return cleaned_data
+        if password1:
+            try:
+                password_validation.validate_password(password1, self._candidate_user(cleaned_data))
+            except ValidationError as exc:
+                self.add_error("password1", exc)
+        return cleaned_data
+
+    def save(self, *, created_by):
+        password = self.cleaned_data["password1"] or self._temporary_password()
+        candidate = self._candidate_user(self.cleaned_data)
+        if not self.cleaned_data["password1"]:
+            password_validation.validate_password(password, candidate)
+        return CustomUser.objects.create_user(
+            username=self._unique_username(self.cleaned_data["email"]),
+            email=self.cleaned_data["email"],
+            password=password,
+            first_name=self.cleaned_data["first_name"].strip(),
+            last_name=self.cleaned_data["last_name"].strip(),
+            role=CustomUser.Role.CRM_USER,
+            is_active=True,
+            is_staff=False,
+            is_superuser=False,
+            metadata={
+                "created_from_crm": True,
+                "created_by_admin_id": created_by.pk,
+                "created_at": timezone.now().isoformat(),
+            },
+        ), password
+
+    @staticmethod
+    def _candidate_user(cleaned_data):
+        email = cleaned_data.get("email", "")
+        return CustomUser(
+            username=email.split("@", 1)[0],
+            email=email,
+            first_name=cleaned_data.get("first_name", ""),
+            last_name=cleaned_data.get("last_name", ""),
+            role=CustomUser.Role.CRM_USER,
+        )
+
+    @staticmethod
+    def _temporary_password():
+        return f"ClearCode-{get_random_string(16)}!"
+
+    @staticmethod
+    def _unique_username(email):
+        base = email.split("@", 1)[0].replace("+", "-")[:120] or "crm-user"
+        username = base
+        counter = 1
+        while CustomUser.objects.filter(username=username).exists():
+            counter += 1
+            username = f"{base}-{counter}"
+        return username

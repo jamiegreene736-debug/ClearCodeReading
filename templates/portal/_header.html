@@ -65,6 +65,10 @@
             </ul>
           </div>
         </li>
+      {% elif request.user.role == 'crm_user' %}
+        <li>
+          <a data-testid="crm-header-link" href="{% url 'crm_dashboard' %}" class="focus-ring inline-flex min-h-11 items-center rounded-full bg-ink px-4 py-2 text-sm font-black text-white shadow-lg shadow-ink/15">CRM workspace</a>
+        </li>
       {% elif request.user.role == 'teacher' %}
         <li class="static lg:relative" data-portal-disclosure>
           <button id="teaching-navigation-button" data-testid="teaching-menu-button" class="focus-ring inline-flex min-h-11 items-center gap-2 rounded-full px-3 py-2 text-sm font-black transition hover:-translate-y-0.5 sm:px-4 {% if request.resolver_match.url_name == 'rapid_session_log' %}bg-ink text-white shadow-lg shadow-ink/15{% else %}text-ink/70 hover:bg-white/70 hover:text-deepTeal{% endif %}" type="button" aria-expanded="false" aria-controls="teaching-navigation-panel">

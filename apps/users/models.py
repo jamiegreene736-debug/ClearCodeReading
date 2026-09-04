@@ -31,6 +31,7 @@ class SoftDeleteModel(models.Model):
 class CustomUser(AbstractUser, TimestampedModel, SoftDeleteModel):
     class Role(models.TextChoices):
         SUPER_ADMIN = "super_admin", "Super Admin"
+        CRM_USER = "crm_user", "CRM User"
         SCHOOL_ADMIN = "school_admin", "School Admin"
         TEACHER = "teacher", "Teacher"
         GUARDIAN = "guardian", "Guardian"
@@ -54,6 +55,18 @@ class CustomUser(AbstractUser, TimestampedModel, SoftDeleteModel):
 
     def __str__(self):
         return self.get_full_name() or self.email
+
+    @property
+    def has_crm_access(self) -> bool:
+        return bool(
+            self.is_superuser
+            or self.is_staff
+            or self.role in {self.Role.SUPER_ADMIN, self.Role.CRM_USER}
+        )
+
+    @property
+    def can_manage_crm_users(self) -> bool:
+        return bool(self.is_superuser or self.role == self.Role.SUPER_ADMIN)
 
 
 class MobileDevice(TimestampedModel):

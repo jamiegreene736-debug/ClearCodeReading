@@ -20,11 +20,14 @@ Career-interest submissions are intentionally stored as `core.RecruitingInterest
 
 The workspace follows familiar CRM patterns:
 
-- a searchable contact index with status, audience, owner, sort, and view filters;
+- a searchable contact index with status, audience, owner, sort, all/unassigned, and **My contacts** filters;
 - summary counts for new/unassigned contacts, recent submissions, and overdue tasks;
 - a contact record with identity and property panels;
 - a unified activity timeline for form submissions, notes, and tasks; and
 - quick owner/status updates plus task completion.
+- bulk assignment of selected contacts to active CRM owners;
+- a team workload view with per-owner contact and open-task counts;
+- super-admin-only creation of least-privilege CRM user accounts;
 - company records shared by multiple contacts and deals;
 - five deal pipelines with pipeline-specific stages; and
 - a human triage queue for ambiguous family partner-interest signals.
@@ -41,11 +44,13 @@ These behaviors were informed by HubSpot's records index, record activity timeli
 - `CrmActivity`: internal note or follow-up task with creator, owner, due date, and completion state.
 - `NewsletterSubscription`: consent and unsubscribe state; this remains separate from CRM lead status.
 
-The HTML workspace and leads API are restricted to superusers, staff, and central `SUPER_ADMIN` users. Form ingestion remains public but validates required fields and email syntax.
+The HTML workspace and leads API are restricted to superusers, staff, central `SUPER_ADMIN` users, and explicit `CRM_USER` accounts. CRM users can manage leads, deals, notes, and tasks without receiving Django admin access. Only superusers and central `SUPER_ADMIN` users can create CRM accounts. New passwords are checked through Django's configured password validators; an auto-generated temporary password is shown once to the creating administrator. Form ingestion remains public but validates required fields and email syntax.
 
 ## Routes
 
-- `/crm/` — contacts index.
+- `/crm/` — actionable CRM overview.
+- `/crm/contacts/` — searchable contact index with owner filters and bulk assignment.
+- `/crm/team/` — assignment-ready users, workload counts, and restricted CRM account creation.
 - `/crm/contacts/<id>/` — contact record and activity timeline.
 - `/crm/companies/` — company records with contact and deal rollups.
 - `/crm/deals/` — pipeline-specific deal boards.

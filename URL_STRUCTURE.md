@@ -85,6 +85,9 @@
 | `/blog/` | Published insights managed through the ClearCode Reading admin CMS, with a secondary link to Substack |
 | `/blog/<slug>/` | Public article detail; drafts and scheduled posts return 404 |
 | `/crm/` | Central staff contact workspace |
+| `/crm/contacts/` | Search, filter, and assign CRM contacts |
+| `/crm/contacts/assign/` | POST-only bulk contact-owner assignment |
+| `/crm/team/` | CRM owner workload and super-admin-only CRM user creation |
 | `/crm/companies/` | Company records shared by contacts and deals |
 | `/crm/deals/` | Five pipeline-specific deal boards |
 | `/crm/triage/` | Human routing for ambiguous partner-interest intake |

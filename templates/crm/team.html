@@ -1,0 +1,54 @@
+{% extends "crm/base.html" %}
+{% block title %}CRM Team{% endblock %}
+{% block extra_style %}
+  .page-head,.section-head { display:flex; align-items:flex-end; justify-content:space-between; gap:16px; }
+  .team-layout { display:grid; grid-template-columns:minmax(0,1.5fr) minmax(300px,.8fr); gap:20px; align-items:start; margin-top:24px; }
+  .team-list { display:grid; gap:12px; }
+  .team-row { display:grid; grid-template-columns:minmax(0,1fr) auto; gap:16px; align-items:center; padding:18px; }
+  .team-stats { display:flex; flex-wrap:wrap; justify-content:flex-end; gap:8px; }
+  .team-stats a { text-decoration:none; }
+  .create-panel { position:sticky; top:20px; padding:20px; }
+  .create-panel form { display:grid; gap:14px; }
+  .errorlist { margin:0; padding-left:18px; color:var(--red); font-weight:600; }
+  .helptext { color:var(--muted); font-size:12px; }
+  @media (max-width:900px) { .team-layout { grid-template-columns:1fr; } .create-panel { position:static; } }
+  @media (max-width:540px) { .page-head,.section-head { align-items:stretch; flex-direction:column; } .team-row { grid-template-columns:1fr; } .team-stats { justify-content:flex-start; } }
+{% endblock %}
+{% block content %}
+  <div class="page-head">
+    <div><p class="eyebrow">Lead ownership</p><h1>CRM team</h1><p class="subtle">Create least-privilege CRM users, then assign contacts and follow-up work across the team.</p></div>
+    <a class="btn btn-primary" href="{% url 'crm_contact_list' %}">Assign contacts</a>
+  </div>
+
+  <div class="team-layout">
+    <section aria-labelledby="team-members-heading">
+      <div class="section-head"><h2 id="team-members-heading">Assignment-ready users</h2><span class="badge badge-neutral">{{ team_members|length }} active</span></div>
+      <div class="team-list">
+        {% for member in team_members %}
+          <article class="card team-row">
+            <div><strong>{{ member.get_full_name|default:member.email }}</strong><div class="subtle">{{ member.email }} · {{ member.get_role_display }}{% if member.is_superuser %} · Superuser{% elif member.is_staff %} · Staff{% endif %}</div></div>
+            <div class="team-stats"><a class="badge" href="{% url 'crm_contact_list' %}?owner={{ member.pk }}">{{ member.assigned_contact_count }} contact{{ member.assigned_contact_count|pluralize }}</a><span class="badge badge-neutral">{{ member.open_task_count }} open task{{ member.open_task_count|pluralize }}</span></div>
+          </article>
+        {% empty %}<div class="card empty">No active CRM users are available.</div>{% endfor %}
+      </div>
+    </section>
+
+    <aside class="card create-panel">
+      {% if can_manage_crm_users %}
+        <p class="eyebrow">Super admin</p><h2>Create a CRM user</h2><p class="subtle">This account can work in the CRM but does not receive Django admin or program-management access.</p>
+        <form method="post" action="{% url 'crm_team' %}">
+          {% csrf_token %}
+          {{ form.non_field_errors }}
+          <div class="field"><label for="{{ form.first_name.id_for_label }}">{{ form.first_name.label }}</label>{{ form.first_name }}{{ form.first_name.errors }}</div>
+          <div class="field"><label for="{{ form.last_name.id_for_label }}">{{ form.last_name.label }}</label>{{ form.last_name }}{{ form.last_name.errors }}</div>
+          <div class="field"><label for="{{ form.email.id_for_label }}">{{ form.email.label }}</label>{{ form.email }}{{ form.email.errors }}</div>
+          <div class="field"><label for="{{ form.password1.id_for_label }}">{{ form.password1.label }}</label>{{ form.password1 }}{% if form.password1.help_text %}<span class="helptext">{{ form.password1.help_text }}</span>{% endif %}{{ form.password1.errors }}</div>
+          <div class="field"><label for="{{ form.password2.id_for_label }}">{{ form.password2.label }}</label>{{ form.password2 }}{{ form.password2.errors }}</div>
+          <button class="btn btn-primary" type="submit">Create CRM user</button>
+        </form>
+      {% else %}
+        <p class="eyebrow">Team management</p><h2>Need another CRM user?</h2><p class="subtle">A super administrator can create new CRM accounts. You can assign contacts to any active user listed here.</p>
+      {% endif %}
+    </aside>
+  </div>
+{% endblock %}

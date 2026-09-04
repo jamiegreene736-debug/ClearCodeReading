@@ -34,6 +34,7 @@ from apps.crm.newsletters import (
 from apps.crm.serializers import OpportunitySerializer
 from apps.crm.services import normalize_relationship_interests
 from apps.crm.views import FamilyResourcesView, NewsletterUnsubscribeView, WebsiteSignupView
+from apps.users.models import AuditLog
 
 
 class CrmTests(SimpleTestCase):
@@ -974,6 +975,174 @@ class CrmWorkspaceTests(TestCase):
         response = self.client.get(reverse("crm_contact_detail", args=[self.lead.pk]))
 
         self.assertNotIn(school_admin, response.context["owners"])
+
+    def test_super_admin_creates_a_least_privilege_crm_user(self):
+        self.client.force_login(self.admin_user)
+
+        response = self.client.post(
+            reverse("crm_team"),
+            {
+                "first_name": "Casey",
+                "last_name": "Coordinator",
+                "email": " CASEY@EXAMPLE.COM ",
+                "password1": "",
+                "password2": "",
+            },
+            follow=True,
+        )
+
+        team_member = get_user_model().objects.get(email="casey@example.com")
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "Temporary password: ClearCode-")
+        self.assertEqual(team_member.role, get_user_model().Role.CRM_USER)
+        self.assertTrue(team_member.is_active)
+        self.assertFalse(team_member.is_staff)
+        self.assertFalse(team_member.is_superuser)
+        self.assertTrue(team_member.has_crm_access)
+        self.assertTrue(
+            AuditLog.objects.filter(
+                action="crm.team_member.created",
+                actor=self.admin_user,
+                entity_id=str(team_member.pk),
+            ).exists()
+        )
+
+    def test_crm_user_can_work_leads_without_creating_more_users(self):
+        crm_user = get_user_model().objects.create_user(
+            username="crm-coordinator",
+            email="coordinator@example.com",
+            password="test-password",
+            role=get_user_model().Role.CRM_USER,
+        )
+        self.client.force_login(crm_user)
+
+        dashboard = self.client.get(reverse("crm_dashboard"))
+        team = self.client.get(reverse("crm_team"))
+        portal = self.client.get(reverse("portal_dashboard"))
+        create_user = self.client.post(
+            reverse("crm_team"),
+            {
+                "first_name": "No",
+                "email": "not-allowed@example.com",
+            },
+        )
+        api_client = APIClient()
+        api_client.force_authenticate(crm_user)
+        api_response = api_client.get("/api/v1/leads/")
+
+        self.assertEqual(dashboard.status_code, 200)
+        self.assertEqual(team.status_code, 200)
+        self.assertNotContains(team, "Create a CRM user")
+        self.assertEqual(portal.status_code, 302)
+        self.assertEqual(portal.url, reverse("crm_dashboard"))
+        self.assertEqual(create_user.status_code, 403)
+        self.assertEqual(api_response.status_code, 200)
+        self.assertFalse(get_user_model().objects.filter(email="not-allowed@example.com").exists())
+
+    def test_crm_user_creation_rejects_duplicate_email_and_weak_password(self):
+        self.client.force_login(self.admin_user)
+
+        duplicate = self.client.post(
+            reverse("crm_team"),
+            {
+                "first_name": "Duplicate",
+                "email": " CRM-ADMIN@EXAMPLE.COM ",
+                "password1": "Strong-Crm-Password-482!",
+                "password2": "Strong-Crm-Password-482!",
+            },
+        )
+        weak = self.client.post(
+            reverse("crm_team"),
+            {
+                "first_name": "Weak",
+                "email": "weak@example.com",
+                "password1": "password",
+                "password2": "password",
+            },
+        )
+
+        self.assertEqual(duplicate.status_code, 400)
+        self.assertContains(duplicate, "A user with this email already exists.", status_code=400)
+        self.assertEqual(weak.status_code, 400)
+        self.assertContains(weak, "This password is too common.", status_code=400)
+        self.assertFalse(get_user_model().objects.filter(email="weak@example.com").exists())
+
+    def test_selected_contacts_can_be_bulk_assigned_to_a_crm_user(self):
+        crm_user = get_user_model().objects.create_user(
+            username="lead-owner",
+            email="lead-owner@example.com",
+            password="test-password",
+            first_name="Lead",
+            last_name="Owner",
+            role=get_user_model().Role.CRM_USER,
+        )
+        selected = Lead.objects.create(
+            school_name="Second inquiry",
+            contact_name="Bailey Reader",
+            contact_email="bailey@example.com",
+            audience=Lead.Audience.PARENT,
+        )
+        untouched = Lead.objects.create(
+            school_name="Third inquiry",
+            contact_name="Cameron Reader",
+            contact_email="cameron@example.com",
+            audience=Lead.Audience.PARENT,
+        )
+        self.client.force_login(self.admin_user)
+
+        response = self.client.post(
+            reverse("crm_contact_bulk_assign"),
+            {
+                "lead_ids": [self.lead.pk, selected.pk],
+                "assigned_to": crm_user.pk,
+            },
+        )
+
+        self.assertRedirects(response, reverse("crm_contact_list"), fetch_redirect_response=False)
+        self.lead.refresh_from_db()
+        selected.refresh_from_db()
+        untouched.refresh_from_db()
+        self.assertEqual(self.lead.assigned_to, crm_user)
+        self.assertEqual(selected.assigned_to, crm_user)
+        self.assertIsNone(untouched.assigned_to)
+        assignment_logs = AuditLog.objects.filter(
+            action="crm.contact.owner_updated",
+            metadata__source="bulk_assignment",
+        )
+        self.assertEqual(assignment_logs.count(), 2)
+        self.assertSetEqual(
+            set(assignment_logs.values_list("entity_id", flat=True)),
+            {str(self.lead.pk), str(selected.pk)},
+        )
+
+    def test_bulk_assignment_rejects_an_ineligible_owner_without_changes(self):
+        self.client.force_login(self.admin_user)
+
+        response = self.client.post(
+            reverse("crm_contact_bulk_assign"),
+            {"lead_ids": [self.lead.pk], "assigned_to": self.guardian.pk},
+        )
+
+        self.assertRedirects(response, reverse("crm_contact_list"), fetch_redirect_response=False)
+        self.lead.refresh_from_db()
+        self.assertIsNone(self.lead.assigned_to)
+        self.assertFalse(
+            AuditLog.objects.filter(action="crm.contact.owner_updated", entity_id=str(self.lead.pk)).exists()
+        )
+
+    def test_contacts_and_team_pages_expose_assignment_workflow(self):
+        self.client.force_login(self.admin_user)
+
+        contacts = self.client.get(reverse("crm_contact_list"))
+        team = self.client.get(reverse("crm_team"))
+
+        self.assertContains(contacts, reverse("crm_contact_bulk_assign"))
+        self.assertContains(contacts, "Assign selected contacts to")
+        self.assertContains(contacts, f"?owner={self.admin_user.pk}")
+        self.assertContains(contacts, "My contacts")
+        self.assertContains(contacts, reverse("crm_team"))
+        self.assertContains(team, "Assignment-ready users")
+        self.assertContains(team, "Create a CRM user")
 
     def test_leads_api_rejects_a_non_crm_portal_user(self):
         api_client = APIClient()
