@@ -98,9 +98,18 @@ class MarketingPageTests(SimpleTestCase):
         self.assertIn("See how it works", content)
         self.assertIn("Our Approach", content)
         self.assertIn("Three steps. One connected reading path.", content)
-        self.assertIn("A straightforward process built around your child.", content)
+        self.assertIn("A straightforward process, built around your child.", content)
         self.assertIn("Precise Placement", content)
-        self.assertIn("Specialist-led sessions", content)
+        self.assertIn(
+            "Every child completes an initial assessment and is placed into one "
+            "structured literacy sequence.",
+            content,
+        )
+        self.assertIn("Specialist-Led Sessions", content)
+        self.assertIn(
+            "Reading specialists deliver lessons aligned to each program’s methodology",
+            content,
+        )
         self.assertIn("Progress you can follow", content)
         self.assertEqual(content.count('data-testid="homepage-approach-step"'), 3)
         self.assertIn('href="/survey/"', content)
