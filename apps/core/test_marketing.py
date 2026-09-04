@@ -97,8 +97,16 @@ class MarketingPageTests(SimpleTestCase):
         )
         self.assertIn("Request a consultation", content)
         self.assertIn("See how it works", content)
-        self.assertIn("Reading gaps don’t close on their own.", content)
+        self.assertIn("Our Approach", content)
         self.assertIn("Three steps. One connected reading path.", content)
+        self.assertIn("A straightforward process built around your child.", content)
+        self.assertIn("Precise Placement", content)
+        self.assertIn("Specialist-led sessions", content)
+        self.assertIn("Progress you can follow", content)
+        self.assertEqual(content.count('data-testid="homepage-approach-step"'), 3)
+        self.assertIn('href="/survey/"', content)
+        self.assertIn("Join Our Waitlist", content)
+        self.assertNotIn("How ClearCode works", content)
         self.assertIn("For schools and specialists", content)
         self.assertIn("Illustrative data", content)
         self.assertIn("Frequently asked questions", content)
@@ -126,12 +134,21 @@ class MarketingPageTests(SimpleTestCase):
         self.assertNotIn("waitlist.html", content)
         self.assertNotIn("docs.google.com", content)
 
-    def test_homepage_keeps_research_claims_attributed(self):
+    def test_homepage_omits_the_removed_reading_difficulty_section(self):
         content = self._render("marketing_home")
 
-        self.assertIn("Florida Department of Education", content)
-        self.assertIn("Juel, C.", content)
-        self.assertIn("G. Reid Lyon", content)
+        removed_copy = [
+            "When reading feels harder than it should",
+            "You do not have to keep guessing.",
+            "Reading gaps don’t close on their own.",
+            "Homework becomes a nightly battle",
+            "Reports do not explain the next step",
+            "Support feels disconnected",
+            "Florida Department of Education",
+        ]
+        for text in removed_copy:
+            with self.subTest(text=text):
+                self.assertNotIn(text, content)
 
     def test_homepage_uses_a_local_optimized_hero_photo(self):
         content = self._render("marketing_home")
