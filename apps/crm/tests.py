@@ -33,7 +33,7 @@ from apps.crm.newsletters import (
 )
 from apps.crm.serializers import OpportunitySerializer
 from apps.crm.services import normalize_relationship_interests
-from apps.crm.views import NewsletterUnsubscribeView, WebsiteSignupView
+from apps.crm.views import FamilyResourcesView, NewsletterUnsubscribeView, WebsiteSignupView
 
 
 class CrmTests(SimpleTestCase):
@@ -379,6 +379,64 @@ class NewsletterAdminTests(TestCase):
 
 
 class FormSubmissionIntakeTests(TestCase):
+    def _resources_context(self, query=""):
+        request = RequestFactory().get(f"/resources/{query}")
+        request.session = self.client.session
+        response = FamilyResourcesView.as_view(template_name="resources.html")(request)
+        return response.context_data
+
+    def test_family_resources_signup_unlocks_the_page_and_records_crm_intake(self):
+        self.assertFalse(self._resources_context()["resources_unlocked"])
+
+        response = self.client.post(
+            reverse("crm_signup"),
+            {
+                "name": "Taylor Reader",
+                "email": " TAYLOR@example.com ",
+                "audience": Lead.Audience.PARENT,
+                "redirect_to": "/resources/",
+            },
+        )
+
+        self.assertRedirects(
+            response,
+            "/resources/?signup=thanks#start-here",
+            fetch_redirect_response=False,
+        )
+        lead = Lead.objects.get(contact_email="taylor@example.com")
+        self.assertEqual(lead.contact_name, "Taylor Reader")
+        self.assertEqual(lead.school_name, "Family inquiry")
+        self.assertTrue(lead.metadata["family_resources_access_requested"])
+        self.assertEqual(lead.metadata["source_path"], "/resources/")
+        submission = lead.form_submissions.get()
+        self.assertEqual(submission.form_type, FormSubmission.FormType.WEBSITE)
+        self.assertEqual(submission.source_path, "/resources/")
+        self.assertEqual(submission.submitted_data["resource_access"], "family_resources")
+
+        self.assertTrue(self._resources_context()["resources_unlocked"])
+
+    def test_invalid_family_resources_signup_does_not_unlock_or_create_records(self):
+        response = self.client.post(
+            reverse("crm_signup"),
+            {
+                "name": "Taylor Reader",
+                "email": "not-an-email",
+                "audience": Lead.Audience.PARENT,
+                "redirect_to": "/resources/",
+            },
+        )
+
+        self.assertRedirects(
+            response,
+            "/resources/?signup=invalid#start-here",
+            fetch_redirect_response=False,
+        )
+        self.assertFalse(Lead.objects.exists())
+        self.assertFalse(FormSubmission.objects.exists())
+        locked_context = self._resources_context("?signup=invalid")
+        self.assertFalse(locked_context["resources_unlocked"])
+        self.assertEqual(locked_context["resource_gate_result"], "invalid")
+
     def test_repeat_consultation_submissions_update_one_contact_and_preserve_both_events(self):
         first = {
             "name": "Jordan Reader",

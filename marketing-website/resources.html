@@ -6,6 +6,7 @@
 {% block og_description %}Start with a clearer snapshot, stronger questions, and simple home-practice guidance.{% endblock %}
 
 {% block content %}
+{% if resources_unlocked %}
   <section class="relative isolate overflow-hidden bg-linen px-4 py-16 sm:px-6 sm:py-24 lg:px-8">
     <div class="absolute -left-20 top-0 h-72 w-72 rounded-full bg-gold/20 blur-3xl" aria-hidden="true"></div>
     <div class="absolute -right-20 bottom-0 h-80 w-80 rounded-full bg-mediumTeal/20 blur-3xl" aria-hidden="true"></div>
@@ -96,4 +97,91 @@
       </div>
     </div>
   </section>
+{% else %}
+  <section class="relative isolate min-h-[calc(100vh-5rem)] overflow-hidden bg-linen px-4 py-16 sm:px-6 sm:py-24 lg:px-8">
+    <div class="absolute -left-24 top-4 h-80 w-80 rounded-full bg-gold/25 blur-3xl" aria-hidden="true"></div>
+    <div class="absolute -right-24 bottom-0 h-96 w-96 rounded-full bg-mediumTeal/20 blur-3xl" aria-hidden="true"></div>
+    <div class="dot-grid absolute inset-0 opacity-40" aria-hidden="true"></div>
+    <div class="relative mx-auto grid max-w-6xl gap-10 lg:grid-cols-[1fr_.82fr] lg:items-center">
+      <div>
+        <p class="text-sm font-black uppercase tracking-[.18em] text-deepTeal">Free family resources</p>
+        <h1 class="mt-5 max-w-3xl text-5xl font-black leading-[1.03] tracking-[-.04em] text-ink sm:text-6xl">Less guessing. More useful next steps.</h1>
+        <p class="mt-6 max-w-2xl text-lg leading-8 text-ink/70">Get immediate access to practical tools for noticing reading patterns, asking stronger questions, and keeping practice calm.</p>
+        <button type="button" data-open-resource-gate class="focus-ring mt-8 inline-flex min-h-12 items-center justify-center rounded-full bg-deepTeal px-7 py-4 font-black text-white shadow-glow transition hover:-translate-y-0.5 hover:bg-[#176a6a]">Unlock Free Family Resources</button>
+        <p class="mt-4 text-sm font-semibold text-ink/55">Free access. No worksheets pileup. Just a clearer place to start.</p>
+      </div>
+      <aside class="rounded-[2rem] bg-ink p-7 text-white shadow-2xl shadow-ink/20 sm:p-9" aria-label="What is inside the family resource library">
+        <p class="text-xs font-black uppercase tracking-[.18em] text-gold">Inside the library</p>
+        <ul class="mt-7 space-y-5">
+          <li class="flex gap-4"><span class="display-type grid h-10 w-10 shrink-0 place-items-center rounded-full bg-gold font-black text-ink">01</span><div><h2 class="font-black">Spot the pattern</h2><p class="mt-1 text-sm leading-6 text-white/65">A simpler way to notice what is actually getting in the way.</p></div></li>
+          <li class="flex gap-4"><span class="display-type grid h-10 w-10 shrink-0 place-items-center rounded-full bg-mediumTeal font-black text-ink">02</span><div><h2 class="font-black">Ask sharper questions</h2><p class="mt-1 text-sm leading-6 text-white/65">Prompts that make school and support conversations more useful.</p></div></li>
+          <li class="flex gap-4"><span class="display-type grid h-10 w-10 shrink-0 place-items-center rounded-full bg-white font-black text-ink">03</span><div><h2 class="font-black">Practice without pressure</h2><p class="mt-1 text-sm leading-6 text-white/65">Small moves that protect confidence while building momentum.</p></div></li>
+        </ul>
+      </aside>
+    </div>
+  </section>
+
+  <dialog
+    data-testid="family-resources-gate"
+    aria-labelledby="resource-gate-title"
+    aria-describedby="resource-gate-description"
+    class="m-auto w-[calc(100%-2rem)] max-w-lg overflow-hidden rounded-[2rem] bg-white p-0 text-ink shadow-2xl backdrop:bg-ink/80 backdrop:backdrop-blur-sm"
+  >
+    <div class="relative border-t-8 border-gold p-6 sm:p-9">
+      <button type="button" data-close-resource-gate class="focus-ring absolute right-4 top-4 grid h-11 w-11 place-items-center rounded-full bg-linen text-xl font-black text-ink transition hover:bg-seafoam" aria-label="Close resource access form">&times;</button>
+      <p class="pr-14 text-xs font-black uppercase tracking-[.18em] text-deepTeal">Your free toolkit is ready</p>
+      <h2 id="resource-gate-title" class="mt-4 pr-10 text-3xl font-black leading-tight sm:text-4xl">Unlock your family toolkit.</h2>
+      <p id="resource-gate-description" class="mt-4 leading-7 text-ink/65">Tell us who you are and unlock the full family resource library right away.</p>
+
+      {% if resource_gate_result == "missing" %}
+        <p class="mt-5 rounded-2xl bg-gold/20 px-4 py-3 text-sm font-black text-ink" role="alert">Please enter your name and email address.</p>
+      {% elif resource_gate_result == "invalid" %}
+        <p class="mt-5 rounded-2xl bg-gold/20 px-4 py-3 text-sm font-black text-ink" role="alert">Enter a valid email address to continue.</p>
+      {% endif %}
+
+      <form action="{% url 'crm_signup' %}" method="post" class="mt-7 space-y-5">
+        {% csrf_token %}
+        <input type="hidden" name="redirect_to" value="/resources/">
+        <input type="hidden" name="audience" value="parent">
+        <div>
+          <label for="resource-name" class="text-sm font-black text-ink">Your name</label>
+          <input id="resource-name" name="name" type="text" autocomplete="name" maxlength="255" required autofocus class="focus-ring mt-2 min-h-12 w-full rounded-2xl border border-ink/20 bg-linen px-4 py-3 text-base text-ink shadow-sm placeholder:text-ink/35" placeholder="First and last name">
+        </div>
+        <div>
+          <label for="resource-email" class="text-sm font-black text-ink">Email address</label>
+          <input id="resource-email" name="email" type="email" inputmode="email" autocomplete="email" maxlength="254" required class="focus-ring mt-2 min-h-12 w-full rounded-2xl border border-ink/20 bg-linen px-4 py-3 text-base text-ink shadow-sm placeholder:text-ink/35" placeholder="you@example.com">
+        </div>
+        <button type="submit" class="focus-ring flex min-h-12 w-full items-center justify-center rounded-full bg-deepTeal px-6 py-4 text-center font-black text-white shadow-glow transition hover:-translate-y-0.5 hover:bg-[#176a6a]">Unlock My Free Resources</button>
+        <p class="text-center text-xs leading-5 text-ink/55">We’ll use your details to provide access and understand family interest. See our <a href="/privacy/" class="focus-ring rounded font-bold text-deepTeal underline decoration-gold decoration-2 underline-offset-2">Privacy Policy</a>.</p>
+      </form>
+    </div>
+  </dialog>
+{% endif %}
+{% endblock %}
+
+{% block scripts %}
+  {{ block.super }}
+  {% if not resources_unlocked %}
+    <script>
+      (() => {
+        const dialog = document.querySelector('[data-testid="family-resources-gate"]');
+        if (!dialog || typeof dialog.showModal !== 'function') return;
+
+        const openDialog = () => {
+          if (!dialog.open) dialog.showModal();
+          document.documentElement.style.overflow = 'hidden';
+        };
+        const closeDialog = () => dialog.close();
+
+        document.querySelectorAll('[data-open-resource-gate]').forEach((button) => {
+          button.addEventListener('click', openDialog);
+        });
+        dialog.querySelector('[data-close-resource-gate]').addEventListener('click', closeDialog);
+        dialog.addEventListener('close', () => {
+          document.documentElement.style.overflow = '';
+        });
+        openDialog();
+      })();
+    </script>
+  {% endif %}
 {% endblock %}
