@@ -58,6 +58,7 @@ urlpatterns = [
     ),
     path("how-it-works/", TemplateView.as_view(template_name="how-it-works.html"), name="marketing_how_it_works"),
     path("families/", TemplateView.as_view(template_name="families.html"), name="marketing_families"),
+    path("faq/", TemplateView.as_view(template_name="faq.html"), name="marketing_faq"),
     path("foundation/", TemplateView.as_view(template_name="foundation.html"), name="marketing_foundation"),
     path("careers/", TemplateView.as_view(template_name="careers.html"), name="marketing_careers"),
     path("contact/", TemplateView.as_view(template_name="contact.html"), name="marketing_contact"),

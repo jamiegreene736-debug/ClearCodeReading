@@ -19,6 +19,7 @@ PUBLIC_PAGES = {
     "marketing_about": "about.html",
     "marketing_how_it_works": "how-it-works.html",
     "marketing_families": "families.html",
+    "marketing_faq": "faq.html",
     "marketing_foundation": "foundation.html",
     "marketing_careers": "careers.html",
     "marketing_contact": "contact.html",
@@ -126,7 +127,7 @@ class MarketingPageTests(SimpleTestCase):
         for text in removed_sections:
             with self.subTest(text=text):
                 self.assertNotIn(text, content)
-        self.assertIn("Frequently asked questions", content)
+        self.assertNotIn("Frequently asked questions", content)
         self.assertIn("Explore the Foundation", content)
 
     def test_homepage_omits_the_reading_team_path_section(self):
@@ -135,6 +136,17 @@ class MarketingPageTests(SimpleTestCase):
         self.assertNotIn("Start with the path that fits you.", content)
         self.assertNotIn("Know what your child is learning.", content)
         self.assertNotIn("Keep evidence and next steps connected.", content)
+
+    def test_faq_has_its_own_public_page_and_is_not_a_homepage_section(self):
+        homepage = self._render("marketing_home")
+        faq = self._render("marketing_faq")
+
+        self.assertNotIn("Frequently asked questions", homepage)
+        self.assertIn("Frequently asked questions", faq)
+        self.assertIn("What families usually want to know.", faq)
+        self.assertEqual(faq.count('details class="group rounded-2xl'), 6)
+        self.assertIn("Who does ClearCode serve?", faq)
+        self.assertIn("How do we begin?", faq)
 
     def test_blog_is_prominent_in_shared_navigation_and_homepage_body(self):
         content = self._render("marketing_home")
@@ -255,6 +267,7 @@ class MarketingPageTests(SimpleTestCase):
             "marketing_about",
             "marketing_how_it_works",
             "marketing_families",
+            "marketing_faq",
             "marketing_foundation",
             "marketing_careers",
             "marketing_contact",
@@ -266,6 +279,7 @@ class MarketingPageTests(SimpleTestCase):
             "/about/",
             "/how-it-works/",
             "/families/",
+            "/faq/",
             "/foundation/",
             "/approach/",
             "/blog/",
@@ -286,7 +300,7 @@ class MarketingPageTests(SimpleTestCase):
         homepage = self._render("marketing_home")
         foundation = self._render("marketing_foundation")
 
-        self.assertGreater(homepage.index("Explore the Foundation"), homepage.index("Frequently asked questions"))
+        self.assertGreater(homepage.index("Explore the Foundation"), homepage.index("From the ClearCode blog"))
         self.assertIn("Help more children find their way into reading.", foundation)
         self.assertIn('href="#newsletter-signup"', foundation)
         self.assertIn('name="consent"', foundation)
