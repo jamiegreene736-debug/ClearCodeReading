@@ -87,7 +87,7 @@ class MarketingPageTests(SimpleTestCase):
                 self.assertEqual(route.func.view_initkwargs["template_name"], template_name)
                 self.assertIn("<!doctype html>", self._render(route_name).lower())
 
-    def test_homepage_matches_family_first_consultation_flow(self):
+    def test_homepage_matches_family_first_waitlist_flow(self):
         content = self._render("marketing_home")
 
         self.assertIn("Unlock Reading. Unlock Everything.", content)
@@ -97,7 +97,7 @@ class MarketingPageTests(SimpleTestCase):
             "real progress, week by week.",
             content,
         )
-        self.assertIn("Request a consultation", content)
+        self.assertIn("Join Priority Waitlist", content)
         self.assertIn("See how it works", content)
         self.assertNotIn("Our Approach", content)
         self.assertIn("Three steps. One connected reading path.", content)
@@ -132,6 +132,24 @@ class MarketingPageTests(SimpleTestCase):
         self.assertNotIn("Frequently asked questions", content)
         self.assertIn("A little clarity can change the whole conversation.", content)
         self.assertEqual(content.count('data-testid="homepage-next-step-tile"'), 3)
+
+    def test_homepage_hero_actions_follow_the_photo_without_tagline(self):
+        content = self._render("marketing_home")
+        hero_actions_start = content.index('data-testid="homepage-hero-actions"')
+        hero_actions = content[hero_actions_start:content.index("</div>", hero_actions_start)]
+
+        self.assertLess(
+            content.index('/assets/images/specialist-reading-session.jpg'),
+            hero_actions_start,
+        )
+        self.assertIn('href="/survey/"', hero_actions)
+        self.assertIn("Join Priority Waitlist", hero_actions)
+        self.assertIn('href="#how-it-works"', hero_actions)
+        self.assertIn("See how it works", hero_actions)
+        self.assertNotIn(
+            "Opening in the Orlando metro area · Priority access available",
+            content,
+        )
 
     def test_homepage_omits_the_reading_team_path_section(self):
         content = self._render("marketing_home")
@@ -176,7 +194,7 @@ class MarketingPageTests(SimpleTestCase):
 
         self.assertGreaterEqual(
             content.count('href="/contact/#consultation-form"'),
-            3,
+            2,
         )
         self.assertNotIn("waitlist.html", content)
         self.assertNotIn("docs.google.com", content)
