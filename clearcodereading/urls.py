@@ -3,7 +3,7 @@ from django.conf import settings
 from django.conf.urls.static import static
 from django.contrib.auth.views import LogoutView
 from django.urls import include, path
-from django.views.generic import TemplateView
+from django.views.generic import RedirectView, TemplateView
 from django.views.static import serve
 
 from apps.assessments.views import assessment_audio, assessment_audio_status
@@ -65,7 +65,11 @@ urlpatterns = [
     path("contact/", TemplateView.as_view(template_name="contact.html"), name="marketing_contact"),
     path("support/", TemplateView.as_view(template_name="support.html"), name="marketing_support"),
     path("privacy/", TemplateView.as_view(template_name="privacy.html"), name="marketing_privacy"),
-    path("approach/", TemplateView.as_view(template_name="approach.html"), name="marketing_approach"),
+    path(
+        "approach/",
+        RedirectView.as_view(pattern_name="marketing_how_it_works", permanent=True),
+        name="marketing_approach",
+    ),
     path("assessment/", TemplateView.as_view(template_name="assessment.html"), name="reading_assessment"),
     path("survey/", TemplateView.as_view(template_name="survey.html"), name="early_interest_survey"),
     path("blog/", include("apps.blog.urls")),
