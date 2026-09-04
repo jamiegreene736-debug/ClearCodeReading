@@ -1,6 +1,19 @@
 <section id="early-interest-survey" class="bg-white py-14 sm:py-20" data-early-interest-survey>
   <div class="mx-auto max-w-4xl px-4 sm:px-6 lg:px-8">
     <div class="rounded-[2.25rem] bg-linen p-5 shadow-2xl shadow-deepTeal/10 ring-1 ring-deepTeal/10 sm:p-9">
+      {% if request.GET.survey and messages %}
+        <div class="mb-7 space-y-3 scroll-mt-24" aria-live="polite" aria-atomic="true" data-testid="survey-submission-feedback">
+          {% for message in messages %}
+            <div class="flex items-start gap-4 rounded-[1.5rem] border-4 border-gold bg-ink px-5 py-5 text-white shadow-2xl shadow-ink/25 sm:px-7" role="{% if 'error' in message.tags %}alert{% else %}status{% endif %}">
+              <span class="grid h-12 w-12 shrink-0 place-items-center rounded-full bg-gold text-2xl font-black text-ink shadow-md" aria-hidden="true">{% if 'error' in message.tags %}!{% else %}✓{% endif %}</span>
+              <div>
+                <p class="text-sm font-black uppercase tracking-[.16em] text-gold">{% if 'error' in message.tags %}Please check your survey{% else %}Survey received — thank you{% endif %}</p>
+                <p class="mt-1 text-lg font-black leading-7 sm:text-xl">{{ message }}</p>
+              </div>
+            </div>
+          {% endfor %}
+        </div>
+      {% endif %}
       <div class="grid gap-7 lg:grid-cols-[.72fr_1.28fr]">
         <div>
           <p class="text-sm font-black uppercase tracking-[.16em] text-deepTeal">ClearCode Early Interest Survey</p>

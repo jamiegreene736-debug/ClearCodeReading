@@ -546,6 +546,25 @@ class MarketingPageTests(SimpleTestCase):
         self.assertIn('name="engagement_interests"', content)
         self.assertIn("We will never sell or share your information", content)
 
+    def test_survey_confirmation_is_prominent_inside_the_survey_card(self):
+        confirmation = (
+            "Thank you. Your survey is in the ClearCode CRM, and our team will follow up "
+            "based on what you selected."
+        )
+        request = RequestFactory().get("/survey/?survey=thanks")
+        content = get_template(PUBLIC_PAGES["early_interest_survey"]).render(
+            {"messages": [Message(message_constants.SUCCESS, confirmation)]},
+            request,
+        )
+
+        self.assertEqual(content.count(confirmation), 1)
+        self.assertLess(content.index('id="early-interest-survey"'), content.index(confirmation))
+        self.assertLess(content.index(confirmation), content.index('data-survey-form'))
+        self.assertIn('data-testid="survey-submission-feedback"', content)
+        self.assertIn('role="status"', content)
+        self.assertIn("Survey received — thank you", content)
+        self.assertIn("border-4 border-gold bg-ink", content)
+
     def test_about_page_preserves_the_supplied_positioning_and_sources(self):
         content = self._render("marketing_about")
 
