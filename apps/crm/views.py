@@ -8,7 +8,7 @@ from django.core.exceptions import PermissionDenied
 from django.core.exceptions import ValidationError
 from django.core.paginator import Paginator
 from django.core.validators import validate_email
-from django.db import transaction
+from django.db import IntegrityError, transaction
 from django.db.models import Count, F, Max, OuterRef, Q, Subquery, Sum
 from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse
@@ -26,7 +26,8 @@ from rest_framework.response import Response
 
 from apps.core.forms import RecruitingInterestForm
 from apps.core.models import RecruitingInterest
-from apps.crm.forms import CompanyForm, ContactForm, DealForm
+from apps.crm.access import crm_owner_queryset
+from apps.crm.forms import CompanyForm, ContactForm, CrmTeamMemberForm, DealForm
 from apps.crm.models import Company, CrmActivity, FormSubmission, IntakeTriage, Lead, NewsletterSubscription, Opportunity
 from apps.crm.newsletters import resolve_unsubscribe_token
 from apps.crm.serializers import CompanySerializer, LeadSerializer, OpportunitySerializer
@@ -429,15 +430,7 @@ class IsCrmAdmin(BasePermission):
 
     def has_permission(self, request, view):
         user = request.user
-        return bool(
-            user
-            and user.is_authenticated
-            and (
-                user.is_superuser
-                or user.is_staff
-                or user.role == CustomUser.Role.SUPER_ADMIN
-            )
-        )
+        return bool(user and user.is_authenticated and user.has_crm_access)
 
 
 class LeadViewSet(viewsets.ModelViewSet):
@@ -567,22 +560,11 @@ class OpportunityViewSet(viewsets.ModelViewSet):
         return Response(OpportunitySerializer(opportunity, context=self.get_serializer_context()).data)
 
 
-def crm_owner_queryset():
-    return CustomUser.objects.filter(is_active=True, is_deleted=False).filter(
-        Q(is_superuser=True) | Q(is_staff=True) | Q(role=CustomUser.Role.SUPER_ADMIN)
-    ).distinct().order_by("first_name", "last_name", "email")
-
-
 class CrmAccessMixin(LoginRequiredMixin, UserPassesTestMixin):
     raise_exception = True
 
     def test_func(self):
-        user = self.request.user
-        return bool(
-            user.is_superuser
-            or user.is_staff
-            or user.role == CustomUser.Role.SUPER_ADMIN
-        )
+        return self.request.user.has_crm_access
 
     def handle_no_permission(self):
         if not self.request.user.is_authenticated:
@@ -1021,6 +1003,117 @@ class CrmTriageResolveView(CrmAccessMixin, View):
         )
         messages.success(request, "Triage item dismissed." if dismiss else "Triage complete and selected deal records are ready.")
         return redirect("crm_triage_list")
+
+
+class CrmTeamView(CrmAccessMixin, View):
+    template_name = "crm/team.html"
+
+    def get(self, request):
+        return self._render(request, CrmTeamMemberForm())
+
+    def post(self, request):
+        if not request.user.can_manage_crm_users:
+            raise PermissionDenied("Only super administrators can create CRM users.")
+
+        form = CrmTeamMemberForm(request.POST)
+        if not form.is_valid():
+            return self._render(request, form, status=400)
+
+        try:
+            with transaction.atomic():
+                team_member, temporary_password = form.save(created_by=request.user)
+                AuditLog.objects.create(
+                    actor=request.user,
+                    action="crm.team_member.created",
+                    entity_type="CustomUser",
+                    entity_id=str(team_member.pk),
+                    after={
+                        "email": team_member.email,
+                        "role": team_member.role,
+                        "is_staff": team_member.is_staff,
+                    },
+                )
+        except IntegrityError:
+            form.add_error("email", "A user with this email or username already exists.")
+            return self._render(request, form, status=400)
+
+        messages.success(
+            request,
+            f"Created CRM user {team_member}. Temporary password: {temporary_password}",
+        )
+        return redirect("crm_team")
+
+    def _render(self, request, form, *, status=200):
+        team_members = crm_owner_queryset().annotate(
+            assigned_contact_count=Count(
+                "assigned_leads",
+                filter=Q(assigned_leads__is_deleted=False),
+                distinct=True,
+            ),
+            open_task_count=Count(
+                "crm_tasks_assigned",
+                filter=Q(crm_tasks_assigned__completed_at__isnull=True),
+                distinct=True,
+            ),
+        )
+        return render(
+            request,
+            self.template_name,
+            {
+                "team_members": team_members,
+                "form": form,
+                "can_manage_crm_users": request.user.can_manage_crm_users,
+            },
+            status=status,
+        )
+
+
+class CrmContactBulkAssignView(CrmAccessMixin, View):
+    def post(self, request):
+        raw_lead_ids = list(dict.fromkeys(request.POST.getlist("lead_ids")))
+        if not raw_lead_ids or any(not value.isdigit() for value in raw_lead_ids):
+            messages.error(request, "Select at least one valid contact to assign.")
+            return redirect("crm_contact_list")
+
+        leads = list(
+            Lead.objects.filter(pk__in=raw_lead_ids, is_deleted=False).order_by("pk")
+        )
+        if len(leads) != len(raw_lead_ids):
+            messages.error(request, "One or more selected contacts are no longer available.")
+            return redirect("crm_contact_list")
+
+        owner_value = request.POST.get("assigned_to", "")
+        owner = None
+        if owner_value != "unassigned":
+            if not owner_value.isdigit():
+                messages.error(request, "Choose a valid CRM user or Unassigned.")
+                return redirect("crm_contact_list")
+            owner = crm_owner_queryset().filter(pk=owner_value).first()
+            if owner is None:
+                messages.error(request, "Choose a valid CRM user or Unassigned.")
+                return redirect("crm_contact_list")
+
+        with transaction.atomic():
+            for lead in leads:
+                previous_owner_id = lead.assigned_to_id
+                lead.assigned_to = owner
+                lead.save(update_fields=["assigned_to", "updated_at"])
+                AuditLog.objects.create(
+                    actor=request.user,
+                    action="crm.contact.owner_updated",
+                    entity_type="Lead",
+                    entity_id=str(lead.pk),
+                    before={"assigned_to_id": previous_owner_id},
+                    after={"assigned_to_id": owner.pk if owner else None},
+                    metadata={"source": "bulk_assignment"},
+                )
+
+        owner_label = str(owner) if owner else "Unassigned"
+        messages.success(
+            request,
+            f"Assigned {len(leads)} contact{'s' if len(leads) != 1 else ''} to {owner_label}.",
+        )
+        return redirect("crm_contact_list")
 
 
 class CrmContactListView(CrmAccessMixin, TemplateView):

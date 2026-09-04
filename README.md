@@ -83,7 +83,7 @@ Useful URLs:
 - ReDoc: `http://localhost:8000/api/redoc/`
 - OpenAPI schema: `http://localhost:8000/api/schema/`
 - Health check: `http://localhost:8000/api/v1/health/`
-- CRM contacts, companies, deals, and triage: `http://localhost:8000/crm/` (central staff only)
+- CRM contacts, companies, deals, triage, and team assignment: `http://localhost:8000/crm/` (central staff and CRM users only)
 
 Demo credentials:
 
@@ -210,6 +210,7 @@ CRM:
 - `/crm/companies/` — companies shared by contacts and deals
 - `/crm/deals/` — five pipeline-specific deal boards
 - `/crm/triage/` — human review for ambiguous intake routing
+- `/crm/team/` — CRM user creation and owner workload summary
 - `/api/v1/leads/`
 - `/api/v1/leads/<id>/qualify/`
 - `/api/v1/leads/<id>/convert/`

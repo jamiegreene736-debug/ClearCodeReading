@@ -17,6 +17,13 @@ class UsersTests(SimpleTestCase):
         self.assertEqual(CustomUser.Role.GUARDIAN, "guardian")
         self.assertEqual(CustomUser.Role.STUDENT, "student")
 
+    def test_crm_role_has_workspace_access_without_admin_site_access(self):
+        user = CustomUser(role=CustomUser.Role.CRM_USER, is_staff=False, is_superuser=False)
+
+        self.assertTrue(user.has_crm_access)
+        self.assertFalse(user.can_manage_crm_users)
+        self.assertFalse(user.is_staff)
+
     def test_consent_status_choices_include_granted_and_revoked(self):
         self.assertIn(GuardianRelationship.ConsentStatus.GRANTED, GuardianRelationship.ConsentStatus.values)
         self.assertIn(ConsentLog.Status.REVOKED, ConsentLog.Status.values)

@@ -104,11 +104,12 @@
           <a class="nav-link {% if request.resolver_match.url_name == 'crm_company_list' or request.resolver_match.url_name == 'crm_company_create' or request.resolver_match.url_name == 'crm_company_detail' or request.resolver_match.url_name == 'crm_company_update' %}active{% endif %}" href="{% url 'crm_company_list' %}"><span aria-hidden="true">▣</span> Companies</a>
           <a class="nav-link {% if request.resolver_match.url_name == 'crm_deal_list' or request.resolver_match.url_name == 'crm_deal_new' or request.resolver_match.url_name == 'crm_deal_create' or request.resolver_match.url_name == 'crm_deal_detail' %}active{% endif %}" href="{% url 'crm_deal_list' %}"><span aria-hidden="true">◇</span> Deals</a>
           <a class="nav-link {% if request.resolver_match.url_name == 'crm_triage_list' %}active{% endif %}" href="{% url 'crm_triage_list' %}"><span aria-hidden="true">⌁</span> Intake triage</a>
+          <a class="nav-link {% if request.resolver_match.url_name == 'crm_team' %}active{% endif %}" href="{% url 'crm_team' %}"><span aria-hidden="true">♙</span> Team</a>
         </nav>
         <p class="nav-label">ClearCode</p>
         <nav class="nav-group" aria-label="ClearCode navigation">
-          <a class="nav-link" href="{% url 'portal_dashboard' %}"><span aria-hidden="true">▦</span> Back to portal</a>
-          <a class="nav-link" href="/admin/"><span aria-hidden="true">⚙</span> Admin</a>
+          {% if request.user.role != 'crm_user' %}<a class="nav-link" href="{% url 'portal_dashboard' %}"><span aria-hidden="true">▦</span> Back to portal</a>{% endif %}
+          {% if request.user.is_staff or request.user.is_superuser %}<a class="nav-link" href="/admin/"><span aria-hidden="true">⚙</span> Admin</a>{% endif %}
         </nav>
       </div>
       <details class="mobile-nav">
@@ -119,8 +120,9 @@
           <a class="nav-link {% if request.resolver_match.url_name == 'crm_company_list' or request.resolver_match.url_name == 'crm_company_create' or request.resolver_match.url_name == 'crm_company_detail' or request.resolver_match.url_name == 'crm_company_update' %}active{% endif %}" href="{% url 'crm_company_list' %}">Companies</a>
           <a class="nav-link {% if request.resolver_match.url_name == 'crm_deal_list' or request.resolver_match.url_name == 'crm_deal_new' or request.resolver_match.url_name == 'crm_deal_create' or request.resolver_match.url_name == 'crm_deal_detail' %}active{% endif %}" href="{% url 'crm_deal_list' %}">Deals</a>
           <a class="nav-link {% if request.resolver_match.url_name == 'crm_triage_list' %}active{% endif %}" href="{% url 'crm_triage_list' %}">Intake triage</a>
-          <a class="nav-link" href="{% url 'portal_dashboard' %}">Back to portal</a>
-          <a class="nav-link" href="/admin/">Admin</a>
+          <a class="nav-link {% if request.resolver_match.url_name == 'crm_team' %}active{% endif %}" href="{% url 'crm_team' %}">Team</a>
+          {% if request.user.role != 'crm_user' %}<a class="nav-link" href="{% url 'portal_dashboard' %}">Back to portal</a>{% endif %}
+          {% if request.user.is_staff or request.user.is_superuser %}<a class="nav-link" href="/admin/">Admin</a>{% endif %}
         </nav>
       </details>
     </aside>

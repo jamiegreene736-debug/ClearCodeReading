@@ -97,6 +97,11 @@ class PortalAuthMixin:
 class PortalDashboardView(PortalAuthMixin, TemplateView):
     template_name = "portal/dashboard.html"
 
+    def dispatch(self, request, *args, **kwargs):
+        if request.user.is_authenticated and request.user.role == CustomUser.Role.CRM_USER:
+            return redirect("crm_dashboard")
+        return super().dispatch(request, *args, **kwargs)
+
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         user = self.request.user
