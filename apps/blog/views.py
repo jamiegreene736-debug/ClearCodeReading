@@ -1,11 +1,7 @@
 from django.views.generic import DetailView, ListView
 
 from apps.blog.models import BlogPost
-from apps.blog.substack import (
-    SUBSTACK_PROFILE_URL,
-    SUBSTACK_SUBSCRIBE_URL,
-    get_substack_posts,
-)
+from apps.blog.substack import SUBSTACK_PUBLICATION_URL
 
 
 class BlogPostListView(ListView):
@@ -14,20 +10,13 @@ class BlogPostListView(ListView):
     paginate_by = 9
 
     def get_queryset(self):
-        local_posts = list(BlogPost.objects.published().select_related("author"))
-        posts = [*local_posts, *get_substack_posts()]
-        return sorted(
-            posts,
-            key=lambda post: (post.is_featured, post.published_at),
-            reverse=True,
-        )
+        return BlogPost.objects.published().select_related("author")
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         context.update(
             {
-                "substack_profile_url": SUBSTACK_PROFILE_URL,
-                "substack_subscribe_url": SUBSTACK_SUBSCRIBE_URL,
+                "substack_publication_url": SUBSTACK_PUBLICATION_URL,
             }
         )
         return context

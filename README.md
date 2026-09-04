@@ -107,12 +107,9 @@ shortcut in the administrator dashboard. New articles start as drafts. Set the s
 article. Draft and future-dated articles are never returned by the public blog views. Cover
 images are optional; when one is supplied, its accessible image description is required.
 
-The public archive also includes Bethany Fleming's **ClearCode Reading** Substack posts.
-The server reads the publication's RSS feed, caches it for 15 minutes, and links each external
-entry to its canonical Substack article. If Substack is slow or unavailable, `/blog/` continues
-to serve locally published articles. Configure `BLOG_SUBSTACK_FEED_URL`,
-`BLOG_SUBSTACK_CACHE_SECONDS`, and `BLOG_SUBSTACK_TIMEOUT_SECONDS` in the environment; set the
-feed URL to an empty value to disable the integration.
+The public archive is powered exclusively by these internally managed `BlogPost` records. A
+secondary **Visit Substack** button links to Bethany Fleming's publication, but Substack posts
+are not imported into or mixed with the ClearCode blog archive.
 
 If `ELEVENLABS_API_KEY` and `ELEVENLABS_VOICE_ID` are set in Railway, predeploy also generates any missing cached assessment audio into PostgreSQL.
 
