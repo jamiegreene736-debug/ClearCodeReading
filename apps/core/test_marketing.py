@@ -100,7 +100,8 @@ class MarketingPageTests(SimpleTestCase):
         self.assertIn("Join Priority Waitlist", content)
         self.assertIn("See how it works", content)
         self.assertNotIn("Our Approach", content)
-        self.assertIn("Three steps. One connected reading path.", content)
+        self.assertIn("One connected reading path.", content)
+        self.assertNotIn("Three steps.", content)
         self.assertIn("A straightforward process, built around your child.", content)
         self.assertIn("Precise Placement", content)
         self.assertIn(
