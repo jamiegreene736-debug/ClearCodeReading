@@ -56,10 +56,6 @@ BRAND_KIT_FILES = {
 
 LEARNING_PHOTOS_BY_PAGE = {
     "marketing_home": {
-        "homepage-hero-specialist-student.jpg",
-        "learning-carousel-small-group.jpg",
-        "learning-carousel-one-to-one.jpg",
-        "learning-carousel-educator-collaboration.jpg",
         "session-carousel-arrival.jpg",
         "session-carousel-settle-in.jpg",
         "session-carousel-multiple-groups.jpg",
@@ -93,8 +89,15 @@ class MarketingPageTests(SimpleTestCase):
         content = self._render("marketing_home")
 
         self.assertIn("Unlock Reading. Unlock Everything.", content)
-        self.assertIn("Reading intervention with progress families can see.", content)
+        self.assertIn(
+            "ClearCode is K–8 structured literacy intervention built to close the gap: "
+            "precise placement, expert specialists, and a live dashboard that shows you "
+            "real progress, week by week.",
+            content,
+        )
         self.assertIn("Request a consultation", content)
+        self.assertIn("See how it works", content)
+        self.assertIn("Reading gaps don’t close on their own.", content)
         self.assertIn("Three steps. One connected reading path.", content)
         self.assertIn("For schools and specialists", content)
         self.assertIn("Illustrative data", content)
@@ -133,26 +136,26 @@ class MarketingPageTests(SimpleTestCase):
     def test_homepage_uses_a_local_optimized_hero_photo(self):
         content = self._render("marketing_home")
 
-        self.assertIn('/assets/images/homepage-hero-specialist-student.jpg', content)
+        self.assertIn('/assets/images/specialist-reading-session.jpg', content)
         self.assertIn('fetchpriority="high"', content)
-        hero_path = Path(settings.BASE_DIR) / "marketing-website/assets/images/homepage-hero-specialist-student.jpg"
+        hero_path = Path(settings.BASE_DIR) / "marketing-website/assets/images/specialist-reading-session.jpg"
         self.assertTrue(hero_path.is_file())
         self.assertLess(hero_path.stat().st_size, 500_000)
-        self.assertIn("homepage-hero-specialist-student-640.webp 640w", content)
-        self.assertIn("homepage-hero-specialist-student-1024.webp 1024w", content)
+        self.assertIn("specialist-reading-session-640.webp 640w", content)
+        self.assertIn("specialist-reading-session-1024.webp 1024w", content)
         image_root = hero_path.parent
-        self.assertTrue((image_root / "homepage-hero-specialist-student-640.webp").is_file())
-        self.assertTrue((image_root / "homepage-hero-specialist-student-1024.webp").is_file())
+        self.assertTrue((image_root / "specialist-reading-session-640.webp").is_file())
+        self.assertTrue((image_root / "specialist-reading-session-1024.webp").is_file())
 
-    def test_homepage_carousels_are_manual_accessible_and_use_local_photos(self):
+    def test_homepage_removes_learning_gallery_and_keeps_session_carousel_accessible(self):
         content = self._render("marketing_home")
 
-        self.assertEqual(content.count('aria-roledescription="carousel"'), 2)
-        self.assertEqual(content.count('data-carousel-slide role="group"'), 8)
-        self.assertEqual(content.count('aria-roledescription="slide"'), 8)
-        self.assertEqual(content.count('data-carousel-dot='), 8)
-        self.assertIn('aria-label="Show previous learning scene"', content)
-        self.assertIn('aria-label="Show next learning scene"', content)
+        self.assertNotIn("Learning in motion", content)
+        self.assertNotIn('aria-label="ClearCode learning experiences"', content)
+        self.assertEqual(content.count('aria-roledescription="carousel"'), 1)
+        self.assertEqual(content.count('data-carousel-slide role="group"'), 5)
+        self.assertEqual(content.count('aria-roledescription="slide"'), 5)
+        self.assertEqual(content.count('data-carousel-dot='), 5)
         self.assertIn('aria-label="Show previous session moment"', content)
         self.assertIn('aria-label="Show next session moment"', content)
         self.assertIn("A ClearCode session feels calm, focused, and connected.", content)
