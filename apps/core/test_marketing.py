@@ -26,7 +26,6 @@ PUBLIC_PAGES = {
     "marketing_contact": "contact.html",
     "marketing_support": "support.html",
     "marketing_privacy": "privacy.html",
-    "marketing_approach": "approach.html",
     "reading_assessment": "assessment.html",
     "early_interest_survey": "survey.html",
 }
@@ -65,9 +64,11 @@ LEARNING_PHOTOS_BY_PAGE = {
         "session-carousel-wrap-up.jpg",
         "specialist-reading-session.jpg",
     },
-    "marketing_how_it_works": {"specialist-reading-session.jpg"},
+    "marketing_how_it_works": {
+        "inclusive-literacy-lesson.jpg",
+        "specialist-reading-session.jpg",
+    },
     "marketing_families": {"family-reading-practice.jpg"},
-    "marketing_approach": {"inclusive-literacy-lesson.jpg"},
     "marketing_careers": {"educator-team-collaboration.jpg"},
 }
 
@@ -98,7 +99,7 @@ class MarketingPageTests(SimpleTestCase):
         )
         self.assertIn("Request a consultation", content)
         self.assertIn("See how it works", content)
-        self.assertIn("Our Approach", content)
+        self.assertNotIn("Our Approach", content)
         self.assertIn("Three steps. One connected reading path.", content)
         self.assertIn("A straightforward process, built around your child.", content)
         self.assertIn("Precise Placement", content)
@@ -284,7 +285,6 @@ class MarketingPageTests(SimpleTestCase):
             "marketing_contact",
             "marketing_support",
             "marketing_privacy",
-            "marketing_approach",
         ]
         expected_links = [
             "/about/",
@@ -293,7 +293,6 @@ class MarketingPageTests(SimpleTestCase):
             "/resources/",
             "/faq/",
             "/foundation/",
-            "/approach/",
             "/blog/",
             "/careers/",
             "/privacy/",
@@ -307,6 +306,21 @@ class MarketingPageTests(SimpleTestCase):
             for link in expected_links:
                 with self.subTest(route_name=route_name, link=link):
                     self.assertIn(f'href="{link}"', content)
+
+            with self.subTest(route_name=route_name, link="/approach/"):
+                self.assertNotIn('href="/approach/"', content)
+
+    def test_legacy_approach_route_redirects_to_combined_page(self):
+        route = resolve(reverse("marketing_approach"))
+        response = route.func(RequestFactory().get("/approach/"))
+
+        self.assertEqual(
+            route.func.view_initkwargs["pattern_name"],
+            "marketing_how_it_works",
+        )
+        self.assertTrue(route.func.view_initkwargs["permanent"])
+        self.assertEqual(response.status_code, 301)
+        self.assertEqual(response.url, reverse("marketing_how_it_works"))
 
     def test_foundation_is_a_secondary_path_with_explicit_updates_opt_in(self):
         homepage = self._render("marketing_home")
@@ -329,7 +343,7 @@ class MarketingPageTests(SimpleTestCase):
         self.assertIn("See the Full Pathway", content)
         self.assertIn('href="/assessment/"', content)
         self.assertIn('href="/faq/"', content)
-        self.assertIn('href="/approach/"', content)
+        self.assertIn('href="/how-it-works/"', content)
         self.assertIn('href="/blog/"', content)
         self.assertIn('href="/survey/"', content)
         self.assertIn("not a diagnosis", content)
@@ -564,17 +578,17 @@ class MarketingPageTests(SimpleTestCase):
         self.assertNotIn('name="notes"', content)
         self.assertEqual(content.count('href="#career-interest-form"'), 3)
 
-    def test_approach_page_uses_the_full_family_pathway(self):
-        content = self._render("marketing_approach")
+    def test_how_it_works_page_includes_the_full_family_pathway(self):
+        content = self._render("marketing_how_it_works")
 
         expected_sections = [
-            "The Right Starting Point for Every Student.",
             "The Assessment",
             "Precise Placement",
             "What a Session Looks Like",
             "How Progress Is Tracked",
             "The Same Faces, Every Session",
             "Trained Reading Specialists",
+            "Ongoing support",
         ]
         for section in expected_sections:
             with self.subTest(section=section):
@@ -582,6 +596,7 @@ class MarketingPageTests(SimpleTestCase):
 
         self.assertIn("Students per group, maximum", content)
         self.assertIn("ClearCode provides educational reading instruction", content)
+        self.assertIn("ClearCode recommendations are explainable and human-controlled.", content)
         self.assertIn('href="/contact/"', content)
         self.assertNotIn('href="waitlist.html"', content)
 
