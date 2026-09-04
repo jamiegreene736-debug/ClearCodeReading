@@ -33,11 +33,52 @@ from apps.crm.newsletters import (
 )
 from apps.crm.serializers import OpportunitySerializer
 from apps.crm.services import normalize_relationship_interests
+from apps.crm.templatetags.crm_display import crm_survey_sections
 from apps.crm.views import FamilyResourcesView, NewsletterUnsubscribeView, WebsiteSignupView
 from apps.users.models import AuditLog
 
 
 class CrmTests(SimpleTestCase):
+    def test_survey_display_groups_answered_fields_and_omits_blanks(self):
+        sections = crm_survey_sections(
+            {
+                "name": "Margaret Suter",
+                "email": "mosuter@icloud.com",
+                "home_zip": "32805",
+                "respondent_situation": "community_supporter",
+                "supports_tried": [],
+                "one_to_one_budget": "",
+                "engagement_interests": ["career_interest", "general_email"],
+                "survey_placement": "Main survey page",
+                "blog_post_slug": "internal-source-value",
+            }
+        )
+
+        self.assertEqual(
+            [section["title"] for section in sections],
+            ["Situation and goals", "Contact details", "Submission details"],
+        )
+        self.assertEqual(
+            sections[0]["answers"][0]["value"],
+            "Educator, specialist, local parent, donor, supporter, or other",
+        )
+        self.assertEqual(
+            sections[0]["answers"][1]["values"],
+            [
+                "Educator or specialist interested in working at ClearCode",
+                "Keep me on the general email list",
+            ],
+        )
+        rendered_labels = {
+            answer["label"]
+            for section in sections
+            for answer in section["answers"]
+        }
+        self.assertNotIn("Reading supports tried", rendered_labels)
+        self.assertNotIn("Maximum 1-on-1 session budget", rendered_labels)
+        self.assertNotIn("Blog Post Slug", rendered_labels)
+        self.assertTrue(sections[0]["answers"][0]["is_wide"])
+
     def test_lead_pipeline_statuses_exist(self):
         self.assertIn(Lead.Status.NEW, Lead.Status.values)
         self.assertIn(Lead.Status.CONVERTED, Lead.Status.values)
@@ -1267,6 +1308,42 @@ class CrmWorkspaceTests(TestCase):
         self.assertEqual(response.status_code, 200)
         self.assertContains(response, "Consultation request submitted")
         self.assertContains(response, "Consultation booked for Friday.")
+
+    def test_contact_detail_renders_scannable_survey_sections(self):
+        FormSubmission.objects.create(
+            lead=self.lead,
+            form_type=FormSubmission.FormType.SURVEY,
+            source_path="/survey/",
+            submitted_data={
+                "name": "Alex Reader",
+                "email": "alex@example.com",
+                "home_zip": "32805",
+                "respondent_situation": "community_supporter",
+                "supports_tried": [],
+                "annual_reading_spend": "",
+                "commitment_preference": "",
+                "one_to_one_budget": "",
+                "small_group_budget": "",
+                "engagement_interests": ["career_interest", "general_email"],
+                "email_consent": "yes",
+                "survey_placement": "Main survey page",
+            },
+        )
+        self.client.force_login(self.admin_user)
+
+        response = self.client.get(reverse("crm_contact_detail", args=[self.lead.pk]))
+
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, 'class="survey-response"')
+        self.assertContains(response, "Situation and goals")
+        self.assertContains(response, "Contact details")
+        self.assertContains(
+            response,
+            "Educator or specialist interested in working at ClearCode",
+        )
+        self.assertContains(response, "Keep me on the general email list")
+        self.assertNotContains(response, "Maximum 1-on-1 session budget")
+        self.assertNotContains(response, "Reading support spend in the last 12 months")
 
     def test_one_company_can_hold_linked_grant_and_equity_deals(self):
         company = Company.objects.create(name="North Star Foundation", owner=self.admin_user)

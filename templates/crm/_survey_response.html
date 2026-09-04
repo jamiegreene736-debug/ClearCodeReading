@@ -1,0 +1,25 @@
+{% load crm_display %}
+{% crm_survey_sections submitted_data as survey_sections %}
+<div class="survey-response" aria-label="Survey answers">
+  {% for section in survey_sections %}
+    <section class="survey-section">
+      <h4 class="survey-section-title">{{ section.title }}</h4>
+      <div class="survey-answer-grid">
+        {% for answer in section.answers %}
+          <div class="survey-answer{% if answer.is_wide %} survey-answer-wide{% endif %}">
+            <div class="survey-answer-label">{{ answer.label }}</div>
+            {% if answer.kind == "list" %}
+              <ul class="survey-chip-list" aria-label="{{ answer.label }}">
+                {% for value in answer.values %}<li class="survey-chip">{{ value }}</li>{% endfor %}
+              </ul>
+            {% else %}
+              <div class="survey-answer-value">{{ answer.value }}</div>
+            {% endif %}
+          </div>
+        {% endfor %}
+      </div>
+    </section>
+  {% empty %}
+    <p class="subtle">No survey answers were recorded.</p>
+  {% endfor %}
+</div>
