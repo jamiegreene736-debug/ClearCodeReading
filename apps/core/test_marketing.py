@@ -115,7 +115,17 @@ class MarketingPageTests(SimpleTestCase):
         self.assertIn('href="/survey/"', content)
         self.assertIn("Join Our Waitlist", content)
         self.assertNotIn("How ClearCode works", content)
-        self.assertIn("Illustrative data", content)
+        removed_sections = [
+            'id="progress"',
+            "See the story behind every session.",
+            "Sample reader progress",
+            "See an example family journey",
+            "What the journey can look like",
+            "A family story they can actually follow.",
+        ]
+        for text in removed_sections:
+            with self.subTest(text=text):
+                self.assertNotIn(text, content)
         self.assertIn("Frequently asked questions", content)
         self.assertIn("Explore the Foundation", content)
 
