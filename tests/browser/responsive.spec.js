@@ -22,7 +22,7 @@ for (const viewport of viewports) {
   test.describe(viewport.name, () => {
     test.use({ viewport });
 
-    for (const route of ['/', '/approach/', '/assessment/', '/careers/', '/login/']) {
+    for (const route of ['/', '/approach/', '/assessment/', '/careers/', '/faq/', '/login/']) {
       test(`${route} reflows without clipping`, async ({ page }, testInfo) => {
         await page.goto(route);
         await expectNoHorizontalOverflow(page, route);
