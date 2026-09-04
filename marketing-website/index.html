@@ -142,37 +142,48 @@
     </section>
     </details>
 
-    <section class="border-y border-ink/10 bg-linen px-4 py-16 sm:px-6 sm:py-20 lg:px-8" aria-labelledby="reading-insights-title">
-      <div class="mx-auto grid max-w-6xl gap-10 lg:grid-cols-[.78fr_1.22fr] lg:items-center">
-        <div>
-          <p class="home-eyebrow text-sm font-bold uppercase text-deepTeal">From the ClearCode blog</p>
-          <h2 id="reading-insights-title" class="mt-4 text-4xl font-black leading-tight text-ink sm:text-5xl">Reading insights, made clear.</h2>
-          <p class="mt-5 text-lg leading-8 text-ink/65">Explore practical guidance for understanding reading progress, supporting practice at home, and asking better questions about intervention.</p>
-          <a href="/blog/" class="focus-ring mt-7 inline-flex rounded-full bg-deepTeal px-7 py-4 font-bold text-white shadow-glow transition hover:-translate-y-0.5 hover:bg-[#176a6a]">Explore the blog</a>
+    <section class="relative isolate overflow-hidden bg-ink px-4 py-20 text-white sm:px-6 sm:py-24 lg:px-8" aria-labelledby="next-step-title" data-testid="homepage-next-steps">
+      <div class="absolute -left-24 top-12 h-72 w-72 rounded-full bg-mediumTeal/10 blur-3xl" aria-hidden="true"></div>
+      <div class="absolute -right-20 bottom-0 h-80 w-80 rounded-full bg-gold/10 blur-3xl" aria-hidden="true"></div>
+      <div class="relative mx-auto max-w-6xl">
+        <div class="max-w-3xl">
+          <p class="home-eyebrow text-sm font-bold uppercase text-gold">Choose your next step</p>
+          <h2 id="next-step-title" class="mt-4 text-4xl font-black leading-tight sm:text-5xl">A little clarity can change the whole conversation.</h2>
+          <p class="mt-5 max-w-2xl text-lg leading-8 text-white/70">Start with practical reading guidance, raise your hand for priority access, or use free tools built for real family questions.</p>
         </div>
-        <div class="grid gap-4 sm:grid-cols-3" aria-label="ClearCode blog topics">
-          <article class="rounded-[1.7rem] bg-white p-6 shadow-sm ring-1 ring-ink/10">
-            <p class="home-eyebrow text-[10px] font-bold uppercase text-deepTeal">Progress</p>
-            <h3 class="mt-3 text-xl font-black leading-tight text-ink">Understand what growth evidence means.</h3>
+
+        <div class="mt-12 grid gap-5 lg:grid-cols-3">
+          <article class="group flex min-h-[23rem] flex-col rounded-[2rem] bg-white p-7 text-ink shadow-2xl shadow-black/15 ring-1 ring-white/10 transition duration-300 hover:-translate-y-1 sm:p-8" data-testid="homepage-next-step-tile">
+            <div class="flex items-center justify-between gap-4">
+              <p class="home-eyebrow text-xs font-bold uppercase text-deepTeal">Ideas you can use</p>
+              <span class="display-type grid h-11 w-11 place-items-center rounded-full bg-linen text-sm font-black text-deepTeal" aria-hidden="true">01</span>
+            </div>
+            <h3 class="mt-8 text-3xl font-black leading-tight">Read smarter. Support with confidence.</h3>
+            <p class="mt-4 leading-7 text-ink/65">Clear explanations about progress, intervention, and helping at home—without the jargon spiral.</p>
+            <a href="/blog/" class="focus-ring mt-auto inline-flex min-h-12 items-center justify-center rounded-full bg-deepTeal px-6 py-3 font-bold text-white transition group-hover:bg-[#176a6a]" data-testid="homepage-blog-cta">Explore the Blog</a>
           </article>
-          <article class="rounded-[1.7rem] bg-seafoam/65 p-6 shadow-sm ring-1 ring-ink/10">
-            <p class="home-eyebrow text-[10px] font-bold uppercase text-deepTeal">At home</p>
-            <h3 class="mt-3 text-xl font-black leading-tight text-ink">Support practice without adding pressure.</h3>
+
+          <article class="group flex min-h-[23rem] flex-col rounded-[2rem] bg-gold p-7 text-ink shadow-2xl shadow-black/15 ring-1 ring-white/10 transition duration-300 hover:-translate-y-1 sm:p-8" data-testid="homepage-next-step-tile">
+            <div class="flex items-center justify-between gap-4">
+              <p class="home-eyebrow text-xs font-bold uppercase text-ink/65">Opening in Orlando</p>
+              <span class="display-type grid h-11 w-11 place-items-center rounded-full bg-ink text-sm font-black text-white" aria-hidden="true">02</span>
+            </div>
+            <h3 class="mt-8 text-3xl font-black leading-tight">Be first in line for focused support.</h3>
+            <p class="mt-4 leading-7 text-ink/70">Tell us what your family needs and get priority updates as enrollment opportunities become available.</p>
+            <a href="/survey/" class="focus-ring mt-auto inline-flex min-h-12 items-center justify-center rounded-full bg-ink px-6 py-3 text-center font-bold text-white transition group-hover:bg-deepTeal" data-testid="homepage-waitlist-cta">Join the Priority Waitlist</a>
           </article>
-          <article class="rounded-[1.7rem] bg-ink p-6 text-white shadow-sm ring-1 ring-ink/10">
-            <p class="home-eyebrow text-[10px] font-bold uppercase text-gold">Next steps</p>
-            <h3 class="mt-3 text-xl font-black leading-tight">Bring clearer questions to your reading team.</h3>
+
+          <article class="group flex min-h-[23rem] flex-col rounded-[2rem] bg-seafoam p-7 text-ink shadow-2xl shadow-black/15 ring-1 ring-white/10 transition duration-300 hover:-translate-y-1 sm:p-8" data-testid="homepage-next-step-tile">
+            <div class="flex items-center justify-between gap-4">
+              <p class="home-eyebrow text-xs font-bold uppercase text-deepTeal">Start right now</p>
+              <span class="display-type grid h-11 w-11 place-items-center rounded-full bg-white text-sm font-black text-deepTeal" aria-hidden="true">03</span>
+            </div>
+            <h3 class="mt-8 text-3xl font-black leading-tight">Less guessing. More useful next steps.</h3>
+            <p class="mt-4 leading-7 text-ink/70">Use family-friendly tools to notice patterns, prepare better questions, and make home practice feel lighter.</p>
+            <a href="/resources/" class="focus-ring mt-auto inline-flex min-h-12 items-center justify-center rounded-full bg-white px-6 py-3 text-center font-bold text-ink transition group-hover:text-deepTeal" data-testid="homepage-resources-cta">Free Family Resources</a>
           </article>
         </div>
       </div>
-    </section>
-
-    <section class="border-y border-ink/10 bg-seafoam/55 px-4 py-14 sm:px-6 lg:px-8">
-      <div class="mx-auto flex max-w-6xl flex-col gap-7 lg:flex-row lg:items-center lg:justify-between"><div class="max-w-3xl"><p class="home-eyebrow text-xs font-bold uppercase text-deepTeal">Beyond one family</p><h2 class="mt-3 text-3xl font-black text-ink sm:text-4xl">Help expand access through the ClearCode Foundation.</h2><p class="mt-3 leading-7 text-ink/65">Families, educators, and community partners can help more children find a clear path into reading.</p></div><a href="/foundation/" class="focus-ring shrink-0 rounded-full bg-ink px-7 py-4 text-center font-bold text-white transition hover:-translate-y-0.5 hover:bg-deepTeal">Explore the Foundation</a></div>
-    </section>
-
-    <section class="bg-ink px-4 py-20 text-center text-white sm:px-6 sm:py-24">
-      <div class="mx-auto max-w-3xl"><p class="home-eyebrow text-sm font-bold uppercase text-gold">Start with a conversation</p><h2 class="mt-4 text-4xl font-black sm:text-5xl">Let’s find the clearest next step.</h2><p class="mx-auto mt-5 max-w-2xl text-lg leading-8 text-white/70">Tell us what you are noticing. We will follow up to discuss fit, availability, and the right starting point—without pressure or diagnostic claims.</p><a href="/contact/#consultation-form" class="focus-ring mt-8 inline-flex rounded-full bg-gold px-8 py-4 font-bold text-ink shadow-lg transition hover:-translate-y-0.5 hover:bg-[#ffb23d]">Request a consultation</a></div>
     </section>
   </div>
 {% endblock %}
