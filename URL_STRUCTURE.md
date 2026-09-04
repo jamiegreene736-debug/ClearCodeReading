@@ -6,7 +6,7 @@
 - `/how-it-works/`
 - `/families/`
 - `/resources/`
-- `/approach/`
+- `/approach/` (redirects to `/how-it-works/`)
 - `/privacy/`
 - `/contact/`
 - `/assessment/`
@@ -74,10 +74,10 @@
 | Route | Purpose |
 |---|---|
 | `/` | Intervention Intelligence Platform homepage |
-| `/how-it-works/` | Placement, sessions, parent dashboard, and decision-support flow |
+| `/how-it-works/` | Assessment, placement, specialist-led sessions, visible progress, and decision-support flow |
 | `/families/` | Parent journey, dashboard visibility, and home-practice expectations |
 | `/resources/` | Free family tools for observing reading patterns, preparing questions, and calmer home practice |
-| `/approach/` | Structured-literacy, one-methodology, specialist-led, education-only stance |
+| `/approach/` | Permanent redirect to the combined `/how-it-works/` page |
 | `/careers/` | Teacher recruiting page with a document-upload expression-of-interest form |
 | `/privacy/` | Plain-language FERPA-oriented privacy and consent overview |
 | `/contact/` | Primary family consultation form |
