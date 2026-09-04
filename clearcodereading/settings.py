@@ -211,13 +211,6 @@ LOGOUT_REDIRECT_URL = "/"
 
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 
-BLOG_SUBSTACK_FEED_URL = os.getenv(
-    "BLOG_SUBSTACK_FEED_URL",
-    "https://bethanyprincefleming.substack.com/feed",
-)
-BLOG_SUBSTACK_CACHE_SECONDS = int(os.getenv("BLOG_SUBSTACK_CACHE_SECONDS", "900"))
-BLOG_SUBSTACK_TIMEOUT_SECONDS = float(os.getenv("BLOG_SUBSTACK_TIMEOUT_SECONDS", "3"))
-
 REST_FRAMEWORK = {
     "DEFAULT_AUTHENTICATION_CLASSES": (
         "rest_framework_simplejwt.authentication.JWTAuthentication",

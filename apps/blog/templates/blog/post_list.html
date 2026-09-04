@@ -10,11 +10,7 @@
     <div class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
       <p class="inline-flex rounded-full bg-white px-4 py-2 text-sm font-black uppercase tracking-[.14em] text-deepTeal shadow-sm ring-1 ring-deepTeal/15">ClearCode Reading blog</p>
       <h1 class="mt-6 max-w-4xl text-4xl font-black leading-[1.05] tracking-tight text-ink sm:text-6xl">Reading insights, made clear.</h1>
-      <p class="mt-6 max-w-2xl text-lg leading-8 text-ink/75 sm:text-xl">Practical structured-literacy guidance, progress insights, and thoughtful next steps for families and reading specialists.</p>
-      <div class="mt-8 flex flex-col gap-3 sm:flex-row sm:items-center">
-        <a href="{{ substack_subscribe_url }}" class="focus-ring inline-flex justify-center rounded-full bg-ink px-6 py-3 font-black text-white shadow-xl transition hover:-translate-y-0.5" target="_blank" rel="noopener">Subscribe on Substack</a>
-        <a href="{{ substack_profile_url }}" class="focus-ring inline-flex justify-center rounded-full bg-white px-6 py-3 font-black text-deepTeal ring-1 ring-deepTeal/15 transition hover:-translate-y-0.5" target="_blank" rel="noopener">Follow Bethany Fleming</a>
-      </div>
+      <p class="mt-6 max-w-2xl text-lg leading-8 text-ink/75 sm:text-xl">Original guidance from ClearCode Reading specialists—published here to help families understand reading progress and take a thoughtful next step.</p>
     </div>
   </section>
 
@@ -25,11 +21,11 @@
           {% for post in posts %}
             <article class="group flex h-full flex-col overflow-hidden rounded-[2rem] {% if forloop.first %}bg-ink text-white lg:col-span-2 lg:grid lg:grid-cols-[1.05fr_.95fr]{% else %}bg-linen text-ink{% endif %} shadow-xl shadow-deepTeal/10 ring-1 ring-deepTeal/10">
               {% if post.cover_image %}
-                <a href="{{ post.get_absolute_url }}" class="focus-ring block overflow-hidden {% if forloop.first %}lg:min-h-[28rem]{% else %}aspect-[16/9]{% endif %}"{% if post.is_external %} target="_blank" rel="noopener"{% endif %}>
+                <a href="{{ post.get_absolute_url }}" class="focus-ring block overflow-hidden {% if forloop.first %}lg:min-h-[28rem]{% else %}aspect-[16/9]{% endif %}">
                   <img src="{{ post.cover_image.url }}" alt="{{ post.cover_image_alt }}" class="h-full w-full object-cover transition duration-500 group-hover:scale-[1.03]" {% if not forloop.first %}loading="lazy"{% endif %}>
                 </a>
               {% else %}
-                <a href="{{ post.get_absolute_url }}" class="focus-ring dot-grid grid min-h-64 place-items-center overflow-hidden {% if forloop.first %}bg-deepTeal lg:min-h-[28rem]{% else %}bg-seafoam{% endif %}" aria-label="Read {{ post.title }}"{% if post.is_external %} target="_blank" rel="noopener"{% endif %}>
+                <a href="{{ post.get_absolute_url }}" class="focus-ring dot-grid grid min-h-64 place-items-center overflow-hidden {% if forloop.first %}bg-deepTeal lg:min-h-[28rem]{% else %}bg-seafoam{% endif %}" aria-label="Read {{ post.title }}">
                   <span class="grid h-24 w-24 place-items-center rounded-[2rem] {% if forloop.first %}bg-gold text-ink{% else %}bg-white text-deepTeal{% endif %} text-3xl font-black shadow-xl">Cc</span>
                 </a>
               {% endif %}
@@ -40,12 +36,12 @@
                   {% if post.is_featured %}<span class="rounded-full {% if forloop.first %}bg-white/10{% else %}bg-seafoam{% endif %} px-3 py-1">Featured</span>{% endif %}
                 </div>
                 <h2 class="mt-4 text-3xl font-black leading-tight {% if forloop.first %}sm:text-5xl{% endif %}">
-                  <a href="{{ post.get_absolute_url }}" class="focus-ring rounded-lg transition {% if forloop.first %}hover:text-gold{% else %}hover:text-deepTeal{% endif %}"{% if post.is_external %} target="_blank" rel="noopener"{% endif %}>{{ post.title }}</a>
+                  <a href="{{ post.get_absolute_url }}" class="focus-ring rounded-lg transition {% if forloop.first %}hover:text-gold{% else %}hover:text-deepTeal{% endif %}">{{ post.title }}</a>
                 </h2>
                 <p class="mt-4 text-lg leading-8 {% if forloop.first %}text-white/75{% else %}text-ink/70{% endif %}">{{ post.excerpt }}</p>
                 <div class="mt-auto flex items-center justify-between gap-4 pt-7 text-sm font-bold {% if forloop.first %}text-white/60{% else %}text-ink/55{% endif %}">
                   <span>{{ post.display_author }}{% if post.reading_time_minutes %} · {{ post.reading_time_minutes }} min read{% endif %}</span>
-                  <a href="{{ post.get_absolute_url }}" class="focus-ring shrink-0 rounded-full {% if forloop.first %}bg-gold text-ink{% else %}bg-deepTeal text-white{% endif %} px-5 py-3 font-black transition group-hover:-translate-y-0.5"{% if post.is_external %} target="_blank" rel="noopener"{% endif %}>{% if post.is_external %}Read on Substack ↗{% else %}Read article{% endif %}</a>
+                  <a href="{{ post.get_absolute_url }}" class="focus-ring shrink-0 rounded-full {% if forloop.first %}bg-gold text-ink{% else %}bg-deepTeal text-white{% endif %} px-5 py-3 font-black transition group-hover:-translate-y-0.5">Read article</a>
                 </div>
               </div>
             </article>
@@ -77,10 +73,10 @@
 
       <div class="mt-12 flex flex-col gap-5 rounded-[2rem] bg-linen p-7 ring-1 ring-deepTeal/10 sm:flex-row sm:items-center sm:justify-between sm:p-9">
         <div>
-          <p class="text-sm font-black uppercase tracking-[.16em] text-deepTeal">ClearCode Reading on Substack</p>
-          <p class="mt-2 max-w-2xl text-lg leading-8 text-ink/70">Get Bethany Fleming’s weekly guide for parents of struggling readers delivered directly to your inbox.</p>
+          <p class="text-sm font-black uppercase tracking-[.16em] text-deepTeal">Also on Substack</p>
+          <p class="mt-2 max-w-2xl text-lg leading-8 text-ink/70">Prefer Substack? Visit Bethany Fleming’s publication for additional reading guidance and email updates.</p>
         </div>
-        <a href="{{ substack_subscribe_url }}" class="focus-ring shrink-0 rounded-full bg-deepTeal px-6 py-3 text-center font-black text-white shadow-xl transition hover:-translate-y-0.5" target="_blank" rel="noopener">Subscribe free</a>
+        <a href="{{ substack_publication_url }}" class="focus-ring shrink-0 rounded-full bg-white px-6 py-3 text-center font-black text-deepTeal shadow-xl ring-1 ring-deepTeal/15 transition hover:-translate-y-0.5" target="_blank" rel="noopener">Visit Substack ↗</a>
       </div>
     </div>
   </section>

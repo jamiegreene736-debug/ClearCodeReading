@@ -82,7 +82,7 @@
 | `/privacy/` | Plain-language FERPA-oriented privacy and consent overview |
 | `/contact/` | Primary family consultation form |
 | `/assessment/` | Optional secondary reading survey |
-| `/blog/` | Published local insights plus cached entries from the ClearCode Reading Substack feed |
+| `/blog/` | Published insights managed through the ClearCode Reading admin CMS, with a secondary link to Substack |
 | `/blog/<slug>/` | Public article detail; drafts and scheduled posts return 404 |
 | `/crm/` | Central staff contact workspace |
 | `/crm/companies/` | Company records shared by contacts and deals |
