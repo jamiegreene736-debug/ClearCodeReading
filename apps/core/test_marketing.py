@@ -62,7 +62,6 @@ LEARNING_PHOTOS_BY_PAGE = {
         "session-carousel-hands-on.jpg",
         "session-carousel-wrap-up.jpg",
         "specialist-reading-session.jpg",
-        "family-reading-practice.jpg",
     },
     "marketing_how_it_works": {"specialist-reading-session.jpg"},
     "marketing_families": {"family-reading-practice.jpg"},
@@ -107,7 +106,6 @@ class MarketingPageTests(SimpleTestCase):
         self.assertIn('href="/survey/"', content)
         self.assertIn("Join Our Waitlist", content)
         self.assertNotIn("How ClearCode works", content)
-        self.assertIn("For schools and specialists", content)
         removed_sections = [
             'id="progress"',
             "See the story behind every session.",
@@ -121,6 +119,13 @@ class MarketingPageTests(SimpleTestCase):
                 self.assertNotIn(text, content)
         self.assertIn("Frequently asked questions", content)
         self.assertIn("Explore the Foundation", content)
+
+    def test_homepage_omits_the_reading_team_path_section(self):
+        content = self._render("marketing_home")
+
+        self.assertNotIn("Start with the path that fits you.", content)
+        self.assertNotIn("Know what your child is learning.", content)
+        self.assertNotIn("Keep evidence and next steps connected.", content)
 
     def test_blog_is_prominent_in_shared_navigation_and_homepage_body(self):
         content = self._render("marketing_home")
@@ -272,7 +277,6 @@ class MarketingPageTests(SimpleTestCase):
         homepage = self._render("marketing_home")
         foundation = self._render("marketing_foundation")
 
-        self.assertGreater(homepage.index("Frequently asked questions"), homepage.index("For families"))
         self.assertGreater(homepage.index("Explore the Foundation"), homepage.index("Frequently asked questions"))
         self.assertIn("Help more children find their way into reading.", foundation)
         self.assertIn('href="#newsletter-signup"', foundation)
