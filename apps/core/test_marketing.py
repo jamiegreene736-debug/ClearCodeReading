@@ -77,8 +77,8 @@ class MarketingPageTests(SimpleTestCase):
     def setUp(self):
         self.request = RequestFactory().get("/")
 
-    def _render(self, route_name):
-        return get_template(PUBLIC_PAGES[route_name]).render({}, self.request)
+    def _render(self, route_name, context=None):
+        return get_template(PUBLIC_PAGES[route_name]).render(context or {}, self.request)
 
     def test_public_pages_render(self):
         for route_name, template_name in PUBLIC_PAGES.items():
@@ -352,7 +352,7 @@ class MarketingPageTests(SimpleTestCase):
         self.assertIn('name="consent"', foundation)
 
     def test_family_resources_page_offers_free_actionable_paths(self):
-        content = self._render("marketing_resources")
+        content = self._render("marketing_resources", {"resources_unlocked": True})
 
         self.assertIn("Less guessing. More useful next steps.", content)
         self.assertIn("Choose the question you need answered today.", content)
@@ -366,6 +366,21 @@ class MarketingPageTests(SimpleTestCase):
         self.assertIn('href="/blog/"', content)
         self.assertIn('href="/survey/"', content)
         self.assertIn("not a diagnosis", content)
+
+    def test_family_resources_page_has_an_accessible_name_and_email_gate(self):
+        content = self._render("marketing_resources")
+
+        self.assertIn('data-testid="family-resources-gate"', content)
+        self.assertIn('aria-labelledby="resource-gate-title"', content)
+        self.assertIn('action="/crm/signup/"', content)
+        self.assertIn('name="name"', content)
+        self.assertIn('autocomplete="name"', content)
+        self.assertIn('name="email"', content)
+        self.assertIn('autocomplete="email"', content)
+        self.assertIn('name="redirect_to" value="/resources/"', content)
+        self.assertIn('name="audience" value="parent"', content)
+        self.assertIn("Unlock My Free Resources", content)
+        self.assertNotIn("Three moves for a calmer reading week.", content)
 
     def test_contact_form_is_short_and_supports_audience_routing(self):
         content = self._render("marketing_contact")

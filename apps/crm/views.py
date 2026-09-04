@@ -53,6 +53,23 @@ from apps.schools.models import School
 from apps.users.models import AuditLog, CustomUser
 
 
+FAMILY_RESOURCES_SESSION_KEY = "family_resources_unlocked"
+
+
+class FamilyResourcesView(TemplateView):
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context["resources_unlocked"] = bool(
+            self.request.session.get(FAMILY_RESOURCES_SESSION_KEY)
+        )
+        context["resource_gate_result"] = (
+            self.request.GET.get("signup")
+            if self.request.GET.get("signup") in {"invalid", "missing"}
+            else ""
+        )
+        return context
+
+
 class WebsiteSignupView(View):
     SUPPORT_TOPICS = {
         "app_access": "App or portal access",
@@ -72,6 +89,7 @@ class WebsiteSignupView(View):
         organization_name = request.POST.get("organization_name", "").strip()[:255]
         submitted_notes = request.POST.get("notes", "").strip()
         redirect_to = request.POST.get("redirect_to")
+        is_family_resources_request = redirect_to == "/resources/"
         is_generic_contact = redirect_to == "/contact/" and organization_name == "Website contact"
         is_support_request = redirect_to == "/support/"
         required_fields_are_missing = (
@@ -124,6 +142,9 @@ class WebsiteSignupView(View):
             "relationship_interests": relationship_interests,
         }
         submitted_data = sanitized_submission_data(request.POST)
+        if is_family_resources_request:
+            intake_metadata["family_resources_access_requested"] = True
+            submitted_data["resource_access"] = "family_resources"
         if is_support_request:
             submitted_data["support_topic"] = support_topic
         if assessment_data:
@@ -157,6 +178,11 @@ class WebsiteSignupView(View):
             ensure_family_enrollment_deal(lead=lead)
         if has_partner_interest:
             create_partner_triage(lead=lead, submission=submission)
+
+        if is_family_resources_request:
+            request.session[FAMILY_RESOURCES_SESSION_KEY] = True
+            messages.success(request, "You’re in—your free family resources are ready.")
+            return redirect(self._redirect_target(request, "thanks"))
 
         messages.success(request, "Thanks. Your request is with the ClearCode Reading team, and we’ll follow up about next steps.")
         return redirect(self._redirect_target(request, "thanks"))
@@ -217,6 +243,8 @@ class WebsiteSignupView(View):
 
     @staticmethod
     def _redirect_target(request, result):
+        if request.POST.get("redirect_to") == "/resources/":
+            return f"/resources/?signup={result}#start-here"
         if request.POST.get("redirect_to") == "/careers/":
             return f"/careers/?signup={result}#career-interest-form"
         if request.POST.get("redirect_to") == "/contact/":
@@ -264,7 +292,7 @@ class WebsiteSignupView(View):
         if organization_name == "Reading assessment follow-up":
             return "/assessment/"
         candidate = request.POST.get("redirect_to", "/")
-        return candidate if candidate in {"/", "/careers/", "/contact/", "/support/"} else "/"
+        return candidate if candidate in {"/", "/careers/", "/contact/", "/resources/", "/support/"} else "/"
 
 
 class SurveySubmissionView(View):
