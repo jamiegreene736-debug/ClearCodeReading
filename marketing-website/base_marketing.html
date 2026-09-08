@@ -48,6 +48,39 @@
     .brand-lockup__clear { color: #F7F2EA; }
     .brand-lockup__code { color: #F5A623; margin-left: .28rem; }
     .brand-lockup__reading { color: #2EB8B8; font-size: .58rem; font-weight: 700; letter-spacing: .3em; text-transform: uppercase; }
+    .app-banner { background: #1A7A7A; color: #F7F2EA; }
+    .app-banner__inner {
+      align-items: center;
+      display: flex;
+      flex-wrap: wrap;
+      gap: .25rem 1rem;
+      justify-content: center;
+      margin: 0 auto;
+      max-width: 80rem;
+      padding: .25rem 1rem;
+    }
+    .app-banner__new {
+      border: 1px solid rgba(245, 166, 35, .6);
+      border-radius: 999px;
+      color: #F7F2EA;
+      font-size: .625rem;
+      font-weight: 800;
+      letter-spacing: .1em;
+      padding: .2rem .55rem;
+      text-transform: uppercase;
+    }
+    .app-banner__copy { align-items: baseline; display: flex; flex-wrap: wrap; gap: .1rem .75rem; }
+    .app-banner__title { font-size: .875rem; font-weight: 800; line-height: 1.4; }
+    .app-banner__devices { font-size: .75rem; line-height: 1.5; }
+    .app-banner__download { border-radius: .5rem; display: inline-flex; flex: 0 0 auto; padding: .625rem; }
+    .app-banner__download:hover { outline: 1px solid #F5A623; outline-offset: -3px; }
+    .app-banner__download img { display: block; height: 40px; width: auto; }
+    @media (max-width: 639px) {
+      .app-banner__inner { column-gap: .5rem; padding: .5rem 1rem; }
+      .app-banner__new { display: none; }
+      .app-banner__copy { align-items: flex-start; flex: 1 1 8rem; flex-direction: column; }
+      .app-banner__download { padding: .25rem; }
+    }
     @media (max-width: 639px) {
       #top > section[class*="py-"] { padding-bottom: 3.5rem; padding-top: 3.5rem; }
     }
@@ -56,6 +89,18 @@
 </head>
 <body class="bg-linen font-sans text-ink antialiased">
   <a href="#main-content" class="focus-ring fixed left-4 top-3 z-[70] -translate-y-24 rounded-full bg-ink px-5 py-3 font-black text-white transition focus:translate-y-0">Skip to content</a>
+  <aside class="app-banner" aria-label="ClearCode Reading iOS app" data-testid="ios-app-banner">
+    <div class="app-banner__inner">
+      <span class="app-banner__new">New</span>
+      <p class="app-banner__copy">
+        <strong class="app-banner__title">iOS app now available</strong>
+        <span class="app-banner__devices">For iPhone &amp; iPad</span>
+      </p>
+      <a class="app-banner__download focus-ring" href="https://apps.apple.com/app/clearcode-reading/id6806810085" aria-label="Download ClearCode Reading on the App Store">
+        <img src="/assets/logo/download-on-the-app-store.svg" alt="Download on the App Store" width="120" height="40">
+      </a>
+    </div>
+  </aside>
   <header class="sticky inset-x-0 top-0 z-50 border-b border-gold/20 bg-ink">
     <nav class="mx-auto flex max-w-7xl items-center justify-between gap-3 px-4 py-3 sm:px-6 lg:px-8" aria-label="Main navigation">
       <a href="/" class="focus-ring flex shrink-0 items-center rounded-lg" aria-label="ClearCode Reading home">
