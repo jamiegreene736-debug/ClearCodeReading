@@ -42,3 +42,16 @@ Authenticated portal headers use `templates/portal/_brand.html`, which pairs the
 supplied compact mark with live text. This keeps the ClearCode Reading name crisp and
 readable at responsive header sizes without placing a second plate around the supplied
 artwork.
+
+## Website app announcement
+
+The shared public-site template places the iOS app announcement above the sticky
+navigation. Its Deep Teal background, Linen text, and small Gold accent use the
+existing palette. The announcement scrolls away with the page so it does not consume
+reading space on phones. A normal HTTPS link opens ClearCode Reading's App Store
+listing (app ID `6806810085`); no automatic redirects or JavaScript are needed.
+
+`marketing-website/assets/logo/download-on-the-app-store.svg` is Apple's unmodified
+[official English badge](https://developer.apple.com/assets/elements/badges/download-on-the-app-store.svg).
+Keep its proportions and 40px height, with clear space as described in
+[Apple's badge guidelines](https://developer.apple.com/app-store/marketing/guidelines/).
