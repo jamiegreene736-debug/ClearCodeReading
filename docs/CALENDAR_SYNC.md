@@ -7,6 +7,9 @@ calendar is connected per host. Account credentials are never requested.
 
 ## Behavior
 
+- Public host eligibility remains controlled by the existing consultation host
+  selection policy (currently the configured default host, Bethany). Connecting
+  a calendar does not make other profiles publicly bookable.
 - Hosts continue to add/confirm the consultation times they wish to offer.
 - Families see up to 100 candidate times within 90 days. Connected calendars are
   read on each availability request and rechecked immediately before booking.
