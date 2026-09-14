@@ -1,4 +1,8 @@
+import json
+
 from django import forms
+from django.db.models import Prefetch
+from django.urls import reverse
 from django.utils import timezone
 
 from apps.crm.access import crm_owner_queryset
@@ -67,7 +71,40 @@ class CompanyForm(forms.ModelForm):
         return self.cleaned_data["name"].strip()
 
 
+class ContactDealSelect(forms.Select):
+    def create_option(self, name, value, label, selected, index, subindex=None, attrs=None):
+        option = super().create_option(name, value, label, selected, index, subindex, attrs)
+        if value:
+            option["attrs"]["data-deals"] = json.dumps([
+                {
+                    "name": deal.name,
+                    "pipeline": deal.get_pipeline_display(),
+                    "stage": deal.get_stage_display(),
+                    "url": reverse("crm_deal_detail", kwargs={"pk": deal.pk}),
+                }
+                for deal in value.instance.contact_deals
+            ])
+        return option
+
+
+class ContactDealChoiceField(forms.ModelChoiceField):
+    def label_from_instance(self, contact: Lead) -> str:
+        deals = contact.contact_deals
+        if not deals:
+            return f"{contact} — No existing deals"
+        context = "; ".join(
+            f"{deal.name} · {deal.get_pipeline_display()} · {deal.get_stage_display()}"
+            for deal in deals
+        )
+        return f"{contact} — {context}"
+
+
 class DealForm(forms.ModelForm):
+    lead = ContactDealChoiceField(
+        queryset=Lead.objects.none(), required=False, label="Contact",
+        empty_label="Choose a contact…", widget=ContactDealSelect,
+    )
+
     class Meta:
         model = Opportunity
         fields = [
@@ -129,9 +166,15 @@ class DealForm(forms.ModelForm):
             self.instance.metadata = {**self.instance.metadata}
             self.instance.metadata.pop("needs_naming_review", None)
 
-        self.fields["lead"].queryset = self.fields["lead"].queryset.filter(
+        self.fields["lead"].queryset = Lead.objects.filter(
             is_deleted=False
-        ).order_by("contact_name", "organization_name")
+        ).order_by("contact_name", "organization_name").prefetch_related(
+            Prefetch(
+                "opportunities",
+                queryset=Opportunity.objects.filter(is_deleted=False).order_by("pipeline", "name", "pk"),
+                to_attr="contact_deals",
+            )
+        )
         company_queryset = Company.objects.filter(is_deleted=False).order_by("name")
         self.fields["company"].queryset = company_queryset
         self.fields["referral_partner"].queryset = company_queryset

@@ -10,6 +10,16 @@
   .full { grid-column:1/-1; }
   .errors { margin-bottom:15px; padding:12px 16px; color:#7b1f1f; background:#fff0f0; border:1px solid #e3a5a5; border-radius:5px; }
   .errorlist { margin:4px 0 0; padding-left:18px; color:#a02323; }
+  .field { min-width:0; align-content:start; }
+  #id_lead { width:100%; text-overflow:ellipsis; }
+  .contact-deals { margin-top:10px; padding:14px; border:1px solid #b9d9d7; border-radius:10px; background:#f0f8f7; overflow-wrap:anywhere; }
+  .contact-deals[hidden] { display:none; }
+  .contact-deals-title { display:block; font-size:12px; color:var(--teal); margin-bottom:8px; }
+  .contact-deals-list { list-style:none; padding:0; margin:0; display:grid; gap:10px; }
+  .contact-deals-list li + li { border-top:1px solid #cfe3e1; padding-top:10px; }
+  .contact-deals-list a { font-size:14px; font-weight:700; color:#176b6c; }
+  .contact-deals-meta { display:flex; flex-wrap:wrap; gap:5px; margin-top:5px; font-size:12px; color:#405767; }
+  .contact-deals-stage { padding:2px 7px; border-radius:20px; background:white; border:1px solid #cfe3e1; }
   .help { color:var(--muted); font-size:12px; }
   [data-pipeline-fields] { display:none; }
   @media (max-width:700px) { .form-grid { grid-template-columns:1fr; } .full,.form-section { grid-column:auto; } .form-head { align-items:start; flex-direction:column; } }
@@ -21,7 +31,9 @@
     <form class="card deal-form" method="post" novalidate>{% csrf_token %}
       {% if form.non_field_errors %}<div class="errors">{{ form.non_field_errors }}</div>{% endif %}
       <div class="form-grid">
-        <div class="field"><label for="{{ form.lead.id_for_label }}">Contact</label>{{ form.lead }}{{ form.lead.errors }}<span class="help">A person appears once; add deals for each distinct opportunity.</span></div>
+        <div class="field"><label for="{{ form.lead.id_for_label }}">Contact</label>{{ form.lead }}{{ form.lead.errors }}<span class="help">A person appears once; add deals for each distinct opportunity.</span>
+          <div class="contact-deals" id="contact-deals" aria-live="polite" hidden></div>
+        </div>
         <div class="field"><label for="{{ form.company.id_for_label }}">Company</label>{{ form.company }}{{ form.company.errors }}<span class="help">One company can have separate grant and investment deals.</span></div>
         <div class="field"><label for="{{ form.pipeline.id_for_label }}">Pipeline</label>{{ form.pipeline }}{{ form.pipeline.errors }}</div>
         <div class="field"><label for="{{ form.stage.id_for_label }}">Stage</label>{{ form.stage }}{{ form.stage.errors }}</div>
@@ -68,6 +80,41 @@
   </div>
   <script>
     (() => {
+      const contact = document.getElementById('{{ form.lead.id_for_label }}');
+      const summary = document.getElementById('contact-deals');
+      const updateContactDeals = () => {
+        summary.replaceChildren();
+        summary.hidden = !contact.value;
+        if (!contact.value) return;
+        const deals = JSON.parse(contact.selectedOptions[0].dataset.deals || '[]');
+        const heading = document.createElement('strong');
+        heading.className = 'contact-deals-title';
+        heading.textContent = deals.length
+          ? `${deals.length} existing ${deals.length === 1 ? 'deal' : 'deals'} for this contact`
+          : 'No existing deals for this contact';
+        summary.append(heading);
+        const list = document.createElement('ul');
+        list.className = 'contact-deals-list';
+        deals.forEach((deal) => {
+          const item = document.createElement('li');
+          const link = document.createElement('a');
+          link.href = deal.url;
+          link.textContent = deal.name;
+          const meta = document.createElement('div');
+          meta.className = 'contact-deals-meta';
+          const pipelineName = document.createElement('span');
+          pipelineName.textContent = deal.pipeline;
+          const stage = document.createElement('span');
+          stage.className = 'contact-deals-stage';
+          stage.textContent = deal.stage;
+          meta.append(pipelineName, stage);
+          item.append(link, meta);
+          list.append(item);
+        });
+        summary.append(list);
+      };
+      contact.addEventListener('change', updateContactDeals);
+      updateContactDeals();
       const pipeline = document.getElementById('{{ form.pipeline.id_for_label }}');
       const updateFields = () => document.querySelectorAll('[data-pipeline-fields]').forEach((node) => {
         const capital = node.dataset.pipelineFields === 'capital' && ['foundation_grants', 'equity_investment'].includes(pipeline.value);

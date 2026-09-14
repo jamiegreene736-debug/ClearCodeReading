@@ -7,6 +7,8 @@ from django.contrib.auth import get_user_model
 from django.contrib.messages.storage.fallback import FallbackStorage
 from django.core import mail
 from django.core.exceptions import ValidationError
+from django.db import connection
+from django.test.utils import CaptureQueriesContext
 from django.test import RequestFactory, SimpleTestCase, TestCase, override_settings
 from django.template.loader import render_to_string
 from django.urls import reverse
@@ -15,6 +17,7 @@ from rest_framework.test import APIClient
 
 from apps.blog.models import BlogPost
 from apps.crm.admin import NewsletterCampaignAdmin
+from apps.crm.forms import DealForm
 from apps.crm.models import (
     Company,
     CrmActivity,
@@ -870,6 +873,53 @@ class CrmWorkspaceTests(TestCase):
             source_path="/contact/",
             submitted_data={"name": "Alex Reader", "email": "alex@example.com"},
         )
+
+    def test_contact_dropdown_shows_all_existing_deals_and_excludes_deleted(self):
+        enrollment = Opportunity.objects.create(
+            lead=self.lead, student_name="Avery Reader", term_year="2026–2027",
+        )
+        gift = Opportunity.objects.create(
+            lead=self.lead, pipeline=Opportunity.Pipeline.FOUNDATION_DONORS,
+            stage=Opportunity.initial_stage_for_pipeline(Opportunity.Pipeline.FOUNDATION_DONORS),
+            campaign_year="Annual fund 2026",
+        )
+        Opportunity.objects.create(lead=self.lead, name="Deleted opportunity", is_deleted=True)
+        deleted_contact = Lead.objects.create(contact_name="Deleted contact", is_deleted=True)
+        form = DealForm(initial={"lead": self.lead.pk})
+        Lead.objects.bulk_create([Lead(contact_name=f"Other contact {index}") for index in range(5)])
+        with CaptureQueriesContext(connection) as queries:
+            markup = form["lead"].as_widget()
+        selects = [query for query in queries if query["sql"].startswith("SELECT")]
+        self.assertEqual(len(selects), 2)
+        self.assertIn(enrollment.name, markup)
+        self.assertIn(gift.name, markup)
+        self.assertIn(enrollment.get_pipeline_display(), markup)
+        self.assertIn(gift.get_stage_display(), markup)
+        self.assertIn('data-deals=', markup)
+        self.assertIn(f'value="{self.lead.pk}" selected', markup)
+        self.assertNotIn("Deleted opportunity", markup)
+        self.assertNotIn(deleted_contact.contact_name, markup)
+
+    def test_contact_dropdown_empty_state_edit_and_bound_selection(self):
+        empty_contact = Lead.objects.create(contact_name="New contact")
+        deal = Opportunity.objects.create(lead=self.lead, student_name="Avery", term_year="2026")
+        edit_form = DealForm(instance=deal)
+        self.assertIn(deal.name, edit_form["lead"].as_widget())
+        bound_form = DealForm(data={"lead": str(empty_contact.pk)})
+        markup = bound_form["lead"].as_widget()
+        self.assertIn("No existing deals", markup)
+        self.assertIn(f'value="{empty_contact.pk}" selected', markup)
+        self.assertIn('data-deals="[]"', markup)
+
+    def test_contact_deal_context_escapes_untrusted_names(self):
+        deal = Opportunity.objects.create(lead=self.lead, name='<script>alert("x")</script>')
+        markup = DealForm()["lead"].as_widget()
+        self.assertNotIn(deal.name, markup)
+        self.assertIn("&lt;script&gt;", markup)
+        self.client.force_login(self.admin_user)
+        response = self.client.get(reverse("crm_deal_new"))
+        self.assertContains(response, 'id="contact-deals"')
+        self.assertContains(response, "aria-live=\"polite\"")
 
     def test_workspace_requires_central_crm_access(self):
         anonymous_response = self.client.get(reverse("crm_dashboard"))
