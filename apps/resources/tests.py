@@ -664,6 +664,44 @@ class ResourceWorkflowTests(TestCase):
         self.assertEqual(self.client.get(url).status_code, 404)
         self.assertEqual(self.client.post(url, {}).status_code, 404)
 
+    def test_setup_https_form_preserves_same_origin_csrf_verification(self):
+        import hashlib
+
+        from apps.resources.models import StaffSetupToken
+
+        token = "csrf-setup-test-token"
+        invitation = StaffSetupToken.objects.create(
+            digest=hashlib.sha256(token.encode()).hexdigest(),
+            expires_at=timezone.now() + timedelta(hours=1),
+        )
+        client = Client(enforce_csrf_checks=True)
+        url = reverse("resources:setup_staff", args=[token])
+        response = client.get(url, secure=True)
+        self.assertEqual(response["Referrer-Policy"], "same-origin")
+        csrf_token = client.cookies["csrftoken"].value
+        payload = {
+            "email": "secure-editor@example.com",
+            "password1": "Local-test-random!83193",
+            "password2": "Local-test-random!83193",
+            "csrfmiddlewaretoken": csrf_token,
+        }
+        self.assertEqual(client.post(url, payload, secure=True).status_code, 403)
+        self.assertEqual(
+            client.post(
+                url, payload, secure=True, HTTP_REFERER="https://other.example/"
+            ).status_code,
+            403,
+        )
+        invitation.refresh_from_db()
+        self.assertIsNone(invitation.used_at)
+        response = client.post(
+            url, payload, secure=True, HTTP_REFERER=f"https://testserver{url}"
+        )
+        self.assertEqual(response.status_code, 302)
+        invitation.refresh_from_db()
+        self.assertIsNotNone(invitation.used_at)
+        self.assertTrue(CustomUser.objects.filter(email=payload["email"]).exists())
+
     def test_expired_and_unknown_setup_tokens_are_rejected(self):
         import hashlib
 

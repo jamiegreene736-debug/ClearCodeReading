@@ -71,5 +71,7 @@ def setup_staff(request: HttpRequest, token: str) -> HttpResponse:
             login(request, user, backend="django.contrib.auth.backends.ModelBackend")
             return redirect("resources:manager")
     response = render(request, "resources/setup.html", {"form": form})
-    response["Referrer-Policy"] = "no-referrer"
+    # Preserve the same-origin Referer required by HTTPS CSRF checks in Safari,
+    # while keeping the one-use token out of requests to other sites.
+    response["Referrer-Policy"] = "same-origin"
     return response
