@@ -121,6 +121,7 @@ TEMPLATES = [
                 "django.template.context_processors.request",
                 "django.contrib.auth.context_processors.auth",
                 "django.contrib.messages.context_processors.messages",
+                "apps.core.context_processors.public_site",
             ],
         },
     },
@@ -260,6 +261,7 @@ EMAIL_USE_TLS = os.getenv("EMAIL_USE_TLS", "0") == "1"
 EMAIL_USE_SSL = os.getenv("EMAIL_USE_SSL", "0") == "1"
 EMAIL_TIMEOUT = int(os.getenv("EMAIL_TIMEOUT", "30"))
 PUBLIC_APP_URL = os.getenv("PUBLIC_APP_URL", "http://localhost:8000")
+PUBLIC_SITE_ORIGIN = os.getenv("PUBLIC_SITE_ORIGIN", "https://clearcodereading.com").rstrip("/")
 NOTIFICATIONS_FAIL_SILENTLY = os.getenv("NOTIFICATIONS_FAIL_SILENTLY", "1") == "1"
 NEWSLETTER_SEND_STALE_MINUTES = max(1, int(os.getenv("NEWSLETTER_SEND_STALE_MINUTES", "30")))
 RECRUITING_OWNER_EMAIL = os.getenv("RECRUITING_OWNER_EMAIL", "").strip().lower()

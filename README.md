@@ -75,6 +75,8 @@ docker compose run --rm web python manage.py createsuperuser
 Useful URLs:
 
 - Marketing homepage: `http://localhost:8000/`
+- Orlando / Florida reading help: `http://localhost:8000/orlando/`
+- AI crawler brief: `http://localhost:8000/llms.txt`
 - Family consultation: `http://localhost:8000/contact/`
 - Public blog: `http://localhost:8000/blog/`
 - Admin: `http://localhost:8000/admin/`
@@ -83,6 +85,7 @@ Useful URLs:
 - ReDoc: `http://localhost:8000/api/redoc/`
 - OpenAPI schema: `http://localhost:8000/api/schema/`
 - Health check: `http://localhost:8000/api/v1/health/`
+- AI search / ChatGPT presence playbook: [`docs/AI_SEARCH_PRESENCE.md`](docs/AI_SEARCH_PRESENCE.md)
 - CRM contacts, companies, deals, triage, and team assignment: `http://localhost:8000/crm/` (central staff and CRM users only)
 
 Demo credentials:

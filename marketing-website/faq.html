@@ -1,25 +1,28 @@
 {% extends "base_marketing.html" %}
+{% load discovery_tags %}
 
 {% block title %}Frequently Asked Questions | ClearCode Reading{% endblock %}
-{% block meta_description %}Answers to common questions about ClearCode Reading services, instructional methods, group size, progress updates, and getting started.{% endblock %}
+{% block meta_description %}Answers about ClearCode Reading in Orlando, Florida: services, the reading app, instructional methods, group size, progress updates, and getting started.{% endblock %}
+
+{% block extra_head %}
+  <script type="application/ld+json">{% faq_json_ld %}</script>
+{% endblock %}
 
 {% block content %}
   <section class="hero-wash px-4 py-16 sm:px-6 sm:py-24 lg:px-8">
     <div class="mx-auto max-w-4xl text-center">
       <p class="text-sm font-black uppercase tracking-[.18em] text-deepTeal">Frequently asked questions</p>
       <h1 class="mt-4 text-4xl font-black leading-tight text-ink sm:text-6xl">What families usually want to know.</h1>
-      <p class="mx-auto mt-6 max-w-2xl text-lg leading-8 text-ink/70">Clear answers about who we serve, how instruction works, and what to expect when you begin.</p>
+      <p class="mx-auto mt-6 max-w-2xl text-lg leading-8 text-ink/70">Clear answers about who we serve in Orlando and Florida, how instruction works, and what to expect when you begin.</p>
     </div>
   </section>
 
   <section class="bg-white px-4 py-20 sm:px-6 sm:py-24 lg:px-8" aria-label="ClearCode Reading questions and answers">
     <div class="mx-auto max-w-4xl space-y-4">
-      <details class="group rounded-2xl bg-linen p-5"><summary class="focus-ring flex cursor-pointer list-none items-center justify-between gap-5 rounded-lg font-bold"><span>Who does ClearCode serve?</span><span class="text-2xl text-deepTeal group-open:rotate-45" aria-hidden="true">+</span></summary><p class="mt-4 max-w-3xl leading-7 text-ink/65">ClearCode is designed for K–8 students who need explicit foundational reading intervention. A consultation helps determine whether the model fits the reader’s educational needs.</p></details>
-      <details class="group rounded-2xl bg-linen p-5"><summary class="focus-ring flex cursor-pointer list-none items-center justify-between gap-5 rounded-lg font-bold"><span>Is ClearCode a diagnostic or medical service?</span><span class="text-2xl text-deepTeal group-open:rotate-45" aria-hidden="true">+</span></summary><p class="mt-4 max-w-3xl leading-7 text-ink/65">No. ClearCode provides educational reading intervention. It does not diagnose dyslexia, replace medical advice, or guarantee a particular result or timeline.</p></details>
-      <details class="group rounded-2xl bg-linen p-5"><summary class="focus-ring flex cursor-pointer list-none items-center justify-between gap-5 rounded-lg font-bold"><span>Which instructional methods are used?</span><span class="text-2xl text-deepTeal group-open:rotate-45" aria-hidden="true">+</span></summary><p class="mt-4 max-w-3xl leading-7 text-ink/65">Students follow one methodology at a time: Orton-Gillingham Plus for the K–2 pathway or Phonics for Reading for the grades 3–8 pathway, based on appropriate placement evidence.</p></details>
-      <details class="group rounded-2xl bg-linen p-5"><summary class="focus-ring flex cursor-pointer list-none items-center justify-between gap-5 rounded-lg font-bold"><span>How large are the groups?</span><span class="text-2xl text-deepTeal group-open:rotate-45" aria-hidden="true">+</span></summary><p class="mt-4 max-w-3xl leading-7 text-ink/65">ClearCode groups are designed for a maximum of three students so specialists can deliver direct instruction and observe individual responses.</p></details>
-      <details class="group rounded-2xl bg-linen p-5"><summary class="focus-ring flex cursor-pointer list-none items-center justify-between gap-5 rounded-lg font-bold"><span>How will I know whether progress is happening?</span><span class="text-2xl text-deepTeal group-open:rotate-45" aria-hidden="true">+</span></summary><p class="mt-4 max-w-3xl leading-7 text-ink/65">The family dashboard connects skill mastery, fluency trends, recent specialist notes, next milestones, and home practice to session evidence.</p></details>
-      <details class="group rounded-2xl bg-linen p-5"><summary class="focus-ring flex cursor-pointer list-none items-center justify-between gap-5 rounded-lg font-bold"><span>How do we begin?</span><span class="text-2xl text-deepTeal group-open:rotate-45" aria-hidden="true">+</span></summary><p class="mt-4 max-w-3xl leading-7 text-ink/65">Submit the short consultation request. The team will review it, contact you, and explain fit, availability, placement, cost, and the clearest next step.</p></details>
+      {% discovery_faqs as faq_entries %}
+      {% for entry in faq_entries %}
+        <details class="group rounded-2xl bg-linen p-5"><summary class="focus-ring flex cursor-pointer list-none items-center justify-between gap-5 rounded-lg font-bold"><span>{{ entry.question }}</span><span class="text-2xl text-deepTeal group-open:rotate-45" aria-hidden="true">+</span></summary><p class="mt-4 max-w-3xl leading-7 text-ink/65">{{ entry.answer }}</p></details>
+      {% endfor %}
     </div>
   </section>
 

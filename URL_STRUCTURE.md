@@ -74,6 +74,11 @@
 | Route | Purpose |
 |---|---|
 | `/` | Intervention Intelligence Platform homepage |
+| `/orlando/` | Orlando / Florida reading-center, reading-app, and reading-help landing page |
+| `/florida/` | Permanent redirect to `/orlando/` |
+| `/robots.txt` | Public crawl rules, including AI search crawlers |
+| `/sitemap.xml` | Public marketing pages and published blog posts |
+| `/llms.txt` | Plain-language brief for AI assistants |
 | `/how-it-works/` | Assessment, placement, specialist-led sessions, visible progress, and decision-support flow |
 | `/families/` | Parent journey, dashboard visibility, and home-practice expectations |
 | `/resources/` | Free family tools for observing reading patterns, preparing questions, and calmer home practice |
