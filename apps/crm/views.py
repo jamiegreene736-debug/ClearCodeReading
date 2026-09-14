@@ -9,6 +9,7 @@ from django.core.exceptions import ValidationError
 from django.core.paginator import Paginator
 from django.core.validators import validate_email
 from django.db import IntegrityError, transaction
+from django.http import HttpRequest, HttpResponse
 from django.db.models import Count, F, Max, OuterRef, Q, Subquery, Sum
 from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse
@@ -978,7 +979,7 @@ class CrmDealDetailView(CrmAccessMixin, View):
 class CrmEnrollmentPersonEditView(CrmAccessMixin, View):
     template_name = "crm/enrollment_person_form.html"
 
-    def get_deal(self, pk):
+    def get_deal(self, pk: int) -> Opportunity:
         return get_object_or_404(
             Opportunity.objects.select_related("lead"),
             pk=pk,
@@ -987,12 +988,12 @@ class CrmEnrollmentPersonEditView(CrmAccessMixin, View):
             lead__is_deleted=False,
         )
 
-    def get(self, request, pk):
+    def get(self, request: HttpRequest, pk: int) -> HttpResponse:
         deal = self.get_deal(pk)
         form = EnrollmentPersonForm(instance=deal.lead)
         return render(request, self.template_name, {"form": form, "deal": deal})
 
-    def post(self, request, pk):
+    def post(self, request: HttpRequest, pk: int) -> HttpResponse:
         deal = self.get_deal(pk)
         form = EnrollmentPersonForm(request.POST, instance=deal.lead)
         if form.is_valid():

@@ -257,7 +257,7 @@ class EnrollmentPersonForm(forms.ModelForm):
         model = Lead
         fields = ["contact_name", "contact_email", "contact_phone"]
 
-    def clean_contact_email(self):
+    def clean_contact_email(self) -> str:
         email = self.cleaned_data["contact_email"].strip().lower()
         if Lead.objects.filter(
             contact_email__iexact=email, is_deleted=False
