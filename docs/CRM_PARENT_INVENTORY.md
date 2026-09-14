@@ -25,10 +25,20 @@ Open **CRM → Contacts → contact → Send assessment**. Select an existing ch
 
 Invitations expire after 30 days and can be withdrawn. Public pages are private-link-only, noindex, no-store, and no-referrer. Answers are stored server-side. Save and return retains partial or complete sections without submitting; Continue commits the section and submits on the last applicable section. Stale-tab submissions cannot overwrite newer saves.
 
-Production email requires a real Django email backend and HTTPS `PUBLIC_APP_URL`. Mail is persisted before delivery and claimed transactionally. Rejected messages display Failed; interrupted SMTP delivery displays Uncertain. Staff must check provider records and wait five minutes before retrying uncertain sends. This intentionally avoids blindly retrying messages SMTP may already have accepted. Pending mail can be retried from the assessment record. Reminders are operator-initiated and limited to once per 24 hours.
+Production email uses the connected Google mailbox of the CRM user who created the invitation. Invitations, follow-ups, owner notifications, and calendar messages enter the existing CRM email worker and appear in its outbox. Google email configuration, the sender's connected mailbox, an operational email worker, and HTTPS `PUBLIC_APP_URL` are required. Missing setup is a visible failure; queued is not sent. The existing worker owns backoff and ambiguous-send reconciliation. The inventory mirrors its delivery receipts. Only the original sender may retry or send reminders from their mailbox. Revoked or expired invitation links are rejected before queued delivery. Development with Google email disabled can use Django's local test backend.
+
+SMTP development tests also cover failed/uncertain deliveries. Uncertain Google sends remain in the worker's reconciliation flow and are not blindly resent. Reminders are operator-initiated and limited to once per 24 hours.
 
 Add Bethany's approved times under **Consultation availability**, selecting her CRM account as host. Slots use explicit IANA time zones, reject DST ambiguity and overlapping slots, and are uniquely bookable. Booked appointments cannot be withdrawn through availability; coordinate changes with the parent. This availability is managed in ClearCode and does not sync an external calendar's busy times. Email attachments use stable calendar UIDs. No actual availability or parent outreach is seeded by deployment.
 
 ## Verification
 
 Run `python manage.py test apps.crm.test_inventory apps.crm.tests` against an isolated PostgreSQL test database, then the full project suite, `manage.py check`, `makemigrations --check --dry-run`, and `git diff --check`.
+
+### Release validation (2026-09-14)
+
+- Full combined project suite: 395 tests passed after integrating CRM Google email and hiring changes.
+- Focused assessment/email suite passed before the full run; tests cover grade counts, early exits, ambiguous totals, saved full/partial sections, stale tabs, sibling isolation, CSRF, access control, idempotent sends/submissions/bookings, slot conflicts, Google queue receipts, calendar MIME, and email failures.
+- Django system checks, migration drift checks, Ruff checks/formatting for changed workflow modules, and whitespace checks passed.
+- Parent survey and CRM compose layout were inspected at desktop and 390px mobile widths with no horizontal overflow.
+- Production Google email is currently disabled pending provider setup. No live parent emails or consultation availability were seeded. `PUBLIC_APP_URL` is set to the verified Railway HTTPS site on web and email worker services.

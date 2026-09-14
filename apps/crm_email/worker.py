@@ -93,6 +93,25 @@ def send(client: Gmail, message: Message) -> None:
     if message.status in {Message.Status.SENDING, Message.Status.UNCERTAIN}:
         reconcile(client, message)
         return
+    from apps.crm.inventory_models import InventoryMail
+
+    delivery = (
+        InventoryMail.objects.filter(provider_message=message)
+        .select_related("invitation")
+        .first()
+    )
+    if (
+        delivery
+        and "/reading-inventory/" in delivery.action_url
+        and (
+            delivery.invitation.revoked_at
+            or delivery.invitation.expires_at <= timezone.now()
+        )
+    ):
+        message.status = Message.Status.CANCELLED
+        message.last_error = "Assessment link expired or was withdrawn before delivery."
+        message.save()
+        return
     if message.lead.is_deleted:
         message.status = Message.Status.CANCELLED
         message.last_error = "Contact was deleted before sending."

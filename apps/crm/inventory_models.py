@@ -1,4 +1,5 @@
 import uuid
+from typing import ClassVar
 
 from django.conf import settings
 from django.db import models
@@ -52,7 +53,7 @@ class InventoryInvitation(models.Model):
     )
 
     class Meta:
-        ordering = ["-created_at"]
+        ordering: ClassVar = ["-created_at"]
 
     @property
     def status(self) -> str:
@@ -72,12 +73,20 @@ class InventoryInvitation(models.Model):
 class InventoryMail(models.Model):
     class Status(models.TextChoices):
         PENDING = "pending", "Pending"
+        QUEUED = "queued", "Queued for Google delivery"
         SENDING = "sending", "Sending / delivery uncertain"
         SENT = "sent", "Sent"
         FAILED = "failed", "Failed"
 
     invitation = models.ForeignKey(
         InventoryInvitation, on_delete=models.CASCADE, related_name="emails"
+    )
+    provider_message = models.OneToOneField(
+        "crm_email.Message",
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="inventory_delivery",
     )
     key = models.CharField(max_length=80)
     recipient = models.EmailField()
@@ -96,12 +105,12 @@ class InventoryMail(models.Model):
     sent_at = models.DateTimeField(null=True, blank=True)
 
     class Meta:
-        constraints = [
+        constraints: ClassVar = [
             models.UniqueConstraint(
                 fields=["invitation", "key"], name="inventory_mail_once"
             )
         ]
-        ordering = ["created_at"]
+        ordering: ClassVar = ["created_at"]
 
 
 class ConsultationSlot(models.Model):
@@ -115,8 +124,8 @@ class ConsultationSlot(models.Model):
     active = models.BooleanField(default=True)
 
     class Meta:
-        ordering = ["starts_at"]
-        constraints = [
+        ordering: ClassVar = ["starts_at"]
+        constraints: ClassVar = [
             models.CheckConstraint(
                 condition=models.Q(ends_at__gt=models.F("starts_at")),
                 name="inventory_slot_positive",

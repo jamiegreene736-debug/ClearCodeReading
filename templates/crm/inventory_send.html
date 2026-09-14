@@ -1,7 +1,18 @@
-{% extends 'crm/base.html' %}{% block title %}Send assessment{% endblock %}{% block content %}
+{% extends "crm/base.html" %}{% block title %}Send assessment{% endblock %}{% block content %}
 <p><a href="{% url 'crm_contact_detail' lead.pk %}">← {{ lead.contact_name }}</a></p><h1>Send an assessment</h1><p>Parent Reading Inventory · About 5 minutes · One child per invitation</p>
-<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,320px),1fr));gap:24px;align-items:start">
-<form method="post" class="card" style="padding:24px" id="invitation-form">{% csrf_token %}<input type="hidden" name="nonce" value="{{ nonce }}">{{ form.as_p }}<p>The link stays available for 30 days. Existing child records retain their saved grade.</p><button class="btn btn-primary" type="submit">Send invitation</button> <a class="btn" href="{% url 'crm_contact_detail' lead.pk %}">Cancel</a></form>
-<aside class="card" style="padding:24px"><p class="badge">Email preview</p><p style="color:var(--teal);font-weight:800">ClearCode Reading</p><h2 id="preview-subject">Your ClearCode Parent Reading Inventory</h2><p id="preview-message" style="white-space:pre-wrap"></p><span class="btn btn-primary">Complete assessment</span><p class="subtle">Each invitation includes a private link that opens the survey page.</p></aside></div>
+<div style="display:grid;
+            grid-template-columns:repeat(auto-fit,minmax(min(100%,320px),1fr));
+            gap:24px;
+            align-items:start">
+    <form method="post" class="card" style="padding:24px" id="invitation-form">{% csrf_token %}<input type="hidden" name="nonce" value="{{ nonce }}">{{ form.as_p }}<p>Messages are sent from your connected Google mailbox. <a href="{% url 'crm_email_settings' %}">Email connection settings</a></p><p>The link stays available for 30 days. Existing child records retain their saved grade.</p><button class="btn btn-primary" type="submit">Send invitation</button> <a class="btn" href="{% url 'crm_contact_detail' lead.pk %}">Cancel</a></form>
+    <aside class="card" style="padding:24px">
+        <p class="badge">Email preview</p>
+        <p style="color:var(--teal);font-weight:800">ClearCode Reading</p>
+        <h2 id="preview-subject">Your ClearCode Parent Reading Inventory</h2>
+        <p id="preview-message" style="white-space:pre-wrap"></p>
+        <span class="btn btn-primary">Complete assessment</span>
+        <p class="subtle">Each invitation includes a private link that opens the survey page.</p>
+    </aside>
+</div>
 <script>const fields=['subject','message'];function preview(){for(const name of fields){document.getElementById('preview-'+name).textContent=document.getElementById('id_'+name).value;}}document.getElementById('invitation-form').addEventListener('input',preview);preview();</script>
 {% endblock %}

@@ -158,6 +158,11 @@ def queue_mail(
 
 
 def deliver_mail(pk: int) -> None:
+    if settings.CRM_EMAIL_ENABLED or not settings.DEBUG:
+        from apps.crm.inventory_mail import enqueue_google
+
+        enqueue_google(pk)
+        return
     # Commit the claim before contacting SMTP; concurrent requests cannot double-send.
     with transaction.atomic():
         mail = InventoryMail.objects.select_for_update().get(pk=pk)
@@ -244,7 +249,7 @@ def complete_inventory(invitation: InventoryInvitation, result: dict[str, Any]) 
     invitation.completed_at, invitation.result = timezone.now(), result
     invitation.save()
     parent = invitation.child.parent
-    CrmActivity.objects.create(
+    review_task = CrmActivity.objects.create(
         lead=parent,
         activity_type="task",
         subject=f"Review reading inventory: {invitation.child.name}",
@@ -252,6 +257,8 @@ def complete_inventory(invitation: InventoryInvitation, result: dict[str, Any]) 
         assigned_to=parent.assigned_to,
         due_at=timezone.now() + timedelta(days=1),
     )
+    invitation.result["review_task_id"] = review_task.pk
+    invitation.save(update_fields=["result"])
     log_activity(invitation, "Completed")
     outcome = result["outcome"]
     if outcome == "support":

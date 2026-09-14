@@ -35,7 +35,7 @@ from apps.crm.inventory_models import (
     InventoryInvitation,
     InventoryMail,
 )
-from apps.crm.models import Lead
+from apps.crm.models import CrmActivity, Lead
 from apps.crm.views import CrmAccessMixin
 from apps.users.models import CustomUser
 
@@ -194,12 +194,27 @@ class InventoryDetailView(CrmAccessMixin, View):
                 child__parent__is_deleted=False,
             )
             action = request.POST.get("action")
+            if (
+                action in {"retry", "resend"}
+                and invitation.created_by_id != request.user.pk
+            ):
+                messages.error(
+                    request,
+                    "Only the original sender may retry or resend messages from their mailbox.",
+                )
+                return redirect("inventory_detail", pk=pk)
             if action == "review" and invitation.completed_at:
                 invitation.reviewed_at, invitation.reviewed_by = (
                     timezone.now(),
                     request.user,
                 )
                 invitation.save()
+                CrmActivity.objects.filter(
+                    pk=invitation.result.get("review_task_id"),
+                    lead=invitation.child.parent,
+                    activity_type="task",
+                    completed_at__isnull=True,
+                ).update(completed_at=timezone.now())
                 log_activity(invitation, "Reviewed", request.user)
             elif action == "revoke":
                 invitation.revoked_at = timezone.now()

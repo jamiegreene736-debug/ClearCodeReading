@@ -407,3 +407,149 @@ class InventoryWorkflowTests(TestCase):
         response = self.client.post(url, {**payload, "time": "13:15"})
         self.assertContains(response, "overlaps")
         self.assertEqual(ConsultationSlot.objects.count(), 1)
+
+    @override_settings(CRM_EMAIL_ENABLED=True)
+    def test_google_queue_uses_creator_and_mirrors_receipt(self):
+        from apps.crm_email.models import Mailbox, Message
+
+        mailbox = Mailbox.objects.create(
+            user=self.staff, email=self.staff.email, status="connected"
+        )
+        email = queue_mail(
+            self.invitation,
+            "inventory_send_test",
+            self.parent.contact_email,
+            "Inventory",
+            "Please complete the survey.",
+        )
+        with (
+            patch("apps.crm.inventory_mail.require_configured"),
+            patch("apps.crm.inventory_mail.active_mailbox", return_value=mailbox),
+        ):
+            deliver_mail(email.pk)
+        email.refresh_from_db()
+        self.assertEqual(email.status, "queued")
+        self.assertEqual(email.provider_message.mailbox, mailbox)
+        self.assertEqual(Message.objects.count(), 1)
+        self.assertIsNone(self.invitation.sent_at)
+        message = email.provider_message
+        message.status, message.sent_at = "sent", timezone.now()
+        message.save()
+        email.refresh_from_db()
+        self.invitation.refresh_from_db()
+        self.assertEqual(email.status, "sent")
+        self.assertIsNotNone(self.invitation.sent_at)
+        self.assertEqual(Message.objects.count(), 1)
+
+    @override_settings(CRM_EMAIL_ENABLED=True)
+    def test_google_missing_setup_is_visible_failure(self):
+        from apps.crm_email.security import EmailError
+
+        email = queue_mail(
+            self.invitation,
+            "inventory_send_test",
+            self.parent.contact_email,
+            "Inventory",
+            "Message",
+        )
+        with patch(
+            "apps.crm.inventory_mail.require_configured",
+            side_effect=EmailError("Connect Google email."),
+        ):
+            deliver_mail(email.pk)
+        email.refresh_from_db()
+        self.assertEqual(email.status, "failed")
+        self.assertIsNone(email.provider_message_id)
+
+    def test_revoked_link_email_is_not_sent(self):
+        self.invitation.revoked_at = timezone.now()
+        self.invitation.save()
+        email = queue_mail(
+            self.invitation,
+            "inventory_send_test",
+            self.parent.contact_email,
+            "Inventory",
+            "Message",
+            "https://clearcode.example/reading-inventory/token/",
+        )
+        deliver_mail(email.pk)
+        email.refresh_from_db()
+        self.assertEqual(email.status, "failed")
+
+    def test_only_sender_can_resend_from_their_mailbox(self):
+        other = get_user_model().objects.create_user(
+            username="other-sender",
+            email="other-staff@example.com",
+            password="test",
+            role="crm_user",
+        )
+        self.client.force_login(other)
+        self.client.post(
+            reverse("inventory_detail", args=[self.invitation.pk]), {"action": "resend"}
+        )
+        self.assertEqual(self.invitation.emails.count(), 0)
+
+    @override_settings(CRM_EMAIL_ENABLED=True)
+    def test_google_calendar_uses_calendar_mime(self):
+        from email import policy
+        from email.parser import BytesParser
+
+        from apps.crm_email.models import Mailbox
+        from apps.crm_email.services import build_mime
+
+        mailbox = Mailbox.objects.create(
+            user=self.staff, email=self.staff.email, status="connected"
+        )
+        calendar = (
+            "BEGIN:VCALENDAR\r\nVERSION:2.0\r\nMETHOD:REQUEST\r\nEND:VCALENDAR\r\n"
+        )
+        email = queue_mail(
+            self.invitation,
+            "booking-parent",
+            self.parent.contact_email,
+            "Consultation",
+            "Booked",
+            calendar=calendar,
+        )
+        with (
+            patch("apps.crm.inventory_mail.require_configured"),
+            patch("apps.crm.inventory_mail.active_mailbox", return_value=mailbox),
+            patch("apps.crm.inventory_mail.encrypt", side_effect=lambda value: value),
+        ):
+            deliver_mail(email.pk)
+        email.refresh_from_db()
+        with patch("apps.crm_email.services.decrypt", side_effect=lambda value: value):
+            mime = BytesParser(policy=policy.default).parsebytes(
+                build_mime(email.provider_message)
+            )
+        attachment = next(mime.iter_attachments())
+        self.assertEqual(attachment.get_content_type(), "text/calendar")
+        self.assertEqual(attachment.get_param("method"), "REQUEST")
+
+    def test_public_submission_requires_csrf(self):
+        self.assertEqual(
+            Client(enforce_csrf_checks=True)
+            .post(self.url, {"revision": 0, "action": "continue"})
+            .status_code,
+            403,
+        )
+
+    def test_review_closes_only_its_own_task(self):
+        self.post_group(value="no")
+        other = CrmActivity.objects.create(
+            lead=self.parent,
+            activity_type="task",
+            subject="Another task",
+            due_at=timezone.now(),
+        )
+        self.client.post(
+            reverse("inventory_detail", args=[self.invitation.pk]), {"action": "review"}
+        )
+        self.invitation.refresh_from_db()
+        self.assertTrue(
+            CrmActivity.objects.get(
+                pk=self.invitation.result["review_task_id"]
+            ).completed_at
+        )
+        other.refresh_from_db()
+        self.assertIsNone(other.completed_at)
