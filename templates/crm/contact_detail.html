@@ -5,6 +5,17 @@
   .crumb { display:inline-block; margin-bottom:15px; color:var(--teal); font-weight:600; text-decoration:none; }
   .record-grid { display:grid; grid-template-columns:250px minmax(0,1fr) 285px; gap:18px; align-items:start; }
   .panel { padding:18px; }
+  .assessment-entry { margin-top:16px; }
+  .assessment-name { margin:0 0 8px; font-weight:600; overflow-wrap:anywhere; }
+  .assessment-action { max-width:100%; white-space:normal; text-align:center; }
+  .assessment-action--pending { background:#edf2f7; border-color:#a9b9c8; color:#334155; }
+  .assessment-action--started { background:#fff0cc; border-color:#c79528; color:#704b00; }
+  .assessment-action--finished { background:#187344; border-color:#187344; color:#fff; }
+  .assessment-action--pending:hover { background:#dfe7ef; }
+  .assessment-action--started:hover { background:#ffe3a0; }
+  .assessment-action--finished:hover { background:#115632; color:#fff; }
+  .assessment-action:focus-visible { outline:3px solid var(--navy); outline-offset:3px; }
+  .assessment-meta { margin:8px 0 0; }
   .identity { text-align:center; }
   .identity .avatar { width:72px; height:72px; margin:0 auto 13px; font-size:24px; }
   .identity h1 { font-size:27px; }
@@ -65,7 +76,18 @@
         <h2>Assessments</h2>
         <p><a class="btn btn-primary" href="{% url 'inventory_send' lead.pk %}">Send assessment</a></p>
         {% for child in lead.inventory_children.all %}
-          {% for invitation in child.invitations.all %}<p><a href="{% url 'inventory_detail' invitation.pk %}">Parent Reading Inventory · {{ child.name }}</a><br><span class="badge">{{ invitation.status }}</span> <small>{{ invitation.created_at|date:"M j, Y" }}</small></p>{% endfor %}
+          {% for invitation in child.invitations.all %}
+            <div class="assessment-entry">
+              <p class="assessment-name" id="assessment-name-{{ invitation.pk }}">Parent Reading Inventory · {{ child.name }}</p>
+              <a class="btn assessment-action {% if invitation.completed_at %}assessment-action--finished{% elif invitation.started_at %}assessment-action--started{% else %}assessment-action--pending{% endif %}"
+                 href="{% url 'inventory_detail' invitation.pk %}"
+                 aria-labelledby="assessment-action-{{ invitation.pk }} assessment-name-{{ invitation.pk }}">
+                <span id="assessment-action-{{ invitation.pk }}">{% if invitation.completed_at %}Finished · View results{% elif invitation.started_at %}Started · View progress{% else %}Not started · View assessment{% endif %}</span>
+                <span aria-hidden="true">→</span>
+              </a>
+              <p class="assessment-meta"><span class="badge">{{ invitation.status }}</span> <small>{{ invitation.created_at|date:"M j, Y" }}</small></p>
+            </div>
+          {% endfor %}
         {% empty %}<p>No assessments yet. Send an invitation to get started.</p>{% endfor %}
       </div>
       <div class="card composer">

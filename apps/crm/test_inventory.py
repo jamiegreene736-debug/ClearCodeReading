@@ -136,6 +136,32 @@ class InventoryWorkflowTests(TestCase):
         )
         self.assertContains(self.client.get(reverse("inventory_list")), "Avery")
 
+    def test_contact_assessment_button_tracks_progress(self):
+        now = timezone.now()
+        cases = [
+            (None, None, None, "pending", "Not started · View assessment"),
+            (now, None, None, "started", "Started · View progress"),
+            (now, now, None, "finished", "Finished · View results"),
+            (now, now, now, "finished", "Finished · View results"),
+        ]
+        for started, completed, reviewed, color, label in cases:
+            with self.subTest(label=label, reviewed=reviewed):
+                self.invitation.started_at = started
+                self.invitation.completed_at = completed
+                self.invitation.reviewed_at = reviewed
+                self.invitation.save()
+                response = self.client.get(
+                    reverse("crm_contact_detail", args=[self.parent.pk])
+                )
+                self.assertContains(response, f"assessment-action--{color}\"")
+                self.assertContains(response, label)
+                self.assertContains(response, "Parent Reading Inventory · Avery")
+                self.assertContains(
+                    response,
+                    f'href="{reverse("inventory_detail", args=[self.invitation.pk])}"',
+                )
+                self.assertContains(response, self.invitation.status)
+
     def test_public_get_does_not_start_inventory(self):
         response = Client().get(self.url)
         self.assertEqual(response.status_code, 200)
