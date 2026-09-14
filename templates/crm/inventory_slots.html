@@ -2,6 +2,7 @@
 {% block content %}
 <p><a href="{% url 'inventory_list' %}">← Assessments</a></p>
 <h1>Consultation availability</h1>
+<p><a class="btn" href="{% url 'crm_calendar_settings' %}">Connect my Google or Apple calendar</a></p>
 <p>Confirm the times you can take calls. Only confirmed times are available for parents to book. Times shown include the site’s time zone; enter new times in the host’s time zone.</p>
 <form method="get"><label for="host-filter">Show availability for</label><select id="host-filter" name="host"><option value="" {% if not selected_host %}selected{% endif %}>All hosts</option>{% for host in hosts %}<option value="{{ host.pk }}" {% if host.pk == selected_host.pk %}selected{% endif %}>{{ host.get_full_name|default:host.email }}</option>{% endfor %}</select><button class="btn">Show availability</button></form>
 <p><a class="btn" href="?host={{ request.user.pk }}">My availability</a></p>

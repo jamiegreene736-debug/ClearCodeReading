@@ -18,3 +18,5 @@ cryptography==50.0.0
 nh3==0.3.7
 requests==2.33.0
 pypdfium2==5.13.0
+icalendar==7.3.0
+recurring-ical-events==3.8.2

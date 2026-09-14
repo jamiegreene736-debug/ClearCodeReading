@@ -17,6 +17,7 @@ from django.views import View
 from django.views.decorators.cache import never_cache
 
 from apps.crm.access import crm_owner_queryset
+from apps.crm.calendars import MAX_DAYS, available_slots
 from apps.crm.consultations import (
     can_manage_team_availability,
     selected_consultation_host,
@@ -586,7 +587,9 @@ class InventoryBookingView(InventoryPublicView):
         ).select_related("host")
         if host:
             slots = slots.filter(host=host)
-        slots = slots[:100]
+        slots = available_slots(
+            slots.filter(ends_at__lte=timezone.now() + timedelta(days=MAX_DAYS))[:100]
+        )
         form = form or BookingForm()
         form.fields["slot"].choices = [
             (
@@ -652,6 +655,8 @@ class InventoryBookingView(InventoryPublicView):
                 if (
                     not slot.active
                     or slot.starts_at <= timezone.now()
+                    or slot.ends_at > timezone.now() + timedelta(days=MAX_DAYS)
+                    or not available_slots([slot])
                     or InventoryBooking.objects.filter(slot=slot).exists()
                 ):
                     form.add_error(
