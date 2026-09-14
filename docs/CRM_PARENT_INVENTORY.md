@@ -42,3 +42,4 @@ Run `python manage.py test apps.crm.test_inventory apps.crm.tests` against an is
 - Django system checks, migration drift checks, Ruff checks/formatting for changed workflow modules, and whitespace checks passed.
 - Parent survey and CRM compose layout were inspected at desktop and 390px mobile widths with no horizontal overflow.
 - Production Google email is currently disabled pending provider setup. No live parent emails or consultation availability were seeded. `PUBLIC_APP_URL` is set to the verified Railway HTTPS site on web and email worker services.
+- Final Google email integration follow-up: 73 focused tests passed, plus a dedicated worker-recovery regression. Strict email mypy checks passed for 17 source files. The worker now picks up pending inventory outbox rows left by interrupted web requests.

@@ -182,6 +182,15 @@ def run_pass() -> int:
         if not settings.CRM_EMAIL_ENABLED:
             return 0
         require_configured()
+        # Recover invitations committed just before a web request was interrupted.
+        from apps.crm.inventory_mail import enqueue_google
+        from apps.crm.inventory_models import InventoryMail
+
+        pending_inventory = InventoryMail.objects.filter(status="pending").values_list(
+            "pk", flat=True
+        )[:50]
+        for delivery_id in pending_inventory:
+            enqueue_google(delivery_id)
         mailboxes = (
             Mailbox.objects.filter(status=Mailbox.Status.CONNECTED)
             .select_related("user")

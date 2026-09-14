@@ -553,3 +553,21 @@ class InventoryWorkflowTests(TestCase):
         )
         other.refresh_from_db()
         self.assertIsNone(other.completed_at)
+
+    @override_settings(CRM_EMAIL_ENABLED=True)
+    def test_worker_recovers_pending_inventory_delivery(self):
+        from apps.crm_email.worker import run_pass
+
+        email = queue_mail(
+            self.invitation,
+            "inventory_send_recovery",
+            self.parent.contact_email,
+            "Inventory",
+            "Message",
+        )
+        with (
+            patch("apps.crm_email.worker.require_configured"),
+            patch("apps.crm.inventory_mail.enqueue_google") as enqueue,
+        ):
+            run_pass()
+        enqueue.assert_called_once_with(email.pk)
