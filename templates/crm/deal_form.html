@@ -2,7 +2,7 @@
 {% block title %}{% if deal %}{{ deal.name }}{% else %}Create deal{% endif %}{% endblock %}
 {% block extra_style %}
   .form-shell { max-width:980px; margin:0 auto; }
-  .form-head { display:flex; align-items:end; justify-content:space-between; gap:16px; margin-bottom:18px; }
+  .form-head { display:flex; flex-wrap:wrap; align-items:end; justify-content:space-between; gap:16px; margin-bottom:18px; }
   .deal-form { padding:22px; }
   .form-grid { display:grid; grid-template-columns:1fr 1fr; gap:15px; }
   .form-section { grid-column:1/-1; margin-top:8px; padding-top:18px; border-top:1px solid var(--line); }
@@ -26,7 +26,7 @@
 {% endblock %}
 {% block content %}
   <div class="form-shell">
-    <div class="form-head"><div><p class="eyebrow">{% if deal %}{{ deal.deal_label }}{% else %}New pipeline record{% endif %}</p><h1>{% if deal %}{{ deal.name }}{% else %}Create a deal{% endif %}</h1><p class="subtle">Names are generated from the master convention. Use a second deal for separate students, pipelines, cycles, or rounds.</p></div><a class="btn" href="{% url 'crm_deal_list' %}{% if deal %}?pipeline={{ deal.pipeline }}{% endif %}">Back to pipelines</a></div>
+    <div class="form-head"><div><p class="eyebrow">{% if deal %}{{ deal.deal_label }}{% else %}New pipeline record{% endif %}</p><h1>{% if deal %}{{ deal.name }}{% else %}Create a deal{% endif %}</h1><p class="subtle">Names are generated from the master convention. Use a second deal for separate students, pipelines, cycles, or rounds.</p></div><a class="btn" href="{% url 'crm_deal_list' %}{% if deal %}?pipeline={{ deal.pipeline }}{% endif %}">Back to pipelines</a>{% if deal %}<a class="btn" href="{% url 'crm_deal_remove' deal.pk %}">Remove from pipeline</a>{% endif %}</div>
     {% if deal.needs_naming_review %}<div class="errors"><strong>Naming review required.</strong> This record came from intake or triage. {% if deal.pipeline == "family_enrollment" %}You can save edits now. Add the student name and term/year when known to finish the naming review.{% else %}Complete the pipeline-specific naming fields before saving.{% endif %}</div>{% endif %}
     <form class="card deal-form" method="post" novalidate>{% csrf_token %}
       {% if form.non_field_errors %}<div class="errors">{{ form.non_field_errors }}</div>{% endif %}

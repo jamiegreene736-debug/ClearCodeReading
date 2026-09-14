@@ -1,0 +1,17 @@
+{% extends "crm/base.html" %}
+{% block title %}Remove from pipeline — {{ deal.name }}{% endblock %}
+{% block content %}
+<div style="max-width:700px;margin:0 auto">
+  <p class="eyebrow">{{ deal.get_pipeline_display }}</p>
+  <h1>Remove from pipeline?</h1>
+  <div class="card" style="padding:24px">
+    <h2>{{ deal.name }}</h2>
+    <p>This will archive this deal and remove it from the pipeline. The person's contact details, history, and other deals will be kept.</p>
+    <form method="post">
+      {% csrf_token %}
+      <button class="btn btn-primary" type="submit">Remove from pipeline</button>
+      <a class="btn" href="{% url 'crm_deal_detail' deal.pk %}">Cancel</a>
+    </form>
+  </div>
+</div>
+{% endblock %}

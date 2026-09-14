@@ -1705,6 +1705,70 @@ class CrmWorkspaceTests(TestCase):
         self.assertEqual(investment.name, "North Star Foundation — Seed")
         self.assertEqual(grant.related_deals.get(), investment)
 
+    def test_remove_from_each_pipeline_preserves_contact_and_other_deals(self):
+        self.client.force_login(self.admin_user)
+        sibling = Opportunity.objects.create(
+            lead=self.lead, name="Keep this enrollment",
+            pipeline=Opportunity.Pipeline.FAMILY_ENROLLMENT,
+            stage=Opportunity.Stage.FAMILY_LEAD_NURTURE,
+        )
+        for pipeline in Opportunity.Pipeline.values:
+            with self.subTest(pipeline=pipeline):
+                deal = Opportunity.objects.create(
+                    lead=self.lead, name=f"Remove {pipeline}", pipeline=pipeline,
+                    stage=Opportunity.initial_stage_for_pipeline(pipeline),
+                    metadata={"needs_naming_review": True},
+                )
+                deal.related_deals.add(sibling)
+                url = reverse("crm_deal_remove", args=[deal.pk])
+                board_url = reverse("crm_deal_list") + f"?pipeline={pipeline}"
+                self.assertContains(self.client.get(board_url), url)
+                self.assertContains(self.client.get(reverse("crm_deal_detail", args=[deal.pk])), url)
+                self.assertContains(self.client.get(url), deal.name)
+                deal.refresh_from_db()
+                self.assertFalse(deal.is_deleted)
+                self.assertRedirects(self.client.post(url), board_url)
+                deal.refresh_from_db()
+                sibling.refresh_from_db()
+                self.lead.refresh_from_db()
+                self.assertTrue(deal.is_deleted)
+                self.assertIsNotNone(deal.deleted_at)
+                self.assertTrue(deal.needs_naming_review)
+                self.assertFalse(sibling.is_deleted)
+                self.assertFalse(self.lead.is_deleted)
+                self.assertEqual(self.lead.contact_email, "alex@example.com")
+                self.assertTrue(deal.related_deals.filter(pk=sibling.pk).exists())
+                self.assertNotContains(self.client.get(board_url), deal.name)
+                self.assertNotContains(
+                    self.client.get(reverse("crm_contact_detail", args=[self.lead.pk])),
+                    reverse("crm_deal_detail", args=[deal.pk]),
+                )
+                self.assertEqual(self.client.get(reverse("crm_deal_detail", args=[deal.pk])).status_code, 404)
+                self.assertEqual(self.client.post(url).status_code, 404)
+                self.assertEqual(AuditLog.objects.filter(
+                    action="crm.deal.removed", entity_id=str(deal.pk)
+                ).count(), 1)
+
+    def test_pipeline_removal_requires_crm_access_and_csrf(self):
+        from django.test import Client
+
+        deal = Opportunity.objects.create(
+            lead=self.lead, name="Protected enrollment",
+            pipeline=Opportunity.Pipeline.FAMILY_ENROLLMENT,
+            stage=Opportunity.Stage.FAMILY_LEAD_NURTURE,
+        )
+        url = reverse("crm_deal_remove", args=[deal.pk])
+        self.assertEqual(self.client.post(url).status_code, 302)
+        self.client.force_login(self.guardian)
+        self.assertEqual(self.client.get(url).status_code, 403)
+        self.assertEqual(self.client.post(url).status_code, 403)
+        csrf_client = Client(enforce_csrf_checks=True)
+        csrf_client.force_login(self.admin_user)
+        self.assertEqual(csrf_client.post(url).status_code, 403)
+        deal.refresh_from_db()
+        self.assertFalse(deal.is_deleted)
+        self.assertFalse(AuditLog.objects.filter(action="crm.deal.removed").exists())
+
     def test_intake_enrollment_can_be_edited_before_naming_is_complete(self):
         self.client.force_login(self.admin_user)
         deal = Opportunity.objects.create(
