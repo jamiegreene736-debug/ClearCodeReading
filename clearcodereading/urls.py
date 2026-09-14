@@ -48,8 +48,20 @@ from apps.users.portal_views import (
     PortalLoginView,
 )
 
+from apps.crm.inventory_views import (
+    InventoryListView, InventorySendView, InventoryDetailView, InventoryPublicView,
+    InventorySlotsView, InventoryBookingView, InventoryPreviewView,
+)
+
 urlpatterns = [
     path("crm/", include("apps.crm_email.urls")),
+    path("crm/assessments/", InventoryListView.as_view(), name="inventory_list"),
+    path("crm/assessments/preview/", InventoryPreviewView.as_view(), name="inventory_preview"),
+    path("crm/assessments/availability/", InventorySlotsView.as_view(), name="inventory_slots"),
+    path("crm/contacts/<int:pk>/assessment/", InventorySendView.as_view(), name="inventory_send"),
+    path("crm/assessments/<uuid:pk>/", InventoryDetailView.as_view(), name="inventory_detail"),
+    path("reading-inventory/<str:token>/", InventoryPublicView.as_view(), name="inventory_public"),
+    path("reading-inventory/<str:token>/book/", InventoryBookingView.as_view(), name="inventory_booking"),
     path("", TemplateView.as_view(template_name="index.html"), name="marketing_home"),
     path("about/", TemplateView.as_view(template_name="about.html"), name="marketing_about"),
     path(

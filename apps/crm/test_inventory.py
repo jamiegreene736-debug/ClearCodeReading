@@ -1,0 +1,409 @@
+import smtplib
+from datetime import timedelta
+from unittest.mock import patch
+
+from django.contrib.auth import get_user_model
+from django.core import mail
+from django.db import IntegrityError, transaction
+from django.test import Client, SimpleTestCase, TestCase, override_settings
+from django.urls import reverse
+from django.utils import timezone
+
+from apps.crm.inventory import (
+    InventoryError,
+    definition,
+    deliver_mail,
+    evaluate,
+    queue_mail,
+    token_for,
+)
+from apps.crm.inventory_models import (
+    ConsultationSlot,
+    InventoryBooking,
+    InventoryChild,
+    InventoryInvitation,
+    InventoryMail,
+)
+from apps.crm.models import CrmActivity, Lead
+
+
+class InventoryScoringTests(SimpleTestCase):
+    def answers(self, grade, value=True):
+        return {
+            q["id"]: value
+            for group in definition(grade)["groups"]
+            for q in group["questions"]
+        }
+
+    def test_counts_and_all_yes(self):
+        for grade, count in [
+            ("kindergarten", 20),
+            ("grade_1", 25),
+            ("grade_2", 25),
+            ("grade_3", 24),
+        ]:
+            with self.subTest(grade=grade):
+                result = evaluate(grade, self.answers(grade))
+                self.assertEqual(result["total"], count)
+                self.assertEqual(result["outcome"], "resources")
+
+    def test_section_stop_precedes_total(self):
+        spec = definition("kindergarten")
+        answers = {q["id"]: False for q in spec["groups"][0]["questions"]}
+        result = evaluate("kindergarten", answers)
+        self.assertEqual(result["outcome"], "support")
+        self.assertEqual(result["answered"], 11)
+        answers[spec["groups"][1]["questions"][0]["id"]] = True
+        with self.assertRaises(InventoryError):
+            evaluate("kindergarten", answers)
+
+    def test_boundary_total_routes_to_review(self):
+        for grade in ["kindergarten", "grade_1", "grade_2", "grade_3"]:
+            spec = definition(grade)
+            answers = self.answers(grade, False)
+            remaining = spec["resourceAt"] - 1
+            for group in spec["groups"]:
+                minimum = group.get("continueAt", 0)
+                for q in group["questions"][:minimum]:
+                    answers[q["id"]] = True
+                    remaining -= 1
+            # K's minimum stopping thresholds exceed 12, so that boundary is unreachable.
+            if remaining < 0:
+                continue
+            for key in answers:
+                if remaining and not answers[key]:
+                    answers[key], remaining = True, remaining - 1
+            self.assertEqual(evaluate(grade, answers)["outcome"], "review")
+
+    def test_wrong_grade_or_values_are_rejected(self):
+        for answers in [
+            {"unknown": True},
+            {"kindergarten-01": "yes"},
+            {"kindergarten-01": 1},
+        ]:
+            with self.assertRaises(InventoryError):
+                evaluate("kindergarten", answers)
+        with self.assertRaises(InventoryError):
+            definition("unlisted")
+
+    def test_incomplete_is_not_scored(self):
+        self.assertFalse(evaluate("grade_3", {"third-plus-01": True})["complete"])
+
+
+@override_settings(
+    DEBUG=True,
+    EMAIL_BACKEND="django.core.mail.backends.locmem.EmailBackend",
+    PUBLIC_APP_URL="https://clearcode.example",
+)
+class InventoryWorkflowTests(TestCase):
+    def setUp(self):
+        self.staff = get_user_model().objects.create_user(
+            username="inventory-staff",
+            email="inventory-staff@example.com",
+            password="testing-pass",
+            role="crm_user",
+        )
+        self.parent = Lead.objects.create(
+            contact_name="Parent",
+            contact_email="parent@example.com",
+            school_name="Family",
+            assigned_to=self.staff,
+        )
+        self.child = InventoryChild.objects.create(
+            parent=self.parent, name="Avery", grade="grade_3"
+        )
+        self.invitation = InventoryInvitation.objects.create(
+            child=self.child,
+            recipient=self.parent.contact_email,
+            created_by=self.staff,
+            expires_at=timezone.now() + timedelta(days=30),
+        )
+        self.url = reverse("inventory_public", args=[token_for(self.invitation)])
+        self.client.force_login(self.staff)
+
+    def post_group(self, value="yes", action="continue"):
+        self.invitation.refresh_from_db()
+        group = definition(self.child.grade)["groups"][self.invitation.current_group]
+        payload = {q["id"]: value for q in group["questions"]}
+        payload.update(revision=self.invitation.revision, action=action)
+        return self.client.post(self.url, payload)
+
+    def test_contact_and_overview_have_assessment_actions(self):
+        self.assertContains(
+            self.client.get(reverse("crm_contact_detail", args=[self.parent.pk])),
+            "Send assessment",
+        )
+        self.assertContains(self.client.get(reverse("inventory_list")), "Avery")
+
+    def test_public_get_does_not_start_inventory(self):
+        response = Client().get(self.url)
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response["Referrer-Policy"], "no-referrer")
+        self.assertIn("no-store", response["Cache-Control"])
+        self.invitation.refresh_from_db()
+        self.assertIsNone(self.invitation.started_at)
+
+    def test_private_views_require_crm_permission(self):
+        for name, args in [
+            ("inventory_list", []),
+            ("inventory_detail", [self.invitation.pk]),
+            ("inventory_send", [self.parent.pk]),
+            ("inventory_slots", []),
+            ("inventory_preview", []),
+        ]:
+            self.assertEqual(Client().get(reverse(name, args=args)).status_code, 302)
+        outsider = get_user_model().objects.create_user(
+            username="inventory-outsider",
+            email="outsider@example.com",
+            password="pass",
+            role="parent",
+        )
+        self.client.force_login(outsider)
+        self.assertEqual(
+            self.client.get(
+                reverse("inventory_detail", args=[self.invitation.pk])
+            ).status_code,
+            403,
+        )
+
+    def test_invitation_send_is_idempotent_and_delivers_private_link(self):
+        url = reverse("inventory_send", args=[self.parent.pk])
+        response = self.client.get(url)
+        payload = {
+            "nonce": response.context["nonce"],
+            "child": self.child.pk,
+            "grade": self.child.grade,
+            "recipient": self.parent.contact_email,
+            "subject": "Reading inventory",
+            "message": "Please complete the inventory.",
+        }
+        self.client.post(url, payload)
+        self.client.post(url, payload)
+        self.assertEqual(len(mail.outbox), 1)
+        self.assertIn("/reading-inventory/", mail.outbox[0].body)
+        self.assertEqual(InventoryInvitation.objects.count(), 2)
+        self.assertIsNotNone(
+            InventoryInvitation.objects.exclude(pk=self.invitation.pk).get().sent_at
+        )
+
+    def test_other_parents_child_is_rejected(self):
+        other = Lead.objects.create(
+            contact_name="Other",
+            contact_email="other@example.com",
+            school_name="Family",
+        )
+        child = InventoryChild.objects.create(
+            parent=other, name="Other child", grade="grade_3"
+        )
+        url = reverse("inventory_send", args=[self.parent.pk])
+        response = self.client.get(url)
+        result = self.client.post(
+            url,
+            {
+                "nonce": response.context["nonce"],
+                "child": child.pk,
+                "grade": "grade_3",
+                "recipient": self.parent.contact_email,
+                "subject": "Test",
+                "message": "Test",
+            },
+        )
+        self.assertEqual(result.status_code, 200)
+        self.assertTrue(result.context["form"].errors)
+        self.assertEqual(InventoryInvitation.objects.count(), 1)
+
+    def test_save_full_section_does_not_advance_or_submit(self):
+        self.post_group(action="save")
+        self.invitation.refresh_from_db()
+        self.assertEqual(len(self.invitation.answers), 8)
+        self.assertEqual(self.invitation.current_group, 0)
+        self.assertIsNone(self.invitation.completed_at)
+        self.assertContains(self.client.get(self.url), "checked")
+        self.post_group()
+        self.invitation.refresh_from_db()
+        self.assertEqual(self.invitation.current_group, 1)
+
+    def test_partial_save_and_stale_tab(self):
+        self.client.post(
+            self.url, {"revision": 0, "action": "save", "third-plus-01": "yes"}
+        )
+        response = self.client.post(
+            self.url, {"revision": 0, "action": "save", "third-plus-01": "no"}
+        )
+        self.assertContains(response, "changed in another tab")
+        self.invitation.refresh_from_db()
+        self.assertEqual(self.invitation.answers, {"third-plus-01": True})
+
+    def test_cannot_continue_incomplete(self):
+        response = self.client.post(
+            self.url, {"revision": 0, "action": "continue", "third-plus-01": "yes"}
+        )
+        self.assertContains(response, "answer every question")
+        self.invitation.refresh_from_db()
+        self.assertIsNone(self.invitation.completed_at)
+
+    def test_stop_completion_is_idempotent_and_queues_review_and_emails(self):
+        self.post_group(value="no")
+        self.invitation.refresh_from_db()
+        self.assertIsNotNone(self.invitation.completed_at)
+        self.assertEqual(self.invitation.result["outcome"], "support")
+        self.assertEqual(self.invitation.emails.count(), 2)
+        self.assertEqual(CrmActivity.objects.filter(activity_type="task").count(), 1)
+        self.client.post(self.url, {"revision": 0, "action": "continue"})
+        self.assertEqual(self.invitation.emails.count(), 2)
+        self.assertEqual(len(mail.outbox), 2)
+        self.assertContains(self.client.get(self.url), "Schedule a consultation")
+
+    def test_siblings_do_not_overwrite_results(self):
+        sibling = InventoryChild.objects.create(
+            parent=self.parent, name="Sibling", grade="grade_1"
+        )
+        second = InventoryInvitation.objects.create(
+            child=sibling,
+            recipient=self.parent.contact_email,
+            expires_at=timezone.now() + timedelta(days=30),
+        )
+        self.post_group(value="no")
+        second.refresh_from_db()
+        self.assertEqual(second.answers, {})
+        self.assertIsNone(second.completed_at)
+
+    def test_expired_revoked_and_tampered_links(self):
+        self.assertEqual(Client().get(self.url + "invalid").status_code, 404)
+        self.invitation.expires_at = timezone.now() - timedelta(seconds=1)
+        self.invitation.save()
+        self.assertEqual(Client().get(self.url).status_code, 404)
+        self.invitation.expires_at = timezone.now() + timedelta(days=1)
+        self.invitation.revoked_at = timezone.now()
+        self.invitation.save()
+        self.assertEqual(Client().get(self.url).status_code, 404)
+
+    def test_mail_transport_uncertainty_does_not_auto_retry(self):
+        email = queue_mail(
+            self.invitation, "test", "parent@example.com", "Subject", "Message"
+        )
+        with patch(
+            "apps.crm.inventory.EmailMultiAlternatives.send", side_effect=TimeoutError
+        ):
+            deliver_mail(email.pk)
+        email.refresh_from_db()
+        self.assertEqual(email.status, "sending")
+        with patch("apps.crm.inventory.EmailMultiAlternatives.send") as sender:
+            deliver_mail(email.pk)
+        sender.assert_not_called()
+
+    def test_mail_rejected_and_zero_acceptance(self):
+        for error in [
+            smtplib.SMTPRecipientsRefused({"parent@example.com": (550, b"no")}),
+            None,
+        ]:
+            email = queue_mail(
+                self.invitation,
+                f"test-{error}",
+                "parent@example.com",
+                "Subject",
+                "Message",
+            )
+            with patch(
+                "apps.crm.inventory.EmailMultiAlternatives.send",
+                side_effect=error,
+                return_value=0,
+            ):
+                deliver_mail(email.pk)
+            email.refresh_from_db()
+            self.assertEqual(email.status, "failed")
+
+    @override_settings(DEBUG=False)
+    def test_production_console_backend_cannot_report_success(self):
+        email = queue_mail(
+            self.invitation, "test", "parent@example.com", "Subject", "Message"
+        )
+        deliver_mail(email.pk)
+        email.refresh_from_db()
+        self.assertEqual(email.status, "failed")
+
+    def test_preview_has_no_side_effects(self):
+        counts = (
+            InventoryInvitation.objects.count(),
+            InventoryMail.objects.count(),
+            CrmActivity.objects.count(),
+        )
+        self.client.post(
+            reverse("inventory_preview"),
+            {
+                "grade": "grade_3",
+                **{
+                    q["id"]: "no"
+                    for q in definition("grade_3")["groups"][0]["questions"]
+                },
+            },
+        )
+        self.assertEqual(
+            counts,
+            (
+                InventoryInvitation.objects.count(),
+                InventoryMail.objects.count(),
+                CrmActivity.objects.count(),
+            ),
+        )
+
+    def test_booking_and_calendar_idempotency(self):
+        self.post_group(value="no")
+        slot = ConsultationSlot.objects.create(
+            host=self.staff,
+            starts_at=timezone.now() + timedelta(days=2),
+            ends_at=timezone.now() + timedelta(days=2, minutes=30),
+        )
+        url = reverse("inventory_booking", args=[token_for(self.invitation)])
+        payload = {
+            "slot": slot.pk,
+            "phone": "407-555-0123",
+            "timezone": "America/New_York",
+        }
+        self.assertEqual(self.client.post(url, payload).status_code, 302)
+        self.assertEqual(self.client.post(url, payload).status_code, 302)
+        self.assertEqual(InventoryBooking.objects.count(), 1)
+        emails = self.invitation.emails.filter(key__startswith="booking-")
+        self.assertEqual(emails.count(), 2)
+        for email in emails:
+            self.assertIn("BEGIN:VCALENDAR", email.calendar)
+            self.assertEqual(email.status, "sent")
+        self.assertNotContains(
+            self.client.get(reverse("inventory_slots")), "Withdraw time"
+        )
+
+    def test_booked_slot_cannot_be_taken_by_another_invitation(self):
+        self.test_booking_and_calendar_idempotency()
+        sibling = InventoryInvitation.objects.create(
+            child=self.child,
+            recipient="parent@example.com",
+            completed_at=timezone.now(),
+            result={"outcome": "support"},
+            expires_at=timezone.now() + timedelta(days=30),
+        )
+        slot = ConsultationSlot.objects.get()
+        response = self.client.post(
+            reverse("inventory_booking", args=[token_for(sibling)]),
+            {"slot": slot.pk, "phone": "407-555-0123", "timezone": "America/New_York"},
+        )
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(InventoryBooking.objects.count(), 1)
+        with self.assertRaises(IntegrityError), transaction.atomic():
+            InventoryBooking.objects.create(
+                invitation=sibling, slot=slot, phone="1234567", timezone="UTC"
+            )
+
+    def test_overlapping_availability_is_rejected(self):
+        date = (timezone.now() + timedelta(days=3)).strftime("%Y-%m-%d")
+        payload = {
+            "host": self.staff.pk,
+            "date": date,
+            "time": "13:00",
+            "timezone": "America/New_York",
+            "duration": 30,
+        }
+        url = reverse("inventory_slots")
+        self.client.post(url, payload)
+        response = self.client.post(url, {**payload, "time": "13:15"})
+        self.assertContains(response, "overlaps")
+        self.assertEqual(ConsultationSlot.objects.count(), 1)

@@ -61,6 +61,13 @@
     </aside>
 
     <section id="activity">
+      <div class="card" style="padding:20px;margin-bottom:20px">
+        <h2>Assessments</h2>
+        <p><a class="btn btn-primary" href="{% url 'inventory_send' lead.pk %}">Send assessment</a></p>
+        {% for child in lead.inventory_children.all %}
+          {% for invitation in child.invitations.all %}<p><a href="{% url 'inventory_detail' invitation.pk %}">Parent Reading Inventory · {{ child.name }}</a><br><span class="badge">{{ invitation.status }}</span> <small>{{ invitation.created_at|date:"M j, Y" }}</small></p>{% endfor %}
+        {% empty %}<p>No assessments yet. Send an invitation to get started.</p>{% endfor %}
+      </div>
       <div class="card composer">
         <h2>Log activity</h2>
         <div class="composer-grid">

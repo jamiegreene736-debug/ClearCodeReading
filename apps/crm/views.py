@@ -1210,7 +1210,7 @@ class CrmContactDetailView(CrmAccessMixin, TemplateView):
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         lead = get_object_or_404(
-            Lead.objects.filter(is_deleted=False).select_related("assigned_to", "linked_user", "company"),
+            Lead.objects.filter(is_deleted=False).select_related("assigned_to", "linked_user", "company").prefetch_related("inventory_children__invitations"),
             pk=kwargs["pk"],
         )
         submissions = list(lead.form_submissions.all())
