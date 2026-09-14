@@ -1,4 +1,5 @@
 {% extends "crm/base.html" %}
+{% load inventory_email %}
 {% block title %}Send assessment{% endblock %}
 {% block extra_style %}
 .invitation-layout{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,340px),1fr));gap:24px;align-items:start}.invitation-form,.invitation-preview{padding:24px}.invitation-field{margin-bottom:20px}.invitation-field label{display:block;font-weight:700;margin-bottom:7px}.invitation-field .errorlist{color:#963420;padding-left:20px;margin:8px 0}.invitation-field.has-error input,.invitation-field.has-error select{border:2px solid #b64a32}.invitation-errors{padding:20px;margin:20px 0;background:#fff5f2;border:1px solid #ebc4b8;border-left:5px solid #b64a32;border-radius:8px}.invitation-errors h2{font-size:20px;margin:0 0 8px}.invitation-errors a{color:#963420}.invitation-errors ul{margin-bottom:0}.invitation-footer{padding-top:18px;border-top:1px solid var(--line)}.invitation-actions{display:flex;flex-wrap:wrap;gap:10px}.invitation-submit-note{min-height:24px;margin:12px 0 0;color:var(--muted)}.invitation-preview{border-top:4px solid var(--teal)}.invitation-preview h2{font-size:22px;overflow-wrap:anywhere}.invitation-preview-message{white-space:pre-wrap;overflow-wrap:anywhere}.invitation-subtitle{max-width:650px;color:var(--muted)}button[disabled]{opacity:.65;cursor:wait}@media(max-width:600px){.invitation-form,.invitation-preview{padding:18px}.invitation-actions .btn{width:100%}}
@@ -28,10 +29,11 @@
     </form>
     <aside class="card invitation-preview" aria-label="Email preview">
         <p class="badge">Email preview</p>
-        <p style="color:var(--teal);font-weight:800">ClearCode Reading</p>
+        <img src="/assets/logo/cc-lockup-linen-ui.png" alt="ClearCode Reading" width="240" style="display:block;width:240px;max-width:100%;height:auto;margin:16px 0 24px">
         <h2 id="preview-subject">{{ form.subject.value|default:"Your ClearCode Parent Reading Inventory" }}</h2>
-        <p id="preview-message" class="invitation-preview-message">{{ form.message.value|default:"" }}</p>
+        <p id="preview-message" class="invitation-preview-message">{{ form.message.value|default:""|before_action }}</p>
         <span class="btn btn-primary">Complete assessment</span>
+        <p id="preview-signoff" class="invitation-preview-message" style="margin-top:24px">{{ form.message.value|default:""|after_action }}</p>
         <p class="subtle">The parent opens this button to complete their child’s survey.</p>
     </aside>
 </div>
@@ -42,7 +44,11 @@
     const note = document.getElementById('invitation-submit-note');
     let submitting = false;
     function preview() {
-        for (const name of ['subject', 'message']) document.getElementById('preview-' + name).textContent = document.getElementById('id_' + name).value;
+        document.getElementById('preview-subject').textContent = document.getElementById('id_subject').value;
+        const message = document.getElementById('id_message').value.replace(/\r\n?/g, '\n');
+        const signoff = /^[ \t]*thank you[,!.]?[ \t]*(?:\n|$)/im.exec(message);
+        document.getElementById('preview-message').textContent = signoff ? message.slice(0, signoff.index).trimEnd() : message;
+        document.getElementById('preview-signoff').textContent = signoff ? message.slice(signoff.index) : '';
     }
     form.addEventListener('input', preview);
     form.addEventListener('submit', event => {

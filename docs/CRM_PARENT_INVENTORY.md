@@ -51,3 +51,7 @@ The send form shows a focused error summary when validation prevents sending and
 While delivery is pending, a CRM-authorized, non-cacheable status endpoint refreshes the confirmation and email history every ten seconds while the page is visible, up to ten minutes of active polling. Manual refresh remains available. Receipt refreshes preserve expanded messages and defer history replacement while a user is interacting with it. Duplicate submissions preserve the original send timestamp.
 
 Verification: 37 focused inventory tests; Django system/migration checks; Ruff on changed Python modules; existing strict email type checks. Desktop and 390px mobile checks confirmed visible validation, retained input, responsive failure/success cards, and queued-to-sent automatic updates without horizontal overflow or browser errors. UI checks used synthetic local receipts and did not send external email.
+
+### Invitation email layout
+
+The assessment action appears before a standalone “Thank you” sign-off, after the message's save-and-return paragraph. Edited messages without that sign-off retain their full text before the action. The CRM preview, HTML email, and plain-text email use the same ordering. HTML email and the CRM preview include the existing ClearCode logo; outgoing email uses an absolute public asset URL with alternative text. Desktop and 390px HTML previews verified the logo and button position; 39 focused tests passed, including Google outbox ordering, escaped content, and custom messages.
