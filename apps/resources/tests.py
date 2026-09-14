@@ -681,3 +681,19 @@ class ResourceWorkflowTests(TestCase):
                 ).status_code,
                 404,
             )
+
+    def test_topic_administration_uses_publisher_boundary(self):
+        from django.contrib import admin
+        from django.test import RequestFactory
+
+        from apps.resources.admin import TopicAdmin
+
+        request = RequestFactory().get("/admin/resources/topic/")
+        request.session = {"resources_staff_login": True}
+        topic_admin = TopicAdmin(Topic, admin.site)
+        request.user = self.author
+        self.assertFalse(topic_admin.has_change_permission(request, self.topic))
+        request.user = self.publisher
+        self.assertTrue(topic_admin.has_change_permission(request, self.topic))
+        request.session = {}
+        self.assertFalse(topic_admin.has_change_permission(request, self.topic))
