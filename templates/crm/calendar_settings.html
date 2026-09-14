@@ -4,8 +4,9 @@
 <h1>My calendar</h1>
 <p>Connect the calendar you already use to your own profile. Personal event details are never shown to families or other team members.</p>
 <p><a class="btn" href="{% url 'inventory_slots' %}?host={{ request.user.pk }}">Manage my consultation times</a></p>
+{% include "crm/_calendar_blocks.html" %}
 <section class="card" style="padding:24px;max-width:760px;margin-bottom:24px">
-<h2>1. Check your existing calendar for busy times</h2>
+<h2>Check your existing calendar for busy times</h2>
 <p>Choose the calendar that contains your commitments. ClearCode checks busy times when families view availability and again before booking.</p>
 {% if profile.encrypted_url or profile.encrypted_google_refresh_token %}
 <p><strong>Connected</strong> · {% if profile.encrypted_google_refresh_token %}Google Calendar · {{ profile.google_email }} · Primary calendar{% else %}Calendar sharing link · Time zone: {{ profile.source_timezone }}{% endif %}</p>
@@ -29,7 +30,7 @@
 </details>
 </section>
 <section class="card" style="padding:24px;max-width:760px">
-<h2>2. Show ClearCode bookings in your calendar</h2>
+<h2>Show ClearCode bookings in your calendar</h2>
 <p>Subscribe to your personal ClearCode calendar. New bookings appear when your calendar app refreshes its subscription. This is a read-only subscription; changing a copied event in another calendar does not reschedule a ClearCode booking.</p>
 {% if feed_url %}
 <label for="feed-url">Your private subscription link</label><input id="feed-url" readonly value="{{ feed_url }}" onclick="this.select()">

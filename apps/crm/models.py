@@ -677,4 +677,4 @@ from apps.crm.inventory_models import (  # noqa: E402,F401
     ConsultationSlot, InventoryBooking, InventoryChild, InventoryInvitation, InventoryMail,
 )
 
-from apps.crm.calendar_models import CalendarAuthorization, HostCalendar  # noqa: E402,F401
+from apps.crm.calendar_models import CalendarAuthorization, CalendarDateOverride, HostCalendar, WeeklyCalendarBlock  # noqa: E402,F401

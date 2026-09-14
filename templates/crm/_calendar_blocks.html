@@ -1,0 +1,80 @@
+<style>
+.calendar-blocks{max-width:900px;padding:24px;margin-bottom:24px}.block-row{display:grid;grid-template-columns:110px minmax(160px,1.4fr) repeat(2,minmax(120px,1fr));gap:12px;align-items:end;border-top:1px solid #dbe4df;padding:16px 0}.block-row label{display:block;font-size:.85rem;margin-bottom:4px}.block-row input,.block-row select{width:100%;min-width:0;box-sizing:border-box}.block-day{align-self:center;font-weight:600}.block-copy{padding:16px;background:#f2f7f4;border-radius:12px;margin:20px 0}.block-copy .block-row{border:0}.block-override{border-top:1px solid #dbe4df;padding:16px 0;display:flex;gap:16px;align-items:center;justify-content:space-between}.block-override p{margin:0}.calendar-blocks .errorlist{color:#a12424}.block-help{font-size:.9rem;color:#42564c}.calendar-blocks fieldset{border:0;padding:0;margin:0}.calendar-blocks legend{font-weight:600}.weekday-rule legend{position:absolute;width:1px;height:1px;overflow:hidden;clip-path:inset(50%)}.calendar-blocks input:disabled{background:#edf2f5;color:#526574}.block-zone select{max-width:100%}@media(max-width:1100px){.calendar-blocks{padding:16px}.block-row{grid-template-columns:1fr 1fr}.block-day{grid-column:1/-1}.block-mode{grid-column:1/-1}.block-override{align-items:start;flex-direction:column}}
+</style>
+<section class="card calendar-blocks" aria-labelledby="weekly-heading">
+<h2 id="weekly-heading">Weekly blocks</h2>
+<p>Protect time from new invitation and consultation bookings, even without a connected calendar. Set the same hours for every day, then adjust any weekday below.</p>
+<p class="block-help">These are <strong>times you cannot be booked</strong>. Confirmed consultation times outside these blocks can still be offered. Google/iCal busy events also apply. Existing bookings are unchanged.</p>
+<form method="post" id="weekly-block-form">{% csrf_token %}
+<div class="block-zone">{{ zone_form.as_p }}</div>
+<div class="block-copy">
+<h3>Start with the same block every day</h3>
+<div class="block-row">
+<span class="block-day">Every day</span>
+<div class="block-mode"><label for="copy-mode">Blocking rule</label><select id="copy-mode"><option value="range">Block a time range</option><option value="all">Block all day</option><option value="none">No block</option></select></div>
+<div><label for="copy-start">From</label><input type="time" id="copy-start" value="09:00"></div>
+<div><label for="copy-end">To</label><input type="time" id="copy-end" value="17:00"></div>
+</div>
+<button type="button" class="btn" id="copy-week">Apply to all seven days</button>
+<span role="status" id="copy-status"></span>
+</div>
+{% for day, day_form in weekly_rows %}
+<fieldset class="weekday-rule"><legend>{{ day }}</legend>{{ day_form.non_field_errors }}
+<div class="block-row">
+<span class="block-day" aria-hidden="true">{{ day }}</span>
+{% for field in day_form %}<div {% if field.name == 'mode' %}class="block-mode"{% endif %}>{{ field.label_tag }}{{ field }}{{ field.errors }}</div>{% endfor %}
+</div></fieldset>
+{% endfor %}
+<p class="block-help">An end time earlier than the start continues into the next day. For example, 10:00 PM–7:00 AM blocks overnight. Use “Block all day” for a full day. During daylight-saving changes, repeated clock times are both blocked.</p>
+<button class="btn btn-primary" name="action" value="save_weekly">Save weekly blocks</button>
+<p class="block-help">Applying to all days fills the rows. Save to make your changes active.</p>
+</form>
+</section>
+<section class="card calendar-blocks" aria-labelledby="override-heading">
+<h2 id="override-heading">Date overrides</h2>
+<p>Make an exception for a specific date in <strong>{{ profile.blocking_timezone|default:"America/New_York" }}</strong>. This replaces its weekly block, including any overnight block carried from the previous day. Google/iCal busy events still apply.</p>
+<p class="block-help">Choose “No block” to remove your local blocks for that date, “Block all day” for a day off, or enter different hours. Saving the same date updates its override.</p>
+<form method="post" id="date-override-form">{% csrf_token %}{{ override_form.as_p }}<button class="btn btn-primary" name="action" value="save_override">Save date override</button></form>
+<h3>Saved overrides</h3>
+{% for override in overrides %}
+<div class="block-override"><p><strong>{{ override.date|date:"D, M j, Y" }}</strong><br>{{ override.get_mode_display }}{% if override.mode == 'range' %}: {{ override.starts_at|time:"g:i A" }}–{{ override.ends_at|time:"g:i A" }}{% if override.ends_at < override.starts_at %} (ends next day){% endif %}{% endif %}</p>
+<form method="post">{% csrf_token %}<input type="hidden" name="override_id" value="{{ override.pk }}"><button class="btn" name="action" value="delete_override" aria-label="Remove override for {{ override.date|date:'M j, Y' }}">Use weekly rule again</button></form></div>
+{% empty %}<p>No date overrides. Your weekly rules apply every week.</p>{% endfor %}
+</section>
+<script>
+(() => {
+  const form = document.getElementById('weekly-block-form');
+  const updateRow = (container) => {
+    const mode = container.querySelector('select');
+    container.querySelectorAll('input[type="time"]').forEach(input => {
+      input.disabled = mode.value !== 'range';
+      input.required = mode.value === 'range';
+    });
+  };
+  form.querySelectorAll('.weekday-rule').forEach(row => {
+    row.querySelector('select').addEventListener('change', () => updateRow(row));
+    updateRow(row);
+  });
+  const overrideForm = document.getElementById('date-override-form');
+  overrideForm.querySelector('select').addEventListener('change', () => updateRow(overrideForm));
+  updateRow(overrideForm);
+  const copy = form.querySelector('.block-copy');
+  copy.querySelector('select').addEventListener('change', () => updateRow(copy));
+  document.getElementById('copy-week').addEventListener('click', () => {
+    const mode = document.getElementById('copy-mode').value;
+    const start = document.getElementById('copy-start');
+    const end = document.getElementById('copy-end');
+    if (mode === 'range' && (!start.value || !end.value || start.value === end.value)) {
+      document.getElementById('copy-status').textContent = 'Enter different start and end times, or choose Block all day.';
+      return;
+    }
+    form.querySelectorAll('.weekday-rule').forEach(row => {
+      row.querySelector('select').value = mode;
+      row.querySelector('input[name$="starts_at"]').value = start.value;
+      row.querySelector('input[name$="ends_at"]').value = end.value;
+      updateRow(row);
+    });
+    document.getElementById('copy-status').textContent = 'Applied. Adjust any day below, then save.';
+  });
+})();
+</script>

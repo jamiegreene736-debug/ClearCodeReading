@@ -103,6 +103,29 @@ existing booking/email idempotency. No real appointment times are invented.
 
 Verification for this change: 503 project tests and 51 focused tests passed; Django system/migration checks, Ruff, and strict email type checks passed. Chromium and WebKit exercised all 25 Grade 2 answers, save/resume, and submission at 390px and 1280px. Chromium exercised Bethany default selection, confirmation, and withdrawal at both widths. No horizontal overflow or assessment browser errors.
 
+### Local weekly blocks and date overrides
+
+Hosts manage their own **My calendar → Weekly blocks** without connecting an
+external calendar. One local-time range (including overnight), an all-day block,
+or no block can be set for each weekday. “Apply to all seven days” fills the
+editor; **Save weekly blocks** persists all seven rows atomically. The separate
+blocking time zone governs these rules and date overrides, without changing a
+connected feed's source time zone.
+
+A saved date override replaces all local blocking on that date, including a
+previous night's carryover. An overnight override can continue into the following
+date unless that date also has an override. Removing an override restores the
+weekly rule. Google/iCal busy events and provider-error protection always remain
+additive; a “No block” override never bypasses them. DST folds cover both copies
+of a repeated time; nonexistent clock boundaries conservatively cover the gap.
+
+The rules only filter confirmed consultation slots offered through invitations;
+they do not create appointments, alter teaching schedules, or cancel existing
+bookings. Availability is checked again at booking. Settings writes and bookings
+share a host-row lock so a newly saved rule cannot race with a booking check.
+The new tables start empty, preserving existing availability after migration.
+
+
 ## Google Calendar sign-in
 
 Consultation availability now has a direct **Connect Google Calendar** button. It requests
