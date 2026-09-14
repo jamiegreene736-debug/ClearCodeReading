@@ -10,7 +10,6 @@ from django.db.models import Avg
 from django.shortcuts import redirect
 from django.urls import reverse_lazy
 from django.utils import timezone
-from django.utils.crypto import get_random_string
 from django.utils.dateparse import parse_date
 from django.views.generic import TemplateView, View
 
@@ -71,8 +70,15 @@ class PortalLoginView(LoginView):
         return context
 
     def form_valid(self, form):
+        from apps.users.onboarding_views import needs_gmail_welcome
+
+        welcome = needs_gmail_welcome(form.get_user())
         messages.success(self.request, "Welcome back to Clear Code Reading.")
-        return super().form_valid(form)
+        response = super().form_valid(form)
+        if welcome:
+            self.request.session["onboarding_next"] = response.url
+            return redirect("gmail_welcome")
+        return response
 
 
 class DemoLoginView(View):
@@ -492,60 +498,6 @@ class AssignLessonTemplateToChildView(PortalAuthMixin, View):
 
 class CreatePortalUserView(PortalAuthMixin, View):
     def post(self, request):
-        if request.user.role not in {CustomUser.Role.SUPER_ADMIN, CustomUser.Role.SCHOOL_ADMIN}:
-            messages.error(request, "Only program administrators can create accounts.")
-            return redirect("portal_dashboard")
+        from apps.users.onboarding_views import manage_users
 
-        role = request.POST.get("role")
-        if role not in {CustomUser.Role.GUARDIAN, CustomUser.Role.TEACHER}:
-            messages.error(request, "Create either a parent or teacher account.")
-            return redirect("portal_dashboard")
-
-        email = request.POST.get("email", "").strip().lower()
-        first_name = request.POST.get("first_name", "").strip()
-        last_name = request.POST.get("last_name", "").strip()
-        phone_number = request.POST.get("phone_number", "").strip()
-        raw_password = request.POST.get("password", "").strip() or self._temporary_password()
-        if not email:
-            messages.error(request, "Email is required to create an account.")
-            return redirect("portal_dashboard")
-        if CustomUser.objects.filter(email=email, is_deleted=False).exists():
-            messages.error(request, f"An account already exists for {email}.")
-            return redirect("portal_dashboard")
-
-        user = CustomUser.objects.create_user(
-            username=self._unique_username(email),
-            email=email,
-            password=raw_password,
-            first_name=first_name,
-            last_name=last_name,
-            role=role,
-            phone_number=phone_number,
-            is_active=True,
-            metadata={
-                "created_from_portal": True,
-                "created_by_admin_id": request.user.id,
-                "created_at": timezone.now().isoformat(),
-            },
-        )
-
-        Lead.objects.filter(contact_email=email, is_deleted=False).update(linked_user=user, updated_at=timezone.now())
-        messages.success(
-            request,
-            f"Created {user.get_role_display()} account for {user.get_full_name() or user.email}. Temporary password: {raw_password}",
-        )
-        return redirect("portal_dashboard")
-
-    @staticmethod
-    def _temporary_password():
-        return f"ClearCode-{get_random_string(10)}!"
-
-    @staticmethod
-    def _unique_username(email):
-        base = email.split("@", 1)[0].replace("+", "-")[:120] or "user"
-        username = base
-        counter = 1
-        while CustomUser.objects.filter(username=username).exists():
-            counter += 1
-            username = f"{base}-{counter}"
-        return username
+        return manage_users(request)

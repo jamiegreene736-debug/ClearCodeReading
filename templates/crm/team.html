@@ -36,17 +36,16 @@
 
     <aside class="card create-panel">
       {% if can_manage_crm_users %}
-        <p class="eyebrow">Super admin</p><h2>Create a CRM user</h2><p class="subtle">This account can work in the CRM but does not receive Django admin or program-management access.</p>
+        <p class="eyebrow">Super admin</p><h2>Add a backend employee</h2><p class="subtle">This account can work in the CRM but does not receive Django admin or program-management access.</p>
+        <p class="subtle">We will email a private link to choose a password and log in.</p><p><a href="{% url 'manage_users' %}">All user invitations, teachers &amp; parents</a></p>
         <form method="post" action="{% url 'crm_team' %}">
           {% csrf_token %}
           {{ form.non_field_errors }}
           <div class="field"><label for="{{ form.first_name.id_for_label }}">{{ form.first_name.label }}</label>{{ form.first_name }}{{ form.first_name.errors }}</div>
           <div class="field"><label for="{{ form.last_name.id_for_label }}">{{ form.last_name.label }}</label>{{ form.last_name }}{{ form.last_name.errors }}</div>
           <div class="field"><label for="{{ form.email.id_for_label }}">{{ form.email.label }}</label>{{ form.email }}{{ form.email.errors }}</div>
-          <div class="field"><label for="{{ form.password1.id_for_label }}">{{ form.password1.label }}</label>{{ form.password1 }}{% if form.password1.help_text %}<span class="helptext">{{ form.password1.help_text }}</span>{% endif %}{{ form.password1.errors }}</div>
-          <div class="field"><label for="{{ form.password2.id_for_label }}">{{ form.password2.label }}</label>{{ form.password2 }}{{ form.password2.errors }}</div>
           <label style="display:flex;align-items:center;gap:8px">{{ form.hiring_enabled }} {{ form.hiring_enabled.label }}</label>
-          <button class="btn btn-primary" type="submit">Create CRM user</button>
+          <button class="btn btn-primary" type="submit">Create user &amp; send invitation</button>
         </form>
       {% else %}
         <p class="eyebrow">Team management</p><h2>Need another CRM user?</h2><p class="subtle">A super administrator can create new CRM accounts. You can assign contacts to any active user listed here.</p>

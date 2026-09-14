@@ -1,8 +1,5 @@
 from django import forms
-from django.contrib.auth import password_validation
-from django.core.exceptions import ValidationError
 from django.utils import timezone
-from django.utils.crypto import get_random_string
 
 from apps.crm.access import crm_owner_queryset
 from apps.crm.models import Company, Lead, Opportunity
@@ -163,17 +160,6 @@ class CrmTeamMemberForm(forms.Form):
     first_name = forms.CharField(max_length=150, label="First name")
     last_name = forms.CharField(max_length=150, required=False, label="Last name")
     email = forms.EmailField(max_length=254, label="Work email")
-    password1 = forms.CharField(
-        required=False,
-        label="Temporary password",
-        widget=forms.PasswordInput(attrs={"autocomplete": "new-password"}),
-        help_text="Leave both password fields blank to generate a secure temporary password.",
-    )
-    password2 = forms.CharField(
-        required=False,
-        label="Confirm temporary password",
-        widget=forms.PasswordInput(attrs={"autocomplete": "new-password"}),
-    )
 
     def clean_email(self):
         email = self.cleaned_data["email"].strip().lower()
@@ -181,29 +167,11 @@ class CrmTeamMemberForm(forms.Form):
             raise forms.ValidationError("A user with this email already exists.")
         return email
 
-    def clean(self):
-        cleaned_data = super().clean()
-        password1 = cleaned_data.get("password1", "")
-        password2 = cleaned_data.get("password2", "")
-        if bool(password1) != bool(password2) or (password1 and password1 != password2):
-            self.add_error("password2", "The two password fields must match.")
-            return cleaned_data
-        if password1:
-            try:
-                password_validation.validate_password(password1, self._candidate_user(cleaned_data))
-            except ValidationError as exc:
-                self.add_error("password1", exc)
-        return cleaned_data
-
     def save(self, *, created_by):
-        password = self.cleaned_data["password1"] or self._temporary_password()
-        candidate = self._candidate_user(self.cleaned_data)
-        if not self.cleaned_data["password1"]:
-            password_validation.validate_password(password, candidate)
         return CustomUser.objects.create_user(
             username=self._unique_username(self.cleaned_data["email"]),
             email=self.cleaned_data["email"],
-            password=password,
+            password=None,
             first_name=self.cleaned_data["first_name"].strip(),
             last_name=self.cleaned_data["last_name"].strip(),
             role=CustomUser.Role.CRM_USER,
@@ -216,22 +184,7 @@ class CrmTeamMemberForm(forms.Form):
                 "created_by_admin_id": created_by.pk,
                 "created_at": timezone.now().isoformat(),
             },
-        ), password
-
-    @staticmethod
-    def _candidate_user(cleaned_data):
-        email = cleaned_data.get("email", "")
-        return CustomUser(
-            username=email.split("@", 1)[0],
-            email=email,
-            first_name=cleaned_data.get("first_name", ""),
-            last_name=cleaned_data.get("last_name", ""),
-            role=CustomUser.Role.CRM_USER,
         )
-
-    @staticmethod
-    def _temporary_password():
-        return f"ClearCode-{get_random_string(16)}!"
 
     @staticmethod
     def _unique_username(email):

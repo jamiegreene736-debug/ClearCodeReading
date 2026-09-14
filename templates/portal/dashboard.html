@@ -369,43 +369,7 @@
               <p class="text-sm font-black uppercase tracking-[0.18em] text-mediumTeal">Account creation</p>
               <h2 class="mt-2 text-3xl font-black">Create a parent or teacher login</h2>
             </div>
-            <form class="mt-5 grid gap-4" method="post" action="{% url 'portal_create_user' %}">
-              {% csrf_token %}
-              <div class="grid gap-4 md:grid-cols-2">
-                <label class="block">
-                  <span class="text-sm font-black text-ink/65">First name</span>
-                  <input class="mt-2 w-full rounded-2xl border border-ink/15 px-4 py-3 font-bold focus:border-deepTeal focus:outline-none" name="first_name" autocomplete="given-name">
-                </label>
-                <label class="block">
-                  <span class="text-sm font-black text-ink/65">Last name</span>
-                  <input class="mt-2 w-full rounded-2xl border border-ink/15 px-4 py-3 font-bold focus:border-deepTeal focus:outline-none" name="last_name" autocomplete="family-name">
-                </label>
-              </div>
-              <div class="grid gap-4 md:grid-cols-2">
-                <label class="block">
-                  <span class="text-sm font-black text-ink/65">Email</span>
-                  <input class="mt-2 w-full rounded-2xl border border-ink/15 px-4 py-3 font-bold focus:border-deepTeal focus:outline-none" type="email" name="email" autocomplete="email" required>
-                </label>
-                <label class="block">
-                  <span class="text-sm font-black text-ink/65">Phone</span>
-                  <input class="mt-2 w-full rounded-2xl border border-ink/15 px-4 py-3 font-bold focus:border-deepTeal focus:outline-none" type="tel" name="phone_number" autocomplete="tel">
-                </label>
-              </div>
-              <div class="grid gap-4 md:grid-cols-[1fr_1fr_auto]">
-                <label class="block">
-                  <span class="text-sm font-black text-ink/65">Account type</span>
-                  <select class="mt-2 w-full rounded-2xl border border-ink/15 px-4 py-3 font-bold focus:border-deepTeal focus:outline-none" name="role" required>
-                    <option value="guardian">Parent</option>
-                    <option value="teacher">Teacher</option>
-                  </select>
-                </label>
-                <label class="block">
-                  <span class="text-sm font-black text-ink/65">Password</span>
-                  <input class="mt-2 w-full rounded-2xl border border-ink/15 px-4 py-3 font-bold focus:border-deepTeal focus:outline-none" name="password" autocomplete="new-password" placeholder="Auto-generate if blank">
-                </label>
-                <button class="focus-ring self-end rounded-full bg-mediumTeal px-6 py-3 font-black text-white shadow-lg shadow-mediumTeal/20 transition hover:-translate-y-0.5" type="submit">Create account</button>
-              </div>
-            </form>
+            <p class="mt-5"><a class="focus-ring rounded-full bg-deepTeal px-5 py-3 font-black text-white" href="{% url 'manage_users' %}">Add user &amp; send invitation</a></p>
           </section>
         {% endif %}
 
