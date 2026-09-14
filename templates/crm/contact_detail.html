@@ -14,6 +14,13 @@
   .property { margin:0 0 13px; }
   .property dt { color:var(--muted); font-size:11px; font-weight:700; text-transform:uppercase; }
   .property dd { margin:3px 0 0; overflow-wrap:anywhere; }
+  .inline-property summary { cursor:pointer; display:flex; align-items:center; justify-content:space-between; gap:8px; min-height:44px; border-radius:4px; padding:4px; }
+  .inline-property summary:hover, .inline-property summary:focus-visible { background:#e5f4f2; outline:2px solid var(--teal); }
+  .edit-cue { color:var(--teal); font-size:12px; }
+  .inline-property form { padding:10px 0; }
+  .inline-property select { width:100%; min-height:44px; }
+  .inline-actions { display:flex; gap:8px; margin-top:10px; }
+  .company-link { font-size:12px; }
   .composer { padding:18px; }
   .composer-grid { display:grid; grid-template-columns:1fr 1fr; gap:12px; }
   .composer form { padding:15px; background:#f5f8fa; border:1px solid var(--line); border-radius:6px; }
@@ -50,11 +57,49 @@
       <p class="subtle">{{ lead.organization_name|default:lead.school_name }}</p>
       <p><a href="mailto:{{ lead.contact_email }}">{{ lead.contact_email }}</a>{% if lead.contact_phone %}<br><a href="tel:{{ lead.contact_phone }}">{{ lead.contact_phone }}</a>{% endif %}</p>
       <div class="quick-actions"><a class="btn btn-small" href="{% url 'crm_contact_email' lead.pk %}">Email</a><a class="btn btn-small" href="#activity">Add activity</a></div>
+      <p class="subtle">Click a property below to edit.</p>
       <dl class="properties">
-        <div class="property"><dt>Lead status</dt><dd><span class="badge {% if lead.status == 'new' %}badge-warn{% endif %}">{{ lead.get_status_display }}</span></dd></div>
-        <div class="property"><dt>Audience</dt><dd>{{ lead.get_audience_display }}</dd></div>
-        <div class="property"><dt>Company</dt><dd>{% if lead.company %}<a href="{% url 'crm_company_detail' lead.company.pk %}">{{ lead.company.name }}</a>{% else %}No company{% endif %}</dd></div>
-        <div class="property"><dt>Contact owner</dt><dd>{% if lead.assigned_to %}{{ lead.assigned_to.get_full_name|default:lead.assigned_to.email }}{% else %}Unassigned{% endif %}</dd></div>
+        <div class="property"><dt>Lead status</dt><dd>
+          <details class="inline-property" id="property-status">
+            <summary aria-label="Edit lead status"><span>{{ lead.get_status_display }}</span><span class="edit-cue">Edit</span></summary>
+            <form method="post" action="{% url 'crm_contact_update' lead.pk %}">{% csrf_token %}
+              <input type="hidden" name="field" value="status">
+              <div class="field"><label for="inline-status">Lead status</label><select id="inline-status" name="status">{% for value,label in status_choices %}<option value="{{ value }}" {% if lead.status == value %}selected{% endif %}>{{ label }}</option>{% endfor %}</select></div>
+              <div class="inline-actions"><button class="btn btn-primary btn-small" type="submit">Save</button><button class="btn btn-small" type="button" data-cancel-edit>Cancel</button></div>
+            </form>
+          </details>
+        </dd></div>
+        <div class="property"><dt>Audience</dt><dd>
+          <details class="inline-property" id="property-audience">
+            <summary aria-label="Edit audience"><span>{{ lead.get_audience_display }}</span><span class="edit-cue">Edit</span></summary>
+            <form method="post" action="{% url 'crm_contact_update' lead.pk %}">{% csrf_token %}
+              <input type="hidden" name="field" value="audience">
+              <div class="field"><label for="inline-audience">Audience</label><select id="inline-audience" name="audience">{% for value,label in audience_choices %}<option value="{{ value }}" {% if lead.audience == value %}selected{% endif %}>{{ label }}</option>{% endfor %}</select></div>
+              <div class="inline-actions"><button class="btn btn-primary btn-small" type="submit">Save</button><button class="btn btn-small" type="button" data-cancel-edit>Cancel</button></div>
+            </form>
+          </details>
+        </dd></div>
+        <div class="property"><dt>Company</dt><dd>
+          <details class="inline-property" id="property-company">
+            <summary aria-label="Edit company"><span>{% if lead.company %}{{ lead.company.name }}{% else %}No company{% endif %}</span><span class="edit-cue">Edit</span></summary>
+            <form method="post" action="{% url 'crm_contact_update' lead.pk %}">{% csrf_token %}
+              <input type="hidden" name="field" value="company">
+              <div class="field"><label for="inline-company">Company</label><select id="inline-company" name="company"><option value="">No company</option>{% for company in companies %}<option value="{{ company.pk }}" {% if lead.company_id == company.pk %}selected{% endif %}>{{ company.name }}</option>{% endfor %}</select></div>
+              <div class="inline-actions"><button class="btn btn-primary btn-small" type="submit">Save</button><button class="btn btn-small" type="button" data-cancel-edit>Cancel</button></div>
+            </form>
+          </details>
+          {% if lead.company %}<a class="company-link" href="{% url 'crm_company_detail' lead.company.pk %}">View company →</a>{% endif %}
+        </dd></div>
+        <div class="property"><dt>Contact owner</dt><dd>
+          <details class="inline-property" id="property-assigned_to">
+            <summary aria-label="Edit contact owner"><span>{% if lead.assigned_to %}{{ lead.assigned_to.get_full_name|default:lead.assigned_to.email }}{% else %}Unassigned{% endif %}</span><span class="edit-cue">Edit</span></summary>
+            <form method="post" action="{% url 'crm_contact_update' lead.pk %}">{% csrf_token %}
+              <input type="hidden" name="field" value="assigned_to">
+              <div class="field"><label for="inline-assigned_to">Contact owner</label><select id="inline-assigned_to" name="assigned_to"><option value="">Unassigned</option>{% for owner in owners %}<option value="{{ owner.pk }}" {% if lead.assigned_to_id == owner.pk %}selected{% endif %}>{{ owner.get_full_name|default:owner.email }}</option>{% endfor %}</select></div>
+              <div class="inline-actions"><button class="btn btn-primary btn-small" type="submit">Save</button><button class="btn btn-small" type="button" data-cancel-edit>Cancel</button></div>
+            </form>
+          </details>
+        </dd></div>
         <div class="property"><dt>First seen</dt><dd>{{ lead.created_at|date:"M j, Y, g:i A" }}</dd></div>
         <div class="property"><dt>Linked account</dt><dd>{% if lead.linked_user %}{{ lead.linked_user.get_full_name|default:lead.linked_user.email }}{% else %}No account yet{% endif %}</dd></div>
       </dl>
@@ -126,4 +171,21 @@
       {% if lead.notes %}<section class="card panel" style="margin-top:18px"><h2 class="side-title">Latest inquiry notes</h2><p>{{ lead.notes|linebreaksbr }}</p></section>{% endif %}
     </aside>
   </div>
+<script>
+  document.querySelectorAll('.inline-property').forEach((editor) => {
+    const cancel = () => {
+      editor.querySelector('form').reset();
+      editor.open = false;
+      editor.querySelector('summary').focus();
+    };
+    editor.querySelector('[data-cancel-edit]').addEventListener('click', cancel);
+    editor.addEventListener('keydown', (event) => {
+      if (event.key === 'Escape') { event.preventDefault(); cancel(); }
+    });
+    editor.addEventListener('toggle', () => {
+      if (editor.open) editor.querySelector('select').focus();
+      else editor.querySelector('form').reset();
+    });
+  });
+</script>
 {% endblock %}
