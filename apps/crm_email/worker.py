@@ -84,6 +84,12 @@ def reconcile(client: Gmail, message: Message) -> None:
 
 
 def send(client: Gmail, message: Message) -> None:
+    if message.status not in {
+        Message.Status.QUEUED,
+        Message.Status.SENDING,
+        Message.Status.UNCERTAIN,
+    }:
+        return
     if message.status in {Message.Status.SENDING, Message.Status.UNCERTAIN}:
         reconcile(client, message)
         return

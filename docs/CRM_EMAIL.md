@@ -112,7 +112,7 @@ by deploying the feature.
 
 ## Verification recorded for this implementation
 - Full Django suite: 334 tests passed on PostgreSQL after dependency security updates.
-- Focused email suite includes 42 tests for isolation, OAuth identity/state, queue idempotency,
+- Focused email suite includes 43 tests for isolation, OAuth identity/state, queue idempotency,
   uncertain sends, rate limits, revocation, attachments, incoming drafts exclusion, history recovery,
   watch renewal, concurrent push hints, signed import selection, templates and follow-up tasks.
 - Strict mypy and Ruff checks cover the new email application.

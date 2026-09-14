@@ -271,6 +271,14 @@ class EmailTests(TestCase):
         self.assertEqual(CrmActivity.objects.filter(activity_type="task").count(), 1)
         self.assertIn(b"Bcc: private@example.com", build_mime(message))
 
+    def test_completed_send_cannot_be_sent_again(self) -> None:
+        message = self.draft()
+        client = MagicMock(spec=Gmail)
+        client.request.return_value = {"id": "def", "threadId": "abc"}
+        send(client, message)
+        send(client, message)
+        client.request.assert_called_once()
+
     def test_send_timeout_reconciles_without_resending(self) -> None:
         message = self.draft()
         client = MagicMock(spec=Gmail)
