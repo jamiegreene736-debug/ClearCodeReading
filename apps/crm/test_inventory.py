@@ -138,7 +138,7 @@ class InventoryWorkflowTests(TestCase):
     def test_public_get_does_not_start_inventory(self):
         response = Client().get(self.url)
         self.assertEqual(response.status_code, 200)
-        self.assertEqual(response["Referrer-Policy"], "no-referrer")
+        self.assertEqual(response["Referrer-Policy"], "same-origin")
         self.assertIn("no-store", response["Cache-Control"])
         self.invitation.refresh_from_db()
         self.assertIsNone(self.invitation.started_at)
@@ -539,6 +539,92 @@ class InventoryWorkflowTests(TestCase):
             .post(self.url, {"revision": 0, "action": "continue"})
             .status_code,
             403,
+        )
+
+    def test_https_continue_and_save_preserve_csrf_verification(self):
+        for action in ("save", "continue"):
+            with self.subTest(action=action):
+                client = Client(enforce_csrf_checks=True)
+                response = client.get(self.url, secure=True)
+                self.assertEqual(response["Referrer-Policy"], "same-origin")
+                self.assertContains(
+                    response, '<meta name="referrer" content="same-origin">'
+                )
+                self.invitation.refresh_from_db()
+                revision = self.invitation.revision
+                group = definition(self.child.grade)["groups"][
+                    self.invitation.current_group
+                ]
+                payload = {q["id"]: "yes" for q in group["questions"]}
+                payload.update(
+                    revision=revision,
+                    action=action,
+                    csrfmiddlewaretoken=client.cookies["csrftoken"].value,
+                )
+                for headers in (
+                    {},
+                    {"HTTP_REFERER": "https://other.example/"},
+                    {"HTTP_ORIGIN": "https://other.example/"},
+                ):
+                    self.assertEqual(
+                        client.post(
+                            self.url, payload, secure=True, **headers
+                        ).status_code,
+                        403,
+                    )
+                self.invitation.refresh_from_db()
+                self.assertEqual(self.invitation.revision, revision)
+                self.assertEqual(
+                    client.post(
+                        self.url,
+                        payload,
+                        secure=True,
+                        HTTP_REFERER=f"https://testserver{self.url}",
+                    ).status_code,
+                    302,
+                )
+                self.invitation.refresh_from_db()
+                self.assertEqual(self.invitation.revision, revision + 1)
+                self.assertTrue(
+                    all(self.invitation.answers[q["id"]] for q in group["questions"])
+                )
+                self.assertEqual(
+                    self.invitation.current_group, 0 if action == "save" else 1
+                )
+
+    def test_https_booking_preserves_csrf_verification(self):
+        self.post_group(value="no")
+        slot = ConsultationSlot.objects.create(
+            host=self.staff,
+            starts_at=timezone.now() + timedelta(days=2),
+            ends_at=timezone.now() + timedelta(days=2, minutes=30),
+        )
+        url = reverse("inventory_booking", args=[token_for(self.invitation)])
+        client = Client(enforce_csrf_checks=True)
+        response = client.get(url, secure=True)
+        self.assertEqual(response["Referrer-Policy"], "same-origin")
+        self.assertContains(response, '<meta name="referrer" content="same-origin">')
+        payload = {
+            "slot": slot.pk,
+            "phone": "407-555-0123",
+            "timezone": "America/New_York",
+            "csrfmiddlewaretoken": client.cookies["csrftoken"].value,
+        }
+        for headers in ({}, {"HTTP_REFERER": "https://other.example/"}):
+            self.assertEqual(
+                client.post(url, payload, secure=True, **headers).status_code, 403
+            )
+        self.assertFalse(
+            InventoryBooking.objects.filter(invitation=self.invitation).exists()
+        )
+        self.assertEqual(
+            client.post(
+                url, payload, secure=True, HTTP_REFERER=f"https://testserver{url}"
+            ).status_code,
+            302,
+        )
+        self.assertEqual(
+            InventoryBooking.objects.get(invitation=self.invitation).slot, slot
         )
 
     def test_review_closes_only_its_own_task(self):
