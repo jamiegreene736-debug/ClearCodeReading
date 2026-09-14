@@ -6,6 +6,7 @@ from django.urls import path, reverse
 from django.utils import timezone
 from django.utils.html import format_html
 
+from apps.crm.contact_lifecycle import set_contact_deleted
 from apps.crm.models import (
     Company,
     CrmActivity,
@@ -75,6 +76,16 @@ def mark_qualified(modeladmin, request, queryset):
 
 @admin.register(Lead)
 class LeadAdmin(admin.ModelAdmin):
+    def has_delete_permission(self, request, obj=None):
+        return request.user.can_manage_crm_users and super().has_delete_permission(request, obj)
+
+    def delete_model(self, request, obj):
+        set_contact_deleted(contact_id=obj.pk, actor=request.user, deleted=True)
+
+    def delete_queryset(self, request, queryset):
+        for contact_id in queryset.values_list("pk", flat=True):
+            set_contact_deleted(contact_id=contact_id, actor=request.user, deleted=True)
+
     inlines = (FormSubmissionInline, CrmActivityInline, OpportunityInline)
     list_display = (
         "school_name",
