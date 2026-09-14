@@ -1,4 +1,5 @@
 from pathlib import Path
+from typing import Any
 from uuid import uuid4
 
 from django.conf import settings
@@ -62,7 +63,7 @@ class RecruitingInterest(TimeStampedModel):
             models.Index(fields=["career_path", "status"], name="core_recruit_path_status"),
         ]
 
-    def save(self, *args, **kwargs):
+    def save(self, *args: Any, **kwargs: Any) -> None:
         self.email = self.email.strip().lower()
         super().save(*args, **kwargs)
 

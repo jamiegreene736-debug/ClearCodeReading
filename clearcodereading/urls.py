@@ -7,6 +7,7 @@ from django.views.generic import RedirectView, TemplateView
 from django.views.static import serve
 
 from apps.assessments.views import assessment_audio, assessment_audio_status
+from apps.crm.hiring_views import (HiringWorkspaceView, HiringUpdateView, HiringAssignView, HiringDocumentView, HiringAccessUpdateView, HiringFromContactView)
 from apps.crm.views import (
     CrmCompanyDetailView,
     CrmCompanyCreateView,
@@ -48,6 +49,7 @@ from apps.users.portal_views import (
 )
 
 urlpatterns = [
+    path("crm/", include("apps.crm_email.urls")),
     path("", TemplateView.as_view(template_name="index.html"), name="marketing_home"),
     path("about/", TemplateView.as_view(template_name="about.html"), name="marketing_about"),
     path(
@@ -82,6 +84,12 @@ urlpatterns = [
     path("dashboard/", PortalDashboardView.as_view(), name="portal_dashboard"),
     path("inbox/", PortalInboxView.as_view(), name="portal_inbox"),
     path("portal/sessions/rapid-log/", RapidSessionLogView.as_view(), name="rapid_session_log"),
+    path("crm/hiring/", HiringWorkspaceView.as_view(), name="crm_hiring"),
+    path("crm/hiring/<int:pk>/update/", HiringUpdateView.as_view(), name="crm_hiring_update"),
+    path("crm/hiring/<int:pk>/assign/", HiringAssignView.as_view(), name="crm_hiring_assign"),
+    path("crm/hiring/<int:pk>/documents/<str:kind>/", HiringDocumentView.as_view(), name="crm_hiring_document"),
+    path("crm/team/<int:pk>/hiring-access/", HiringAccessUpdateView.as_view(), name="crm_hiring_access"),
+    path("crm/contacts/<int:pk>/hiring/", HiringFromContactView.as_view(), name="crm_hiring_from_contact"),
     path("crm/", CrmDashboardView.as_view(), name="crm_dashboard"),
     path("crm/contacts/", CrmContactListView.as_view(), name="crm_contact_list"),
     path("crm/contacts/new/", CrmContactCreateView.as_view(), name="crm_contact_create"),

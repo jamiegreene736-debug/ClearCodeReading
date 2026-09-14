@@ -42,6 +42,14 @@ class CustomUser(AbstractUser, TimestampedModel, SoftDeleteModel):
     phone_number = models.CharField(max_length=32, blank=True)
     metadata = models.JSONField(default=dict, blank=True)
 
+    hiring_enabled = models.BooleanField(default=False, help_text="Access private teacher hiring records in the CRM.")
+
+    @property
+    def has_hiring_access(self) -> bool:
+        return bool(self.is_active and not self.is_deleted and self.has_crm_access and (
+            self.is_staff or self.can_manage_crm_users or self.hiring_enabled
+        ))
+
     USERNAME_FIELD = "email"
     REQUIRED_FIELDS = ["username"]
 

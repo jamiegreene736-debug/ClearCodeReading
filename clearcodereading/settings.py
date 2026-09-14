@@ -61,6 +61,7 @@ SHARED_APPS = [
     "apps.notifications.apps.NotificationsConfig",
     "apps.users",
     "apps.crm",
+    "apps.crm_email.apps.CrmEmailConfig",
     "apps.curriculum",
     "apps.sessions.apps.InterventionSessionsConfig",
     "apps.decision_support.apps.DecisionSupportConfig",
@@ -307,3 +308,15 @@ SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
 SESSION_COOKIE_SECURE = os.getenv("SESSION_COOKIE_SECURE", "0") == "1"
 CSRF_COOKIE_SECURE = os.getenv("CSRF_COOKIE_SECURE", "0") == "1"
 X_FRAME_OPTIONS = "DENY"
+
+# Individual Google Workspace mailboxes; disabled until organization setup is complete.
+CRM_EMAIL_ENABLED = os.getenv("CRM_EMAIL_ENABLED", "0") == "1"
+CRM_EMAIL_GOOGLE_CLIENT_ID = os.getenv("CRM_EMAIL_GOOGLE_CLIENT_ID", "")
+CRM_EMAIL_GOOGLE_CLIENT_SECRET = os.getenv("CRM_EMAIL_GOOGLE_CLIENT_SECRET", "")
+CRM_EMAIL_REDIRECT_URI = os.getenv("CRM_EMAIL_REDIRECT_URI", "")
+CRM_EMAIL_DOMAIN = os.getenv("CRM_EMAIL_DOMAIN", "clearcodereading.com").lower()
+CRM_EMAIL_ENCRYPTION_KEYS = [key for key in os.getenv("CRM_EMAIL_ENCRYPTION_KEYS", "").split(",") if key]
+CRM_EMAIL_PUBSUB_TOPIC = os.getenv("CRM_EMAIL_PUBSUB_TOPIC", "")
+CRM_EMAIL_PUBSUB_AUDIENCE = os.getenv("CRM_EMAIL_PUBSUB_AUDIENCE", "")
+CRM_EMAIL_PUBSUB_EMAIL = os.getenv("CRM_EMAIL_PUBSUB_EMAIL", "")
+CRM_EMAIL_ATTACHMENT_LIMIT = 10 * 1024 * 1024

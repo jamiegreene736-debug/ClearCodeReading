@@ -1,0 +1,21 @@
+{% extends "crm/base.html" %}
+{% load static %}
+{% block extra_style %}
+.email-page { max-width:1100px; margin:auto; overflow-wrap:anywhere; }
+.email-page .card { padding:22px; margin:18px 0; }
+.email-page .field { margin-bottom:16px; }
+.email-page .actions { display:flex; gap:10px; flex-wrap:wrap; margin:16px 0; }
+.email-page .errorlist { color:var(--red); padding-left:20px; }
+.email-page .row { padding:16px 0; border-bottom:1px solid var(--line); overflow-wrap:anywhere; }
+.email-page .row:last-child { border-bottom:0; }
+.email-page .mail-body { overflow-wrap:anywhere; padding:18px; border:1px solid var(--line); border-radius:6px; }
+.email-page .mail-body a { color:var(--teal); text-decoration:underline; }
+.email-page .mail-body p { white-space:pre-wrap; }
+.email-page .grid { display:grid; grid-template-columns:1fr 1fr; gap:18px; }
+.email-page textarea { font-family:inherit; }
+.email-page .rich-editor { min-height:180px; padding:12px; border:1px solid #99afbf; border-radius:4px; background:white; margin:8px 0; white-space:pre-wrap; }
+.email-page .rich-editor:focus { outline:3px solid rgba(26,122,122,.2); border-color:var(--teal); }
+.email-page .toolbar { display:flex; gap:8px; flex-wrap:wrap; }
+@media(max-width:760px) { .email-page .grid { grid-template-columns:1fr; } .email-page .card { padding:16px; } }
+{% endblock %}
+{% block content %}<div class="email-page">{% block email_content %}{% endblock %}</div><script src="{% static 'crm_email/editor.js' %}" defer></script>{% endblock %}

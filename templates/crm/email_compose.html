@@ -1,0 +1,15 @@
+{% extends "crm/email_base.html" %}
+{% block title %}Compose email{% endblock %}
+{% block email_content %}
+<p><a href="{% url 'crm_contact_email' lead.pk %}">← Email for {{ lead.contact_name }}</a></p><h1>Compose email</h1><p class="subtle">From {{ mailbox.email|default:request.user.email }}</p>
+{% if templates %}<details class="card"><summary>Start with a template</summary><div class="actions">{% for item in templates %}<a class="btn" href="{% url 'crm_email_compose' lead.pk %}?template={{ item.pk }}">{{ item.name }}</a>{% endfor %}</div><p>Choosing a template opens a new draft. Save your current draft first.</p></details>{% endif %}
+<section class="card"><form method="post" enctype="multipart/form-data">{% csrf_token %}{{ form.non_field_errors }}
+{% for field in form %}{% if field.is_hidden %}{{ field }}{% else %}<div class="field">{{ field.label_tag }}
+
+{{ field }}{{ field.errors }}</div>{% endif %}{% endfor %}
+<div class="field"><label for="attachments">Attachments (10 MB total)</label><input id="attachments" type="file" name="attachments" multiple></div>
+<p class="subtle">Times use America/New_York, including daylight saving time. Leave Send later empty to send now. Set follow-up days to 0 for no reminder.</p>
+<div class="actions"><button class="btn" name="action" value="draft">Save draft</button><button class="btn btn-primary" name="action" value="send">Send / schedule email</button></div><p class="subtle">Sending shares this conversation with authorized CRM users. Your BCC recipients remain private in the CRM.</p></form></section>
+{% if draft %}{% for attachment in draft.attachments.all %}<div class="row">{{ attachment.filename }} <form method="post" action="{% url 'crm_email_attachment_remove' attachment.pk %}">{% csrf_token %}<button class="btn btn-small">Remove attachment</button></form></div>{% endfor %}{% endif %}
+
+{% endblock %}
