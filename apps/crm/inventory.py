@@ -16,6 +16,7 @@ from django.template.loader import render_to_string
 from django.urls import reverse
 from django.utils import timezone
 
+from apps.crm.inventory_email import plain_text
 from apps.crm.inventory_models import InventoryInvitation, InventoryMail
 from apps.crm.models import CrmActivity
 from apps.crm.newsletters import newsletter_delivery_configuration_errors
@@ -192,8 +193,7 @@ def deliver_mail(pk: int) -> None:
         mail.save(update_fields=["status", "attempted_at", "attempts"])
     message = EmailMultiAlternatives(
         subject=mail.subject,
-        body=mail.body
-        + (f"\n\n{mail.action_label}: {mail.action_url}" if mail.action_url else ""),
+        body=plain_text(mail),
         from_email=settings.DEFAULT_FROM_EMAIL,
         to=[mail.recipient],
         headers={"Message-ID": f"<inventory-{mail.pk}@clearcodereading.com>"},

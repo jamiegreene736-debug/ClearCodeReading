@@ -5,6 +5,7 @@ from unittest.mock import patch
 from django.contrib.auth import get_user_model
 from django.core import mail
 from django.db import IntegrityError, transaction
+from django.template.loader import render_to_string
 from django.test import Client, SimpleTestCase, TestCase, override_settings
 from django.urls import reverse
 from django.utils import timezone
@@ -427,7 +428,9 @@ class InventoryWorkflowTests(TestCase):
             "inventory_send_test",
             self.parent.contact_email,
             "Inventory",
-            "Please complete the survey.",
+            "Return using the same link.\n\nThank you,\nThe ClearCode Reading team",
+            "https://example.com/reading-inventory/test/",
+            "Complete assessment",
         )
         with (
             patch("apps.crm.inventory_mail.require_configured"),
@@ -437,6 +440,17 @@ class InventoryWorkflowTests(TestCase):
         email.refresh_from_db()
         self.assertEqual(email.status, "queued")
         self.assertEqual(email.provider_message.mailbox, mailbox)
+        for content in (
+            email.provider_message.body_html,
+            email.provider_message.body_text,
+        ):
+            self.assertLess(
+                content.index("same link."), content.index("Complete assessment")
+            )
+            self.assertLess(
+                content.index("Complete assessment"), content.index("Thank you,")
+            )
+        self.assertIn("cc-lockup-linen-ui.png", email.provider_message.body_html)
         self.assertEqual(Message.objects.count(), 1)
         self.assertIsNone(self.invitation.sent_at)
         message = email.provider_message
@@ -696,3 +710,44 @@ class InventoryWorkflowTests(TestCase):
         )
         self.client.force_login(outsider)
         self.assertEqual(self.client.get(url).status_code, 403)
+
+
+class InventoryEmailLayoutTests(SimpleTestCase):
+    @override_settings(PUBLIC_APP_URL="https://reading.example.com/")
+    def test_button_precedes_signoff_with_escaped_content_and_absolute_logo(self):
+        from apps.crm.inventory_email import plain_text
+
+        email = InventoryMail(
+            subject="Reading inventory",
+            body="Hi <Parent>,\r\n\r\nReturn using the same link.\r\n\r\nThank you,\r\nThe team",
+            action_url="https://reading.example.com/reading-inventory/test/",
+            action_label="Complete assessment",
+        )
+        html = render_to_string("crm/inventory_email.html", {"email": email})
+        for content in (html, plain_text(email)):
+            self.assertLess(
+                content.index("same link."), content.index("Complete assessment")
+            )
+            self.assertLess(
+                content.index("Complete assessment"), content.index("Thank you,")
+            )
+        self.assertIn(
+            "https://reading.example.com/assets/logo/cc-lockup-linen-ui.png", html
+        )
+        self.assertIn('alt="ClearCode Reading"', html)
+        self.assertIn("&lt;Parent&gt;", html)
+        self.assertNotIn("<Parent>", html)
+
+    def test_custom_message_without_signoff_keeps_all_text_before_action(self):
+        from apps.crm.inventory_email import plain_text, split_signoff
+
+        body = "Thank you for your interest.\n\nPlease complete the survey."
+        self.assertEqual(split_signoff(body), (body, ""))
+        email = InventoryMail(
+            body=body, action_url="https://example.com", action_label="Open"
+        )
+        self.assertEqual(plain_text(email), body + "\n\nOpen: https://example.com")
+        email.action_url = ""
+        self.assertEqual(plain_text(email), body)
+        html = render_to_string("crm/inventory_email.html", {"email": email})
+        self.assertIn("Please complete the survey.", html)

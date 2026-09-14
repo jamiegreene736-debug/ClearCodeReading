@@ -8,6 +8,7 @@ from django.dispatch import receiver
 from django.template.loader import render_to_string
 from django.utils import timezone
 
+from apps.crm.inventory_email import plain_text
 from apps.crm.inventory_models import InventoryInvitation, InventoryMail
 from apps.crm_email.models import Attachment, Mailbox, Message
 from apps.crm_email.security import (
@@ -84,12 +85,7 @@ def _enqueue_locked(delivery: InventoryMail, mailbox: Mailbox) -> None:
         sender=mailbox.email,
         to=[delivery.recipient],
         subject=delivery.subject,
-        body_text=delivery.body
-        + (
-            f"\n\n{delivery.action_label}: {delivery.action_url}"
-            if delivery.action_url
-            else ""
-        ),
+        body_text=plain_text(delivery),
         body_html=render_to_string("crm/inventory_email.html", {"email": delivery}),
         status=Message.Status.DRAFT,
     )
