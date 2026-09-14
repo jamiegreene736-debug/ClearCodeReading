@@ -28,6 +28,7 @@ from rest_framework.response import Response
 from apps.core.forms import RecruitingInterestForm
 from apps.core.models import RecruitingInterest
 from apps.crm.hiring import select_intake_owner
+from apps.crm.contact_lifecycle import set_contact_deleted
 from apps.crm.access import crm_owner_queryset
 from apps.crm.forms import CompanyForm, ContactForm, CrmTeamMemberForm, DealForm, EnrollmentPersonForm
 from apps.crm.models import Company, CrmActivity, FormSubmission, IntakeTriage, Lead, NewsletterSubscription, Opportunity
@@ -487,6 +488,9 @@ class LeadViewSet(viewsets.ModelViewSet):
             queryset = queryset.filter(assigned_to_id=assigned_to)
         return queryset
 
+    def perform_destroy(self, instance):
+        set_contact_deleted(contact_id=instance.pk, actor=self.request.user, deleted=True)
+
     def perform_create(self, serializer):
         serializer.save(assigned_to=serializer.validated_data.get("assigned_to") or self.request.user)
 
@@ -645,6 +649,7 @@ class CrmDashboardView(CrmAccessMixin, TemplateView):
 
         open_tasks = list(
             CrmActivity.objects.filter(
+                lead__is_deleted=False,
                 activity_type=CrmActivity.ActivityType.TASK,
                 completed_at__isnull=True,
             )
@@ -661,11 +666,13 @@ class CrmDashboardView(CrmAccessMixin, TemplateView):
                 "new_contacts": contacts.filter(status=Lead.Status.NEW).count(),
                 "unassigned_contacts": contacts.filter(assigned_to__isnull=True).count(),
                 "overdue_tasks": CrmActivity.objects.filter(
+                    lead__is_deleted=False,
                     activity_type=CrmActivity.ActivityType.TASK,
                     completed_at__isnull=True,
                     due_at__lt=now,
                 ).count(),
                 "pending_triage": IntakeTriage.objects.filter(
+                    lead__is_deleted=False,
                     status=IntakeTriage.Status.PENDING
                 ).count(),
                 "recent_submissions": FormSubmission.objects.filter(
@@ -676,6 +683,7 @@ class CrmDashboardView(CrmAccessMixin, TemplateView):
                 ).order_by(F("last_submission_at").desc(nulls_last=True), "-created_at")[:6],
                 "task_rows": task_rows,
                 "triage_items": IntakeTriage.objects.filter(
+                    lead__is_deleted=False,
                     status=IntakeTriage.Status.PENDING
                 ).select_related("lead", "submission").order_by("created_at")[:5],
                 "pipeline_summaries": pipeline_summaries,
@@ -1064,7 +1072,7 @@ class CrmTriageListView(CrmAccessMixin, TemplateView):
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         items = (
-            IntakeTriage.objects.filter(status=IntakeTriage.Status.PENDING)
+            IntakeTriage.objects.filter(status=IntakeTriage.Status.PENDING, lead__is_deleted=False)
             .select_related("lead__company", "submission")
             .order_by("created_at")
         )
@@ -1273,11 +1281,12 @@ class CrmContactListView(CrmAccessMixin, TemplateView):
                     created_at__gte=now - timezone.timedelta(days=30)
                 ).count(),
                 "overdue_tasks": CrmActivity.objects.filter(
+                    lead__is_deleted=False,
                     activity_type=CrmActivity.ActivityType.TASK,
                     completed_at__isnull=True,
                     due_at__lt=now,
                 ).count(),
-                "pending_triage": IntakeTriage.objects.filter(status=IntakeTriage.Status.PENDING).count(),
+                "pending_triage": IntakeTriage.objects.filter(status=IntakeTriage.Status.PENDING, lead__is_deleted=False).count(),
                 "owners": crm_owner_queryset(),
                 "status_choices": Lead.Status.choices,
                 "audience_choices": Lead.Audience.choices,
@@ -1337,6 +1346,19 @@ class CrmContactDetailView(CrmAccessMixin, TemplateView):
             }
         )
         return context
+
+
+class CrmContactDeleteView(CrmAccessMixin, View):
+    def post(self, request: HttpRequest, pk: int) -> HttpResponse:
+        if not request.user.can_manage_crm_users:
+            raise PermissionDenied("Only administrators can delete CRM contacts.")
+        contact = get_object_or_404(Lead, pk=pk, is_deleted=False)
+        if request.POST.get("confirm") != "delete":
+            messages.error(request, "Confirm deletion before removing this contact.")
+            return redirect("crm_contact_detail", pk=pk)
+        set_contact_deleted(contact_id=pk, actor=request.user, deleted=True)
+        messages.success(request, f"{contact.contact_name} has been deleted from the CRM. The record is retained for recovery.")
+        return redirect("crm_contact_list")
 
 
 class CrmContactUpdateView(CrmAccessMixin, View):

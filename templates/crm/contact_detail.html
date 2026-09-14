@@ -2,6 +2,11 @@
 {% load crm_display %}
 {% block title %}{{ lead.contact_name }}{% endblock %}
 {% block extra_style %}
+  .delete-dialog { width:min(480px, calc(100vw - 40px)); padding:24px; border:1px solid var(--line); border-radius:12px; color:var(--navy); }
+  .delete-dialog::backdrop { background:rgba(0,0,0,.5); }
+  .delete-dialog p { overflow-wrap:anywhere; }
+  .btn-danger { background:#a32222; color:white; border-color:#a32222; }
+
   .crumb { display:inline-block; margin-bottom:15px; color:var(--teal); font-weight:600; text-decoration:none; }
   .record-grid { display:grid; grid-template-columns:250px minmax(0,1fr) 285px; gap:18px; align-items:start; }
   .panel { padding:18px; }
@@ -67,6 +72,18 @@
       <h1>{{ lead.contact_name }}</h1>
       <p class="subtle">{{ lead.organization_name|default:lead.school_name }}</p>
       <p><a href="mailto:{{ lead.contact_email }}">{{ lead.contact_email }}</a>{% if lead.contact_phone %}<br><a href="tel:{{ lead.contact_phone }}">{{ lead.contact_phone }}</a>{% endif %}</p>
+      {% if request.user.can_manage_crm_users %}
+      <button class="btn btn-small btn-danger" type="button" onclick="document.getElementById('delete-contact-dialog').showModal()">Delete contact</button>
+      <dialog class="delete-dialog" id="delete-contact-dialog" aria-labelledby="delete-contact-title" aria-describedby="delete-contact-description">
+        <h2 id="delete-contact-title">Delete this CRM contact?</h2>
+        <p id="delete-contact-description">Delete <strong>{{ lead.contact_name }}</strong>{% if lead.contact_email %} ({{ lead.contact_email }}){% endif %} from the CRM? The contact will be hidden from active contacts. Its history will be retained so it can be recovered later with backend assistance. Linked deals are kept.</p>
+        <form method="post" action="{% url 'crm_contact_delete' lead.pk %}">
+          {% csrf_token %}
+          <button class="btn" type="button" autofocus onclick="document.getElementById('delete-contact-dialog').close()">Cancel</button>
+          <button class="btn btn-danger" type="submit" name="confirm" value="delete">Delete from CRM</button>
+        </form>
+      </dialog>
+      {% endif %}
       <div class="quick-actions"><a class="btn btn-small" href="{% url 'crm_contact_email' lead.pk %}">Email</a><a class="btn btn-small" href="#activity">Add activity</a></div>
       <p class="subtle">Click a property below to edit.</p>
       <dl class="properties">
