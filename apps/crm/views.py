@@ -356,9 +356,10 @@ class SurveySubmissionView(View):
             messages.error(request, str(exc))
             return redirect(self._redirect_target(source.path, "invalid"))
 
+        request.session["survey_success_path"] = source.path
         messages.success(
             request,
-            "Thank you. Your survey is in the ClearCode CRM, and our team will follow up based on what you selected.",
+            "Survey submitted. Thank you for sharing your interests with ClearCode Reading.",
         )
         return redirect(self._redirect_target(source.path, "thanks"))
 

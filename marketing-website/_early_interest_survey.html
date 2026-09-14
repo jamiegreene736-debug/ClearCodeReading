@@ -1,19 +1,18 @@
 <section id="early-interest-survey" class="bg-white py-14 sm:py-20" data-early-interest-survey>
   <div class="mx-auto max-w-4xl px-4 sm:px-6 lg:px-8">
     <div class="rounded-[2.25rem] bg-linen p-5 shadow-2xl shadow-deepTeal/10 ring-1 ring-deepTeal/10 sm:p-9">
-      {% if request.GET.survey and messages %}
-        <div class="mb-7 space-y-3 scroll-mt-24" aria-live="polite" aria-atomic="true" data-testid="survey-submission-feedback">
-          {% for message in messages %}
-            <div class="flex items-start gap-4 rounded-[1.5rem] border-4 border-gold bg-ink px-5 py-5 text-white shadow-2xl shadow-ink/25 sm:px-7" role="{% if 'error' in message.tags %}alert{% else %}status{% endif %}">
-              <span class="grid h-12 w-12 shrink-0 place-items-center rounded-full bg-gold text-2xl font-black text-ink shadow-md" aria-hidden="true">{% if 'error' in message.tags %}!{% else %}✓{% endif %}</span>
-              <div>
-                <p class="text-sm font-black uppercase tracking-[.16em] text-gold">{% if 'error' in message.tags %}Please check your survey{% else %}Survey received — thank you{% endif %}</p>
-                <p class="mt-1 text-lg font-black leading-7 sm:text-xl">{{ message }}</p>
-              </div>
-            </div>
-          {% endfor %}
+      {% if request.GET.survey == "thanks" and request.session.survey_success_path == request.path %}
+        <div class="survey-success" role="status" tabindex="-1" data-testid="survey-submission-feedback">
+          <span class="survey-success-check" aria-hidden="true">✓</span>
+          <h2>Survey submitted!</h2>
+          <p>Thank you. Your answers have been received. You’re all done.</p>
+          <p>Our team will follow up based on the interests you selected. Your email confirmation will arrive shortly; please check your spam folder too.</p>
+          <a class="focus-ring" href="/">Return to the homepage</a>
         </div>
-      {% endif %}
+      {% else %}
+        {% if request.GET.survey and messages %}
+          {% for message in messages %}<p role="alert">{{ message }}</p>{% endfor %}
+        {% endif %}
       <div class="grid gap-7 lg:grid-cols-[.72fr_1.28fr]">
         <div>
           <p class="text-sm font-black uppercase tracking-[.16em] text-deepTeal">ClearCode Early Interest Survey</p>
@@ -159,7 +158,9 @@
               <label class="survey-choice" data-family-engagement><input type="checkbox" name="engagement_interests" value="priority_waitlist"><span>Join the priority enrollment waitlist for my child</span></label>
               <label class="survey-choice" data-family-engagement><input type="checkbox" name="engagement_interests" value="consultation"><span>Schedule a free consultation with one of our specialists</span></label>
               <label class="survey-choice"><input type="checkbox" name="engagement_interests" value="opening_updates"><span>Receive updates as we approach our June 2027 opening</span></label>
-              <label class="survey-choice"><input type="checkbox" name="engagement_interests" value="community_partner"><span>Partner with ClearCode as a community advocate, referral source, potential donor funding scholarships, or in another way</span></label>
+              <label class="survey-choice"><input type="checkbox" name="engagement_interests" value="community_partner"><span>Support ClearCode as a community advocate or discuss another partnership</span></label>
+              <label class="survey-choice"><input type="checkbox" name="engagement_interests" value="donor"><span>Help fund reading scholarships as a donor</span></label>
+              <label class="survey-choice"><input type="checkbox" name="engagement_interests" value="referral_partner"><span>Become a school or professional referral partner</span></label>
               <label class="survey-choice"><input type="checkbox" name="engagement_interests" value="refer_family"><span>Refer another family who needs help</span></label>
               <label class="survey-choice"><input type="checkbox" name="engagement_interests" value="professional_connection"><span>Connect us with a school, pediatrician, or evaluator who should know about ClearCode</span></label>
               <label class="survey-choice"><input type="checkbox" name="engagement_interests" value="career_interest"><span>I am an educator or specialist interested in working at ClearCode</span></label>
@@ -174,10 +175,16 @@
           </div>
         </form>
       </div>
+      {% endif %}
     </div>
   </div>
 
   <style>
+    .survey-success { border:4px solid #F5AD21; border-radius:1.5rem; background:#102F38; color:white; padding:clamp(1.5rem,5vw,4rem); text-align:center; scroll-margin-top:7rem; }
+    .survey-success-check { display:block; font-size:4rem; color:#F5AD21; }
+    .survey-success h2 { font-size:clamp(2rem,6vw,3.5rem); font-weight:900; line-height:1.15; }
+    .survey-success p { margin:1.5rem auto; max-width:36rem; font-size:1.15rem; line-height:1.7; }
+    .survey-success a { display:inline-block; background:#F5AD21; color:#102F38; padding:1rem 1.5rem; border-radius:2rem; font-weight:800; }
     .survey-choice { display:flex; align-items:flex-start; gap:.75rem; border:1px solid rgba(15,43,53,.12); border-radius:1rem; padding:.8rem 1rem; font-size:.875rem; font-weight:700; line-height:1.45; color:rgba(15,43,53,.78); cursor:pointer; }
     .survey-choice:hover { border-color:rgba(26,122,122,.55); background:rgba(168,207,196,.2); }
     .survey-choice input { width:1.15rem; height:1.15rem; margin-top:.08rem; flex:0 0 auto; accent-color:#1A7A7A; }
@@ -187,6 +194,12 @@
     (() => {
       const root = document.currentScript.closest('[data-early-interest-survey]');
       const form = root.querySelector('[data-survey-form]');
+      if (!form) {
+        const feedback = root.querySelector('[data-testid="survey-submission-feedback"]');
+        feedback?.focus({preventScroll:true});
+        feedback?.scrollIntoView({block:'center'});
+        return;
+      }
       const steps = [...form.querySelectorAll('[data-survey-step]')];
       const back = form.querySelector('[data-survey-back]');
       const next = form.querySelector('[data-survey-next]');
@@ -273,7 +286,13 @@
           next.click();
           return;
         }
-        if (!currentStepIsValid()) event.preventDefault();
+        if (!currentStepIsValid()) { event.preventDefault(); return; }
+        if (!isParentBranch()) {
+          steps.filter(step => [5,6,7,8,9].includes(Number(step.dataset.surveyStep)))
+            .forEach(step => step.querySelectorAll('input').forEach(input => { input.disabled = true; }));
+        }
+        submit.disabled = true;
+        submit.textContent = 'Submitting your survey…';
       });
       render();
     })();

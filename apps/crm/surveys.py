@@ -19,6 +19,7 @@ from apps.crm.services import (
     LeadIntake,
     create_partner_triage,
     ensure_family_enrollment_deal,
+    resolve_triage_item,
     record_form_submission,
 )
 
@@ -95,6 +96,8 @@ SURVEY_ENGAGEMENTS = {
     "priority_waitlist": "Join the priority enrollment waitlist",
     "consultation": "Schedule a free specialist consultation",
     "opening_updates": "Receive updates about the center opening",
+    "donor": "Help fund reading scholarships as a donor",
+    "referral_partner": "Become a school or professional referral partner",
     "community_partner": "Partner as an advocate, referral source, or donor",
     "refer_family": "Refer another family who needs help",
     "professional_connection": "Connect ClearCode with a school, pediatrician, or evaluator",
@@ -107,6 +110,8 @@ PARTNER_SIGNAL_ENGAGEMENTS = {
     "community_partner",
     "refer_family",
     "professional_connection",
+    "donor",
+    "referral_partner",
 }
 
 SURVEY_VALUE_LABELS = {
@@ -326,6 +331,11 @@ def record_early_interest_survey(*, answers: EarlyInterestSurveyAnswers, source:
             estimated_students=answers.estimated_students,
             notes=notes,
             metadata={
+                "relationship_interests": [
+                    interest for interest in ("donor", "referral_partner")
+                    if interest in answers.engagement_interests
+                ],
+                "career_interest": "career_interest" in answers.engagement_interests,
                 "home_zip": answers.home_zip,
                 "respondent_situation": answers.respondent_situation,
                 "engagement_interests": answers.engagement_interests,
@@ -338,7 +348,7 @@ def record_early_interest_survey(*, answers: EarlyInterestSurveyAnswers, source:
         submitted_data=submission_data,
     )
 
-    if answers.uses_parent_branch:
+    if answers.audience == Lead.Audience.PARENT:
         deal, _created = ensure_family_enrollment_deal(lead=lead)
         deal.grade_band = _grade_band_for_situation(answers.respondent_situation)
         deal.in_catchment_zip = answers.home_zip
@@ -362,8 +372,24 @@ def record_early_interest_survey(*, answers: EarlyInterestSurveyAnswers, source:
         }
         deal.save()
 
-    if has_partner_signal:
-        create_partner_triage(lead=lead, submission=submission)
+    if has_partner_signal or "career_interest" in answers.engagement_interests:
+        triage = create_partner_triage(lead=lead, submission=submission)
+        pipelines = []
+        if set(answers.engagement_interests) & {"referral_partner", "refer_family", "professional_connection"}:
+            pipelines.append(Opportunity.Pipeline.REFERRAL_PARTNERS)
+        if "donor" in answers.engagement_interests:
+            pipelines.append(Opportunity.Pipeline.FOUNDATION_DONORS)
+        if pipelines:
+            resolve_triage_item(
+                triage=triage, pipelines=pipelines, actor=None,
+                notes="Automatically routed from explicit survey interests.",
+            )
+            # Broader partnership and career requests still need human follow-up.
+            if set(answers.engagement_interests) & {"community_partner", "career_interest"}:
+                triage.status = triage.Status.PENDING
+                triage.resolved_at = None
+                triage.save(update_fields=["status", "resolved_at", "updated_at"])
+
 
     existing_name = (
         NewsletterSubscription.objects.filter(email=answers.contact_email)
