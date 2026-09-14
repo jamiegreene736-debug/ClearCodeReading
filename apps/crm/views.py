@@ -59,8 +59,17 @@ FAMILY_RESOURCES_SESSION_KEY = "family_resources_unlocked"
 
 
 class FamilyResourcesView(TemplateView):
+    def dispatch(self, request, *args, **kwargs):
+        response = super().dispatch(request, *args, **kwargs)
+        response["Cache-Control"] = "private, no-store"
+        response["Vary"] = "Cookie"
+        return response
+
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
+        from apps.resources.views import library_context
+
+        context.update(library_context(self.request))
         context["resources_unlocked"] = bool(
             self.request.session.get(FAMILY_RESOURCES_SESSION_KEY)
         )
@@ -184,6 +193,11 @@ class WebsiteSignupView(View):
         if is_family_resources_request:
             request.session[FAMILY_RESOURCES_SESSION_KEY] = True
             messages.success(request, "You’re in—your free family resources are ready.")
+            resource_target = request.session.pop("family_resource_return_to", "")
+            if resource_target.startswith("/resources/") and url_has_allowed_host_and_scheme(
+                resource_target, allowed_hosts={request.get_host()}
+            ):
+                return redirect(resource_target)
             return redirect(self._redirect_target(request, "thanks"))
 
         messages.success(request, "Thanks. Your request is with the ClearCode Reading team, and we’ll follow up about next steps.")

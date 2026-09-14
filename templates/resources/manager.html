@@ -1,0 +1,82 @@
+{% extends "resources/base.html" %}
+{% block content %}
+    <div class="rm-toolbar">
+        <div>
+            <p class="rm-eyebrow">Your content, ready to share</p>
+            <h1 class="rm-title">Resources</h1>
+            <p class="rm-subtitle">Helpful tools for families and educators. Add the content; we’ll handle the layout.</p>
+        </div>
+        <a class="rm-button" href="{% url 'resources:add' %}">＋ Add resource</a>
+    </div>
+    <nav class="rm-tabs" aria-label="Resource status">
+        {% for key,label in tabs %}
+            <a href="?tab={{ key }}&amp;q={{ query|urlencode }}"
+               {% if tab == key %}aria-current="page"{% endif %}>{{ label }}</a>
+        {% endfor %}
+    </nav>
+    <form class="rm-search" method="get">
+        <input type="hidden" name="tab" value="{{ tab }}">
+        <div>
+            <label for="search">Find a resource</label>
+            <input id="search"
+                   name="q"
+                   value="{{ query }}"
+                   placeholder="Search titles and descriptions"
+                   maxlength="200">
+        </div>
+        <button class="rm-button secondary">Search</button>
+    </form>
+    {% if page.object_list %}
+        <div class="rm-table-wrap">
+            <table class="rm-table">
+                <thead>
+                    <tr>
+                        <th scope="col">Resource</th>
+                        <th scope="col">Audience</th>
+                        <th scope="col">Status</th>
+                        <th scope="col">Last updated</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for resource in page %}
+                        <tr>
+                            <td>
+                                <div class="rm-row-title">
+                                    <div class="rm-mini-cover" aria-hidden="true">{{ resource.draft.kind }}</div>
+                                    <div>
+                                        <a href="{% url 'resources:edit' resource.pk %}">{{ resource.draft.title }}</a>
+                                        {% if resource.has_unpublished_changes %}
+                                            <p class="rm-status-line">Unpublished changes</p>
+                                        {% endif %}
+                                    </div>
+                                </div>
+                            </td>
+                            <td>{{ resource.draft.get_audience_display }}</td>
+                            <td>
+                                <span class="rm-badge">{{ resource.state }}</span>
+                            </td>
+                            <td>
+                                {{ resource.updated_at|date:"M j, Y" }}
+                                <br>
+                                <span class="rm-subtle">{{ resource.updated_at|date:"H:i" }} UTC</span>
+                            </td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    {% else %}
+        <section class="rm-panel rm-empty">
+            <p class="rm-eyebrow">A useful resource starts here</p>
+            <h2>{% if query %}No matching resources{% else %}Make something helpful easy to find.{% endif %}</h2>
+            <p>
+                {% if query %}Try a different title or clear your search.{% else %}Upload a worksheet, share a video, or write a guide. Your first version stays private until it’s published.{% endif %}
+            </p>
+            <a class="rm-button" href="{% url 'resources:add' %}">Add a resource</a>
+        </section>
+    {% endif %}
+    {% include "resources/pagination.html" %}
+    {% if not publisher %}
+        <p class="rm-muted">You can create and edit your own resources, then submit them for review.</p>
+    {% endif %}
+{% endblock %}

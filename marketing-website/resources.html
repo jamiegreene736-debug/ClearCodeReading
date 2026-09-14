@@ -6,6 +6,7 @@
 {% block og_description %}Start with a clearer snapshot, stronger questions, and simple home-practice guidance.{% endblock %}
 
 {% block content %}
+{% if resource_page.paginator.count or resource_query or selected_topic or selected_audience or selected_kind %}{% include "resources/library.html" %}{% endif %}
 {% if resources_unlocked %}
   <section class="relative isolate overflow-hidden bg-linen px-4 py-16 sm:px-6 sm:py-24 lg:px-8">
     <div class="absolute -left-20 top-0 h-72 w-72 rounded-full bg-gold/20 blur-3xl" aria-hidden="true"></div>

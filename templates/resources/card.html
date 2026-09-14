@@ -1,0 +1,19 @@
+<article class="rm-card">
+    <div class="rm-card-cover">
+        {% if show_cover and revision.image_asset %}
+            <img src="{{ cover_url }}"
+                 alt="{{ revision.cover_alt|default:revision.title }}"
+                 loading="lazy">
+        {% else %}
+            <span>ClearCode Reading</span>
+            <span>{{ revision.get_kind_display }} · {{ revision.topic.name|default:'Reading resources' }}</span>
+        {% endif %}
+    </div>
+    <div class="rm-card-body">
+        <span class="rm-eyebrow">{{ revision.get_audience_display }}</span>
+        <h3>{{ revision.title }}</h3>
+        <p>{{ revision.description }}</p>
+        <a class="rm-card-link"
+           href="{% if preview %}#resource-content{% else %}{{ revision.resource.get_absolute_url }}{% endif %}">Open resource →</a>
+    </div>
+</article>

@@ -1,0 +1,77 @@
+{% extends "base_marketing.html" %}
+{% load static %}
+{% block title %}{{ revision.seo_title|default:revision.title }} | ClearCode Reading{% endblock %}
+{% block meta_description %}{{ revision.seo_description|default:revision.description }}{% endblock %}
+{% block og_title %}{{ revision.title }}{% endblock %}
+{% block og_description %}{{ revision.description }}{% endblock %}
+{% block extra_head %}
+    <link rel="stylesheet" href="{% static 'resources/resources.css' %}">
+    {% if preview %}
+        <meta name="robots" content="noindex,nofollow">
+    {% endif %}
+{% endblock %}
+{% block content %}
+    <article class="rm-article">
+        {% if preview %}
+            <div class="rm-notice">
+                <strong>Preview only</strong> · {{ revision.get_access_display }}
+                <br>
+                This is how your saved resource will appear after publishing.
+            </div>
+            <div class="rm-preview-card">
+                <p class="rm-eyebrow">Resource card</p>
+                {% include "resources/card.html" with show_cover=True %}
+            </div>
+            <hr>
+            <p class="rm-eyebrow" style="margin-top:25px">Full resource page</p>
+        {% else %}
+            <a href="/resources/">← All resources</a>
+        {% endif %}
+        <p class="rm-eyebrow"
+           style="margin-top:25px">{{ revision.topic.name }} · {{ revision.get_audience_display }}</p>
+        <h1 id="resource-content">{{ revision.title }}</h1>
+        <p class="rm-description">{{ revision.description }}</p>
+        <p class="rm-muted">{{ revision.language }}{% if revision.grade %} · {{ revision.grade }}{% endif %}</p>
+        {% if revision.cover_id %}
+            <img src="{{ cover_url }}"
+                 alt="{{ revision.cover_alt }}"
+                 style="margin:24px 0">
+        {% endif %}
+        {% if revision.kind == "article" %}
+            <div class="rm-article-body">{{ revision.body|linebreaks }}</div>
+        {% elif revision.kind == "link" %}
+            {% if embed_url %}
+                <iframe class="rm-video"
+                        src="{{ embed_url }}"
+                        title="{{ revision.title }} video"
+                        allow="fullscreen; picture-in-picture"
+                        referrerpolicy="strict-origin-when-cross-origin"
+                        allowfullscreen
+                        loading="lazy">
+                </iframe>
+            {% endif %}
+            <p style="margin-top:24px">
+                <a class="rm-button"
+                   href="{{ revision.url }}"
+                   target="_blank"
+                   rel="noopener noreferrer">Open website ↗</a>
+            </p>
+        {% elif revision.asset_id %}
+            <p style="margin-top:24px">
+                <a class="rm-button" href="{{ asset_url }}">Download {{ revision.asset.name }}</a>
+            </p>
+            <p class="rm-subtle" style="margin-top:10px">{{ revision.asset.size|filesizeformat }}</p>
+            {% if revision.is_pdf %}
+                <img class="rm-pdf-preview"
+                     src="{{ asset_url }}{% if preview %}&amp;{% else %}?{% endif %}thumbnail=1"
+                     alt="First page of {{ revision.title }}"
+                     style="margin-top:24px">
+                <p class="rm-subtle">First-page preview. Download the PDF to read every page.</p>
+            {% elif revision.asset.is_image %}
+                <img src="{{ asset_url }}{% if preview %}&amp;{% else %}?{% endif %}inline=1"
+                     alt="{{ revision.title }}"
+                     style="margin-top:24px">
+            {% endif %}
+        {% endif %}
+    </article>
+{% endblock %}

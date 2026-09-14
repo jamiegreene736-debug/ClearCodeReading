@@ -17,3 +17,4 @@ google-auth[requests]==2.49.0
 cryptography==50.0.0
 nh3==0.3.7
 requests==2.33.0
+pypdfium2==5.13.0

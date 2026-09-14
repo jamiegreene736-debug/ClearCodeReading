@@ -1,0 +1,82 @@
+{% extends "resources/base.html" %}
+{% load static %}
+{% block title %}Add resource{% endblock %}
+{% block content %}
+    <p class="rm-eyebrow">
+        <a href="{% url 'resources:manager' %}">← Resources</a>
+    </p>
+    <h1 class="rm-title">What would you like to share?</h1>
+    <p class="rm-subtitle"
+       style="margin-bottom:30px">Start with what you have. Everything is saved as a draft for you to review.</p>
+    {% for error in errors %}
+        <p class="rm-notice rm-error" role="alert">{{ error }}</p>
+    {% endfor %}
+    <div class="rm-grid">
+        <section class="rm-choice">
+            <span class="rm-choice-icon" aria-hidden="true">↑</span>
+            <h2>Upload a file</h2>
+            <p>Worksheets, guides, printables, and presentations. Add one file or a batch.</p>
+            <a href="#upload-panel" class="rm-button">Choose files</a>
+        </section>
+        <form method="post" class="rm-choice">
+            {% csrf_token %}
+            <input type="hidden" name="kind" value="link">
+            <span class="rm-choice-icon" aria-hidden="true">↗</span>
+            <h2>Paste a link</h2>
+            <p>Share a website or turn a YouTube or Vimeo link into a video resource.</p>
+            <button class="rm-button secondary">Add a link</button>
+        </form>
+        <form method="post" class="rm-choice">
+            {% csrf_token %}
+            <input type="hidden" name="kind" value="article">
+            <span class="rm-choice-icon" aria-hidden="true">✎</span>
+            <h2>Write a resource</h2>
+            <p>Write or paste your guide. Clear typography and spacing are built in.</p>
+            <button class="rm-button secondary">Start writing</button>
+        </form>
+    </div>
+    <section class="rm-panel" id="upload-panel" style="margin-top:24px">
+        <h2>Add your files</h2>
+        <p class="rm-muted">Each file becomes its own draft. Up to 10 files, 10 MB each, 50 MB total.</p>
+        <form method="post" enctype="multipart/form-data" id="bulk-form">
+            {% csrf_token %}
+            <input type="hidden" name="kind" value="file">
+            <input type="hidden" name="token" value="{{ token }}">
+            <div class="rm-drop" id="drop-zone">
+                <label for="files">Drop files here or choose from your device</label>
+                <input id="files"
+                       type="file"
+                       name="files"
+                       multiple
+                       required
+                       accept=".pdf,.docx,.pptx,.txt,.jpg,.jpeg,.png,.webp">
+                <small>PDF · DOCX · PPTX · TXT · JPEG · PNG · WebP</small>
+                <p id="file-summary" role="status"></p>
+            </div>
+            <div class="rm-two" style="margin-top:20px">
+                <div class="rm-field">
+                    <label for="topic">Topic for these drafts (optional)</label>
+                    <select id="topic" name="topic">
+                        <option value="">Choose later</option>
+                        {% for topic in topics %}
+                            <option value="{{ topic.pk }}">{{ topic.name }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="rm-field">
+                    <label for="audience">Who are they for?</label>
+                    <select id="audience" name="audience">
+                        <option value="families">Families</option>
+                        <option value="educators">Educators</option>
+                        <option value="both">Families and educators</option>
+                    </select>
+                </div>
+            </div>
+            <button class="rm-button" id="upload-button">Upload and review</button>
+            <span id="upload-state" class="rm-save-state" role="status"></span>
+        </form>
+    </section>
+{% endblock %}
+{% block scripts %}
+    <script src="{% static 'resources/upload.js' %}" defer></script>
+{% endblock %}

@@ -65,6 +65,12 @@ class CustomUser(AbstractUser, TimestampedModel, SoftDeleteModel):
         return self.get_full_name() or self.email
 
     @property
+    def has_resource_access(self) -> bool:
+        from apps.resources.access import can_edit
+
+        return can_edit(self)
+
+    @property
     def has_crm_access(self) -> bool:
         return bool(
             self.is_superuser

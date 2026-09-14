@@ -1,0 +1,37 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <meta charset="utf-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+        <title>{% block title %}Resource Manager{% endblock %} | ClearCode Reading</title>
+        <meta name="robots" content="noindex,nofollow">
+        <link rel="icon" href="/assets/logo/cc-favicon-gold-teal-32.png">
+        <link rel="stylesheet" href="{% static 'resources/resources.css' %}">
+    </head>
+    <body class="rm-body">
+        <a class="rm-skip" href="#main">Skip to content</a>
+        <header class="rm-header">
+            <a class="rm-brand" href="{% url 'resources:manager' %}">
+                <span class="rm-mark" aria-hidden="true">C<span>C</span>
+                </span>
+                <span>ClearCode Reading<small>Resource Manager</small>
+                </span>
+            </a>
+            <nav aria-label="Resource navigation">
+                <a href="{% url 'resources:manager' %}">Resources</a>
+                <a href="{% url 'resources:media' %}">Files</a>
+                <a href="/dashboard/">Dashboard</a>
+                <a href="/resources/" target="_blank" rel="noopener">View website ↗</a>
+            </nav>
+        </header>
+        <main id="main" class="rm-main">
+            {% for message in messages %}
+                <div class="rm-notice {% if message.tags == 'error' %}rm-error{% endif %}"
+                     role="status">{{ message }}</div>
+            {% endfor %}
+            {% block content %}{% endblock %}
+        </main>
+        {% block scripts %}{% endblock %}
+    </body>
+</html>
