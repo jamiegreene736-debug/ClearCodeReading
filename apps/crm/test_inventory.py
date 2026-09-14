@@ -105,6 +105,7 @@ class InventoryScoringTests(SimpleTestCase):
     EMAIL_BACKEND="django.core.mail.backends.locmem.EmailBackend",
     PUBLIC_APP_URL="https://clearcode.example",
 )
+@override_settings(CRM_DEFAULT_CONSULTATION_HOST_EMAIL="inventory-staff@example.com")
 class InventoryWorkflowTests(TestCase):
     def setUp(self):
         self.staff = get_user_model().objects.create_user(
@@ -548,7 +549,9 @@ class InventoryWorkflowTests(TestCase):
             self.assertLess(
                 content.index("Complete assessment"), content.index("Thank you,")
             )
-        self.assertIn('aria-label="ClearCode Reading"', email.provider_message.body_html)
+        self.assertIn(
+            'aria-label="ClearCode Reading"', email.provider_message.body_html
+        )
         self.assertEqual(Message.objects.count(), 1)
         self.assertIsNone(self.invitation.sent_at)
         message = email.provider_message
@@ -572,12 +575,16 @@ class InventoryWorkflowTests(TestCase):
                 user=user, email=user.email, status="connected"
             )
             invitation = InventoryInvitation.objects.create(
-                child=self.child, created_by=user,
+                child=self.child,
+                created_by=user,
                 expires_at=timezone.now() + timedelta(days=7),
             )
             email = queue_mail(
-                invitation, f"inventory_send_{user.pk}",
-                self.parent.contact_email, "Assessment", "Please complete assessment.",
+                invitation,
+                f"inventory_send_{user.pk}",
+                self.parent.contact_email,
+                "Assessment",
+                "Please complete assessment.",
             )
             with patch("apps.crm.inventory_mail.require_configured"):
                 deliver_mail(email.pk)
@@ -1071,7 +1078,7 @@ class ConsultationAvailabilityTests(TestCase):
         self.slot.refresh_from_db()
         self.assertFalse(self.slot.active)
 
-    def test_public_calendar_defaults_to_bethany_and_hides_unconfirmed_times(self):
+    def public_booking_url(self):
         parent = Lead.objects.create(
             contact_name="Parent",
             contact_email="parent@example.com",
@@ -1087,16 +1094,27 @@ class ConsultationAvailabilityTests(TestCase):
             result={"outcome": "support"},
             expires_at=timezone.now() + timedelta(days=30),
         )
+        return reverse("inventory_booking", args=[token_for(invitation)])
+
+    def test_public_calendar_defaults_to_bethany_and_hides_unconfirmed_times(self):
+        url = self.public_booking_url()
         other_slot = ConsultationSlot.objects.create(
             host=self.other, starts_at=self.slot.starts_at, ends_at=self.slot.ends_at
         )
-        url = reverse("inventory_booking", args=[token_for(invitation)])
         self.client.logout()
         response = self.client.get(url)
         self.assertEqual(response.context["selected_host"], self.bethany)
         self.assertEqual(list(response.context["slots"]), [])
         response = self.client.get(url, {"host": self.other.pk})
-        self.assertEqual(list(response.context["slots"]), [other_slot])
+        self.assertEqual(list(response.context["slots"]), [])
+        self.assertEqual(response.context["hosts"], [self.bethany])
+        self.assertNotContains(response, "All hosts")
+        self.assertNotContains(response, f'<option value="{self.other.pk}"')
+        response = self.client.post(
+            url, {"slot": other_slot.pk, "phone": "4075550123", "timezone": "UTC"}
+        )
+        self.assertEqual(response.status_code, 200)
+        self.assertFalse(InventoryBooking.objects.exists())
         response = self.client.post(
             url, {"slot": self.slot.pk, "phone": "4075550123", "timezone": "UTC"}
         )
@@ -1114,3 +1132,35 @@ class ConsultationAvailabilityTests(TestCase):
             CRM_DEFAULT_CONSULTATION_HOST_EMAIL="bethany@example.com"
         ):
             self.assertEqual(default_consultation_host(), self.bethany)
+
+    def test_public_calendar_without_unique_available_host_has_no_slots(self):
+        url = self.public_booking_url()
+        self.slot.active = True
+        self.slot.save()
+        ConsultationSlot.objects.create(
+            host=self.other, starts_at=self.slot.starts_at, ends_at=self.slot.ends_at
+        )
+        for changes in ({"is_active": False}, {"is_active": True, "is_deleted": True}):
+            for field, value in changes.items():
+                setattr(self.bethany, field, value)
+            self.bethany.save()
+            with self.subTest(changes=changes):
+                response = self.client.get(url, {"host": ""})
+                self.assertEqual(list(response.context["slots"]), [])
+                self.assertEqual(response.context["hosts"], [])
+                self.client.post(
+                    url,
+                    {"slot": self.slot.pk, "phone": "4075550123", "timezone": "UTC"},
+                )
+                self.assertFalse(InventoryBooking.objects.exists())
+
+    def test_public_calendar_blank_host_still_shows_only_bethany(self):
+        url = self.public_booking_url()
+        self.slot.active = True
+        self.slot.save()
+        ConsultationSlot.objects.create(
+            host=self.other, starts_at=self.slot.starts_at, ends_at=self.slot.ends_at
+        )
+        response = self.client.get(url, {"host": ""})
+        self.assertEqual(list(response.context["slots"]), [self.slot])
+        self.assertEqual(response.context["hosts"], [self.bethany])
