@@ -699,7 +699,7 @@ is only for explicit test delivery and must remain disabled in production.
 Accepted consultation, assessment follow-up, family resource, support, general inquiry,
 newsletter, early-interest survey, and career submissions create a durable pair of
 branded HTML/plain-text receipts. The customer gets form-specific next steps; the team
-notification goes to `info@clearcodereading.com`. Customer replies go to that inbox;
+notification goes to `hello@clearcodereading.com`. Customer replies go to that inbox;
 team replies go to the submitter. Assessment results and application documents stay in
 secured records. Career applicants remain separate from sales contacts.
 
