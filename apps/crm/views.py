@@ -9,6 +9,7 @@ from django.core.exceptions import ValidationError
 from django.core.paginator import Paginator
 from django.core.validators import validate_email
 from django.db import IntegrityError, transaction
+from django.http import HttpRequest, HttpResponse
 from django.db.models import Count, F, Max, OuterRef, Q, Subquery, Sum
 from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse
@@ -28,7 +29,7 @@ from apps.core.forms import RecruitingInterestForm
 from apps.core.models import RecruitingInterest
 from apps.crm.hiring import select_intake_owner
 from apps.crm.access import crm_owner_queryset
-from apps.crm.forms import CompanyForm, ContactForm, CrmTeamMemberForm, DealForm
+from apps.crm.forms import CompanyForm, ContactForm, CrmTeamMemberForm, DealForm, EnrollmentPersonForm
 from apps.crm.models import Company, CrmActivity, FormSubmission, IntakeTriage, Lead, NewsletterSubscription, Opportunity
 from apps.crm.newsletters import resolve_unsubscribe_token
 from apps.crm.serializers import CompanySerializer, LeadSerializer, OpportunitySerializer
@@ -971,6 +972,41 @@ class CrmDealDetailView(CrmAccessMixin, View):
                 after={"pipeline": deal.pipeline, "stage": deal.stage, "name": deal.name},
             )
             messages.success(request, f"{deal.deal_label} updated.")
+            return redirect("crm_deal_detail", pk=deal.pk)
+        return render(request, self.template_name, {"form": form, "deal": deal}, status=400)
+
+
+class CrmEnrollmentPersonEditView(CrmAccessMixin, View):
+    template_name = "crm/enrollment_person_form.html"
+
+    def get_deal(self, pk: int) -> Opportunity:
+        return get_object_or_404(
+            Opportunity.objects.select_related("lead"),
+            pk=pk,
+            is_deleted=False,
+            pipeline=Opportunity.Pipeline.FAMILY_ENROLLMENT,
+            lead__is_deleted=False,
+        )
+
+    def get(self, request: HttpRequest, pk: int) -> HttpResponse:
+        deal = self.get_deal(pk)
+        form = EnrollmentPersonForm(instance=deal.lead)
+        return render(request, self.template_name, {"form": form, "deal": deal})
+
+    def post(self, request: HttpRequest, pk: int) -> HttpResponse:
+        deal = self.get_deal(pk)
+        form = EnrollmentPersonForm(request.POST, instance=deal.lead)
+        if form.is_valid():
+            with transaction.atomic():
+                contact = form.save()
+                AuditLog.objects.create(
+                    actor=request.user,
+                    action="crm.contact.updated",
+                    entity_type="Lead",
+                    entity_id=str(contact.pk),
+                    after={"fields": list(form.changed_data), "enrollment_id": deal.pk},
+                )
+            messages.success(request, "Person updated.")
             return redirect("crm_deal_detail", pk=deal.pk)
         return render(request, self.template_name, {"form": form, "deal": deal}, status=400)
 
