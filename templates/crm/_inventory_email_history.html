@@ -1,0 +1,6 @@
+<h2 id="email-history">Email history</h2>{% for email in emails %}<article class="card" style="padding:16px;margin-bottom:12px"><strong>{{ email.subject }}</strong><p>{{ email.recipient }} · <span class="badge">{{ email.get_status_display }}</span>{% if email.sent_at %} · {{ email.sent_at }}{% endif %}</p>{% if email.error %}<p role="alert">{{ email.error }}</p>{% endif %}<details><summary>View message</summary>{{ email.body|linebreaks }}</details>{% if email.status == "failed" or email.status == "sending" or email.status == "pending" %}<form method="post">{% csrf_token %}<input type="hidden" name="mail" value="{{ email.pk }}">{% if email.status == "sending" %}<label style="display:block"><input style="width:auto;
+              min-height:auto"
+       type="checkbox"
+       name="checked_provider"
+       value="yes"
+       required> I checked provider records and this message was not delivered.</label>{% endif %}<button class="btn" name="action" value="retry">Retry delivery</button></form>{% endif %}</article>{% endfor %}
