@@ -1,0 +1,231 @@
+{% extends "resources/base.html" %}
+{% load static %}
+{% block title %}{{ resource.draft.title }}{% endblock %}
+{% block content %}
+    <div class="rm-toolbar">
+        <div>
+            <p class="rm-eyebrow">
+                <a href="{% url 'resources:manager' %}">← Resources</a> / {{ resource.draft.get_kind_display }}</p>
+            <h1 class="rm-title">Make it ready to share.</h1>
+            <p class="rm-subtitle">Add the details. Preview the result. Publish when it feels right.</p>
+        </div>
+        <span class="rm-badge">{{ resource.state }}</span>
+    </div>
+    {% if resource.has_unpublished_changes %}
+        <p class="rm-notice">You’re editing a draft. Visitors still see the published version.</p>
+    {% endif %}
+    {% if resource.archived %}
+        <p class="rm-notice">This resource is archived and hidden from visitors.</p>
+    {% endif %}
+    <div class="rm-editor-grid">
+        <div>
+            <form id="resource-form"
+                  action="{% url 'resources:edit' resource.pk %}"
+                  method="post"
+                  enctype="multipart/form-data">
+                {% csrf_token %}{{ form.version }}{{ form.kind }}{{ form.cover }}{{ form.non_field_errors }}{{ form.kind.errors }}{{ form.cover.errors }}
+                <section class="rm-panel">
+                    <p class="rm-eyebrow">1 · Add your content</p>
+                    {% if resource.draft.kind == "file" %}
+                        <div class="rm-field">
+                            {{ form.upload.label_tag }}{{ form.upload }}{{ form.upload.errors }}<small>Replacing the file preserves this resource’s website address.</small>
+                        </div>
+                        <div class="rm-field">{{ form.asset.label_tag }}{{ form.asset }}{{ form.asset.errors }}</div>
+                    {% elif resource.draft.kind == "link" %}
+                        <div class="rm-field">
+                            {{ form.url.label_tag }}{{ form.url }}{{ form.url.errors }}<small>Paste an HTTPS link. YouTube and Vimeo videos get a built-in player.</small>
+                        </div>
+                    {% else %}
+                        <div class="rm-field">
+                            {{ form.body.label_tag }}{{ form.body }}{{ form.body.errors }}<small>Paragraphs are formatted automatically. No page design needed.</small>
+                        </div>
+                    {% endif %}
+                </section>
+                <section class="rm-panel">
+                    <p class="rm-eyebrow">2 · Help people find it</p>
+                    <div class="rm-field">{{ form.title.label_tag }}{{ form.title }}{{ form.title.errors }}</div>
+                    <div class="rm-field">
+                        {{ form.description.label_tag }}{{ form.description }}{{ form.description.errors }}<small>A sentence or two explaining how this resource helps.</small>
+                    </div>
+                    <div class="rm-two">
+                        <div class="rm-field">{{ form.audience.label_tag }}{{ form.audience }}{{ form.audience.errors }}</div>
+                        <div class="rm-field">{{ form.topic.label_tag }}{{ form.topic }}{{ form.topic.errors }}</div>
+                    </div>
+                    <details {% if form.errors %}open{% endif %}>
+                        <summary>More options</summary>
+                        <div class="rm-two">
+                            <div class="rm-field">{{ form.grade.label_tag }}{{ form.grade }}{{ form.grade.errors }}</div>
+                            <div class="rm-field">{{ form.language.label_tag }}{{ form.language }}{{ form.language.errors }}</div>
+                        </div>
+                        <div class="rm-field">
+                            {{ form.cover_upload.label_tag }}{{ form.cover_upload }}{{ form.cover_upload.errors }}<small>Optional. We provide a branded cover automatically.</small>
+                        </div>
+                        <div class="rm-field">{{ form.remove_cover }} {{ form.remove_cover.label_tag }}</div>
+                        <div class="rm-field">{{ form.cover_alt.label_tag }}{{ form.cover_alt }}{{ form.cover_alt.errors }}</div>
+                        {% if publisher %}
+                            <div class="rm-field">{{ form.access.label_tag }}{{ form.access }}{{ form.access.errors }}</div>
+                            <div class="rm-field">{{ form.featured }} {{ form.featured.label_tag }}{{ form.featured.errors }}</div>
+                        {% endif %}
+                        <div class="rm-field">{{ form.seo_title.label_tag }}{{ form.seo_title }}{{ form.seo_title.errors }}</div>
+                        <div class="rm-field">{{ form.seo_description.label_tag }}{{ form.seo_description }}{{ form.seo_description.errors }}</div>
+                    </details>
+                    <button class="rm-button secondary" id="save-button">Save draft</button>
+                    <span class="rm-save-state"
+                          id="save-state"
+                          aria-live="polite">Draft saved · {{ resource.updated_at|date:"M j, H:i" }} UTC</span>
+                    <div id="save-errors" class="rm-notice rm-error" role="alert" hidden></div>
+                </section>
+            </form>
+            <details class="rm-panel rm-revisions"
+                     {% if request.GET.history_page %}open{% endif %}>
+                <summary>Version history</summary>
+                <p class="rm-subtle">Restoring a version changes only the draft. Browse earlier versions to recover previous work.</p>
+                <ul class="rm-history">
+                    {% for revision in history %}
+                        <li>
+                            <strong>{{ revision.title }}</strong>
+                            <br>{{ revision.created_at|date:"M j, Y H:i" }} UTC · {{ revision.author|default:'Former editor' }} {% if revision.pk == resource.draft_id %}· Current draft{% endif %}
+                            <div>
+                                <a href="{% url 'resources:preview' resource.pk %}?revision={{ revision.pk }}"
+                                   target="_blank"
+                                   rel="noopener">Preview version</a>
+                                {% if revision.pk != resource.draft_id %}
+                                    <form class="resource-action"
+                                          action="{% url 'resources:action' resource.pk %}"
+                                          method="post">
+                                        {% csrf_token %}
+                                        <input type="hidden" name="version" value="{{ resource.version }}">
+                                        <input type="hidden" name="action" value="restore_revision">
+                                        <input type="hidden" name="revision" value="{{ revision.pk }}">
+                                        <button class="rm-link-button">Restore to draft</button>
+                                    </form>
+                                {% endif %}
+                            </div>
+                        </li>
+                    {% endfor %}
+                </ul>
+                <nav class="rm-pager" aria-label="Version history pages">
+                    {% if history.has_previous %}<a href="?history_page={{ history.previous_page_number }}">Newer versions</a>{% endif %}
+                    {% if history.has_next %}<a href="?history_page={{ history.next_page_number }}">Older versions</a>{% endif %}
+                </nav>
+            </details>
+        </div>
+        <aside>
+            <section class="rm-panel">
+                <p class="rm-eyebrow">3 · Preview &amp; publish</p>
+                <h2>Ready when you are.</h2>
+                <p class="rm-muted">Check the card and full page before sharing.</p>
+                <div class="rm-actions">
+                    <a class="rm-button secondary"
+                       id="preview-button"
+                       href="{% url 'resources:preview' resource.pk %}"
+                       target="_blank"
+                       rel="noopener">Preview resource</a>
+                    <form class="resource-action rm-actions"
+                          action="{% url 'resources:action' resource.pk %}"
+                          method="post">
+                        {% csrf_token %}
+                        <input type="hidden" name="version" value="{{ resource.version }}">
+                        {% if publisher %}
+                            {% if not resource.archived %}
+                                <button class="rm-button" name="action" value="publish">Publish now</button>
+                            {% endif %}
+                        {% else %}
+                            <button class="rm-button" name="action" value="submit">Submit for review</button>
+                        {% endif %}
+                    </form>
+                    {% if resource.published_revision %}
+                        <a class="rm-button secondary"
+                           href="{{ resource.get_absolute_url }}"
+                           target="_blank"
+                           rel="noopener">View resource ↗</a>
+                        <button class="rm-link-button"
+                                id="copy-link"
+                                type="button"
+                                data-path="{{ resource.get_absolute_url }}">Copy resource link</button>
+                    {% endif %}
+                </div>
+                {% if publisher and not resource.archived %}
+                    <details>
+                        <summary>Schedule publication</summary>
+                        <form class="resource-action"
+                              action="{% url 'resources:action' resource.pk %}"
+                              method="post">
+                            {% csrf_token %}
+                            <input type="hidden" name="version" value="{{ resource.version }}">
+                            <input type="hidden" name="action" value="schedule">
+                            <div class="rm-field">{{ schedule_form.publish_at.label_tag }}{{ schedule_form.publish_at }}</div>
+                            <button class="rm-button secondary">Schedule</button>
+                        </form>
+                        {% if resource.scheduled_id %}
+                            <p class="rm-subtle">Scheduled version: {{ resource.publish_at|date:"M j, Y H:i" }} UTC. Later draft edits require rescheduling.</p>
+                            <form class="resource-action"
+                                  action="{% url 'resources:action' resource.pk %}"
+                                  method="post">
+                                {% csrf_token %}
+                                <input type="hidden" name="version" value="{{ resource.version }}">
+                                <button class="rm-link-button"
+                                        name="action"
+                                        value="cancel_schedule">Cancel schedule</button>
+                            </form>
+                        {% endif %}
+                    </details>
+                {% endif %}
+                <details>
+                    <summary>Resource actions</summary>
+                    <form class="resource-action rm-actions"
+                          action="{% url 'resources:action' resource.pk %}"
+                          method="post">
+                        {% csrf_token %}
+                        <input type="hidden" name="version" value="{{ resource.version }}">
+                        <button class="rm-button secondary" name="action" value="duplicate">Duplicate as draft</button>
+                        {% if publisher %}
+                            {% if resource.archived %}
+                                <button class="rm-link-button" name="action" value="restore">Restore resource</button>
+                                <p class="rm-subtle">Previous publication settings will apply again.</p>
+                            {% else %}
+                                <button class="rm-link-button" name="action" value="archive">Archive resource</button>
+                                <p class="rm-subtle">Hides it from visitors. You can restore it later.</p>
+                            {% endif %}
+                        {% endif %}
+                    </form>
+                </details>
+            </section>
+            <section class="rm-panel">
+                <h2>Recent activity</h2>
+                <ul class="rm-history">
+                    {% for event in events %}
+                        <li>
+                            {{ event.display_action }} · {{ event.created_at|date:"M j, H:i" }} UTC
+                            <br>
+                            <span class="rm-muted">{{ event.actor|default:'Former editor' }}</span>
+                        </li>
+                    {% endfor %}
+                </ul>
+            </section>
+        </aside>
+    </div>
+    <dialog id="preview-dialog" class="rm-dialog" aria-labelledby="preview-title">
+        <div class="rm-toolbar">
+            <strong id="preview-title">Resource preview</strong>
+            <div class="rm-preview-switch">
+                <button class="rm-button secondary"
+                        id="preview-desktop"
+                        type="button"
+                        aria-pressed="true">Desktop</button>
+                <button class="rm-button secondary"
+                        id="preview-mobile"
+                        type="button"
+                        aria-pressed="false">Mobile</button>
+                <button class="rm-button secondary" id="preview-close" type="button">Close</button>
+            </div>
+        </div>
+        <iframe id="preview-frame"
+                class="rm-preview-frame"
+                title="Resource card and page preview">
+        </iframe>
+    </dialog>
+{% endblock %}
+{% block scripts %}
+    <script src="{% static 'resources/editor.js' %}" defer></script>
+{% endblock %}

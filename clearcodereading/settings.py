@@ -57,6 +57,7 @@ SHARED_APPS = [
     "drf_spectacular",
     "apps.core",
     "apps.blog.apps.BlogConfig",
+    "apps.resources.apps.ResourcesConfig",
     "apps.notifications.apps.NotificationsConfig",
     "apps.users",
     "apps.crm",

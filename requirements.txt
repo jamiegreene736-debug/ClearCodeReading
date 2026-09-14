@@ -13,3 +13,4 @@ boto3==1.41.2
 gunicorn==26.0.0
 whitenoise==6.9.0
 Pillow==12.2.0
+pypdfium2==5.13.0

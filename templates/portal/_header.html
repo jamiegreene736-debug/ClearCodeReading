@@ -14,6 +14,9 @@
         >Dashboard</a>
       </li>
 
+      {% if request.user.has_resource_access %}
+        <li><a href="{% url 'resources:manager' %}" class="focus-ring inline-flex min-h-11 items-center rounded-full px-4 py-2 text-sm font-black">Resources</a></li>
+      {% endif %}
       {% if request.user.is_superuser or request.user.role == 'super_admin' or request.user.role == 'school_admin' %}
         <li class="static lg:relative" data-portal-disclosure>
           <button id="program-navigation-button" data-testid="program-menu-button" class="focus-ring inline-flex min-h-11 items-center gap-2 rounded-full px-3 py-2 text-sm font-black text-ink/70 transition hover:-translate-y-0.5 hover:bg-white/70 hover:text-deepTeal sm:px-4" type="button" aria-expanded="false" aria-controls="program-navigation-panel">

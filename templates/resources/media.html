@@ -1,0 +1,46 @@
+{% extends "resources/base.html" %}
+{% block title %}File library{% endblock %}
+{% block content %}
+    <div class="rm-toolbar">
+        <div>
+            <p class="rm-eyebrow">Upload once. Use again.</p>
+            <h1 class="rm-title">File library</h1>
+            <p class="rm-subtitle">Choose “Or reuse a file” in a resource editor to use one of these files. Earlier files are kept for version history.</p>
+        </div>
+        <a class="rm-button" href="{% url 'resources:add' %}">Upload files</a>
+    </div>
+    <form class="rm-search">
+        <div>
+            <label for="q">Find a file</label>
+            <input id="q" name="q" value="{{ query }}" placeholder="Search filenames">
+        </div>
+        <button class="rm-button secondary">Search</button>
+    </form>
+    <div class="rm-table-wrap">
+        <table class="rm-table">
+            <thead>
+                <tr>
+                    <th>File</th>
+                    <th>Size</th>
+                    <th>Resources using it</th>
+                    <th>Uploaded</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for asset in page %}
+                    <tr>
+                        <td>{{ asset.name }}</td>
+                        <td>{{ asset.size|filesizeformat }}</td>
+                        <td>{{ asset.uses }}</td>
+                        <td>{{ asset.created_at|date:"M j, Y" }}</td>
+                    </tr>
+                {% empty %}
+                    <tr>
+                        <td colspan="4">No files yet. Upload a resource to get started.</td>
+                    </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    {% include "resources/pagination.html" %}
+{% endblock %}

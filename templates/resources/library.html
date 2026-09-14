@@ -1,0 +1,71 @@
+{% load static %}
+<link rel="stylesheet" href="{% static 'resources/resources.css' %}">
+<section class="rm-library" aria-labelledby="library-title">
+    <p class="rm-eyebrow">Tools you can use today</p>
+    <h2 id="library-title">Explore the resource library</h2>
+    <p style="margin-bottom:24px">Find worksheets, guides, videos, and practical ideas for your next step.</p>
+    <form class="rm-search" method="get">
+        <div>
+            <label for="resource-search">Search</label>
+            <input id="resource-search"
+                   name="q"
+                   value="{{ resource_query }}"
+                   placeholder="Find a resource"
+                   maxlength="200">
+        </div>
+        <div>
+            <label for="resource-audience">Audience</label>
+            <select id="resource-audience" name="audience">
+                <option value="">Everyone</option>
+                <option value="families"
+                        {% if selected_audience == 'families' %}selected{% endif %}>Families</option>
+                <option value="educators"
+                        {% if selected_audience == 'educators' %}selected{% endif %}>Educators</option>
+            </select>
+        </div>
+        <div>
+            <label for="resource-topic">Topic</label>
+            <select id="resource-topic" name="topic">
+                <option value="">All topics</option>
+                {% for topic in resource_topics %}
+                    <option value="{{ topic.pk }}"
+                            {% if selected_topic == topic.pk|stringformat:'s' %}selected{% endif %}>{{ topic.name }}</option>
+                {% endfor %}
+            </select>
+        </div>
+        <div>
+            <label for="resource-kind">Format</label>
+            <select id="resource-kind" name="kind">
+                <option value="">All formats</option>
+                <option value="file" {% if selected_kind == 'file' %}selected{% endif %}>Files</option>
+                <option value="link" {% if selected_kind == 'link' %}selected{% endif %}>Links &amp; videos</option>
+                <option value="article"
+                        {% if selected_kind == 'article' %}selected{% endif %}>Articles</option>
+            </select>
+        </div>
+        <button class="rm-button">Find resources</button>
+    </form>
+    <div class="rm-grid">
+        {% for revision in resource_page %}
+            {% url 'resources:asset' revision.resource_id 'cover' as resource_cover %}
+            {% if resources_unlocked or revision.access == "public" %}
+                {% include "resources/card.html" with cover_url=resource_cover show_cover=True %}
+            {% else %}
+                {% include "resources/card.html" with show_cover=False %}
+            {% endif %}
+        {% empty %}
+            <p>No resources match these filters yet. Try a different search or explore the starting points below.</p>
+        {% endfor %}
+    </div>
+    {% if resource_page.has_other_pages %}
+        <nav class="rm-pager" aria-label="Resource pages">
+            {% if resource_page.has_previous %}
+                <a href="?page={{ resource_page.previous_page_number }}&amp;q={{ resource_query|urlencode }}&amp;topic={{ selected_topic|urlencode }}&amp;audience={{ selected_audience|urlencode }}&amp;kind={{ selected_kind|urlencode }}">← Previous</a>
+            {% endif %}
+            <span>{{ resource_page.number }} / {{ resource_page.paginator.num_pages }}</span>
+            {% if resource_page.has_next %}
+                <a href="?page={{ resource_page.next_page_number }}&amp;q={{ resource_query|urlencode }}&amp;topic={{ selected_topic|urlencode }}&amp;audience={{ selected_audience|urlencode }}&amp;kind={{ selected_kind|urlencode }}">Next →</a>
+            {% endif %}
+        </nav>
+    {% endif %}
+</section>
