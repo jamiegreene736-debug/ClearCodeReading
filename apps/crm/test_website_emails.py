@@ -38,7 +38,7 @@ class WebsiteEmailTests(TestCase):
         return record_form_submission(
             intake=LeadIntake(
                 contact_email="parent@example.com",
-                contact_name="Parent",
+                contact_name=data.get("name", "Parent"),
                 school_name="Family",
                 audience="parent",
             ),
