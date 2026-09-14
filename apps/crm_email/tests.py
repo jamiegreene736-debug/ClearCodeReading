@@ -259,6 +259,41 @@ class EmailTests(TestCase):
         self.assertContains(response, "Include this contact")
         self.assertFalse(Message.objects.exists())
 
+    def test_each_user_composes_from_their_own_mailbox(self) -> None:
+        other_mailbox = Mailbox.objects.create(
+            user=self.other, email=self.other.email, status=Mailbox.Status.CONNECTED
+        )
+        for user, mailbox in ((self.owner, self.mailbox), (self.other, other_mailbox)):
+            self.client.force_login(user)
+            response = self.client.post(
+                reverse("crm_email_compose", args=[self.lead.pk]), self.data()
+            )
+            self.assertEqual(response.status_code, 302)
+            message = Message.objects.get(mailbox=mailbox)
+            self.assertEqual(message.sender, user.email)
+            self.assertEqual(message.status, Message.Status.QUEUED)
+
+    def test_wrong_sender_is_rejected_before_gmail_send(self) -> None:
+        message = self.draft()
+        message.sender = self.other.email
+        message.save()
+        client = MagicMock(spec=Gmail)
+        send(client, message)
+        message.refresh_from_db()
+        self.assertEqual(message.status, Message.Status.FAILED)
+        client.request.assert_not_called()
+
+    def test_disconnected_sender_is_rejected_before_gmail_send(self) -> None:
+        message = self.draft()
+        Mailbox.objects.filter(pk=self.mailbox.pk).update(
+            status=Mailbox.Status.DISCONNECTED
+        )
+        client = MagicMock(spec=Gmail)
+        send(client, message)
+        message.refresh_from_db()
+        self.assertEqual(message.status, Message.Status.FAILED)
+        client.request.assert_not_called()
+
     def test_send_success_records_thread_and_one_follow_up(self) -> None:
         message = self.draft(follow_up_days=3)
         client = MagicMock(spec=Gmail)

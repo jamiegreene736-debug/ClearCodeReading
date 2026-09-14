@@ -95,6 +95,19 @@ def send(client: Gmail, message: Message) -> None:
     if message.status in {Message.Status.SENDING, Message.Status.UNCERTAIN}:
         reconcile(client, message)
         return
+    mailbox = Mailbox.objects.select_related("user").get(pk=message.mailbox_id)
+    if (
+        mailbox.status != Mailbox.Status.CONNECTED
+        or not mailbox.user.has_crm_access
+        or not mailbox.user.is_active
+        or mailbox.user.is_deleted
+        or mailbox.email.lower() != mailbox.user.email.lower()
+        or message.sender.lower() != mailbox.email.lower()
+    ):
+        message.status = Message.Status.FAILED
+        message.last_error = "Sender no longer matches an active connected Gmail account. Reconnect your Gmail and create a new message."
+        message.save()
+        return
     from apps.crm.inventory_models import InventoryMail
 
     delivery = (
