@@ -19,6 +19,7 @@ from django.views.decorators.cache import never_cache
 from apps.crm.access import crm_owner_queryset
 from apps.crm.consultations import (
     can_manage_team_availability,
+    default_consultation_host,
     selected_consultation_host,
 )
 from apps.crm.inventory import (
@@ -576,16 +577,15 @@ class InventoryBookingView(InventoryPublicView):
             .select_related("slot__host")
             .first()
         )
-        host = selected_consultation_host(request)
+        host = default_consultation_host()
         slots = ConsultationSlot.objects.filter(
+            host=host,
             active=True,
             starts_at__gt=timezone.now(),
             booking__isnull=True,
             host__is_active=True,
             host__is_deleted=False,
         ).select_related("host")
-        if host:
-            slots = slots.filter(host=host)
         slots = slots[:100]
         form = form or BookingForm()
         form.fields["slot"].choices = [
@@ -603,7 +603,7 @@ class InventoryBookingView(InventoryPublicView):
                 "form": form,
                 "booking": booking,
                 "slots": slots,
-                "hosts": crm_owner_queryset(),
+                "hosts": [host] if host else [],
                 "selected_host": host,
             },
         )
@@ -626,6 +626,7 @@ class InventoryBookingView(InventoryPublicView):
         form.fields["slot"].choices = [
             (str(pk), str(pk))
             for pk in ConsultationSlot.objects.filter(
+                host=default_consultation_host(),
                 active=True,
                 starts_at__gt=timezone.now(),
                 host__is_active=True,
