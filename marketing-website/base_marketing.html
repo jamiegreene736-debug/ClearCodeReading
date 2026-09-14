@@ -7,9 +7,13 @@
   <title>{% block title %}ClearCode Reading{% endblock %}</title>
   <meta name="description" content="{% block meta_description %}Specialist-led structured literacy intervention with precise placement and clear parent visibility.{% endblock %}">
   <meta name="theme-color" content="#1A7A7A">
+  <link rel="canonical" href="{{ public_canonical_url }}">
   <meta property="og:title" content="{% block og_title %}ClearCode Reading{% endblock %}">
   <meta property="og:description" content="{% block og_description %}Structured literacy intervention with clear, measurable progress.{% endblock %}">
   <meta property="og:type" content="website">
+  <meta property="og:url" content="{{ public_canonical_url }}">
+  <meta property="og:locale" content="en_US">
+  <script type="application/ld+json">{{ organization_json_ld|safe }}</script>
   <link rel="icon" href="/assets/logo/cc-favicon-gold-teal-32.png" type="image/png" sizes="32x32">
   <link rel="apple-touch-icon" href="/assets/logo/cc-apple-touch-icon-gold-teal-180.png" sizes="180x180">
   <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -108,6 +112,7 @@
       </a>
       <div class="hidden items-center gap-4 text-xs font-bold text-white/80 lg:flex xl:gap-7 xl:text-sm">
         <a class="focus-ring rounded-lg transition hover:text-gold" href="/about/">About</a>
+        <a class="focus-ring rounded-lg transition hover:text-gold" href="/orlando/">Orlando</a>
         <a class="focus-ring rounded-lg transition hover:text-gold" href="/how-it-works/">How it works</a>
         <a class="focus-ring rounded-lg transition hover:text-gold" href="/families/">For Families</a>
         <a class="focus-ring rounded-lg transition hover:text-gold" href="/survey/">Survey</a>
@@ -123,6 +128,7 @@
         <div class="absolute right-0 top-14 w-72 rounded-[2rem] bg-white p-4 shadow-2xl ring-1 ring-ink/10">
           <div class="grid gap-1 text-sm font-black">
             <a class="focus-ring rounded-xl px-4 py-3 hover:bg-seafoam" href="/about/">About</a>
+            <a class="focus-ring rounded-xl px-4 py-3 hover:bg-seafoam" href="/orlando/">Orlando reading help</a>
             <a class="focus-ring rounded-xl px-4 py-3 hover:bg-seafoam" href="/how-it-works/">How it works</a>
             <a class="focus-ring rounded-xl px-4 py-3 hover:bg-seafoam" href="/families/">For Families</a>
             <a class="focus-ring rounded-xl px-4 py-3 hover:bg-seafoam" href="/resources/">Free Family Resources</a>
@@ -160,11 +166,12 @@
     <div class="mx-auto grid max-w-7xl gap-10 lg:grid-cols-[1fr_auto] lg:items-start">
       <div>
         <a class="focus-ring inline-flex rounded-lg" href="/" aria-label="ClearCode Reading home">{% include "_brand_lockup.html" %}</a>
-        <p class="mt-4 max-w-xl text-sm leading-6 text-white/70">Specialist-led structured literacy intervention with precise placement and live parent visibility.</p>
+        <p class="mt-4 max-w-xl text-sm leading-6 text-white/70">Specialist-led structured literacy intervention in Orlando, Florida, with precise placement and live parent visibility.</p>
         <p class="mt-2 text-sm font-bold text-gold">Unlock Reading. Unlock Everything.</p>
       </div>
       <div class="grid grid-cols-2 gap-x-8 gap-y-4 text-sm font-bold text-white/75 sm:grid-cols-3">
         <a href="/about/" class="focus-ring inline-flex min-h-11 items-center rounded hover:text-gold">About</a>
+        <a href="/orlando/" class="focus-ring inline-flex min-h-11 items-center rounded hover:text-gold">Orlando</a>
         <a href="/how-it-works/" class="focus-ring inline-flex min-h-11 items-center rounded hover:text-gold">How it works</a>
         <a href="/families/" class="focus-ring inline-flex min-h-11 items-center rounded hover:text-gold">For Families</a>
         <a href="/resources/" class="focus-ring inline-flex min-h-11 items-center rounded hover:text-gold">Free Resources</a>

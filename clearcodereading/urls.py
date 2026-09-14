@@ -38,6 +38,7 @@ from apps.crm.views import (
     SurveySubmissionView,
     WebsiteSignupView,
 )
+from apps.core.discovery_views import LlmsTxtView, RobotsTxtView, SitemapXmlView
 from apps.sessions.views import RapidSessionLogView
 from apps.users.onboarding_views import manage_users, resend_invitation, AcceptInvitationView, gmail_welcome
 from apps.users.portal_views import (
@@ -75,6 +76,9 @@ urlpatterns = [
     path("reading-inventory/<str:token>/", InventoryPublicView.as_view(), name="inventory_public"),
     path("reading-inventory/<str:token>/book/", InventoryBookingView.as_view(), name="inventory_booking"),
     path("", TemplateView.as_view(template_name="index.html"), name="marketing_home"),
+    path("robots.txt", RobotsTxtView.as_view(), name="robots_txt"),
+    path("sitemap.xml", SitemapXmlView.as_view(), name="sitemap_xml"),
+    path("llms.txt", LlmsTxtView.as_view(), name="llms_txt"),
     path("about/", TemplateView.as_view(template_name="about.html"), name="marketing_about"),
     path(
         "favicon.ico",
@@ -89,6 +93,12 @@ urlpatterns = [
     path("families/", TemplateView.as_view(template_name="families.html"), name="marketing_families"),
     path("resources/", FamilyResourcesView.as_view(template_name="resources.html"), name="marketing_resources"),
     path("resources/", include("apps.resources.urls")),
+    path("orlando/", TemplateView.as_view(template_name="orlando.html"), name="marketing_orlando"),
+    path(
+        "florida/",
+        RedirectView.as_view(pattern_name="marketing_orlando", permanent=True),
+        name="marketing_florida",
+    ),
     path("faq/", TemplateView.as_view(template_name="faq.html"), name="marketing_faq"),
     path("foundation/", TemplateView.as_view(template_name="foundation.html"), name="marketing_foundation"),
     path("careers/", TemplateView.as_view(template_name="careers.html"), name="marketing_careers"),

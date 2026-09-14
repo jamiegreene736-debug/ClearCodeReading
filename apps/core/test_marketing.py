@@ -20,6 +20,7 @@ PUBLIC_PAGES = {
     "marketing_how_it_works": "how-it-works.html",
     "marketing_families": "families.html",
     "marketing_resources": "resources.html",
+    "marketing_orlando": "orlando.html",
     "marketing_faq": "faq.html",
     "marketing_foundation": "foundation.html",
     "marketing_careers": "careers.html",
@@ -166,8 +167,10 @@ class MarketingPageTests(SimpleTestCase):
         self.assertNotIn("Frequently asked questions", homepage)
         self.assertIn("Frequently asked questions", faq)
         self.assertIn("What families usually want to know.", faq)
-        self.assertEqual(faq.count('details class="group rounded-2xl'), 6)
+        self.assertEqual(faq.count('details class="group rounded-2xl'), 10)
         self.assertIn("Who does ClearCode serve?", faq)
+        self.assertIn("Where is ClearCode Reading located?", faq)
+        self.assertIn("Is there a ClearCode reading app?", faq)
         self.assertIn("How do we begin?", faq)
 
     def test_three_primary_next_steps_are_prominent_in_the_homepage_body(self):
@@ -298,6 +301,7 @@ class MarketingPageTests(SimpleTestCase):
             "marketing_how_it_works",
             "marketing_families",
             "marketing_resources",
+            "marketing_orlando",
             "marketing_faq",
             "marketing_foundation",
             "marketing_careers",
@@ -307,6 +311,7 @@ class MarketingPageTests(SimpleTestCase):
         ]
         expected_links = [
             "/about/",
+            "/orlando/",
             "/how-it-works/",
             "/families/",
             "/resources/",
@@ -748,6 +753,62 @@ class MarketingPageTests(SimpleTestCase):
         self.assertEqual(route.kwargs["path"], "logo/favicon.ico")
         self.assertTrue(favicon_path.is_file())
 
+    def test_homepage_states_the_orlando_opening_and_current_app(self):
+        content = self._render("marketing_home")
+
+        self.assertIn("K–8 structured literacy intervention in Orlando", content)
+        self.assertIn("Orlando, Florida metro area in 2027", content)
+        self.assertIn("ClearCode Reading iOS app", content)
+        self.assertIn("EducationalOrganization", content)
+        self.assertIn("https://clearcodereading.com/", content)
+        self.assertIn('rel="canonical"', content)
+
+    def test_orlando_page_answers_local_reading_help_queries(self):
+        content = self._render("marketing_orlando")
+
+        self.assertIn("Reading help in Orlando, Florida.", content)
+        self.assertIn("reading center opening in the Orlando metro area in 2027", content)
+        self.assertIn("ClearCode Reading iOS app", content)
+        self.assertIn("Florida education scholarships", content)
+        self.assertIn("Orton-Gillingham", content)
+        self.assertIn("Phonics for Reading", content)
+        self.assertIn("data-ai-answer", content)
+        self.assertIn("FAQPage", content)
+        self.assertIn('href="/survey/"', content)
+
+    def test_florida_route_redirects_to_the_orlando_page(self):
+        route = resolve(reverse("marketing_florida"))
+        response = route.func(RequestFactory().get("/florida/"))
+
+        self.assertEqual(route.func.view_initkwargs["pattern_name"], "marketing_orlando")
+        self.assertTrue(route.func.view_initkwargs["permanent"])
+        self.assertEqual(response.status_code, 301)
+        self.assertEqual(response.url, reverse("marketing_orlando"))
+
+    def test_robots_and_llms_files_invite_ai_crawlers(self):
+        robots = resolve("/robots.txt").func(RequestFactory().get("/robots.txt"))
+        llms = resolve("/llms.txt").func(RequestFactory().get("/llms.txt"))
+        sitemap = resolve("/sitemap.xml").func(RequestFactory().get("/sitemap.xml"))
+
+        self.assertEqual(robots.status_code, 200)
+        self.assertEqual(robots["Content-Type"], "text/plain; charset=utf-8")
+        self.assertIn("GPTBot", robots.content.decode())
+        self.assertIn("OAI-SearchBot", robots.content.decode())
+        self.assertIn("PerplexityBot", robots.content.decode())
+        self.assertIn("Allow: /", robots.content.decode())
+        self.assertIn("Sitemap: https://clearcodereading.com/sitemap.xml", robots.content.decode())
+        self.assertIn("Disallow: /admin/", robots.content.decode())
+
+        self.assertEqual(llms.status_code, 200)
+        self.assertIn("ClearCode Reading", llms.content.decode())
+        self.assertIn("Orlando metro area, Florida", llms.content.decode())
+        self.assertIn("https://clearcodereading.com/orlando/", llms.content.decode())
+        self.assertIn("does not diagnose dyslexia", llms.content.decode())
+
+        self.assertEqual(sitemap.status_code, 200)
+        self.assertIn("https://clearcodereading.com/orlando/", sitemap.content.decode())
+        self.assertIn("https://clearcodereading.com/faq/", sitemap.content.decode())
+
 
 class ContactFormTests(TestCase):
     @staticmethod
@@ -981,3 +1042,30 @@ class ContactFormTests(TestCase):
         self.assertEqual(response["X-Content-Type-Options"], "nosniff")
         self.assertIn('filename="Morgan Resume.pdf"', response["Content-Disposition"])
         self.assertIn(b"ClearCode test document", b"".join(response.streaming_content))
+
+
+class DiscoveryFeedTests(TestCase):
+    def test_sitemap_includes_published_blog_posts(self):
+        from apps.blog.models import BlogPost
+
+        BlogPost.objects.create(
+            title="How Orlando families can notice reading struggle",
+            excerpt="A practical starting point.",
+            body="A published article for families.",
+            status=BlogPost.Status.PUBLISHED,
+        )
+        BlogPost.objects.create(
+            title="Draft only",
+            excerpt="Not ready.",
+            body="Draft body.",
+            status=BlogPost.Status.DRAFT,
+        )
+
+        response = resolve("/sitemap.xml").func(RequestFactory().get("/sitemap.xml"))
+        content = response.content.decode()
+
+        self.assertIn(
+            "https://clearcodereading.com/blog/how-orlando-families-can-notice-reading-struggle/",
+            content,
+        )
+        self.assertNotIn("https://clearcodereading.com/blog/draft-only/", content)
