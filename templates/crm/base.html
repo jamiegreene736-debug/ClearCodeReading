@@ -111,6 +111,7 @@
       <a class="brand" href="{% url 'crm_dashboard' %}"><span class="brand-mark">CC</span><span>ClearCode CRM</span></a>
       <div class="desktop-nav">
         <p class="nav-label">CRM</p>
+        <a class="nav-link" href="{% url 'crm_calendar_settings' %}">My calendar</a>
         <a class="nav-link" href="{% url 'crm_email_settings' %}">✉ Email settings</a>
         <nav class="nav-group" aria-label="CRM navigation">
           <a class="nav-link {% if request.resolver_match.url_name == 'crm_dashboard' %}active{% endif %}" href="{% url 'crm_dashboard' %}"><span aria-hidden="true">⌂</span> Overview</a>
@@ -132,7 +133,8 @@
       <details class="mobile-nav">
         <summary>Workspace menu</summary>
         <nav class="nav-group" aria-label="Mobile CRM navigation">
-<a class="nav-link" href="{% url 'crm_email_settings' %}">Email settings</a>
+<a class="nav-link" href="{% url 'crm_calendar_settings' %}">My calendar</a>
+        <a class="nav-link" href="{% url 'crm_email_settings' %}">Email settings</a>
           <a class="nav-link {% if request.resolver_match.url_name == 'crm_dashboard' %}active{% endif %}" href="{% url 'crm_dashboard' %}">Overview</a>
           <a class="nav-link {% if request.resolver_match.url_name == 'crm_contact_list' or request.resolver_match.url_name == 'crm_contact_create' or request.resolver_match.url_name == 'crm_contact_detail' %}active{% endif %}" href="{% url 'crm_contact_list' %}">Contacts</a>
           <a class="nav-link {% if request.resolver_match.url_name == 'crm_company_list' or request.resolver_match.url_name == 'crm_company_create' or request.resolver_match.url_name == 'crm_company_detail' or request.resolver_match.url_name == 'crm_company_update' %}active{% endif %}" href="{% url 'crm_company_list' %}">Companies</a>

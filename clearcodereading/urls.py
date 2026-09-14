@@ -49,12 +49,15 @@ from apps.users.portal_views import (
     PortalLoginView,
 )
 
+from apps.crm.calendar_views import CalendarSettingsView, calendar_feed
 from apps.crm.inventory_views import (
     InventoryListView, InventorySendView, InventoryDetailView, InventoryPublicView,
     InventorySlotsView, InventoryBookingView, InventoryPreviewView,
 )
 
 urlpatterns = [
+    path("crm/calendar/", CalendarSettingsView.as_view(), name="crm_calendar_settings"),
+    path("calendars/<uuid:token>.ics", calendar_feed, name="crm_calendar_feed"),
     path("portal/users/", manage_users, name="manage_users"),
     path("portal/users/invitations/<int:pk>/resend/", resend_invitation, name="resend_user_invitation"),
     path("account/setup/<uidb64>/<token>/", AcceptInvitationView.as_view(), name="user_invitation_accept"),

@@ -676,3 +676,5 @@ from apps.crm.hiring_models import HiringCandidate, HiringEvent  # noqa: E402,F4
 from apps.crm.inventory_models import (  # noqa: E402,F401
     ConsultationSlot, InventoryBooking, InventoryChild, InventoryInvitation, InventoryMail,
 )
+
+from apps.crm.calendar_models import HostCalendar  # noqa: E402,F401
