@@ -19,7 +19,7 @@ from apps.crm_email.models import Mailbox, Message
 from apps.crm_email.security import EmailError, mailbox_lock, require_configured
 from apps.crm_email.services import active_mailbox
 
-TEAM_EMAIL = "info@clearcodereading.com"
+TEAM_EMAIL = "hello@clearcodereading.com"
 
 
 @dataclass(frozen=True)

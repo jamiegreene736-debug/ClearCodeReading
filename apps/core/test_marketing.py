@@ -564,6 +564,8 @@ class MarketingPageTests(SimpleTestCase):
         self.assertIn('role="status"', content)
         self.assertIn("Explore our site to learn more.", content)
         self.assertIn("We’ve received your response.", content)
+        self.assertIn("check Spam or Promotions", content)
+        self.assertIn("mailto:hello@clearcodereading.com", content)
 
     def test_about_page_preserves_the_supplied_positioning_and_sources(self):
         content = self._render("marketing_about")

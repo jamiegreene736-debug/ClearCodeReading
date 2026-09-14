@@ -70,8 +70,8 @@ class WebsiteEmailTests(TestCase):
                 receipt = WebsiteReceipt.objects.get(submission=submission)
                 customer, team = receipt.customer_message, receipt.team_message
                 self.assertEqual(customer.to, ["parent@example.com"])
-                self.assertEqual(team.to, ["info@clearcodereading.com"])
-                self.assertEqual(customer.reply_to, "info@clearcodereading.com")
+                self.assertEqual(team.to, ["hello@clearcodereading.com"])
+                self.assertEqual(customer.reply_to, "hello@clearcodereading.com")
                 self.assertEqual(team.reply_to, "parent@example.com")
                 self.assertEqual(customer.status, "queued")
                 self.assertIn("#F5A623", customer.body_html)
@@ -79,7 +79,7 @@ class WebsiteEmailTests(TestCase):
                 mime = BytesParser(policy=policy.default).parsebytes(
                     build_mime(customer)
                 )
-                self.assertEqual(mime["Reply-To"], "info@clearcodereading.com")
+                self.assertEqual(mime["Reply-To"], "hello@clearcodereading.com")
                 self.assertEqual(
                     mime.get_body(preferencelist=("html",)).get_content_type(),
                     "text/html",
