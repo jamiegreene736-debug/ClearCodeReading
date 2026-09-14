@@ -981,6 +981,10 @@ class ConsultationAvailabilityTests(TestCase):
         self.assertEqual(list(response.context["slots"]), [self.slot])
         response = self.client.get(self.url, {"host": self.other.pk})
         self.assertEqual(list(response.context["slots"]), [])
+        response = self.client.get(self.url, {"host": ""})
+        self.assertIsNone(response.context["selected_host"])
+        self.assertEqual(list(response.context["slots"]), [self.slot])
+        self.assertContains(response, 'value="" selected>All hosts')
         self.assertEqual(self.client.get(self.url, {"host": "bad"}).status_code, 404)
 
     def test_only_host_can_confirm_and_other_users_cannot_withdraw(self):

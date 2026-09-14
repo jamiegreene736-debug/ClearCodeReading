@@ -3,7 +3,7 @@
 <p><a href="{% url 'inventory_list' %}">← Assessments</a></p>
 <h1>Consultation availability</h1>
 <p>Confirm the times you can take calls. Only confirmed times are available for parents to book. Times shown include the site’s time zone; enter new times in the host’s time zone.</p>
-<form method="get"><label for="host-filter">Show availability for</label><select id="host-filter" name="host">{% for host in hosts %}<option value="{{ host.pk }}" {% if host.pk == selected_host.pk %}selected{% endif %}>{{ host.get_full_name|default:host.email }}</option>{% endfor %}</select><button class="btn">Show availability</button></form>
+<form method="get"><label for="host-filter">Show availability for</label><select id="host-filter" name="host"><option value="" {% if not selected_host %}selected{% endif %}>All hosts</option>{% for host in hosts %}<option value="{{ host.pk }}" {% if host.pk == selected_host.pk %}selected{% endif %}>{{ host.get_full_name|default:host.email }}</option>{% endfor %}</select><button class="btn">Show availability</button></form>
 <p><a class="btn" href="?host={{ request.user.pk }}">My availability</a></p>
 <div class="card" style="padding:24px;max-width:650px"><h2>Add a time</h2><p>Adding your own time confirms you are available. A time proposed for another host stays unavailable until they confirm it.</p><form method="post">{% csrf_token %}{{ form.as_p }}<button class="btn btn-primary">Add appointment time</button></form></div>
 <h2>Upcoming appointments{% if selected_host %} · {{ selected_host.get_full_name }}{% endif %}</h2>

@@ -24,6 +24,8 @@ def selected_consultation_host(request: HttpRequest) -> CustomUser | None:
     value = request.GET.get("host")
     if value is None:
         return default_consultation_host()
+    if value == "":
+        return None
     if not value.isdecimal():
         raise Http404("Host unavailable")
     host = crm_owner_queryset().filter(pk=value).first()
