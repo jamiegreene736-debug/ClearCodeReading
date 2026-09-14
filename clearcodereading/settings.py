@@ -324,3 +324,6 @@ CRM_EMAIL_ATTACHMENT_LIMIT = 10 * 1024 * 1024
 
 # Explicit connected mailbox used for automated website confirmations.
 WEBSITE_EMAIL_SENDER = os.getenv("WEBSITE_EMAIL_SENDER", "").strip().lower()
+
+# Optional stable account override for the default consultation calendar.
+CRM_DEFAULT_CONSULTATION_HOST_EMAIL = os.getenv("CRM_DEFAULT_CONSULTATION_HOST_EMAIL", "")

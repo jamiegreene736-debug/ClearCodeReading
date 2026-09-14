@@ -11,9 +11,9 @@
 
 ## Content and routing
 
-`apps/crm/data/parent_inventory_v1.json` copies the existing `marketing-website/assessment.html` inventory, which matches the downloaded Parent Reading Inventory form. It contains Kindergarten (20), Grade 1 (25), Grade 2 (25), and Grade 3+ (24) questions, with examples counted as part of the question. Grade-specific stopping thresholds are enforced before accepting later-section answers.
+`apps/crm/data/parent_inventory_v1.json` copies the existing `marketing-website/assessment.html` inventory, which matches the downloaded Parent Reading Inventory form. It contains Kindergarten (20), Grade 1 (25), Grade 2 (25), and Grade 3+ (24) questions, with examples counted as part of the question. All grade-specific questions must now be answered before submission. Former stopping thresholds still select the support outcome, but no longer prevent answering later questions.
 
-The source has conflicting percentage/Yes-count wording. Exact full-inventory boundary scores K=12, Grade 1=15, Grade 2=18, and Grade 3+=18 route to staff review; earlier stopping rules take precedence. No diagnostic or placement decisions are made. Existing standalone website assessment behavior is unchanged.
+The source has conflicting percentage/Yes-count wording. Exact full-inventory boundary scores K=12, Grade 1=15, Grade 2=18, and Grade 3+=18 route to staff review; section support thresholds take precedence after all questions are answered. No diagnostic or placement decisions are made. Existing standalone website assessment behavior is unchanged.
 
 Outcome emails use conservative default copy. Resources link to the existing `/resources/` page. Support links to the invitation's booking page. Ambiguous totals receive a review acknowledgment. Contact owners receive a private CRM result link, not answers in email. Unassigned contacts still receive a visible review task.
 
@@ -55,3 +55,50 @@ Verification: 37 focused inventory tests; Django system/migration checks; Ruff o
 ### Invitation email layout
 
 The assessment action appears before a standalone “Thank you” sign-off, after the message's save-and-return paragraph. Edited messages without that sign-off retain their full text before the action. The CRM preview, HTML email, and plain-text email use the same ordering. HTML email and the CRM preview include the existing ClearCode logo; outgoing email uses an absolute public asset URL with alternative text. Desktop and 390px HTML previews verified the logo and button position; 39 focused tests passed, including Google outbox ordering, escaped content, and custom messages.
+
+
+## September 14: full completion and per-user appointments
+
+The previous implementation marked a low-scoring section as a completed inventory.
+Live investigation found a kindergarten invitation with 11 of 20 answers and rule
+`section-1-below-9`. All 20/25/25/24 grade-specific questions are now required.
+Existing valid links with early completions offer **Answer remaining questions**.
+This explicit action preserves answers and the earlier result in the audit log,
+reuses the review task, and issues updated follow-up receipts on completion.
+Fully completed, expired, and withdrawn invitations cannot be reopened this way.
+
+### Appointment plan and first version
+
+1. **Use the existing consultation slots and booking records.** These already
+   provide one booking per slot and invitation, time zones, overlap checks,
+   durable email receipts, and calendar attachments. Do not duplicate them in the
+   instructional group-scheduling subsystem.
+2. **First version implemented here:** show Bethany Fleming by default in CRM and
+   public booking, with a host selector and a My availability shortcut. Ordinary
+   CRM users add/confirm/withdraw only their own times. Super administrators may
+   propose another user's time, but only that host can confirm it; proposed times
+   are not bookable. Confirmations lock the host and recheck overlaps. Booked slots
+   cannot be withdrawn. Existing active times retain their previous approval.
+   `CRM_DEFAULT_CONSULTATION_HOST_EMAIL` can pin the default to an exact account;
+   without it only a unique active CRM account named Bethany Fleming is selected.
+   An absent/ambiguous default shows the available team times instead of guessing.
+3. **Next phase: recurring hours and exceptions.** Add a host scheduling profile
+   with time zone, weekly hours, meeting length, buffers, and a booking horizon.
+   Generate dated slots idempotently; let users confirm a week at a time and block
+   vacations or single dates. Keep unconfirmed dates unavailable.
+4. **Next phase: connected-calendar busy checks.** Reuse each user's connected
+   Google account, request the minimum calendar permission, and check busy times
+   when displaying and again when booking. Show a clear unavailable state when
+   freshness cannot be verified. Keep local bookings authoritative for duplicate
+   protection and record provider synchronization failures visibly.
+5. **Next phase: rescheduling, cancellation, reminders.** Use explicit booking
+   states and audited transitions; update stable calendar UIDs and notify both
+   parties through the existing durable outbox. Add retries/idempotency and an
+   operator queue for failures. Do not remove booked slots as a cancellation shortcut.
+
+Acceptance checks include all-No answers through every grade, legacy continuation,
+partial save, stale tabs, browser radio interaction, CSRF, host authorization,
+unconfirmed-slot rejection, overlap rejection, Bethany default selection, and
+existing booking/email idempotency. No real appointment times are invented.
+
+Verification for this change: 503 project tests and 51 focused tests passed; Django system/migration checks, Ruff, and strict email type checks passed. Chromium and WebKit exercised all 25 Grade 2 answers, save/resume, and submission at 390px and 1280px. Chromium exercised Bethany default selection, confirmation, and withdrawal at both widths. No horizontal overflow or assessment browser errors.

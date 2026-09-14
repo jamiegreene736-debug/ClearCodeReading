@@ -49,6 +49,7 @@ def evaluate(grade: str, answers: dict[str, bool]) -> dict[str, Any]:
         raise InventoryError("Some answers are not valid for this grade.")
     visited: set[str] = set()
     score = 0
+    support_rule = None
     for index, group in enumerate(spec["groups"]):
         ids = {q["id"] for q in group["questions"]}
         visited |= ids
@@ -58,19 +59,17 @@ def evaluate(grade: str, answers: dict[str, bool]) -> dict[str, Any]:
             return {"complete": False, "next_group": index}
         count = sum(answers[key] for key in ids)
         score += count
-        if count < group.get("continueAt", 0):
-            if set(answers) - visited:
-                raise InventoryError(
-                    "Answers after the stopping section are not accepted."
-                )
-            return {
-                "complete": True,
-                "outcome": "support",
-                "rule": f"section-{index + 1}-below-{group['continueAt']}",
-                "yes_count": score,
-                "answered": len(answers),
-                "total": len(allowed),
-            }
+        if count < group.get("continueAt", 0) and support_rule is None:
+            support_rule = f"section-{index + 1}-below-{group['continueAt']}"
+    if support_rule:
+        return {
+            "complete": True,
+            "outcome": "support",
+            "rule": support_rule,
+            "yes_count": score,
+            "answered": len(answers),
+            "total": len(allowed),
+        }
     resource_at = spec["resourceAt"]
     # Source percentage/Yes-count wording conflicts at these exact totals.
     outcome = (
@@ -246,17 +245,26 @@ def deliver_pending(invitation: InventoryInvitation) -> None:
 
 
 def complete_inventory(invitation: InventoryInvitation, result: dict[str, Any]) -> None:
+    previous_task_id = invitation.result.get("review_task_id")
     invitation.completed_at, invitation.result = timezone.now(), result
     invitation.save()
     parent = invitation.child.parent
-    review_task = CrmActivity.objects.create(
-        lead=parent,
-        activity_type="task",
-        subject=f"Review reading inventory: {invitation.child.name}",
-        body="Review the answers and follow-up in CRM → Assessments.",
-        assigned_to=parent.assigned_to,
-        due_at=timezone.now() + timedelta(days=1),
-    )
+    review_task = CrmActivity.objects.filter(
+        pk=previous_task_id, lead=parent, activity_type="task"
+    ).first()
+    if review_task:
+        review_task.completed_at = None
+        review_task.due_at = timezone.now() + timedelta(days=1)
+        review_task.save(update_fields=["completed_at", "due_at"])
+    else:
+        review_task = CrmActivity.objects.create(
+            lead=parent,
+            activity_type="task",
+            subject=f"Review reading inventory: {invitation.child.name}",
+            body="Review the answers and follow-up in CRM → Assessments.",
+            assigned_to=parent.assigned_to,
+            due_at=timezone.now() + timedelta(days=1),
+        )
     invitation.result["review_task_id"] = review_task.pk
     invitation.save(update_fields=["result"])
     log_activity(invitation, "Completed")
@@ -276,7 +284,7 @@ def complete_inventory(invitation: InventoryInvitation, result: dict[str, Any]) 
     body += "\n\nThis parent inventory is a starting point for a conversation, not a diagnosis or a placement decision."
     queue_mail(
         invitation,
-        "follow-up",
+        f"follow-up-r{invitation.revision}" if previous_task_id else "follow-up",
         invitation.recipient,
         "Your Parent Reading Inventory: next steps",
         body,
@@ -286,7 +294,7 @@ def complete_inventory(invitation: InventoryInvitation, result: dict[str, Any]) 
     if parent.assigned_to and parent.assigned_to.is_active:
         queue_mail(
             invitation,
-            "owner",
+            f"owner-r{invitation.revision}" if previous_task_id else "owner",
             parent.assigned_to.email,
             "A reading inventory is ready for review",
             "An assigned contact has completed the Parent Reading Inventory.",

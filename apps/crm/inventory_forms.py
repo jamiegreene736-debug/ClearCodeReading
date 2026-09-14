@@ -3,6 +3,7 @@ from zoneinfo import ZoneInfo, ZoneInfoNotFoundError
 from django import forms
 
 from apps.crm.access import crm_owner_queryset
+from apps.crm.consultations import default_consultation_host, editable_hosts
 from apps.crm.inventory import GRADES, definition
 from apps.crm.inventory_models import InventoryChild
 
@@ -75,6 +76,16 @@ class SlotForm(forms.Form):
     duration = forms.IntegerField(
         min_value=10, max_value=120, initial=30, label="Duration in minutes"
     )
+
+    def __init__(self, *args, user=None, **kwargs):
+        super().__init__(*args, **kwargs)
+        if user is not None:
+            hosts = editable_hosts(user)
+            self.fields["host"].queryset = hosts
+            default = default_consultation_host()
+            self.fields["host"].initial = (
+                default if default and hosts.filter(pk=default.pk).exists() else user
+            )
 
     def clean_timezone(self):
         value = self.cleaned_data["timezone"]

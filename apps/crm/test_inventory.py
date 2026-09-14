@@ -48,15 +48,24 @@ class InventoryScoringTests(SimpleTestCase):
                 self.assertEqual(result["total"], count)
                 self.assertEqual(result["outcome"], "resources")
 
-    def test_section_stop_precedes_total(self):
-        spec = definition("kindergarten")
-        answers = {q["id"]: False for q in spec["groups"][0]["questions"]}
-        result = evaluate("kindergarten", answers)
-        self.assertEqual(result["outcome"], "support")
-        self.assertEqual(result["answered"], 11)
-        answers[spec["groups"][1]["questions"][0]["id"]] = True
+    def test_low_scores_require_all_sections_before_support_result(self):
+        for grade in ["kindergarten", "grade_1", "grade_2", "grade_3"]:
+            with self.subTest(grade=grade):
+                spec = definition(grade)
+                answers = {}
+                for index, group in enumerate(spec["groups"]):
+                    answers.update({q["id"]: False for q in group["questions"]})
+                    result = evaluate(grade, answers)
+                    self.assertEqual(
+                        result["complete"], index == len(spec["groups"]) - 1
+                    )
+                self.assertEqual(result["outcome"], "support")
+                self.assertEqual(result["answered"], result["total"])
+
+    def test_cannot_skip_an_unanswered_section(self):
+        groups = definition("grade_1")["groups"]
         with self.assertRaises(InventoryError):
-            evaluate("kindergarten", answers)
+            evaluate("grade_1", {groups[1]["questions"][0]["id"]: True})
 
     def test_boundary_total_routes_to_review(self):
         for grade in ["kindergarten", "grade_1", "grade_2", "grade_3"]:
@@ -153,7 +162,7 @@ class InventoryWorkflowTests(TestCase):
                 response = self.client.get(
                     reverse("crm_contact_detail", args=[self.parent.pk])
                 )
-                self.assertContains(response, f"assessment-action--{color}\"")
+                self.assertContains(response, f'assessment-action--{color}"')
                 self.assertContains(response, label)
                 self.assertContains(response, "Parent Reading Inventory · Avery")
                 self.assertContains(
@@ -276,8 +285,9 @@ class InventoryWorkflowTests(TestCase):
         self.invitation.refresh_from_db()
         self.assertIsNone(self.invitation.completed_at)
 
-    def test_stop_completion_is_idempotent_and_queues_review_and_emails(self):
-        self.post_group(value="no")
+    def test_full_completion_is_idempotent_and_queues_review_and_emails(self):
+        for _ in definition(self.child.grade)["groups"]:
+            self.post_group(value="no")
         self.invitation.refresh_from_db()
         self.assertIsNotNone(self.invitation.completed_at)
         self.assertEqual(self.invitation.result["outcome"], "support")
@@ -287,6 +297,67 @@ class InventoryWorkflowTests(TestCase):
         self.assertEqual(self.invitation.emails.count(), 2)
         self.assertEqual(len(mail.outbox), 2)
         self.assertContains(self.client.get(self.url), "Schedule a consultation")
+
+    def test_first_section_no_answers_do_not_finish_grade_one_inventory(self):
+        self.child.grade = "grade_1"
+        self.child.save()
+        self.client.logout()
+        self.post_group(value="no")
+        self.invitation.refresh_from_db()
+        self.assertEqual(len(self.invitation.answers), 7)
+        self.assertIsNone(self.invitation.completed_at)
+        self.assertEqual(self.invitation.current_group, 1)
+        self.assertEqual(self.invitation.emails.count(), 0)
+        response = self.client.get(self.url)
+        self.assertContains(response, "Section 2 of")
+        self.assertContains(response, 'type="radio"')
+        for _ in definition(self.child.grade)["groups"][1:]:
+            self.post_group(value="no")
+        self.invitation.refresh_from_db()
+        self.assertEqual(self.invitation.result["answered"], 25)
+        self.assertIsNotNone(self.invitation.completed_at)
+
+    def test_legacy_completed_inventory_can_resume_without_losing_answers(self):
+        from apps.crm.inventory import complete_inventory
+
+        answers = {
+            q["id"]: False
+            for q in definition(self.child.grade)["groups"][0]["questions"]
+        }
+        self.invitation.answers = answers
+        complete_inventory(
+            self.invitation,
+            {"complete": True, "outcome": "support", "answered": 8, "total": 24},
+        )
+        task_id = self.invitation.result["review_task_id"]
+        slot = ConsultationSlot.objects.create(
+            host=self.staff,
+            starts_at=timezone.now() + timedelta(days=2),
+            ends_at=timezone.now() + timedelta(days=2, minutes=30),
+        )
+        InventoryBooking.objects.create(
+            invitation=self.invitation, slot=slot, phone="4075550123", timezone="UTC"
+        )
+        self.client.logout()
+        self.assertContains(self.client.get(self.url), "Answer remaining questions")
+        self.client.post(self.url, {"action": "resume"})
+        self.invitation.refresh_from_db()
+        self.assertEqual(self.invitation.answers, answers)
+        self.assertContains(
+            self.client.get(
+                reverse("inventory_booking", args=[token_for(self.invitation)])
+            ),
+            "Your consultation is booked.",
+        )
+        self.assertIsNone(self.invitation.completed_at)
+        self.assertEqual(self.invitation.current_group, 1)
+        for _ in definition(self.child.grade)["groups"][1:]:
+            self.post_group(value="no")
+        self.invitation.refresh_from_db()
+        self.assertEqual(self.invitation.result["answered"], 24)
+        self.assertEqual(self.invitation.result["review_task_id"], task_id)
+        self.assertEqual(CrmActivity.objects.filter(activity_type="task").count(), 1)
+        self.assertNotContains(self.client.get(self.url), "Answer remaining questions")
 
     def test_siblings_do_not_overwrite_results(self):
         sibling = InventoryChild.objects.create(
@@ -382,7 +453,8 @@ class InventoryWorkflowTests(TestCase):
         )
 
     def test_booking_and_calendar_idempotency(self):
-        self.post_group(value="no")
+        for _ in definition(self.child.grade)["groups"]:
+            self.post_group(value="no")
         slot = ConsultationSlot.objects.create(
             host=self.staff,
             starts_at=timezone.now() + timedelta(days=2),
@@ -659,7 +731,8 @@ class InventoryWorkflowTests(TestCase):
                 )
 
     def test_https_booking_preserves_csrf_verification(self):
-        self.post_group(value="no")
+        for _ in definition(self.child.grade)["groups"]:
+            self.post_group(value="no")
         slot = ConsultationSlot.objects.create(
             host=self.staff,
             starts_at=timezone.now() + timedelta(days=2),
@@ -694,7 +767,8 @@ class InventoryWorkflowTests(TestCase):
         )
 
     def test_review_closes_only_its_own_task(self):
-        self.post_group(value="no")
+        for _ in definition(self.child.grade)["groups"]:
+            self.post_group(value="no")
         other = CrmActivity.objects.create(
             lead=self.parent,
             activity_type="task",
@@ -897,3 +971,146 @@ class InventoryEmailLayoutTests(SimpleTestCase):
         self.assertEqual(plain_text(email), body)
         html = render_to_string("crm/inventory_email.html", {"email": email})
         self.assertIn("Please complete the survey.", html)
+
+
+class ConsultationAvailabilityTests(TestCase):
+    def setUp(self):
+        self.bethany = get_user_model().objects.create_user(
+            username="bethany",
+            email="bethany@example.com",
+            first_name="Bethany",
+            last_name="Fleming",
+            role="crm_user",
+        )
+        self.other = get_user_model().objects.create_user(
+            username="other-host",
+            email="other@example.com",
+            role="crm_user",
+        )
+        self.admin = get_user_model().objects.create_user(
+            username="calendar-admin",
+            email="admin@example.com",
+            is_superuser=True,
+        )
+        self.slot = ConsultationSlot.objects.create(
+            host=self.bethany,
+            active=False,
+            starts_at=timezone.now() + timedelta(days=2),
+            ends_at=timezone.now() + timedelta(days=2, minutes=30),
+        )
+        self.url = reverse("inventory_slots")
+        self.client.force_login(self.bethany)
+
+    def test_bethany_default_and_explicit_host_selection(self):
+        response = self.client.get(self.url)
+        self.assertEqual(response.context["selected_host"], self.bethany)
+        self.assertEqual(list(response.context["slots"]), [self.slot])
+        response = self.client.get(self.url, {"host": self.other.pk})
+        self.assertEqual(list(response.context["slots"]), [])
+        response = self.client.get(self.url, {"host": ""})
+        self.assertIsNone(response.context["selected_host"])
+        self.assertEqual(list(response.context["slots"]), [self.slot])
+        self.assertContains(response, 'value="" selected>All hosts')
+        self.assertEqual(self.client.get(self.url, {"host": "bad"}).status_code, 404)
+
+    def test_only_host_can_confirm_and_other_users_cannot_withdraw(self):
+        for user in [self.other, self.admin]:
+            self.client.force_login(user)
+            self.assertEqual(
+                self.client.post(
+                    self.url, {"action": "confirm", "slot": self.slot.pk}
+                ).status_code,
+                403,
+            )
+        self.client.force_login(self.bethany)
+        self.client.post(self.url, {"action": "confirm", "slot": self.slot.pk})
+        self.slot.refresh_from_db()
+        self.assertTrue(self.slot.active)
+        self.client.force_login(self.other)
+        self.assertEqual(
+            self.client.post(
+                self.url, {"action": "withdraw", "slot": self.slot.pk}
+            ).status_code,
+            403,
+        )
+        self.client.force_login(self.bethany)
+        self.client.post(self.url, {"action": "withdraw", "slot": self.slot.pk})
+        self.slot.refresh_from_db()
+        self.assertFalse(self.slot.active)
+
+    def test_team_proposals_require_host_confirmation(self):
+        self.client.force_login(self.admin)
+        payload = {
+            "host": self.bethany.pk,
+            "date": (timezone.now() + timedelta(days=5)).date(),
+            "time": "13:00",
+            "timezone": "America/New_York",
+            "duration": 30,
+        }
+        self.assertEqual(self.client.post(self.url, payload).status_code, 302)
+        self.assertFalse(ConsultationSlot.objects.exclude(pk=self.slot.pk).get().active)
+        self.client.force_login(self.other)
+        response = self.client.post(self.url, payload)
+        self.assertIn("host", response.context["form"].errors)
+        self.assertEqual(ConsultationSlot.objects.count(), 2)
+
+    def test_cannot_confirm_overlapping_or_past_slot(self):
+        ConsultationSlot.objects.create(
+            host=self.bethany,
+            active=True,
+            starts_at=self.slot.starts_at,
+            ends_at=self.slot.ends_at,
+        )
+        self.client.post(self.url, {"action": "confirm", "slot": self.slot.pk})
+        self.slot.refresh_from_db()
+        self.assertFalse(self.slot.active)
+        self.slot.starts_at = timezone.now() - timedelta(hours=2)
+        self.slot.ends_at = timezone.now() - timedelta(hours=1)
+        self.slot.save()
+        self.client.post(self.url, {"action": "confirm", "slot": self.slot.pk})
+        self.slot.refresh_from_db()
+        self.assertFalse(self.slot.active)
+
+    def test_public_calendar_defaults_to_bethany_and_hides_unconfirmed_times(self):
+        parent = Lead.objects.create(
+            contact_name="Parent",
+            contact_email="parent@example.com",
+            school_name="Family",
+        )
+        child = InventoryChild.objects.create(
+            parent=parent, name="Reader", grade="grade_1"
+        )
+        invitation = InventoryInvitation.objects.create(
+            child=child,
+            recipient=parent.contact_email,
+            completed_at=timezone.now(),
+            result={"outcome": "support"},
+            expires_at=timezone.now() + timedelta(days=30),
+        )
+        other_slot = ConsultationSlot.objects.create(
+            host=self.other, starts_at=self.slot.starts_at, ends_at=self.slot.ends_at
+        )
+        url = reverse("inventory_booking", args=[token_for(invitation)])
+        self.client.logout()
+        response = self.client.get(url)
+        self.assertEqual(response.context["selected_host"], self.bethany)
+        self.assertEqual(list(response.context["slots"]), [])
+        response = self.client.get(url, {"host": self.other.pk})
+        self.assertEqual(list(response.context["slots"]), [other_slot])
+        response = self.client.post(
+            url, {"slot": self.slot.pk, "phone": "4075550123", "timezone": "UTC"}
+        )
+        self.assertEqual(response.status_code, 200)
+        self.assertFalse(InventoryBooking.objects.exists())
+
+    def test_ambiguous_bethany_name_does_not_choose_an_arbitrary_account(self):
+        from apps.crm.consultations import default_consultation_host
+
+        self.other.first_name = "Bethany"
+        self.other.last_name = "Fleming"
+        self.other.save()
+        self.assertIsNone(default_consultation_host())
+        with override_settings(
+            CRM_DEFAULT_CONSULTATION_HOST_EMAIL="bethany@example.com"
+        ):
+            self.assertEqual(default_consultation_host(), self.bethany)
