@@ -1,23 +1,22 @@
-<section id="early-interest-survey" class="bg-white py-14 sm:py-20" data-early-interest-survey>
+<section id="early-interest-survey" class="bg-white py-6 sm:py-8" data-early-interest-survey>
   <div class="mx-auto max-w-4xl px-4 sm:px-6 lg:px-8">
     <div class="rounded-[2.25rem] bg-linen p-5 shadow-2xl shadow-deepTeal/10 ring-1 ring-deepTeal/10 sm:p-9">
       {% if request.GET.survey == "thanks" and request.session.survey_success_path == request.path %}
         <div class="survey-success" role="status" tabindex="-1" data-testid="survey-submission-feedback">
           <span class="survey-success-check" aria-hidden="true">✓</span>
-          <h2>Survey submitted!</h2>
-          <p>Thank you. Your answers have been received. You’re all done.</p>
-          <p>Our team will follow up based on the interests you selected. Your email confirmation will arrive shortly; please check your spam folder too.</p>
-          <a class="focus-ring" href="/">Return to the homepage</a>
+          <h2>Thank you!</h2>
+          <p>We’ve received your response. We'll be in touch soon.</p>
+          <a class="focus-ring" href="/">Explore our site to learn more.</a>
         </div>
       {% else %}
         {% if request.GET.survey and messages %}
           {% for message in messages %}<p role="alert">{{ message }}</p>{% endfor %}
         {% endif %}
       <div class="grid gap-7 lg:grid-cols-[.72fr_1.28fr]">
-        <div>
+        <div class="order-last lg:order-first">
           <p class="text-sm font-black uppercase tracking-[.16em] text-deepTeal">ClearCode Early Interest Survey</p>
           <h2 class="mt-3 text-3xl font-black leading-tight sm:text-4xl">Ten questions. About two minutes.</h2>
-          <p class="mt-5 leading-7 text-ink/70">We are a new evidence-based reading center opening in Winter Park and Maitland in June 2027. We are trying to understand what families like yours need, and to build a small group of founding families to walk with us from the beginning.</p>
+          <p class="mt-5 leading-7 text-ink/70">We are a new evidence-based reading center opening in Orlando in 2027. We are trying to understand what families like yours need, and to build a small group of founding families to walk with us from the beginning.</p>
           <p class="mt-4 rounded-2xl bg-white p-4 text-sm font-bold leading-6 text-ink/65 ring-1 ring-ink/10">Your name, email, and ZIP code are required so we can follow up. Everything else is optional. We will never sell your information.</p>
           {% if survey_placement == "blog" %}
             <p class="mt-4 text-sm font-bold text-deepTeal">Your response will be connected to this article in the CRM so the team knows what prompted your interest.</p>
@@ -56,10 +55,6 @@
               <span class="sr-only">Email address</span>
               <input class="w-full rounded-2xl border border-ink/15 px-4 py-4 font-bold focus:border-deepTeal focus:outline-none" type="email" name="email" autocomplete="email" maxlength="254" placeholder="name@example.com" required>
             </label>
-            <label class="mt-4 flex items-start gap-3 rounded-2xl bg-seafoam/55 p-4 text-sm font-bold leading-6 text-ink/75">
-              <input class="mt-1 h-5 w-5 shrink-0 accent-deepTeal" type="checkbox" name="email_consent" value="yes" required>
-              <span>Yes, ClearCode may email me about this survey and about the center opening. We will never sell or share your information, and you can unsubscribe at any time.</span>
-            </label>
           </fieldset>
 
           <fieldset data-survey-step="3" hidden>
@@ -77,7 +72,7 @@
               <label class="survey-choice"><input type="radio" name="respondent_situation" value="grade_3_5_struggling"><span>I have a child in 3rd through 5th grade who struggles with reading, or I suspect they do.</span></label>
               <label class="survey-choice"><input type="radio" name="respondent_situation" value="grade_6_8_struggling"><span>I have a child in 6th through 8th grade who struggles with reading, or I suspect they do.</span></label>
               <label class="survey-choice"><input type="radio" name="respondent_situation" value="multiple_grade_bands"><span>I have more than one child who struggles with reading, in different grade bands.</span></label>
-              <label class="survey-choice"><input type="radio" name="respondent_situation" value="older_than_grade_8"><span>My child is older than 8th grade, and I am interested for the future or on behalf of another family.</span></label>
+              <label class="survey-choice"><input type="radio" name="respondent_situation" value="older_than_grade_8"><span>I am interested for the future or on behalf of another family.</span></label>
               <label class="survey-choice"><input type="radio" name="respondent_situation" value="community_supporter"><span>I am an educator, reading specialist, local parent, potential donor or supporter, or other, with no struggling reader at home.</span></label>
             </div>
           </fieldset>
@@ -91,7 +86,7 @@
               <label class="survey-choice"><input type="checkbox" name="supports_tried" value="specialized_tutor"><span>Specialized reading tutor (Orton-Gillingham, Wilson, Barton, Lindamood-Bell, and similar)</span></label>
               <label class="survey-choice"><input type="checkbox" name="supports_tried" value="speech_educational_therapy"><span>Speech-language pathologist or educational therapist</span></label>
               <label class="survey-choice"><input type="checkbox" name="supports_tried" value="online_program"><span>Online reading program, app, or game</span></label>
-              <label class="survey-choice"><input type="checkbox" name="supports_tried" value="medical_consultation"><span>Pediatrician, neurologist, or psychologist consultation</span></label>
+              <label class="survey-choice"><input type="checkbox" name="supports_tried" value="medical_consultation"><span>Pediatrician and psychologist consultation</span></label>
               <label class="survey-choice"><input type="checkbox" name="supports_tried" value="formal_evaluation"><span>Formal dyslexia or learning evaluation</span></label>
               <label class="survey-choice"><input type="checkbox" name="supports_tried" value="changed_schooling"><span>Changed schools or schooling models because of reading</span></label>
               <label class="survey-choice"><input type="checkbox" name="supports_tried" value="nothing_yet" data-nothing-yet><span>Nothing yet; we are just starting to look for help</span></label>
@@ -113,14 +108,13 @@
           </fieldset>
 
           <fieldset data-survey-step="7" hidden>
-            <legend class="text-xl font-black">7. Which commitment shape would your family most realistically choose?</legend>
-            <p class="mt-3 rounded-2xl bg-linen p-4 text-sm leading-6 text-ink/70">Imagine a specialized reading center for your child: credentialed specialists, evidence-based methodology such as Orton-Gillingham, a structured curriculum, and progress reporting you can see. Sessions are 60 minutes.</p>
+            <legend class="text-xl font-black">7. Consistent attendance is critical to success. If you were confident the following would work, would you make time in your schedule for an hour reading intervention at least 3x/week?</legend>
+            <p class="mt-3 rounded-2xl bg-linen p-4 text-sm leading-6 text-ink/70">Imagine a specialized reading center for your child: credentialed specialists, 60min sessions, evidence based reading interventions and weekly progress reporting.</p>
             <div class="mt-4 grid gap-3">
-              <label class="survey-choice"><input type="radio" name="commitment_preference" value="weekly_few_months"><span>One session per week for a few months</span></label>
-              <label class="survey-choice"><input type="radio" name="commitment_preference" value="one_two_weekly_three_six_months"><span>One to two sessions per week for three to six months</span></label>
-              <label class="survey-choice"><input type="radio" name="commitment_preference" value="two_three_weekly_six_twelve_months"><span>Two to three sessions per week for six to twelve months</span></label>
-              <label class="survey-choice"><input type="radio" name="commitment_preference" value="two_three_weekly_school_year"><span>Two to three sessions per week for a full school year or more</span></label>
-              <label class="survey-choice"><input type="radio" name="commitment_preference" value="specialist_recommendation"><span>Whatever the specialist recommends, we will commit to it</span></label>
+              <label class="survey-choice"><input type="radio" name="commitment_preference" value="yes_have_time"><span>Yes, I have time!</span></label>
+              <label class="survey-choice"><input type="radio" name="commitment_preference" value="maybe_shift_schedule"><span>Maybe, I would have to shift things in my schedule</span></label>
+              <label class="survey-choice"><input type="radio" name="commitment_preference" value="maybe_confident_method"><span>Maybe, if I was confident this method would work</span></label>
+              <label class="survey-choice"><input type="radio" name="commitment_preference" value="no_time"><span>No, I do not have time for this.</span></label>
             </div>
           </fieldset>
 
@@ -152,19 +146,18 @@
 
           <fieldset data-survey-step="10" hidden>
             <legend class="text-xl font-black">10. How would you like to engage with ClearCode?</legend>
-            <p class="mt-3 rounded-2xl bg-linen p-4 text-sm leading-6 text-ink/70">ClearCode Reading is a specialized literacy center opening in Winter Park and Maitland in early 2027. We serve Pre-K through 8th grade children who struggle with reading, including those with dyslexia.</p>
+            <p class="mt-3 rounded-2xl bg-linen p-4 text-sm leading-6 text-ink/70">ClearCode Reading is a specialized literacy center opening in Orlando in 2027. We serve K through 8th grade children who struggle with reading, including those with dyslexia.</p>
             <p class="mt-2 text-sm text-ink/60">Select all that apply. At least one is required.</p>
             <div class="mt-4 grid gap-3">
               <label class="survey-choice" data-family-engagement><input type="checkbox" name="engagement_interests" value="priority_waitlist"><span>Join the priority enrollment waitlist for my child</span></label>
               <label class="survey-choice" data-family-engagement><input type="checkbox" name="engagement_interests" value="consultation"><span>Schedule a free consultation with one of our specialists</span></label>
-              <label class="survey-choice"><input type="checkbox" name="engagement_interests" value="opening_updates"><span>Receive updates as we approach our June 2027 opening</span></label>
+              <label class="survey-choice"><input type="checkbox" name="engagement_interests" value="opening_updates"><span>Receive updates as we approach our 2027 opening</span></label>
               <label class="survey-choice"><input type="checkbox" name="engagement_interests" value="community_partner"><span>Support ClearCode as a community advocate or discuss another partnership</span></label>
               <label class="survey-choice"><input type="checkbox" name="engagement_interests" value="donor"><span>Help fund reading scholarships as a donor</span></label>
               <label class="survey-choice"><input type="checkbox" name="engagement_interests" value="referral_partner"><span>Become a school or professional referral partner</span></label>
               <label class="survey-choice"><input type="checkbox" name="engagement_interests" value="refer_family"><span>Refer another family who needs help</span></label>
-              <label class="survey-choice"><input type="checkbox" name="engagement_interests" value="professional_connection"><span>Connect us with a school, pediatrician, or evaluator who should know about ClearCode</span></label>
+              <label class="survey-choice"><input type="checkbox" name="engagement_interests" value="professional_connection"><span>Connect us with a school, pediatrician, or psychologist who should know about ClearCode</span></label>
               <label class="survey-choice"><input type="checkbox" name="engagement_interests" value="career_interest"><span>I am an educator or specialist interested in working at ClearCode</span></label>
-              <label class="survey-choice"><input type="checkbox" name="engagement_interests" value="general_email"><span>Just keep me on your general email list for now</span></label>
             </div>
           </fieldset>
 

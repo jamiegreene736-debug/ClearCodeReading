@@ -660,7 +660,7 @@ class EarlyInterestSurveyIntakeTests(TestCase):
             "respondent_situation": "grade_3_5_struggling",
             "supports_tried": ["school_intervention", "specialized_tutor"],
             "annual_reading_spend": "2001_5000",
-            "commitment_preference": "two_three_weekly_six_twelve_months",
+            "commitment_preference": "yes_have_time",
             "one_to_one_budget": "scholarship_esa",
             "small_group_budget": "up_to_75",
             "engagement_interests": ["priority_waitlist", "opening_updates"],
@@ -718,12 +718,12 @@ class EarlyInterestSurveyIntakeTests(TestCase):
 
     def test_success_replaces_form_and_survives_refresh(self):
         response = self.client.post(reverse("crm_survey_submit"), self._payload(), follow=True)
-        self.assertContains(response, "Survey submitted!")
+        self.assertContains(response, "Thank you!")
         self.assertNotContains(response, 'data-survey-form novalidate')
-        self.assertContains(self.client.get(response.redirect_chain[-1][0]), "Survey submitted!")
+        self.assertContains(self.client.get(response.redirect_chain[-1][0]), "Thank you!")
 
     def test_success_url_alone_does_not_claim_a_saved_submission(self):
-        self.assertNotContains(self.client.get("/survey/?survey=thanks"), "<h2>Survey submitted!</h2>")
+        self.assertNotContains(self.client.get("/survey/?survey=thanks"), "<h2>Thank you!</h2>")
 
     def test_main_survey_preserves_answers_and_routes_family_properties(self):
         response = self.client.post(reverse("crm_survey_submit"), self._payload())
@@ -755,7 +755,7 @@ class EarlyInterestSurveyIntakeTests(TestCase):
         self.assertEqual(deal.funding_type, Opportunity.FundingType.ESA)
         subscription = NewsletterSubscription.objects.get(email="jordan@example.com")
         self.assertEqual(subscription.source_path, "/survey/")
-        self.assertEqual(subscription.consent_version, "early-interest-v1")
+        self.assertEqual(subscription.consent_version, "survey-opening-updates-v2")
         self.assertIsNotNone(subscription.consented_at)
 
     def test_blog_survey_deduplicates_contact_and_preserves_article_attribution(self):
@@ -814,11 +814,7 @@ class EarlyInterestSurveyIntakeTests(TestCase):
             ["community_partner", "career_interest"],
         )
 
-    def test_survey_rejects_missing_consent_and_conditional_tampering(self):
-        missing_consent = self.client.post(
-            reverse("crm_survey_submit"),
-            self._payload(email_consent=""),
-        )
+    def test_survey_rejects_conditional_tampering(self):
         tampered = self.client.post(
             reverse("crm_survey_submit"),
             self._payload(
@@ -828,10 +824,38 @@ class EarlyInterestSurveyIntakeTests(TestCase):
             ),
         )
 
-        self.assertEqual(missing_consent.status_code, 302)
         self.assertEqual(tampered.status_code, 302)
         self.assertFalse(Lead.objects.exists())
         self.assertFalse(FormSubmission.objects.exists())
+
+    def test_survey_without_checkbox_saves_without_newsletter_opt_in(self):
+        payload = self._payload(engagement_interests=["consultation"])
+        payload.pop("email_consent")
+        self.client.post(reverse("crm_survey_submit"), payload)
+        self.assertEqual(FormSubmission.objects.get().submitted_data["email_consent"], "no")
+        self.assertFalse(NewsletterSubscription.objects.exists())
+
+    def test_community_opening_updates_is_visible_in_pending_triage(self):
+        self.client.post(reverse("crm_survey_submit"), self._payload(
+            email_consent="", respondent_situation="community_supporter",
+            supports_tried=[], annual_reading_spend="", commitment_preference="",
+            one_to_one_budget="", small_group_budget="", engagement_interests=["opening_updates"],
+        ))
+        lead = Lead.objects.get()
+        self.assertEqual(IntakeTriage.objects.get(lead=lead).status, IntakeTriage.Status.PENDING)
+        self.assertFalse(lead.opportunities.exists())
+        self.assertEqual(lead.form_submissions.count(), 1)
+        self.assertTrue(NewsletterSubscription.objects.filter(email=lead.contact_email).exists())
+
+    def test_all_new_commitment_choices_are_saved_and_legacy_labels_remain_readable(self):
+        from apps.crm.surveys import SURVEY_COMMITMENTS, SURVEY_VALUE_LABELS
+        for choice in SURVEY_COMMITMENTS:
+            with self.subTest(choice=choice):
+                self.client.post(reverse("crm_survey_submit"), self._payload(
+                    email=f"{choice}@example.com", commitment_preference=choice))
+                submission = FormSubmission.objects.get(lead__contact_email=f"{choice}@example.com")
+                self.assertEqual(submission.submitted_data["commitment_preference"], choice)
+        self.assertEqual(SURVEY_VALUE_LABELS["weekly_few_months"], "One session per week for a few months")
 
     def test_survey_honeypot_is_discarded_without_records(self):
         response = self.client.post(

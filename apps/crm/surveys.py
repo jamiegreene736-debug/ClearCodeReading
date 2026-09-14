@@ -29,7 +29,7 @@ SURVEY_SITUATIONS = {
     "grade_3_5_struggling": "Child in 3rd through 5th grade who struggles with reading",
     "grade_6_8_struggling": "Child in 6th through 8th grade who struggles with reading",
     "multiple_grade_bands": "More than one child in different grade bands",
-    "older_than_grade_8": "Child older than 8th grade or interest on behalf of another family",
+    "older_than_grade_8": "Interested for the future or on behalf of another family",
     "community_supporter": "Educator, specialist, local parent, donor, supporter, or other",
 }
 
@@ -48,7 +48,7 @@ SURVEY_SUPPORTS_TRIED = {
     "specialized_tutor": "Specialized reading tutor",
     "speech_educational_therapy": "Speech-language pathologist or educational therapist",
     "online_program": "Online reading program, app, or game",
-    "medical_consultation": "Pediatrician, neurologist, or psychologist consultation",
+    "medical_consultation": "Pediatrician and psychologist consultation",
     "formal_evaluation": "Formal dyslexia or learning evaluation",
     "changed_schooling": "Changed schools or schooling models because of reading",
     "nothing_yet": "Nothing yet; just starting to look for help",
@@ -64,12 +64,19 @@ SURVEY_SPENDING = {
     "prefer_not_to_say": "Prefer not to say",
 }
 
-SURVEY_COMMITMENTS = {
+LEGACY_SURVEY_COMMITMENTS = {
     "weekly_few_months": "One session per week for a few months",
     "one_two_weekly_three_six_months": "One to two sessions per week for three to six months",
     "two_three_weekly_six_twelve_months": "Two to three sessions per week for six to twelve months",
     "two_three_weekly_school_year": "Two to three sessions per week for a full school year or more",
     "specialist_recommendation": "Whatever the specialist recommends",
+}
+
+SURVEY_COMMITMENTS = {
+    "yes_have_time": "Yes, I have time!",
+    "maybe_shift_schedule": "Maybe, I would have to shift things in my schedule",
+    "maybe_confident_method": "Maybe, if I was confident this method would work",
+    "no_time": "No, I do not have time for this.",
 }
 
 SURVEY_ONE_TO_ONE_BUDGETS = {
@@ -100,7 +107,7 @@ SURVEY_ENGAGEMENTS = {
     "referral_partner": "Become a school or professional referral partner",
     "community_partner": "Partner as an advocate, referral source, or donor",
     "refer_family": "Refer another family who needs help",
-    "professional_connection": "Connect ClearCode with a school, pediatrician, or evaluator",
+    "professional_connection": "Connect ClearCode with a school, pediatrician, or psychologist",
     "career_interest": "Educator or specialist interested in working at ClearCode",
     "general_email": "Keep me on the general email list",
 }
@@ -118,6 +125,7 @@ SURVEY_VALUE_LABELS = {
     **SURVEY_SITUATIONS,
     **SURVEY_SUPPORTS_TRIED,
     **SURVEY_SPENDING,
+    **LEGACY_SURVEY_COMMITMENTS,
     **SURVEY_COMMITMENTS,
     **SURVEY_ONE_TO_ONE_BUDGETS,
     **SURVEY_GROUP_BUDGETS,
@@ -191,7 +199,7 @@ class EarlyInterestSurveyAnswers:
         data: dict[str, object] = {
             "name": self.contact_name,
             "email": self.contact_email,
-            "email_consent": "yes",
+            "email_consent": "yes" if "opening_updates" in self.engagement_interests else "no",
             "home_zip": self.home_zip,
             "respondent_situation": self.respondent_situation,
             "supports_tried": self.supports_tried,
@@ -248,8 +256,6 @@ def parse_early_interest_survey(post_data) -> EarlyInterestSurveyAnswers:
         validate_email(contact_email)
     except ValidationError as exc:
         raise SurveySubmissionError("Enter a valid email address.") from exc
-    if post_data.get("email_consent") != "yes":
-        raise SurveySubmissionError("Email consent is required for this survey.")
     if not re.fullmatch(r"\d{5}", home_zip):
         raise SurveySubmissionError("Enter a five-digit ZIP code.")
 
@@ -372,7 +378,11 @@ def record_early_interest_survey(*, answers: EarlyInterestSurveyAnswers, source:
         }
         deal.save()
 
-    if has_partner_signal or "career_interest" in answers.engagement_interests:
+    if (
+        has_partner_signal
+        or "career_interest" in answers.engagement_interests
+        or answers.respondent_situation == "community_supporter"
+    ):
         triage = create_partner_triage(lead=lead, submission=submission)
         pipelines = []
         if set(answers.engagement_interests) & {"referral_partner", "refer_family", "professional_connection"}:
@@ -390,23 +400,23 @@ def record_early_interest_survey(*, answers: EarlyInterestSurveyAnswers, source:
                 triage.resolved_at = None
                 triage.save(update_fields=["status", "resolved_at", "updated_at"])
 
-
-    existing_name = (
-        NewsletterSubscription.objects.filter(email=answers.contact_email)
-        .values_list("name", flat=True)
-        .first()
-    )
-    NewsletterSubscription.objects.update_or_create(
-        email=answers.contact_email,
-        defaults={
-            "name": answers.contact_name or existing_name or "",
-            "status": NewsletterSubscription.Status.ACTIVE,
-            "consented_at": timezone.now(),
-            "unsubscribed_at": None,
-            "source_path": source.path,
-            "consent_version": "early-interest-v1",
-        },
-    )
+    if "opening_updates" in answers.engagement_interests:
+        existing_name = (
+            NewsletterSubscription.objects.filter(email=answers.contact_email)
+            .values_list("name", flat=True)
+            .first()
+        )
+        NewsletterSubscription.objects.update_or_create(
+            email=answers.contact_email,
+            defaults={
+                "name": answers.contact_name or existing_name or "",
+                "status": NewsletterSubscription.Status.ACTIVE,
+                "consented_at": timezone.now(),
+                "unsubscribed_at": None,
+                "source_path": source.path,
+                "consent_version": "survey-opening-updates-v2",
+            },
+        )
     return lead, submission
 
 

@@ -539,21 +539,31 @@ class MarketingPageTests(SimpleTestCase):
         self.assertIn('action="/crm/survey/"', content)
         self.assertIn('name="source_path" value="/survey/"', content)
         self.assertIn("Question 1 of 10", content)
-        self.assertIn('name="email_consent"', content)
+        self.assertNotIn('name="email_consent"', content)
         self.assertIn('name="home_zip"', content)
         self.assertIn('name="respondent_situation"', content)
         self.assertIn('name="supports_tried"', content)
         self.assertIn('name="engagement_interests"', content)
-        self.assertIn("We will never sell or share your information", content)
+        self.assertIn("We will never sell your information", content)
+
+    def test_survey_uses_approved_september_copy_and_choices(self):
+        content = self._render("early_interest_survey")
+        for text in ("in Orlando in 2027", "We serve K through 8th", "Yes, I have time!",
+                     "at least 3x/week?", "weekly progress reporting", "Pediatrician and psychologist"):
+            self.assertIn(text, content)
+        for text in ("Winter Park", "Maitland", "June 2027", "neurologist", "evaluator",
+                     'value="general_email"', 'value="weekly_few_months"', "My child is older than 8th grade"):
+            self.assertNotIn(text, content)
 
     def test_survey_confirmation_is_prominent_inside_the_survey_card(self):
         request = RequestFactory().get("/survey/?survey=thanks")
         request.session = {"survey_success_path": "/survey/"}
         content = get_template(PUBLIC_PAGES["early_interest_survey"]).render({}, request)
-        self.assertIn("Survey submitted!", content)
+        self.assertIn("Thank you!", content)
         self.assertNotIn('data-survey-form novalidate', content)
         self.assertIn('role="status"', content)
-        self.assertIn("email confirmation", content)
+        self.assertIn("Explore our site to learn more.", content)
+        self.assertIn("We’ve received your response.", content)
 
     def test_about_page_preserves_the_supplied_positioning_and_sources(self):
         content = self._render("marketing_about")
