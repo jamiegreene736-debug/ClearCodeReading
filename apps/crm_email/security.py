@@ -32,6 +32,8 @@ def configuration_errors() -> list[str]:
         "PUBSUB_EMAIL",
     ]
     missing = [name for name in required if not getattr(settings, "CRM_EMAIL_" + name)]
+    if settings.ENABLE_DEMO_ACCESS:
+        missing.append("Public demo access must be disabled before connecting email")
     if settings.SECRET_KEY == "dev-only-change-me" or len(settings.SECRET_KEY) < 32:
         missing.append("DJANGO_SECRET_KEY must be a strong production secret")
     if (

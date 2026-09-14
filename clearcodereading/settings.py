@@ -8,6 +8,7 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 
 SECRET_KEY = os.getenv("DJANGO_SECRET_KEY", "dev-only-change-me")
 DEBUG = os.getenv("DJANGO_DEBUG", "0") == "1"
+ENABLE_DEMO_ACCESS = os.getenv("ENABLE_DEMO_ACCESS", "0") == "1"
 
 PUBLIC_HOSTS = ["clearcodereading.com", "www.clearcodereading.com"]
 ALLOWED_HOSTS = list(

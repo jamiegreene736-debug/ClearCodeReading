@@ -1,3 +1,4 @@
+from django.conf import settings
 from datetime import date, datetime, timedelta
 from decimal import Decimal
 
@@ -100,6 +101,8 @@ class Command(BaseCommand):
     help = "Create safe, idempotent samples across every admin-visible section."
 
     def handle(self, *args, **options):
+        if not settings.ENABLE_DEMO_ACCESS:
+            raise CommandError("Demo seeding is disabled. Enable only in an isolated demo environment.")
         call_command("seed_reading_survey_questions", verbosity=0)
         call_command("seed_demo_login", verbosity=0)
         center = self._seed_center()

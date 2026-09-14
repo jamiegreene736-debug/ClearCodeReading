@@ -1,6 +1,7 @@
+from django.conf import settings
 from datetime import timedelta
 
-from django.core.management.base import BaseCommand
+from django.core.management.base import BaseCommand, CommandError
 from django.db.models.signals import post_save
 from django.utils import timezone
 
@@ -20,6 +21,8 @@ class Command(BaseCommand):
     help = "Create demo Clear Code Reading login credentials, a demo child, and COPPA consent records."
 
     def handle(self, *args, **options):
+        if not settings.ENABLE_DEMO_ACCESS:
+            raise CommandError("Demo seeding is disabled. Enable only in an isolated demo environment.")
         admin = self._upsert_user(
             email=DEMO_ADMIN_EMAIL,
             username="demo-admin",

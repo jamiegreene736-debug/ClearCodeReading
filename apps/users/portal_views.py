@@ -1,3 +1,7 @@
+from typing import Any
+
+from django.conf import settings
+from django.http import Http404, HttpRequest, HttpResponse
 from django.contrib import messages
 from django.contrib.auth import get_user_model, login
 from django.contrib.auth.views import LoginView
@@ -61,13 +65,20 @@ class PortalLoginView(LoginView):
     redirect_authenticated_user = True
     next_page = reverse_lazy("portal_dashboard")
 
+    def get_context_data(self, **kwargs: Any) -> dict[str, Any]:
+        context = super().get_context_data(**kwargs)
+        context["demo_access_enabled"] = settings.ENABLE_DEMO_ACCESS
+        return context
+
     def form_valid(self, form):
         messages.success(self.request, "Welcome back to Clear Code Reading.")
         return super().form_valid(form)
 
 
 class DemoLoginView(View):
-    def post(self, request, role):
+    def post(self, request: HttpRequest, role: str) -> HttpResponse:
+        if not settings.ENABLE_DEMO_ACCESS:
+            raise Http404
         email = DEMO_LOGINS.get(role)
         if email is None:
             messages.error(request, "That demo login is not available.")
