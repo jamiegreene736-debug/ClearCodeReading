@@ -684,3 +684,19 @@ Minimal API example:
 ```json
 {"mode":"quick_complete","child":42,"accuracy_numerator":9,"accuracy_denominator":10}
 ```
+
+### Website form confirmation emails
+
+Accepted consultation, assessment follow-up, family resource, support, general inquiry,
+newsletter, early-interest survey, and career submissions create a durable pair of
+branded HTML/plain-text receipts. The customer gets form-specific next steps; the team
+notification goes to `info@clearcodereading.com`. Customer replies go to that inbox;
+team replies go to the submitter. Assessment results and application documents stay in
+secured records. Career applicants remain separate from sales contacts.
+
+Set `WEBSITE_EMAIL_SENDER` to an authorized, connected CRM Google mailbox on both the
+web service and `CRM Email Worker`. The existing worker processes receipts every pass
+and handles Gmail rate limits and uncertain delivery without blindly resending. Missing
+sender configuration leaves receipts pending for recovery. The form submission's admin
+page shows each delivery status. `sent` means Gmail accepted the email, not proof that it
+arrived in the recipient's inbox. Historical submissions are not automatically emailed.

@@ -1,0 +1,22 @@
+<!doctype html>
+<html lang="en">
+<head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>{{ subject }}</title></head>
+<body style="margin:0;padding:0;background:#F7F2EA;color:#0F2B35;font-family:Arial,Helvetica,sans-serif;">
+<div style="display:none;max-height:0;overflow:hidden;opacity:0;">{{ preheader }}</div>
+<table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="background:#F7F2EA;"><tr><td align="center" style="padding:24px 12px;">
+<table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="max-width:600px;background:#ffffff;border-collapse:collapse;">
+<tr><td style="padding:28px 24px;background:#0F2B35;border-bottom:5px solid #F5A623;"><p style="margin:0;font-size:25px;font-weight:bold;letter-spacing:-1px;"><span style="color:#F7F2EA;">CLEAR</span><span style="color:#F5A623;"> CODE</span></p><p style="margin:6px 0 0;color:#2EB8B8;letter-spacing:5px;font-size:12px;font-weight:bold;">READING</p></td></tr>
+<tr><td style="padding:28px 24px;">
+<p style="margin:0 0 12px;color:#1A7A7A;font-size:12px;font-weight:bold;letter-spacing:2px;">SUBMISSION CONFIRMED</p>
+<h1 style="margin:0 0 20px;font-size:28px;line-height:1.25;color:#0F2B35;">{{ heading }}</h1>
+<p style="font-size:16px;line-height:1.7;">{{ introduction }}</p>
+{% if rows %}<table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="table-layout:fixed;background:#F7F2EA;margin:24px 0;">{% for row in rows %}<tr><td style="padding:12px 16px;border-bottom:1px solid #E8D5B0;overflow-wrap:anywhere;word-break:break-word;"><p style="margin:0 0 4px;font-size:12px;color:#38616B;font-weight:bold;">{{ row.label }}</p><p style="margin:0;font-size:15px;line-height:1.6;">{{ row.value }}</p></td></tr>{% endfor %}</table>{% endif %}
+<h2 style="font-size:18px;margin:24px 0 8px;">What happens next</h2>
+<p style="font-size:16px;line-height:1.7;">{{ next_step }}</p>
+<p style="margin:28px 0;"><a href="{{ action_url }}" style="display:inline-block;background:#1A7A7A;color:#ffffff;text-decoration:none;font-size:16px;font-weight:bold;padding:16px 22px;border-radius:8px;">{{ action_label }}</a></p>
+<p style="font-size:14px;line-height:1.7;">Questions? Contact <a href="mailto:{{ team_email }}" style="color:#1A7A7A;overflow-wrap:anywhere;">{{ team_email }}</a>.</p>
+<p style="font-size:15px;line-height:1.7;">The ClearCode Reading team<br><span style="color:#38616B;">A clear next step. Growing reading confidence.</span></p>
+</td></tr>
+<tr><td style="padding:20px 24px;background:#EAF3F0;font-size:12px;line-height:1.7;color:#38616B;">This confirms a website submission to ClearCode Reading. Reference #{{ reference }}.{% if unsubscribe_url %}<br><a href="{{ unsubscribe_url }}" style="color:#1A7A7A;">Unsubscribe from email updates</a>{% endif %}</td></tr>
+</table></td></tr></table>
+</body></html>

@@ -349,6 +349,8 @@ def download(request: EmailRequest, attachment_id: int) -> HttpResponse:
         pk=attachment_id,
     )
     message = attachment.message
+    if message.lead_id is None:
+        raise PermissionDenied
     lead_for(message.lead_id)
     if message.mailbox.user_id != request.user.pk and (
         message.status not in FINAL_STATUSES

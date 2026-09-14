@@ -159,6 +159,7 @@ def build_mime(message: Message) -> bytes:
         ("Bcc", ", ".join(message.bcc)),
         ("Subject", message.subject),
         ("Message-ID", message.rfc_message_id),
+        ("Reply-To", message.reply_to),
         ("In-Reply-To", message.in_reply_to),
         ("References", message.references),
     ]:

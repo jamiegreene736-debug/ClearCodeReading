@@ -16,6 +16,7 @@ from apps.crm.models import (
     NewsletterDelivery,
     NewsletterSubscription,
     Opportunity,
+    WebsiteReceipt,
 )
 from apps.crm.newsletters import (
     NewsletterSendError,
@@ -100,10 +101,19 @@ class LeadAdmin(admin.ModelAdmin):
 
 @admin.register(FormSubmission)
 class FormSubmissionAdmin(admin.ModelAdmin):
+    @admin.display(description="Confirmation delivery")
+    def email_delivery(self, obj):
+        receipt = WebsiteReceipt.objects.select_related("customer_message", "team_message").filter(submission=obj).first()
+        if not receipt:
+            return "No automatic confirmation (historical submission)"
+        customer = receipt.customer_message.get_status_display() if receipt.customer_message else "Waiting for sender"
+        team = receipt.team_message.get_status_display() if receipt.team_message else "Waiting for sender"
+        return f"Customer: {customer}. Team: {team}. {receipt.error}"
+
     list_display = ("form_type", "lead", "source_path", "created_at")
     list_filter = ("form_type", "source_path", "created_at")
     search_fields = ("lead__contact_name", "lead__contact_email", "submitted_data")
-    readonly_fields = ("lead", "form_type", "source_path", "submitted_data", "created_at", "updated_at")
+    readonly_fields = ("lead", "form_type", "source_path", "submitted_data", "email_delivery", "created_at", "updated_at")
 
     def has_add_permission(self, request):
         return False

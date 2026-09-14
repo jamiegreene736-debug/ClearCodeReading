@@ -3,9 +3,14 @@ from dataclasses import dataclass, field
 from django.db import transaction
 from django.utils import timezone
 
-from apps.crm.models import FormSubmission, IntakeTriage, Lead, Opportunity
+from apps.crm.models import (
+    FormSubmission,
+    IntakeTriage,
+    Lead,
+    Opportunity,
+    WebsiteReceipt,
+)
 from apps.users.models import AuditLog, CustomUser
-
 
 PUBLIC_SUBMISSION_FIELDS = {
     "audience",
@@ -134,8 +139,9 @@ def record_form_submission(*, intake, form_type, source_path, submitted_data):
         lead=lead,
         form_type=form_type,
         source_path=source_path[:255],
-        submitted_data=submitted_data,
+        submitted_data={**submitted_data, "email": intake.contact_email, "name": intake.contact_name},
     )
+    WebsiteReceipt.objects.create(submission=submission)
     return lead, submission
 
 

@@ -1,0 +1,20 @@
+{% autoescape off %}ClearCode Reading
+{{ heading }}
+
+{{ introduction }}
+{% for row in rows %}
+{{ row.label }}: {{ row.value }}{% endfor %}
+
+What happens next
+{{ next_step }}
+
+{{ action_label }}: {{ action_url }}
+
+Questions? Contact {{ team_email }}.
+
+The ClearCode Reading team
+A clear next step. Growing reading confidence.
+
+Website submission reference #{{ reference }}.
+{% if unsubscribe_url %}Unsubscribe from email updates: {{ unsubscribe_url }}{% endif %}
+{% endautoescape %}
