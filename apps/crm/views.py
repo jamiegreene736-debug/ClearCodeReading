@@ -52,6 +52,8 @@ from apps.crm.surveys import (
     structured_assessment_submission,
 )
 from apps.schools.models import School
+from apps.users.invitations import create_invitation, deliver_invitation
+from apps.users.onboarding_views import invitation_feedback
 from apps.users.models import AuditLog, CustomUser
 
 
@@ -1057,7 +1059,8 @@ class CrmTeamView(CrmAccessMixin, View):
 
         try:
             with transaction.atomic():
-                team_member, temporary_password = form.save(created_by=request.user)
+                team_member = form.save(created_by=request.user)
+                invitation = create_invitation(team_member, request.user)
                 AuditLog.objects.create(
                     actor=request.user,
                     action="crm.team_member.created",
@@ -1073,10 +1076,7 @@ class CrmTeamView(CrmAccessMixin, View):
             form.add_error("email", "A user with this email or username already exists.")
             return self._render(request, form, status=400)
 
-        messages.success(
-            request,
-            f"Created CRM user {team_member}. Temporary password: {temporary_password}",
-        )
+        invitation_feedback(request, deliver_invitation(invitation.pk, request.user))
         return redirect("crm_team")
 
     def _render(self, request, form, *, status=200):

@@ -41,9 +41,10 @@
           <div id="manage-navigation-panel" class="absolute left-4 right-4 top-[calc(100%+.65rem)] z-50 hidden max-h-[70vh] overflow-y-auto rounded-3xl bg-white p-3 shadow-2xl shadow-ink/20 ring-1 ring-ink/10 lg:left-0 lg:right-auto lg:w-[21rem]" aria-labelledby="manage-navigation-button">
             <p class="px-3 pb-2 text-xs font-black uppercase tracking-[0.16em] text-mediumTeal">People &amp; instruction</p>
             <ul class="grid gap-1">
+              <li><a data-testid="add-user-menu-link" href="{% url 'manage_users' %}" class="focus-ring block rounded-2xl px-3 py-3 hover:bg-linen"><span class="block font-black">Add user</span><span class="mt-1 block text-xs text-ink/60">Invite an employee, teacher or parent</span></a></li>
               <li><a href="{% url 'portal_dashboard' %}#admin-actions" class="focus-ring block rounded-2xl px-3 py-3 font-black hover:bg-linen">Teacher assignments</a></li>
               <li><a href="{% url 'portal_dashboard' %}#lesson-library" class="focus-ring block rounded-2xl px-3 py-3 font-black hover:bg-linen">Lesson library</a></li>
-              <li><a href="{% url 'portal_dashboard' %}#account-creation" class="focus-ring block rounded-2xl px-3 py-3 font-black hover:bg-linen">Parent &amp; teacher accounts</a></li>
+              <li><a href="{% url 'manage_users' %}#recent-invitations" class="focus-ring block rounded-2xl px-3 py-3 font-black hover:bg-linen">User invitations</a></li>
             </ul>
           </div>
         </li>

@@ -121,6 +121,7 @@
           {% if request.user.has_hiring_access %}<a class="nav-link {% if request.resolver_match.url_name == 'crm_hiring' %}active{% endif %}" href="{% url 'crm_hiring' %}">Teacher hiring</a>{% endif %}
           <a class="nav-link" href="{% url 'inventory_list' %}">Assessments</a>
           <a class="nav-link {% if request.resolver_match.url_name == 'crm_team' %}active{% endif %}" href="{% url 'crm_team' %}"><span aria-hidden="true">♙</span> Team</a>
+        {% if request.user.can_manage_crm_users %}<a class="nav-link" href="{% url 'manage_users' %}">Add user &amp; invitations</a>{% endif %}
         </nav>
         <p class="nav-label">ClearCode</p>
         <nav class="nav-group" aria-label="ClearCode navigation">
@@ -140,6 +141,7 @@
           {% if request.user.has_hiring_access %}<a class="nav-link {% if request.resolver_match.url_name == 'crm_hiring' %}active{% endif %}" href="{% url 'crm_hiring' %}">Teacher hiring</a>{% endif %}
           <a class="nav-link" href="{% url 'inventory_list' %}">Assessments</a>
           <a class="nav-link {% if request.resolver_match.url_name == 'crm_team' %}active{% endif %}" href="{% url 'crm_team' %}">Team</a>
+        {% if request.user.can_manage_crm_users %}<a class="nav-link" href="{% url 'manage_users' %}">Add user &amp; invitations</a>{% endif %}
           {% if request.user.role != 'crm_user' %}<a class="nav-link" href="{% url 'portal_dashboard' %}">Back to portal</a>{% endif %}
           {% if request.user.is_staff or request.user.is_superuser %}<a class="nav-link" href="/admin/">Admin</a>{% endif %}
         </nav>

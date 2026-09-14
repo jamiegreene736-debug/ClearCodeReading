@@ -1034,7 +1034,9 @@ class CrmWorkspaceTests(TestCase):
 
         team_member = get_user_model().objects.get(email="casey@example.com")
         self.assertEqual(response.status_code, 200)
-        self.assertContains(response, "Temporary password: ClearCode-")
+        self.assertFalse(team_member.has_usable_password())
+        self.assertTrue(hasattr(team_member, "invitation"))
+        self.assertNotContains(response, "Temporary password:")
         self.assertEqual(team_member.role, get_user_model().Role.CRM_USER)
         self.assertTrue(team_member.is_active)
         self.assertFalse(team_member.is_staff)
@@ -1073,14 +1075,14 @@ class CrmWorkspaceTests(TestCase):
 
         self.assertEqual(dashboard.status_code, 200)
         self.assertEqual(team.status_code, 200)
-        self.assertNotContains(team, "Create a CRM user")
+        self.assertNotContains(team, "Add a backend employee")
         self.assertEqual(portal.status_code, 302)
         self.assertEqual(portal.url, reverse("crm_dashboard"))
         self.assertEqual(create_user.status_code, 403)
         self.assertEqual(api_response.status_code, 200)
         self.assertFalse(get_user_model().objects.filter(email="not-allowed@example.com").exists())
 
-    def test_crm_user_creation_rejects_duplicate_email_and_weak_password(self):
+    def test_crm_user_creation_rejects_duplicate_email_and_ignores_supplied_password(self):
         self.client.force_login(self.admin_user)
 
         duplicate = self.client.post(
@@ -1104,9 +1106,8 @@ class CrmWorkspaceTests(TestCase):
 
         self.assertEqual(duplicate.status_code, 400)
         self.assertContains(duplicate, "A user with this email already exists.", status_code=400)
-        self.assertEqual(weak.status_code, 400)
-        self.assertContains(weak, "This password is too common.", status_code=400)
-        self.assertFalse(get_user_model().objects.filter(email="weak@example.com").exists())
+        self.assertEqual(weak.status_code, 302)
+        self.assertFalse(get_user_model().objects.get(email="weak@example.com").has_usable_password())
 
     def test_selected_contacts_can_be_bulk_assigned_to_a_crm_user(self):
         crm_user = get_user_model().objects.create_user(
@@ -1183,7 +1184,7 @@ class CrmWorkspaceTests(TestCase):
         self.assertContains(contacts, "My contacts")
         self.assertContains(contacts, reverse("crm_team"))
         self.assertContains(team, "Assignment-ready users")
-        self.assertContains(team, "Create a CRM user")
+        self.assertContains(team, "Add a backend employee")
 
     def test_leads_api_rejects_a_non_crm_portal_user(self):
         api_client = APIClient()

@@ -452,3 +452,20 @@ def update_relationship_consent_status(sender, instance, **kwargs):
     relationship.consent_status = status_map[instance.status]
     relationship.consent_expires_at = instance.expires_at
     relationship.save(update_fields=["consent_status", "consent_expires_at", "updated_at"])
+
+
+class UserInvitation(TimestampedModel):
+    """Delivery receipt; setup credentials never enter shared CRM history."""
+
+    user = models.OneToOneField(
+        CustomUser, on_delete=models.CASCADE, related_name="invitation"
+    )
+    created_by = models.ForeignKey(
+        CustomUser, null=True, on_delete=models.SET_NULL, related_name="user_invitations"
+    )
+    nonce = models.CharField(max_length=64)
+    status = models.CharField(max_length=20, default="pending")
+    attempted_at = models.DateTimeField(null=True, blank=True)
+    sent_at = models.DateTimeField(null=True, blank=True)
+    accepted_at = models.DateTimeField(null=True, blank=True)
+    error = models.CharField(max_length=255, blank=True)

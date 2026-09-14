@@ -36,6 +36,7 @@ from apps.crm.views import (
     WebsiteSignupView,
 )
 from apps.sessions.views import RapidSessionLogView
+from apps.users.onboarding_views import manage_users, resend_invitation, AcceptInvitationView, gmail_welcome
 from apps.users.portal_views import (
     AssignLessonTemplateToChildView,
     AssignTeacherView,
@@ -54,6 +55,10 @@ from apps.crm.inventory_views import (
 )
 
 urlpatterns = [
+    path("portal/users/", manage_users, name="manage_users"),
+    path("portal/users/invitations/<int:pk>/resend/", resend_invitation, name="resend_user_invitation"),
+    path("account/setup/<uidb64>/<token>/", AcceptInvitationView.as_view(), name="user_invitation_accept"),
+    path("portal/welcome/gmail/", gmail_welcome, name="gmail_welcome"),
     path("crm/", include("apps.crm_email.urls")),
     path("crm/assessments/", InventoryListView.as_view(), name="inventory_list"),
     path("crm/assessments/preview/", InventoryPreviewView.as_view(), name="inventory_preview"),
