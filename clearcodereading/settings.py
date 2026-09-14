@@ -327,3 +327,8 @@ WEBSITE_EMAIL_SENDER = os.getenv("WEBSITE_EMAIL_SENDER", "").strip().lower()
 
 # Optional stable account override for the default consultation calendar.
 CRM_DEFAULT_CONSULTATION_HOST_EMAIL = os.getenv("CRM_DEFAULT_CONSULTATION_HOST_EMAIL", "")
+
+# Calendar consent uses separate scopes and tokens, with the registered Google callback.
+CRM_CALENDAR_GOOGLE_CLIENT_ID = os.getenv("CRM_CALENDAR_GOOGLE_CLIENT_ID", CRM_EMAIL_GOOGLE_CLIENT_ID)
+CRM_CALENDAR_GOOGLE_CLIENT_SECRET = os.getenv("CRM_CALENDAR_GOOGLE_CLIENT_SECRET", CRM_EMAIL_GOOGLE_CLIENT_SECRET)
+CRM_CALENDAR_REDIRECT_URI = os.getenv("CRM_CALENDAR_REDIRECT_URI", CRM_EMAIL_REDIRECT_URI)

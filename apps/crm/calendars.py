@@ -160,8 +160,13 @@ def check_calendar(
     profile: HostCalendar, start: datetime, end: datetime
 ) -> list[tuple[datetime, datetime]]:
     try:
-        url = cipher().decrypt(profile.encrypted_url.encode()).decode()
-        periods = busy_periods(fetch_calendar(url), start, end, profile.source_timezone)
+        if profile.encrypted_google_refresh_token:
+            from apps.crm.google_calendar import busy_periods as google_busy_periods
+
+            periods = google_busy_periods(profile, start, end)
+        else:
+            url = cipher().decrypt(profile.encrypted_url.encode()).decode()
+            periods = busy_periods(fetch_calendar(url), start, end, profile.source_timezone)
     except InvalidToken as exc:
         error = CalendarError("Reconnect your calendar to restore availability checks.")
         HostCalendar.objects.filter(pk=profile.pk).update(last_error=str(error))
@@ -183,7 +188,7 @@ def available_slots(slots: Iterable[ConsultationSlot]) -> list[ConsultationSlot]
         profile.host_id: profile
         for profile in HostCalendar.objects.filter(
             host_id__in={slot.host_id for slot in candidates}
-        ).exclude(encrypted_url="")
+        ).exclude(encrypted_url="", encrypted_google_refresh_token="")
     }
     blocked: set[int] = set()
     periods_by_host: dict[int, list[tuple[datetime, datetime]]] = {}

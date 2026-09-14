@@ -1,11 +1,19 @@
 {% extends "crm/base.html" %}
+{% block extra_style %}
+  .availability-filter { display:grid; gap:10px; margin:24px 0; max-width:760px; }
+  .availability-filter select { min-height:44px; width:100%; }
+  .availability-actions { display:flex; flex-wrap:wrap; gap:12px; margin-top:6px; }
+  .calendar-connect { margin:16px 0 20px; }
+{% endblock %}
 {% block content %}
 <p><a href="{% url 'inventory_list' %}">← Assessments</a></p>
 <h1>Consultation availability</h1>
-<p><a class="btn" href="{% url 'crm_calendar_settings' %}">Connect my Google or Apple calendar</a></p>
+<div class="calendar-connect availability-actions">
+<form method="post" action="{% url 'crm_google_calendar_connect' %}">{% csrf_token %}<button class="btn btn-primary">Connect Google Calendar</button></form>
+<a class="btn" href="{% url 'crm_calendar_settings' %}">Calendar settings</a>
+</div>
 <p>Confirm the times you can take calls. Only confirmed times are available for parents to book. Times shown include the site’s time zone; enter new times in the host’s time zone.</p>
-<form method="get"><label for="host-filter">Show availability for</label><select id="host-filter" name="host"><option value="" {% if not selected_host %}selected{% endif %}>All hosts</option>{% for host in hosts %}<option value="{{ host.pk }}" {% if host.pk == selected_host.pk %}selected{% endif %}>{{ host.get_full_name|default:host.email }}</option>{% endfor %}</select><button class="btn">Show availability</button></form>
-<p><a class="btn" href="?host={{ request.user.pk }}">My availability</a></p>
+<form method="get" class="availability-filter"><label for="host-filter">Show availability for</label><select id="host-filter" name="host"><option value="" {% if not selected_host %}selected{% endif %}>All hosts</option>{% for host in hosts %}<option value="{{ host.pk }}" {% if host.pk == selected_host.pk %}selected{% endif %}>{{ host.get_full_name|default:host.email }}</option>{% endfor %}</select><div class="availability-actions"><button class="btn">Show availability</button><a class="btn" href="?host={{ request.user.pk }}">My availability</a></div></form>
 <div class="card" style="padding:24px;max-width:650px"><h2>Add a time</h2><p>Adding your own time confirms you are available. A time proposed for another host stays unavailable until they confirm it.</p><form method="post">{% csrf_token %}{{ form.as_p }}<button class="btn btn-primary">Add appointment time</button></form></div>
 <h2>Upcoming appointments{% if selected_host %} · {{ selected_host.get_full_name }}{% endif %}</h2>
 {% for slot in slots %}<article class="card" style="padding:18px;margin-bottom:12px"><strong>{{ slot.starts_at|date:"M j, Y, g:i A T" }} — {{ slot.ends_at|date:"g:i A T" }}</strong><p>{{ slot.host.get_full_name|default:slot.host.email }} · {% if slot.booking %}Booked: {{ slot.booking.invitation.child.parent.contact_name }}{% elif slot.active %}Confirmed available{% else %}Not available · Host confirmation required to offer this time{% endif %}</p>
