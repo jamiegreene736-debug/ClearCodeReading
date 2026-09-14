@@ -1,9 +1,9 @@
-from django.db.models import Q
+from django.db.models import Q, QuerySet
 
 from apps.users.models import CustomUser
 
 
-def crm_owner_queryset():
+def crm_owner_queryset() -> QuerySet[CustomUser]:
     return CustomUser.objects.filter(is_active=True, is_deleted=False).filter(
         Q(is_superuser=True)
         | Q(is_staff=True)

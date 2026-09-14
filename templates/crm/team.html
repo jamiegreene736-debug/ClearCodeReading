@@ -10,6 +10,7 @@
   .create-panel { position:sticky; top:20px; padding:20px; }
   .create-panel form { display:grid; gap:14px; }
   .errorlist { margin:0; padding-left:18px; color:var(--red); font-weight:600; }
+  input[type=checkbox] { width:18px; height:18px; min-height:18px; }
   .helptext { color:var(--muted); font-size:12px; }
   @media (max-width:900px) { .team-layout { grid-template-columns:1fr; } .create-panel { position:static; } }
   @media (max-width:540px) { .page-head,.section-head { align-items:stretch; flex-direction:column; } .team-row { grid-template-columns:1fr; } .team-stats { justify-content:flex-start; } }
@@ -27,7 +28,7 @@
         {% for member in team_members %}
           <article class="card team-row">
             <div><strong>{{ member.get_full_name|default:member.email }}</strong><div class="subtle">{{ member.email }} · {{ member.get_role_display }}{% if member.is_superuser %} · Superuser{% elif member.is_staff %} · Staff{% endif %}</div></div>
-            <div class="team-stats"><a class="badge" href="{% url 'crm_contact_list' %}?owner={{ member.pk }}">{{ member.assigned_contact_count }} contact{{ member.assigned_contact_count|pluralize }}</a><span class="badge badge-neutral">{{ member.open_task_count }} open task{{ member.open_task_count|pluralize }}</span></div>
+            <div class="team-stats">{% if member.has_hiring_access %}<span class="badge">Hiring access</span>{% endif %}{% if can_manage_crm_users and not member.is_staff and not member.can_manage_crm_users %}<form method="post" action="{% url 'crm_hiring_access' member.pk %}">{% csrf_token %}<input type="hidden" name="enabled" value="{% if member.hiring_enabled %}0{% else %}1{% endif %}"><button class="btn btn-small" type="submit">{% if member.hiring_enabled %}Remove{% else %}Enable{% endif %} hiring access</button></form>{% endif %}<a class="badge" href="{% url 'crm_contact_list' %}?owner={{ member.pk }}">{{ member.assigned_contact_count }} contact{{ member.assigned_contact_count|pluralize }}</a><span class="badge badge-neutral">{{ member.open_task_count }} open task{{ member.open_task_count|pluralize }}</span></div>
           </article>
         {% empty %}<div class="card empty">No active CRM users are available.</div>{% endfor %}
       </div>
@@ -44,6 +45,7 @@
           <div class="field"><label for="{{ form.email.id_for_label }}">{{ form.email.label }}</label>{{ form.email }}{{ form.email.errors }}</div>
           <div class="field"><label for="{{ form.password1.id_for_label }}">{{ form.password1.label }}</label>{{ form.password1 }}{% if form.password1.help_text %}<span class="helptext">{{ form.password1.help_text }}</span>{% endif %}{{ form.password1.errors }}</div>
           <div class="field"><label for="{{ form.password2.id_for_label }}">{{ form.password2.label }}</label>{{ form.password2 }}{{ form.password2.errors }}</div>
+          <label style="display:flex;align-items:center;gap:8px">{{ form.hiring_enabled }} {{ form.hiring_enabled.label }}</label>
           <button class="btn btn-primary" type="submit">Create CRM user</button>
         </form>
       {% else %}
