@@ -20,7 +20,8 @@ class TopicAdmin(TopicModelAdmin):
 
     def has_module_permission(self, request: HttpRequest) -> bool:
         return bool(
-            request.session.get("resources_staff_login") and can_publish(request.user)
+            getattr(request, "session", {}).get("resources_staff_login")
+            and can_publish(request.user)
         )
 
     def has_view_permission(
