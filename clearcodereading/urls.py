@@ -49,6 +49,7 @@ from apps.users.portal_views import (
 )
 
 urlpatterns = [
+    path("crm/", include("apps.crm_email.urls")),
     path("", TemplateView.as_view(template_name="index.html"), name="marketing_home"),
     path("about/", TemplateView.as_view(template_name="about.html"), name="marketing_about"),
     path(

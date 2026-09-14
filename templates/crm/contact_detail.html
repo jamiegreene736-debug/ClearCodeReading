@@ -49,7 +49,7 @@
       <h1>{{ lead.contact_name }}</h1>
       <p class="subtle">{{ lead.organization_name|default:lead.school_name }}</p>
       <p><a href="mailto:{{ lead.contact_email }}">{{ lead.contact_email }}</a>{% if lead.contact_phone %}<br><a href="tel:{{ lead.contact_phone }}">{{ lead.contact_phone }}</a>{% endif %}</p>
-      <div class="quick-actions"><a class="btn btn-small" href="mailto:{{ lead.contact_email }}">Email</a><a class="btn btn-small" href="#activity">Add activity</a></div>
+      <div class="quick-actions"><a class="btn btn-small" href="{% url 'crm_contact_email' lead.pk %}">Email</a><a class="btn btn-small" href="#activity">Add activity</a></div>
       <dl class="properties">
         <div class="property"><dt>Lead status</dt><dd><span class="badge {% if lead.status == 'new' %}badge-warn{% endif %}">{{ lead.get_status_display }}</span></dd></div>
         <div class="property"><dt>Audience</dt><dd>{{ lead.get_audience_display }}</dd></div>

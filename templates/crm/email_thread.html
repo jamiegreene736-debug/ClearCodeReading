@@ -1,0 +1,13 @@
+{% extends "crm/email_base.html" %}
+{% block title %}{{ conversation.subject }}{% endblock %}
+{% block email_content %}
+<p><a href="{% url 'crm_contact_email' lead.pk %}">← Email for {{ lead.contact_name }}</a></p><h1>{{ conversation.subject }}</h1>
+<p class="subtle">Via {{ conversation.mailbox.email }} · Most recent first</p>
+{% for item in page %}<article class="card"><p><span class="badge">{{ item.get_status_display }}</span> {{ item.sent_at|date:"M j, Y, g:i A T" }}</p>
+<p><strong>From:</strong> {{ item.sender }}<br><strong>To:</strong> {{ item.to|join:", " }}{% if item.cc %}<br><strong>CC:</strong> {{ item.cc|join:", " }}{% endif %}{% if item.mailbox.user_id == request.user.pk and item.bcc %}<br><strong>BCC:</strong> {{ item.bcc|join:", " }}{% endif %}</p>
+<div class="mail-body">{{ item.body_html|safe }}</div>
+{% if item.attachments.all %}<div class="actions">{% for attachment in item.attachments.all %}<a class="btn btn-small" href="{% url 'crm_email_download' attachment.pk %}">Download {{ attachment.filename }} ({{ attachment.size|filesizeformat }})</a>{% endfor %}</div>{% endif %}
+{% if conversation.mailbox.user_id == request.user.pk %}<div class="actions"><a class="btn" href="{% url 'crm_email_compose' lead.pk %}?reply={{ item.pk }}">Reply</a><a class="btn" href="{% url 'crm_email_compose' lead.pk %}?reply={{ item.pk }}&amp;all=1">Reply all</a><a class="btn" href="https://mail.google.com/mail/u/?authuser={{ conversation.mailbox.email|urlencode }}#all/{{ conversation.gmail_thread_id|urlencode }}" target="_blank" rel="noopener noreferrer">Open in Gmail</a></div>{% endif %}
+{% if item.status == 'sent' %}<p class="subtle">Accepted by Google. Delivery and opening are not confirmed.</p>{% endif %}
+</article>{% endfor %}{% include 'crm/email_pagination.html' %}
+{% endblock %}
