@@ -4,6 +4,7 @@ from zoneinfo import ZoneInfo
 
 from django.contrib import messages
 from django.core import signing
+from django.core.exceptions import PermissionDenied
 from django.core.paginator import Paginator
 from django.db import transaction
 from django.http import Http404, JsonResponse
@@ -15,6 +16,11 @@ from django.utils.decorators import method_decorator
 from django.views import View
 from django.views.decorators.cache import never_cache
 
+from apps.crm.access import crm_owner_queryset
+from apps.crm.consultations import (
+    can_manage_team_availability,
+    selected_consultation_host,
+)
 from apps.crm.inventory import (
     GRADES,
     InventoryError,
@@ -39,7 +45,7 @@ from apps.crm.inventory_models import (
 )
 from apps.crm.models import CrmActivity, Lead
 from apps.crm.views import CrmAccessMixin
-from apps.users.models import CustomUser
+from apps.users.models import AuditLog, CustomUser
 
 
 class InventoryListView(CrmAccessMixin, View):
@@ -315,6 +321,9 @@ class InventoryPublicView(View):
                 {
                     "invitation": invitation,
                     "completed": True,
+                    "can_resume": not evaluate(
+                        invitation.child.grade, invitation.answers
+                    )["complete"],
                     "result": invitation.result,
                 },
             )
@@ -355,7 +364,25 @@ class InventoryPublicView(View):
             if invitation.revoked_at or invitation.expires_at <= timezone.now():
                 raise Http404("Link unavailable")
             if invitation.completed_at:
-                return self.page(request, invitation)
+                state = evaluate(invitation.child.grade, invitation.answers)
+                if request.POST.get("action") != "resume" or state["complete"]:
+                    return self.page(request, invitation)
+                AuditLog.objects.create(
+                    action="crm.inventory.resumed_remaining_questions",
+                    entity_type="InventoryInvitation",
+                    entity_id=str(invitation.pk),
+                    before={
+                        "result": invitation.result,
+                        "completed_at": invitation.completed_at.isoformat(),
+                    },
+                )
+                invitation.completed_at = None
+                invitation.reviewed_at = None
+                invitation.reviewed_by = None
+                invitation.current_group = state["next_group"]
+                invitation.revision += 1
+                invitation.save()
+                return redirect("inventory_public", token=token)
             index = invitation.current_group
             form = SectionForm(
                 request.POST,
@@ -411,35 +438,85 @@ class InventoryPublicView(View):
 
 class InventorySlotsView(CrmAccessMixin, View):
     def get(self, request):
-        return self.page(request, SlotForm())
+        return self.page(request, SlotForm(user=request.user))
 
     def page(self, request, form):
-        slots = (
-            ConsultationSlot.objects.filter(starts_at__gt=timezone.now())
-            .select_related("host", "booking__invitation__child")
-            .order_by("starts_at")[:100]
-        )
+        host = selected_consultation_host(request)
+        slots = ConsultationSlot.objects.filter(starts_at__gt=timezone.now())
+        if host:
+            slots = slots.filter(host=host)
+        slots = slots.select_related(
+            "host", "booking__invitation__child__parent"
+        ).order_by("starts_at")[:100]
         return render(
-            request, "crm/inventory_slots.html", {"form": form, "slots": slots}
+            request,
+            "crm/inventory_slots.html",
+            {
+                "form": form,
+                "slots": slots,
+                "hosts": crm_owner_queryset(),
+                "selected_host": host,
+                "can_manage_team": can_manage_team_availability(request.user),
+            },
         )
 
     def post(self, request):
-        if request.POST.get("action") == "withdraw":
+        action = request.POST.get("action")
+        if action in {"withdraw", "confirm"}:
+            slot_id = request.POST.get("slot", "")
+            if not slot_id.isdecimal():
+                raise Http404("Appointment unavailable")
             with transaction.atomic():
+                candidate = get_object_or_404(ConsultationSlot, pk=slot_id)
+                if candidate.host_id != request.user.pk and (
+                    action == "confirm"
+                    or not can_manage_team_availability(request.user)
+                ):
+                    raise PermissionDenied(
+                        "Only the host can confirm their availability."
+                    )
+                CustomUser.objects.select_for_update().get(pk=candidate.host_id)
                 slot = get_object_or_404(
                     ConsultationSlot.objects.select_for_update(),
-                    pk=request.POST.get("slot"),
+                    pk=slot_id,
                 )
-                if not InventoryBooking.objects.filter(slot=slot).exists():
-                    slot.active = False
-                    slot.save()
+                if slot.starts_at <= timezone.now():
+                    messages.error(request, "This appointment time has passed.")
+                elif not InventoryBooking.objects.filter(slot=slot).exists():
+                    overlap = (
+                        ConsultationSlot.objects.filter(
+                            host_id=slot.host_id,
+                            active=True,
+                            starts_at__lt=slot.ends_at,
+                            ends_at__gt=slot.starts_at,
+                        )
+                        .exclude(pk=slot.pk)
+                        .exists()
+                    )
+                    if action == "confirm" and overlap:
+                        messages.error(
+                            request, "This time overlaps another confirmed appointment."
+                        )
+                    else:
+                        before = slot.active
+                        slot.active = action == "confirm"
+                        slot.save(update_fields=["active"])
+                        AuditLog.objects.create(
+                            actor=request.user,
+                            action="crm.consultation.availability_updated",
+                            entity_type="ConsultationSlot",
+                            entity_id=str(slot.pk),
+                            before={"active": before},
+                            after={"active": slot.active},
+                        )
+                        messages.success(request, "Availability updated.")
                 else:
                     messages.error(
                         request,
                         "Booked appointments cannot be withdrawn here. Contact the family to arrange a change.",
                     )
-            return redirect("inventory_slots")
-        form = SlotForm(request.POST)
+            return redirect(reverse("inventory_slots") + f"?host={slot.host_id}")
+        form = SlotForm(request.POST, user=request.user)
         if form.is_valid():
             data = form.cleaned_data
             local = datetime.combine(data["date"], data["time"]).replace(
@@ -469,11 +546,26 @@ class InventorySlotsView(CrmAccessMixin, View):
                             "This appointment overlaps an existing slot for this host.",
                         )
                     else:
-                        ConsultationSlot.objects.create(
-                            host=host, starts_at=local, ends_at=end
+                        slot = ConsultationSlot.objects.create(
+                            host=host,
+                            starts_at=local,
+                            ends_at=end,
+                            active=host.pk == request.user.pk,
                         )
-                        messages.success(request, "Consultation time added.")
-                        return redirect("inventory_slots")
+                        AuditLog.objects.create(
+                            actor=request.user,
+                            action="crm.consultation.slot_created",
+                            entity_type="ConsultationSlot",
+                            entity_id=str(slot.pk),
+                            after={"host": host.pk, "active": slot.active},
+                        )
+                        messages.success(
+                            request,
+                            "Consultation time added."
+                            if host.pk == request.user.pk
+                            else "Time proposed. The host must confirm availability before parents can book.",
+                        )
+                        return redirect(reverse("inventory_slots") + f"?host={host.pk}")
         return self.page(request, form)
 
 
@@ -484,13 +576,17 @@ class InventoryBookingView(InventoryPublicView):
             .select_related("slot__host")
             .first()
         )
+        host = selected_consultation_host(request)
         slots = ConsultationSlot.objects.filter(
             active=True,
             starts_at__gt=timezone.now(),
             booking__isnull=True,
             host__is_active=True,
             host__is_deleted=False,
-        ).select_related("host")[:100]
+        ).select_related("host")
+        if host:
+            slots = slots.filter(host=host)
+        slots = slots[:100]
         form = form or BookingForm()
         form.fields["slot"].choices = [
             (
@@ -507,17 +603,23 @@ class InventoryBookingView(InventoryPublicView):
                 "form": form,
                 "booking": booking,
                 "slots": slots,
+                "hosts": crm_owner_queryset(),
+                "selected_host": host,
             },
         )
 
     def get(self, request, token):
         invitation = self.get_invitation(token)
-        if not invitation.completed_at or invitation.result.get("outcome") != "support":
+        if not InventoryBooking.objects.filter(invitation=invitation).exists() and (
+            not invitation.completed_at or invitation.result.get("outcome") != "support"
+        ):
             raise Http404("Consultation link unavailable")
         return self.booking_page(request, invitation)
 
     def post(self, request, token):
         original = self.get_invitation(token)
+        if InventoryBooking.objects.filter(invitation=original).exists():
+            return redirect("inventory_booking", token=token)
         if not original.completed_at or original.result.get("outcome") != "support":
             raise Http404("Consultation link unavailable")
         form = BookingForm(request.POST)
