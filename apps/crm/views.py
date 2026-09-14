@@ -1282,14 +1282,34 @@ class CrmContactDetailView(CrmAccessMixin, TemplateView):
 class CrmContactUpdateView(CrmAccessMixin, View):
     def post(self, request, pk):
         lead = get_object_or_404(Lead, pk=pk, is_deleted=False)
-        status_value = request.POST.get("status", "")
-        audience = request.POST.get("audience", "")
-        owner_value = request.POST.get("assigned_to", "")
-        company_value = request.POST.get("company", "")
-        company_name = request.POST.get("company_name", "").strip()[:255]
+        field = request.POST.get("field")
+        editable_fields = {"status", "audience", "assigned_to", "company"}
+        if field is not None and (field not in editable_fields or field not in request.POST):
+            messages.error(request, "Choose a valid contact property.")
+            return redirect("crm_contact_detail", pk=lead.pk)
+        data = request.POST.copy()
+        if field:
+            # Single-property edits must not overwrite other submitted or saved values.
+            data = {
+                "status": lead.status,
+                "audience": lead.audience,
+                "assigned_to": lead.assigned_to_id or "",
+                "company": lead.company_id or "",
+                field: request.POST[field],
+            }
+        status_value = data.get("status", "")
+        audience = data.get("audience", "")
+        owner_value = data.get("assigned_to", "")
+        company_value = data.get("company", "")
+        company_name = data.get("company_name", "").strip()[:255]
         if status_value not in Lead.Status.values or audience not in Lead.Audience.values:
             messages.error(request, "Choose a valid status and audience.")
             return redirect("crm_contact_detail", pk=lead.pk)
+
+        for value in (owner_value, company_value):
+            if value and (not str(value).isascii() or not str(value).isdigit() or len(str(value)) > 18):
+                messages.error(request, "Choose a valid owner or company.")
+                return redirect("crm_contact_detail", pk=lead.pk)
 
         owner = None
         if owner_value:
@@ -1323,10 +1343,11 @@ class CrmContactUpdateView(CrmAccessMixin, View):
         old_company_id = lead.company_id
         lead.company = company
         with transaction.atomic():
-            lead.save(update_fields=["status", "audience", "assigned_to", "company", "updated_at"])
-            lead.opportunities.filter(
-                Q(company_id=old_company_id) | Q(company__isnull=True)
-            ).update(company=company, updated_at=timezone.now())
+            lead.save(update_fields=[field, "updated_at"] if field else ["status", "audience", "assigned_to", "company", "updated_at"])
+            if field in (None, "company"):
+                lead.opportunities.filter(
+                    Q(company_id=old_company_id) | Q(company__isnull=True)
+                ).update(company=company, updated_at=timezone.now())
         AuditLog.objects.create(
             actor=request.user,
             action="crm.contact.updated",

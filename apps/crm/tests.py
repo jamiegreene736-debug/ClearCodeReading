@@ -1252,6 +1252,46 @@ class CrmWorkspaceTests(TestCase):
             Lead.RelationshipInterest.DONOR,
         )
 
+    def test_inline_contact_properties_preserve_other_fields(self):
+        self.client.force_login(self.admin_user)
+        company = Company.objects.create(name="Reading school")
+        self.lead.company = company
+        self.lead.assigned_to = self.admin_user
+        self.lead.save()
+        url = reverse("crm_contact_update", args=[self.lead.pk])
+        for field, value in (("status", Lead.Status.CONTACTED), ("audience", Lead.Audience.PARENT), ("assigned_to", ""), ("company", "")):
+            self.lead.refresh_from_db()
+            before = {name: getattr(self.lead, name) for name in ("status", "audience", "assigned_to_id", "company_id")}
+            response = self.client.post(url, {"field": field, field: value, "company_name": "Must not create"})
+            self.assertEqual(response.status_code, 302)
+            self.lead.refresh_from_db()
+            model_field = field + "_id" if field in ("company", "assigned_to") else field
+            self.assertEqual(getattr(self.lead, model_field), value or None)
+            for name, previous in before.items():
+                if name != model_field:
+                    self.assertEqual(getattr(self.lead, name), previous)
+        self.assertFalse(Company.objects.filter(name="Must not create").exists())
+
+    def test_inline_contact_rejects_invalid_fields_and_values(self):
+        self.client.force_login(self.admin_user)
+        url = reverse("crm_contact_update", args=[self.lead.pk])
+        initial_status = self.lead.status
+        for data in ({"field": "contact_email", "contact_email": "bad@example.com"}, {"field": "status"}, {"field": "status", "status": "invalid"}, {"field": "assigned_to", "assigned_to": "invalid"}, {"field": "company", "company": "999999999"}):
+            response = self.client.post(url, data)
+            self.assertEqual(response.status_code, 302)
+            self.lead.refresh_from_db()
+            self.assertEqual(self.lead.status, initial_status)
+            self.assertIsNone(self.lead.company_id)
+
+    def test_contact_detail_has_inline_and_sidebar_editors(self):
+        self.client.force_login(self.admin_user)
+        response = self.client.get(reverse("crm_contact_detail", args=[self.lead.pk]))
+        for field in ("status", "audience", "company", "assigned_to"):
+            self.assertContains(response, f'id="inline-{field}"')
+            self.assertContains(response, f'name="field" value="{field}"')
+        self.assertContains(response, 'id="detail-status"')
+        self.assertContains(response, "Save properties")
+
     def test_contact_properties_notes_and_tasks_are_manageable(self):
         self.client.force_login(self.admin_user)
         detail_url = reverse("crm_contact_detail", args=[self.lead.pk])
