@@ -1,1 +1,20 @@
-{% extends "portal/onboarding_base.html" %}{% block title %}Set your password{% endblock %}{% block content %}<section class="card">{% if validlink %}<h1>Welcome to ClearCode Reading</h1><p>Choose a password for your new account.</p><form method="post">{% csrf_token %}{{ form.as_p }}<button type="submit">Set password</button></form>{% else %}<h1>This setup link is no longer available</h1><p>It may have expired, been replaced, or already been used. Ask your administrator to send a new invitation.</p><a class="button" href="{% url 'login' %}">Go to login</a>{% endif %}</section>{% endblock %}
+{% extends "portal/onboarding_base.html" %}
+
+{% block title %}
+Set your password
+{% endblock %}
+
+{% block content %}
+<section class="card">
+{% if validlink %}
+<h1>Welcome to ClearCode Reading</h1>
+<p>Choose a password for your new account.</p>
+<form method="post">{% csrf_token %}{{ form.as_p }}<button type="submit">Set password</button>
+</form>
+{% else %}
+<h1>This setup link is no longer available</h1>
+<p>It may have expired, been replaced, or already been used. Ask your administrator to send a new invitation.</p>
+<a class="button" href="{% url 'login' %}">Go to login</a>
+{% endif %}
+</section>
+{% endblock %}
