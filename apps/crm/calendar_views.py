@@ -15,6 +15,7 @@ from django.views import View
 from django.views.decorators.http import require_GET
 from icalendar import Calendar, Event
 
+from apps.crm import google_calendar
 from apps.crm.calendar_models import HostCalendar
 from apps.crm.calendars import (
     MAX_DAYS,
@@ -79,6 +80,7 @@ class CalendarSettingsView(CrmAccessMixin, View):
             "crm/calendar_settings.html",
             {
                 "profile": profile,
+                "google_configured": google_calendar.configured(),
                 "form": form,
                 "feed_url": feed,
                 "webcal_url": feed.replace("https://", "webcal://").replace(
@@ -107,6 +109,8 @@ class CalendarSettingsView(CrmAccessMixin, View):
                         HostCalendar.objects.update_or_create(
                             host=request.user,
                             defaults={
+                                "google_email": "",
+                                "encrypted_google_refresh_token": "",
                                 "encrypted_url": cipher()
                                 .encrypt(url.encode())
                                 .decode(),
@@ -130,6 +134,8 @@ class CalendarSettingsView(CrmAccessMixin, View):
             profile, _ = HostCalendar.objects.get_or_create(host=request.user)
             if action == "disconnect":
                 profile.encrypted_url = ""
+                profile.encrypted_google_refresh_token = ""
+                profile.google_email = ""
                 profile.last_error = ""
                 profile.last_checked_at = None
                 profile.save()
@@ -144,7 +150,9 @@ class CalendarSettingsView(CrmAccessMixin, View):
                     request,
                     "Subscription link replaced. Add the new link to your calendar; the previous link no longer works.",
                 )
-            elif action == "check" and profile.encrypted_url:
+            elif action == "check" and (
+                profile.encrypted_url or profile.encrypted_google_refresh_token
+            ):
                 try:
                     now = timezone.now()
                     check_calendar(profile, now, now + timedelta(days=MAX_DAYS))
@@ -189,5 +197,30 @@ def calendar_feed(request: CalendarRequest, token: uuid.UUID) -> HttpResponse:
     )
     response["Cache-Control"] = "private, no-store"
     response["X-Robots-Tag"] = "noindex, nofollow"
+    response["Referrer-Policy"] = "no-referrer"
+    return response
+
+
+class GoogleCalendarConnectView(CrmAccessMixin, View):
+    def post(self, request: CalendarRequest) -> HttpResponse:
+        try:
+            return redirect(google_calendar.authorization_url(request))
+        except CalendarError as exc:
+            messages.error(request, str(exc))
+            return redirect("crm_calendar_settings")
+
+
+def google_calendar_callback(request: HttpRequest) -> HttpResponse:
+    # Access is checked by the registered Google callback before dispatch here.
+    try:
+        google_calendar.connect(request)
+        messages.success(
+            request,
+            "Google Calendar connected. Your primary calendar’s busy times will now be checked.",
+        )
+    except CalendarError as exc:
+        messages.error(request, str(exc))
+    response = redirect("crm_calendar_settings")
+    response["Cache-Control"] = "private, no-store"
     response["Referrer-Policy"] = "no-referrer"
     return response

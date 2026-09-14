@@ -122,6 +122,10 @@ def connect_view(request: EmailRequest) -> HttpResponse:
 @crm_view
 @require_GET
 def callback(request: EmailRequest) -> HttpResponse:
+    if request.GET.get("state", "").startswith("calendar."):
+        from apps.crm.calendar_views import google_calendar_callback
+
+        return google_calendar_callback(request)
     try:
         connect(request)
         messages.success(

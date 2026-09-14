@@ -102,3 +102,37 @@ unconfirmed-slot rejection, overlap rejection, Bethany default selection, and
 existing booking/email idempotency. No real appointment times are invented.
 
 Verification for this change: 503 project tests and 51 focused tests passed; Django system/migration checks, Ruff, and strict email type checks passed. Chromium and WebKit exercised all 25 Grade 2 answers, save/resume, and submission at 390px and 1280px. Chromium exercised Bethany default selection, confirmation, and withdrawal at both widths. No horizontal overflow or assessment browser errors.
+
+## Google Calendar sign-in
+
+Consultation availability now has a direct **Connect Google Calendar** button. It requests
+`openid`, `email`, and `calendar.freebusy` for the user's primary Google calendar. Calendar
+consent is independent of Gmail consent, stored against the signed-in CRM host, and protected
+by expiring single-use state, session binding, nonce verification, and PKCE. Refresh tokens
+use the calendar encryption key derivation. No event descriptions, attendees, or Gmail data
+are requested by this flow. Existing Apple/iCal connections remain a secondary option.
+
+Google busy-time reads run through the existing availability filtering and booking recheck.
+Malformed responses, revoked grants, and provider errors hide the connected host's slots;
+a successful read clears the error. A connection is saved only after its first free/busy read
+succeeds. Disconnect deletes the locally stored token without revoking a shared Google OAuth
+client's Gmail grant. Hosts can remove the app's Google permissions separately in Google Account.
+
+Provider setup:
+- Enable `calendar-json.googleapis.com` in the Google Cloud project owning the OAuth client.
+- Allow `https://www.googleapis.com/auth/calendar.freebusy` in the consent configuration and
+  any applicable Workspace administrator controls.
+- By default, calendar sign-in reuses `CRM_EMAIL_GOOGLE_CLIENT_ID`,
+  `CRM_EMAIL_GOOGLE_CLIENT_SECRET`, and the registered `CRM_EMAIL_REDIRECT_URI`.
+  The existing `/crm/email/callback/` dispatches calendar-prefixed state to the isolated calendar
+  handler before Gmail processing. No Gmail permission is needed for calendar connection.
+- Optional `CRM_CALENDAR_GOOGLE_CLIENT_ID`, `CRM_CALENDAR_GOOGLE_CLIENT_SECRET`, and
+  `CRM_CALENDAR_REDIRECT_URI` allow a separate OAuth client. Register the same callback route
+  on the canonical CRM hostname. An Internal client permits Workspace accounts only; personal
+  Gmail accounts require an External client/audience with applicable Google verification and
+  test-user restrictions resolved. Do not broaden the Gmail client's audience implicitly.
+- Every host completes Google's consent themselves. Confirm a live connected account and
+  a busy-time collision before claiming end-to-end provider verification.
+
+References: https://developers.google.com/identity/protocols/oauth2/web-server and
+https://developers.google.com/workspace/calendar/api/v3/reference/freebusy/query.
