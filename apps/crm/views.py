@@ -976,6 +976,29 @@ class CrmDealDetailView(CrmAccessMixin, View):
         return render(request, self.template_name, {"form": form, "deal": deal}, status=400)
 
 
+class CrmDealRemoveView(CrmAccessMixin, View):
+    def get(self, request: HttpRequest, pk: int) -> HttpResponse:
+        deal = get_object_or_404(Opportunity, pk=pk, is_deleted=False)
+        return render(request, "crm/deal_remove.html", {"deal": deal})
+
+    def post(self, request: HttpRequest, pk: int) -> HttpResponse:
+        with transaction.atomic():
+            deal = get_object_or_404(
+                Opportunity.objects.select_for_update(), pk=pk, is_deleted=False
+            )
+            deal.soft_delete()
+            AuditLog.objects.create(
+                actor=request.user,
+                action="crm.deal.removed",
+                entity_type="Opportunity",
+                entity_id=str(deal.pk),
+                before={"pipeline": deal.pipeline, "stage": deal.stage, "is_deleted": False},
+                after={"is_deleted": True, "deleted_at": deal.deleted_at.isoformat()},
+            )
+        messages.success(request, f"{deal.name} removed from {deal.get_pipeline_display()}. The contact and other deals are unchanged.")
+        return redirect(f"{reverse('crm_deal_list')}?pipeline={deal.pipeline}")
+
+
 class CrmEnrollmentPersonEditView(CrmAccessMixin, View):
     template_name = "crm/enrollment_person_form.html"
 
