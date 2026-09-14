@@ -349,3 +349,13 @@ class UserOnboardingTests(TestCase):
         self.client.post(reverse("resend_user_invitation", args=[user.invitation.pk]))
         self.assertEqual(len(mail.outbox), 2)
         self.assertEqual(UserInvitation.objects.get(user=user).status, "sent")
+
+    def test_email_longer_than_user_column_is_rejected_by_form(self):
+        email = "a" * 64 + "@" + "b" * 63 + "." + "c" * 63 + "." + "d" * 60 + ".com"
+        response = self.client.post(
+            reverse("manage_users"),
+            {"first_name": "Long", "email": email, "role": "crm_user"},
+        )
+        self.assertEqual(response.status_code, 400)
+        self.assertContains(response, "254 characters", status_code=400)
+        self.assertFalse(CustomUser.objects.filter(email=email).exists())

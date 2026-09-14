@@ -40,7 +40,7 @@ class PortalRequest(HttpRequest):
 class InviteUserForm(forms.Form):
     first_name = forms.CharField(max_length=150, label="First name")
     last_name = forms.CharField(max_length=150, required=False, label="Last name")
-    email = forms.EmailField(label="Email address")
+    email = forms.EmailField(max_length=254, label="Email address")
     role = forms.ChoiceField(
         label="Account type",
         choices=[
