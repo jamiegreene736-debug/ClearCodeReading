@@ -162,7 +162,10 @@ class DealForm(forms.ModelForm):
                 self.initial.setdefault("capital_lane", Opportunity.CapitalLane.FOUNDATION)
         if self.instance.pk:
             self.fields["pipeline"].disabled = True
-        if self.is_bound and self.instance.pk and self.instance.needs_naming_review:
+        if (
+            self.is_bound and self.instance.pk and self.instance.needs_naming_review
+            and self.instance.pipeline != Opportunity.Pipeline.FAMILY_ENROLLMENT
+        ):
             self.instance.metadata = {**self.instance.metadata}
             self.instance.metadata.pop("needs_naming_review", None)
 
@@ -190,6 +193,15 @@ class DealForm(forms.ModelForm):
         stage = cleaned_data.get("stage")
         if stage and stage not in Opportunity.stage_values_for_pipeline(pipeline):
             self.add_error("stage", "Choose a stage from the selected pipeline.")
+        if (
+            self.instance.pk
+            and self.instance.needs_naming_review
+            and pipeline == Opportunity.Pipeline.FAMILY_ENROLLMENT
+            and cleaned_data.get("student_name")
+            and cleaned_data.get("term_year")
+        ):
+            self.instance.metadata = {**self.instance.metadata}
+            self.instance.metadata.pop("needs_naming_review", None)
         capital_lane = cleaned_data.get("capital_lane")
         if pipeline == Opportunity.Pipeline.FOUNDATION_GRANTS:
             cleaned_data["capital_lane"] = Opportunity.CapitalLane.FOUNDATION
@@ -238,3 +250,17 @@ class CrmTeamMemberForm(forms.Form):
             counter += 1
             username = f"{base}-{counter}"
         return username
+
+
+class EnrollmentPersonForm(forms.ModelForm):
+    class Meta:
+        model = Lead
+        fields = ["contact_name", "contact_email", "contact_phone"]
+
+    def clean_contact_email(self):
+        email = self.cleaned_data["contact_email"].strip().lower()
+        if Lead.objects.filter(
+            contact_email__iexact=email, is_deleted=False
+        ).exclude(pk=self.instance.pk).exists():
+            raise forms.ValidationError("Another contact already uses this email address.")
+        return email

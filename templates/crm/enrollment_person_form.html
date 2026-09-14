@@ -1,0 +1,15 @@
+{% extends "crm/base.html" %}
+{% block title %}Edit person — {{ deal.name }}{% endblock %}
+{% block content %}
+<div style="max-width:700px;margin:0 auto">
+  <p class="eyebrow">Enrollment</p>
+  <h1>Edit person</h1>
+  <p class="subtle">Update the contact's name, email, or phone. These details are shared across this person's CRM records. Student name and term/year are edited on the enrollment.</p>
+  <form class="card" method="post" style="padding:24px" novalidate>
+    {% csrf_token %}
+    {{ form.as_p }}
+    <button class="btn btn-primary" type="submit">Save person</button>
+    <a class="btn" href="{% url 'crm_deal_detail' deal.pk %}">Back to enrollment</a>
+  </form>
+</div>
+{% endblock %}

@@ -1681,6 +1681,79 @@ class CrmWorkspaceTests(TestCase):
         self.assertEqual(investment.name, "North Star Foundation — Seed")
         self.assertEqual(grant.related_deals.get(), investment)
 
+    def test_intake_enrollment_can_be_edited_before_naming_is_complete(self):
+        self.client.force_login(self.admin_user)
+        deal = Opportunity.objects.create(
+            lead=self.lead, name="Alex Reader — Enrollment",
+            pipeline=Opportunity.Pipeline.FAMILY_ENROLLMENT,
+            stage=Opportunity.Stage.FAMILY_LEAD_NURTURE,
+            metadata={"needs_naming_review": True, "source": "intake"},
+        )
+        url = reverse("crm_deal_detail", args=[deal.pk])
+        self.assertContains(self.client.get(url), "Edit person: Alex Reader")
+        data = {"lead": self.lead.pk, "stage": Opportunity.Stage.FAMILY_WAITLIST,
+                "value": "0", "next_steps": "Call parent"}
+        response = self.client.post(url, data)
+        self.assertRedirects(response, url)
+        deal.refresh_from_db()
+        self.assertTrue(deal.needs_naming_review)
+        self.assertEqual(deal.next_steps, "Call parent")
+        self.assertEqual(deal.stage, Opportunity.Stage.FAMILY_WAITLIST)
+        self.assertEqual(deal.name, "Alex Reader — Enrollment")
+
+        data.update(student_name="Sam Reader")
+        self.assertRedirects(self.client.post(url, data), url)
+        deal.refresh_from_db()
+        self.assertTrue(deal.needs_naming_review)
+        data.update(term_year="Fall")
+        self.assertEqual(self.client.post(url, data).status_code, 400)
+        deal.refresh_from_db()
+        self.assertTrue(deal.needs_naming_review)
+        data.update(term_year="Fall 2026")
+        self.assertRedirects(self.client.post(url, data), url)
+        deal.refresh_from_db()
+        self.assertFalse(deal.needs_naming_review)
+        self.assertEqual(deal.metadata, {"source": "intake"})
+        self.assertEqual(deal.name, "Sam Reader — Fall 2026")
+        data.update(student_name="")
+        self.assertEqual(self.client.post(url, data).status_code, 400)
+
+    def test_enrollment_person_edit_validates_and_preserves_enrollment(self):
+        self.client.force_login(self.admin_user)
+        deal = Opportunity.objects.create(
+            lead=self.lead, name="Alex Reader — Enrollment",
+            pipeline=Opportunity.Pipeline.FAMILY_ENROLLMENT,
+            stage=Opportunity.Stage.FAMILY_LEAD_NURTURE,
+            metadata={"needs_naming_review": True},
+        )
+        url = reverse("crm_enrollment_person_edit", args=[deal.pk])
+        self.assertContains(self.client.get(url), "Save person")
+        data = {"contact_name": "Alex Updated", "contact_email": "NEW@example.com",
+                "contact_phone": "555-0100"}
+        self.assertRedirects(self.client.post(url, data), reverse("crm_deal_detail", args=[deal.pk]))
+        self.lead.refresh_from_db()
+        deal.refresh_from_db()
+        self.assertEqual(self.lead.contact_name, "Alex Updated")
+        self.assertEqual(self.lead.contact_email, "new@example.com")
+        self.assertEqual(self.lead.contact_phone, "555-0100")
+        self.assertTrue(deal.needs_naming_review)
+        self.assertEqual(deal.lead_id, self.lead.pk)
+        self.assertTrue(AuditLog.objects.filter(action="crm.contact.updated", entity_id=str(self.lead.pk)).exists())
+        data["contact_email"] = "invalid"
+        self.assertEqual(self.client.post(url, data).status_code, 400)
+        other = Lead.objects.create(school_name="Other", contact_name="Other", contact_email="other@example.com")
+        data["contact_email"] = other.contact_email
+        self.assertEqual(self.client.post(url, data).status_code, 400)
+        self.lead.refresh_from_db()
+        self.assertEqual(self.lead.contact_email, "new@example.com")
+        self.client.force_login(self.guardian)
+        self.assertEqual(self.client.get(url).status_code, 403)
+        self.assertEqual(self.client.post(url, data).status_code, 403)
+        self.client.force_login(self.admin_user)
+        self.lead.is_deleted = True
+        self.lead.save()
+        self.assertEqual(self.client.get(url).status_code, 404)
+
     def test_deal_form_enforces_and_generates_master_naming_convention(self):
         self.client.force_login(self.admin_user)
 

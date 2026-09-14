@@ -27,11 +27,11 @@
 {% block content %}
   <div class="form-shell">
     <div class="form-head"><div><p class="eyebrow">{% if deal %}{{ deal.deal_label }}{% else %}New pipeline record{% endif %}</p><h1>{% if deal %}{{ deal.name }}{% else %}Create a deal{% endif %}</h1><p class="subtle">Names are generated from the master convention. Use a second deal for separate students, pipelines, cycles, or rounds.</p></div><a class="btn" href="{% url 'crm_deal_list' %}{% if deal %}?pipeline={{ deal.pipeline }}{% endif %}">Back to pipelines</a></div>
-    {% if deal.needs_naming_review %}<div class="errors"><strong>Naming review required.</strong> This record came from intake or triage. Complete the pipeline-specific naming fields before saving.</div>{% endif %}
+    {% if deal.needs_naming_review %}<div class="errors"><strong>Naming review required.</strong> This record came from intake or triage. {% if deal.pipeline == "family_enrollment" %}You can save edits now. Add the student name and term/year when known to finish the naming review.{% else %}Complete the pipeline-specific naming fields before saving.{% endif %}</div>{% endif %}
     <form class="card deal-form" method="post" novalidate>{% csrf_token %}
       {% if form.non_field_errors %}<div class="errors">{{ form.non_field_errors }}</div>{% endif %}
       <div class="form-grid">
-        <div class="field"><label for="{{ form.lead.id_for_label }}">Contact</label>{{ form.lead }}{{ form.lead.errors }}<span class="help">A person appears once; add deals for each distinct opportunity.</span>
+        <div class="field"><label for="{{ form.lead.id_for_label }}">Contact</label>{{ form.lead }}{{ form.lead.errors }}{% if deal.pipeline == "family_enrollment" and deal.lead_id and not deal.lead.is_deleted %}<a class="btn" href="{% url 'crm_enrollment_person_edit' deal.pk %}">Edit person: {{ deal.lead.contact_name }}</a><span class="help">Save enrollment changes before opening the person editor.</span>{% endif %}<span class="help">A person appears once; add deals for each distinct opportunity.</span>
           <div class="contact-deals" id="contact-deals" aria-live="polite" hidden></div>
         </div>
         <div class="field"><label for="{{ form.company.id_for_label }}">Company</label>{{ form.company }}{{ form.company.errors }}<span class="help">One company can have separate grant and investment deals.</span></div>
