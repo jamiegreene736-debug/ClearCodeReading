@@ -180,7 +180,7 @@ def receipt_context(submission: FormSubmission, *, team: bool) -> dict[str, obje
             )
         if any(
             item in interests
-            for item in ("community_partner", "refer_family", "professional_connection")
+            for item in ("community_partner", "refer_family", "professional_connection", "referral_partner", "donor")
         ):
             steps.append(
                 "We’ve noted your interest in connecting with our community team."

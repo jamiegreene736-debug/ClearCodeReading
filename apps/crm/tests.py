@@ -665,6 +665,63 @@ class EarlyInterestSurveyIntakeTests(TestCase):
         payload.update(overrides)
         return payload
 
+    def test_all_situations_preserve_contact_and_expected_family_routing(self):
+        from apps.crm.surveys import SURVEY_SITUATIONS, PARENT_AUDIENCE_SITUATIONS
+        from apps.crm.models import WebsiteReceipt
+        for situation in SURVEY_SITUATIONS:
+            with self.subTest(situation=situation):
+                self.client.post(reverse("crm_survey_submit"), self._payload(
+                    email=f"{situation}@example.com", respondent_situation=situation,
+                    supports_tried=[], annual_reading_spend="", commitment_preference="",
+                    one_to_one_budget="", small_group_budget="", engagement_interests=["opening_updates"],
+                ))
+                lead = Lead.objects.get(contact_email=f"{situation}@example.com")
+                self.assertEqual(lead.opportunities.exists(), situation in PARENT_AUDIENCE_SITUATIONS)
+                self.assertTrue(WebsiteReceipt.objects.filter(submission__lead=lead).exists())
+
+    def test_explicit_donor_and_referral_interests_create_both_pipelines_without_duplicates(self):
+        payload = self._payload(respondent_situation="community_supporter",
+            supports_tried=[], annual_reading_spend="", commitment_preference="",
+            one_to_one_budget="", small_group_budget="", engagement_interests=["donor", "referral_partner"])
+        for _ in range(2):
+            self.client.post(reverse("crm_survey_submit"), payload)
+        lead = Lead.objects.get()
+        self.assertEqual(set(lead.opportunities.values_list("pipeline", flat=True)),
+            {Opportunity.Pipeline.FOUNDATION_DONORS, Opportunity.Pipeline.REFERRAL_PARTNERS})
+        self.assertEqual(lead.opportunities.count(), 2)
+        self.assertEqual(lead.metadata["relationship_interests"], ["donor", "referral_partner"])
+
+    def test_each_engagement_has_the_expected_destination(self):
+        from apps.crm.surveys import SURVEY_ENGAGEMENTS
+        for interest in SURVEY_ENGAGEMENTS:
+            with self.subTest(interest=interest):
+                self.client.post(reverse("crm_survey_submit"), self._payload(
+                    email=f"{interest}@example.com", engagement_interests=[interest]))
+                lead = Lead.objects.get(contact_email=f"{interest}@example.com")
+                self.assertTrue(lead.opportunities.filter(pipeline=Opportunity.Pipeline.FAMILY_ENROLLMENT).exists())
+                self.assertEqual(lead.opportunities.filter(pipeline=Opportunity.Pipeline.REFERRAL_PARTNERS).exists(),
+                    interest in {"referral_partner", "refer_family", "professional_connection"})
+                self.assertEqual(lead.opportunities.filter(pipeline=Opportunity.Pipeline.FOUNDATION_DONORS).exists(), interest == "donor")
+                self.assertEqual(IntakeTriage.objects.filter(lead=lead, status=IntakeTriage.Status.PENDING).exists(),
+                    interest in {"community_partner", "career_interest"})
+
+    def test_career_interest_alone_is_actionable_in_triage(self):
+        self.client.post(reverse("crm_survey_submit"), self._payload(
+            respondent_situation="community_supporter", supports_tried=[], annual_reading_spend="",
+            commitment_preference="", one_to_one_budget="", small_group_budget="",
+            engagement_interests=["career_interest"]))
+        self.assertEqual(IntakeTriage.objects.get().status, IntakeTriage.Status.PENDING)
+        self.assertTrue(Lead.objects.get().metadata["career_interest"])
+
+    def test_success_replaces_form_and_survives_refresh(self):
+        response = self.client.post(reverse("crm_survey_submit"), self._payload(), follow=True)
+        self.assertContains(response, "Survey submitted!")
+        self.assertNotContains(response, 'data-survey-form novalidate')
+        self.assertContains(self.client.get(response.redirect_chain[-1][0]), "Survey submitted!")
+
+    def test_success_url_alone_does_not_claim_a_saved_submission(self):
+        self.assertNotContains(self.client.get("/survey/?survey=thanks"), "<h2>Survey submitted!</h2>")
+
     def test_main_survey_preserves_answers_and_routes_family_properties(self):
         response = self.client.post(reverse("crm_survey_submit"), self._payload())
 

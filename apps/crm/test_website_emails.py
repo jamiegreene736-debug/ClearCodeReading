@@ -34,6 +34,21 @@ class WebsiteEmailTests(TestCase):
         self.config.start()
         self.addCleanup(self.config.stop)
 
+    def test_survey_post_queues_customer_confirmation_and_team_notice_once(self):
+        self.client.post(reverse("crm_survey_submit"), {
+            "source_path": "/survey/", "name": "Survey Visitor", "email": "visitor@example.com",
+            "email_consent": "yes", "home_zip": "32789", "respondent_situation": "community_supporter",
+            "engagement_interests": ["donor", "referral_partner"],
+        })
+        enqueue_pending_receipts()
+        enqueue_pending_receipts()
+        receipt = WebsiteReceipt.objects.get()
+        self.assertEqual(receipt.customer_message.to, ["visitor@example.com"])
+        self.assertEqual(receipt.customer_message.status, Message.Status.QUEUED)
+        self.assertIn("survey", receipt.customer_message.subject)
+        self.assertIn("Donor", receipt.customer_message.body_text)
+        self.assertEqual(Message.objects.count(), 2)
+
     def submit(self, kind="website", **data):
         return record_form_submission(
             intake=LeadIntake(
