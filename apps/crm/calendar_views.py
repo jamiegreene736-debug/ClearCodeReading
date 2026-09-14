@@ -16,7 +16,17 @@ from django.views.decorators.http import require_GET
 from icalendar import Calendar, Event
 
 from apps.crm import google_calendar
-from apps.crm.calendar_models import HostCalendar
+from apps.crm.availability_forms import (
+    WEEKDAYS,
+    BlockingRuleForm,
+    BlockingTimezoneForm,
+    DateOverrideForm,
+)
+from apps.crm.calendar_models import (
+    CalendarDateOverride,
+    HostCalendar,
+    WeeklyCalendarBlock,
+)
 from apps.crm.calendars import (
     MAX_DAYS,
     CalendarError,
@@ -66,8 +76,32 @@ class CalendarSettingsView(CrmAccessMixin, View):
     def get(self, request: CalendarRequest) -> HttpResponse:
         return self.page(request, CalendarForm())
 
-    def page(self, request: CalendarRequest, form: CalendarForm) -> HttpResponse:
+    def page(
+        self,
+        request: CalendarRequest,
+        form: CalendarForm,
+        weekly_forms: list[BlockingRuleForm] | None = None,
+        zone_form: BlockingTimezoneForm | None = None,
+        override_form: DateOverrideForm | None = None,
+    ) -> HttpResponse:
         profile = HostCalendar.objects.filter(host=request.user).first()
+        saved = (
+            {rule.weekday: rule for rule in profile.weekly_blocks.all()}
+            if profile
+            else {}
+        )
+        if weekly_forms is None:
+            weekly_forms = [
+                BlockingRuleForm(
+                    prefix=f"day-{day}",
+                    initial={
+                        "mode": saved[day].mode if day in saved else "none",
+                        "starts_at": saved[day].starts_at if day in saved else None,
+                        "ends_at": saved[day].ends_at if day in saved else None,
+                    },
+                )
+                for day in range(7)
+            ]
         feed = (
             request.build_absolute_uri(
                 reverse("crm_calendar_feed", args=[profile.subscription_token])
@@ -80,6 +114,18 @@ class CalendarSettingsView(CrmAccessMixin, View):
             "crm/calendar_settings.html",
             {
                 "profile": profile,
+                "weekly_rows": list(zip(WEEKDAYS, weekly_forms)),
+                "zone_form": zone_form
+                or BlockingTimezoneForm(
+                    initial={
+                        "blocking_timezone": profile.blocking_timezone
+                        if profile
+                        else "America/New_York",
+                    }
+                ),
+                "override_form": override_form
+                or DateOverrideForm(prefix="override", initial={"mode": "range"}),
+                "overrides": profile.date_overrides.all() if profile else [],
                 "google_configured": google_calendar.configured(),
                 "form": form,
                 "feed_url": feed,
@@ -94,6 +140,8 @@ class CalendarSettingsView(CrmAccessMixin, View):
 
     def post(self, request: CalendarRequest) -> HttpResponse:
         action = request.POST.get("action", "connect")
+        if action in {"save_weekly", "save_override", "delete_override"}:
+            return self.save_blocks(request, action)
         form = CalendarForm(request.POST)
         if action == "connect":
             if form.is_valid():
@@ -141,7 +189,7 @@ class CalendarSettingsView(CrmAccessMixin, View):
                 profile.save()
                 messages.success(
                     request,
-                    "Calendar disconnected. Only your manually confirmed availability will be used.",
+                    "Calendar disconnected. Your weekly blocks and date overrides still apply to confirmed consultation times.",
                 )
             elif action == "rotate":
                 profile.subscription_token = uuid.uuid4()
@@ -159,6 +207,59 @@ class CalendarSettingsView(CrmAccessMixin, View):
                     messages.success(request, "Calendar checked successfully.")
                 except CalendarError as exc:
                     messages.error(request, str(exc))
+        return redirect("crm_calendar_settings")
+
+    def save_blocks(self, request: CalendarRequest, action: str) -> HttpResponse:
+        if action == "save_weekly":
+            weekly = [
+                BlockingRuleForm(request.POST, prefix=f"day-{day}") for day in range(7)
+            ]
+            zone = BlockingTimezoneForm(request.POST)
+            valid = [form.is_valid() for form in [zone, *weekly]]
+            if not all(valid):
+                return self.page(
+                    request, CalendarForm(), weekly_forms=weekly, zone_form=zone
+                )
+        elif action == "save_override":
+            override = DateOverrideForm(request.POST, prefix="override")
+            if not override.is_valid():
+                return self.page(request, CalendarForm(), override_form=override)
+        else:
+            deletion = forms.IntegerField(min_value=1)
+            try:
+                override_id = deletion.clean(request.POST.get("override_id"))
+            except forms.ValidationError:
+                return HttpResponse(status=400)
+        # Booking and settings writes take the same host lock, including first setup.
+        with transaction.atomic():
+            CustomUser.objects.select_for_update().get(pk=request.user.pk)
+            profile, _ = HostCalendar.objects.get_or_create(host=request.user)
+            if action == "save_weekly":
+                profile.blocking_timezone = zone.cleaned_data["blocking_timezone"]
+                profile.save(update_fields=["blocking_timezone"])
+                profile.weekly_blocks.all().delete()
+                WeeklyCalendarBlock.objects.bulk_create(
+                    [
+                        WeeklyCalendarBlock(
+                            calendar=profile, weekday=day, **form.cleaned_data
+                        )
+                        for day, form in enumerate(weekly)
+                        if form.cleaned_data["mode"] != "none"
+                    ]
+                )
+            elif action == "save_override":
+                data = override.cleaned_data.copy()
+                day = data.pop("date")
+                CalendarDateOverride.objects.update_or_create(
+                    calendar=profile, date=day, defaults=data
+                )
+            else:
+                get_object_or_404(
+                    CalendarDateOverride, pk=override_id, calendar=profile
+                ).delete()
+        messages.success(
+            request, "Calendar blocks saved. Existing bookings have not changed."
+        )
         return redirect("crm_calendar_settings")
 
 

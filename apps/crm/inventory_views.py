@@ -645,9 +645,12 @@ class InventoryBookingView(InventoryPublicView):
                     raise Http404("Link unavailable")
                 if InventoryBooking.objects.filter(invitation=invitation).exists():
                     return redirect("inventory_booking", token=token)
+                booking_host = get_object_or_404(
+                    ConsultationSlot.objects.only("host_id"), pk=form.cleaned_data["slot"]
+                ).host_id
+                CustomUser.objects.select_for_update().get(pk=booking_host)
                 slot = get_object_or_404(
-                    # Availability changes lock the host before its slot; booking
-                    # needs only the slot lock, avoiding the opposite lock order.
+                    # Weekly blocks and slot changes use the same host-first lock.
                     ConsultationSlot.objects.select_for_update(
                         of=("self",)
                     ).select_related("host"),

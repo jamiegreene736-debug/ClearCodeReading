@@ -17,6 +17,7 @@ from django.utils import timezone
 from django.utils.encoding import force_bytes
 from icalendar import Calendar
 
+from apps.crm.availability import local_busy_periods
 from apps.crm.calendar_models import HostCalendar
 from apps.crm.inventory_models import ConsultationSlot
 
@@ -166,7 +167,9 @@ def check_calendar(
             periods = google_busy_periods(profile, start, end)
         else:
             url = cipher().decrypt(profile.encrypted_url.encode()).decode()
-            periods = busy_periods(fetch_calendar(url), start, end, profile.source_timezone)
+            periods = busy_periods(
+                fetch_calendar(url), start, end, profile.source_timezone
+            )
     except InvalidToken as exc:
         error = CalendarError("Reconnect your calendar to restore availability checks.")
         HostCalendar.objects.filter(pk=profile.pk).update(last_error=str(error))
@@ -188,7 +191,7 @@ def available_slots(slots: Iterable[ConsultationSlot]) -> list[ConsultationSlot]
         profile.host_id: profile
         for profile in HostCalendar.objects.filter(
             host_id__in={slot.host_id for slot in candidates}
-        ).exclude(encrypted_url="", encrypted_google_refresh_token="")
+        ).prefetch_related("weekly_blocks", "date_overrides")
     }
     blocked: set[int] = set()
     periods_by_host: dict[int, list[tuple[datetime, datetime]]] = {}
@@ -200,7 +203,9 @@ def available_slots(slots: Iterable[ConsultationSlot]) -> list[ConsultationSlot]
             blocked.add(host_id)
             continue
         try:
-            periods_by_host[host_id] = check_calendar(profile, start, end)
+            periods_by_host[host_id] = local_busy_periods(profile, start, end)
+            if profile.encrypted_url or profile.encrypted_google_refresh_token:
+                periods_by_host[host_id].extend(check_calendar(profile, start, end))
         except CalendarError:
             # Never turn a failed provider read into apparently free time.
             blocked.add(host_id)
