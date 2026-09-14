@@ -43,6 +43,7 @@
         Parents, teachers, evaluators, and school teams use this portal to review reading KPIs, assessment results, human-review tasks, and next-step learning plans.
       </p>
 
+      {% if demo_access_enabled %}
       <div class="mt-7 grid gap-3">
         <form method="post" action="{% url 'demo_login' 'admin' %}">
           {% csrf_token %}
@@ -75,6 +76,7 @@
       <p class="mt-6 rounded-2xl bg-ink px-4 py-3 text-sm leading-6 text-white/80">
         Demo logins use seeded sample data. Internal Django administration remains available at <a class="font-black text-gold" href="/admin/">/admin/</a> for staff.
       </p>
+      {% endif %}
     </section>
 
     <section class="min-w-0 rounded-[2rem] bg-white p-6 shadow-2xl shadow-ink/10 ring-1 ring-ink/10 sm:p-8">
@@ -96,7 +98,7 @@
 
       {% if form.errors %}
         <p class="mt-5 rounded-2xl bg-sand px-4 py-3 text-sm font-bold text-mediumTeal">
-          That email and password did not match. Please try again or use a demo login.
+          That email and password did not match. Please try again.
         </p>
       {% endif %}
 
@@ -116,6 +118,7 @@
         </button>
       </form>
 
+      {% if demo_access_enabled %}
       <div class="mt-7 rounded-3xl bg-linen p-5">
         <p class="text-sm font-black uppercase tracking-[0.16em] text-deepTeal">Sample credentials</p>
         <div class="mt-3 grid gap-2 break-all text-sm font-bold text-ink/70">
@@ -125,6 +128,7 @@
           <p>Password: ClearCodeDemo!2026</p>
         </div>
       </div>
+      {% endif %}
     </section>
   </main>
 </body>

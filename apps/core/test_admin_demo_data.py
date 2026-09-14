@@ -1,6 +1,6 @@
 from django.contrib import admin
 from django.core.management import call_command
-from django.test import TestCase
+from django.test import TestCase, override_settings
 
 from apps.crm.models import NewsletterCampaign, NewsletterDelivery
 from apps.curriculum.models import Lesson
@@ -8,6 +8,7 @@ from apps.schools.models import School
 from apps.workforce.models import PaymentRun, ProviderOnboarding, SensitiveDataReference
 
 
+@override_settings(ENABLE_DEMO_ACCESS=True)
 class AdminDemoDataTests(TestCase):
     def setUp(self):
         self.original_auto_create_schema = School.auto_create_schema

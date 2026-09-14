@@ -121,3 +121,22 @@ by deploying the feature.
 - Direct runtime dependency audit found no known vulnerabilities after patching existing Django,
   DRF and Pillow and choosing patched Google HTTP/encryption libraries and maintained nh3 sanitization.
 - Google activation and the live two-account pilot require organization configuration and user consent.
+
+## Production authentication prerequisite
+Public demo access is disabled by default (`ENABLE_DEMO_ACCESS=0`). Deployment retires
+public demo identities by disabling their accounts and invalidating their passwords; their
+contacts, activities, and other records remain intact. Demo seeding cannot run unless an
+operator explicitly enables demo access in an isolated environment. The email integration
+refuses activation while demo access is enabled.
+
+Before connecting a real mailbox, provision a private CRM-authorized user with a personal
+password and matching Workspace email. Do not reuse the public demo administrator identity.
+The one-use resource publisher setup flow can establish a private account; an authenticated
+server operator must separately grant the intended CRM role after verifying its identity.
+
+Google activation on 2026-09-14 used project `clearcode-crm`, internal OAuth audience,
+`crm-gmail-events` topic and authenticated `crm-gmail-push` subscription. The project-level
+managed sharing policy permits the ClearCodeReading organization and the single Gmail push
+service identity. It replaces the legacy domain policy only for this project. The temporary
+organization policy administrator grant was removed. A synthetic Google push was accepted
+with HTTP 204; no real mailbox or outbound email was involved in that check.
