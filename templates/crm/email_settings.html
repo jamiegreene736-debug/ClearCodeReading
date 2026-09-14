@@ -1,0 +1,24 @@
+{% extends "crm/email_base.html" %}
+{% block title %}Email settings{% endblock %}
+{% block email_content %}
+<p class="eyebrow">Your workspace</p><h1>Email settings</h1>
+<p class="subtle">Connect your ClearCodeReading Google Workspace mailbox to send and receive email on contact records.</p>
+<section class="card"><h2>Your Google mailbox</h2>
+<p><strong>{{ mailbox.email|default:request.user.email }}</strong> <span class="badge">{{ mailbox.get_status_display }}</span></p>
+{% if mailbox.last_error %}<p role="alert">{{ mailbox.last_error }}</p>{% endif %}
+{% if configured %}
+<p>Google will request permission to send and read your mailbox. The CRM imports only conversations started here and existing threads you select. Linked conversations are shared with authorized CRM team members. Unrelated email stays private.</p>
+<div class="actions"><form method="post" action="{% url 'crm_email_connect' %}">{% csrf_token %}<button class="btn btn-primary">{% if mailbox.status == 'connected' %}Reconnect Google{% else %}Connect Google{% endif %}</button></form>
+{% if mailbox.status == 'connected' %}<form method="post" action="{% url 'crm_email_sync' %}">{% csrf_token %}<button class="btn">Sync now</button></form>{% endif %}
+{% if mailbox.status != 'disconnected' %}<form method="post" action="{% url 'crm_email_disconnect' mailbox.pk %}">{% csrf_token %}<button class="btn">Disconnect mailbox</button></form>{% endif %}</div>
+{% else %}<p class="badge badge-warn">Google setup required</p><p>Your administrator needs to finish the organization's Google connection before mailboxes can connect. You can prepare signatures, templates and drafts now.</p>{% endif %}
+<p class="subtle">Last synchronized: {{ mailbox.last_sync_at|date:"M j, Y, g:i A T"|default:"Not yet" }}<br>Background worker: {% if worker_healthy %}Ready{% else %}Not reporting ready{% endif %}</p>
+<p class="subtle">Disconnect stops future sending and syncing. Existing CRM conversation history remains on its contact records.</p>
+</section>
+<div class="grid"><section class="card"><h2>Your signature</h2><p class="subtle">Added automatically when you start a new draft.</p><form method="post">{% csrf_token %}{{ form.as_p }}<button class="btn btn-primary">Save signature</button></form></section>
+<section class="card"><h2>Your templates</h2><p class="subtle">Reusable messages visible only to you.</p><a class="btn" href="{% url 'crm_email_template_new' %}">New template</a>{% for item in templates %}<div class="row"><a href="{% url 'crm_email_template' item.pk %}">{{ item.name }}</a></div>{% empty %}<p>No templates yet.</p>{% endfor %}</section></div>
+{% if request.user.can_manage_crm_users %}<section class="card"><h2>Team email connections</h2>
+{% for item in team_mailboxes %}<div class="row"><strong>{{ item.user.email }}</strong> · {{ item.get_status_display }}<br><span class="subtle">Last sync: {{ item.last_sync_at|date:"M j, g:i A T"|default:"Not yet" }}</span>{% if item.last_error %}<p>{{ item.last_error }}</p>{% endif %}{% if item.status != 'disconnected' %}<form method="post" action="{% url 'crm_email_disconnect' item.pk %}">{% csrf_token %}<button class="btn btn-small">Disconnect {{ item.user.email }}</button></form>{% endif %}</div>{% endfor %}
+{% if setup_errors %}<details><summary>Administrator setup checklist</summary><p>Missing or invalid configuration:</p><ul>{% for item in setup_errors %}<li>{{ item }}</li>{% endfor %}</ul></details>{% endif %}
+</section>{% endif %}
+{% endblock %}

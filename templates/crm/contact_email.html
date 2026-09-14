@@ -1,0 +1,12 @@
+{% extends "crm/email_base.html" %}
+{% block title %}Email · {{ lead.contact_name }}{% endblock %}
+{% block email_content %}
+<p><a href="{% url 'crm_contact_detail' lead.pk %}">← {{ lead.contact_name }}</a></p><h1>Email</h1><p class="subtle">{{ lead.contact_email }} · Linked conversations are shared with the CRM team. Drafts and queued messages are private to their sender.</p>
+<div class="actions"><a class="btn btn-primary" href="{% url 'crm_email_compose' lead.pk %}">Compose email</a><a class="btn" href="{% url 'crm_email_import' lead.pk %}">Import existing conversation</a><a class="btn" href="{% url 'crm_email_settings' %}">Email settings</a></div>
+{% if mailbox.status != 'connected' %}<p class="card">Connect your Google mailbox in Email settings before sending.</p>{% endif %}
+{% if own_messages %}<section class="card"><h2>Your drafts and outbox</h2>{% for item in own_messages %}<div class="row"><strong>{{ item.subject }}</strong> <span class="badge">{{ item.get_status_display }}</span>
+{% if item.scheduled_at %}<p class="subtle">Scheduled {{ item.scheduled_at|date:"M j, Y, g:i A T" }}</p>{% endif %}{% if item.last_error %}<p>{{ item.last_error }}</p>{% endif %}
+<div class="actions">{% if item.status == 'draft' %}<a class="btn btn-small" href="{% url 'crm_email_compose' lead.pk %}?draft={{ item.pk }}">Edit draft</a>{% endif %}{% if item.status == 'draft' or item.status == 'queued' %}<form method="post" action="{% url 'crm_email_cancel' lead.pk item.pk %}">{% csrf_token %}<button class="btn btn-small">Cancel</button></form>{% endif %}</div></div>{% endfor %}</section>{% endif %}
+{% if imports %}<section class="card"><h2>Your pending imports</h2>{% for item in imports %}<div class="row">{{ item.subject }}<p class="subtle">{{ item.last_error|default:"Waiting for background import" }}</p></div>{% endfor %}</section>{% endif %}
+<section class="card"><h2>Conversations</h2>{% for item in page %}<div class="row"><a href="{% url 'crm_email_thread' lead.pk item.pk %}"><strong>{{ item.subject|default:"(No subject)" }}</strong></a><p class="subtle">Via {{ item.mailbox.email }} · Updated {{ item.updated_at|date:"M j, Y, g:i A T" }}</p>{% if item.last_error %}<p>{{ item.last_error }}</p>{% endif %}</div>{% empty %}<p>No linked conversations yet. Compose an email or select a conversation to import.</p>{% endfor %}{% include 'crm/email_pagination.html' %}</section>
+{% endblock %}
