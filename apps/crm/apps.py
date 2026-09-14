@@ -7,3 +7,4 @@ class CrmConfig(AppConfig):
 
     def ready(self):
         from apps.crm import hiring_signals  # noqa: F401
+        from apps.crm import inventory_mail  # noqa: F401

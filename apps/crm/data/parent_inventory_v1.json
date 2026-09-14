@@ -1,0 +1,753 @@
+{
+  "grades": [
+    {
+      "value": "kindergarten",
+      "label": "Kindergarten",
+      "inventoryKey": "kindergarten"
+    },
+    {
+      "value": "grade_1",
+      "label": "1st",
+      "inventoryKey": "firstGrade"
+    },
+    {
+      "value": "grade_2",
+      "label": "2nd",
+      "inventoryKey": "secondGrade"
+    },
+    {
+      "value": "grade_3",
+      "label": "3rd",
+      "inventoryKey": "thirdGradeAndAbove"
+    },
+    {
+      "value": "grade_4",
+      "label": "4th",
+      "inventoryKey": "thirdGradeAndAbove"
+    },
+    {
+      "value": "grade_5",
+      "label": "5th",
+      "inventoryKey": "thirdGradeAndAbove"
+    },
+    {
+      "value": "grade_6",
+      "label": "6th",
+      "inventoryKey": "thirdGradeAndAbove"
+    },
+    {
+      "value": "grade_7",
+      "label": "7th",
+      "inventoryKey": "thirdGradeAndAbove"
+    },
+    {
+      "value": "grade_8",
+      "label": "8th",
+      "inventoryKey": "thirdGradeAndAbove"
+    },
+    {
+      "value": "high_school",
+      "label": "High School",
+      "inventoryKey": "thirdGradeAndAbove"
+    }
+  ],
+  "inventories": {
+    "kindergarten": {
+      "label": "Kindergarten",
+      "resourceAt": 13,
+      "groups": [
+        {
+          "title": "Sound awareness",
+          "continueAt": 9,
+          "questions": [
+            {
+              "id": "kindergarten-01",
+              "prompt": "My child can break apart a word into syllables.",
+              "examples": [
+                "For example, if you say, “Tell me the syllables you hear in backpack,” your child will respond, “Back and pack.”"
+              ]
+            },
+            {
+              "id": "kindergarten-02",
+              "prompt": "My child can put together two syllables to make a word.",
+              "examples": [
+                "For example, if you say, “What word would nap and kin make?” your child will respond, “Napkin.”"
+              ]
+            },
+            {
+              "id": "kindergarten-03",
+              "prompt": "My child can add syllables in a word.",
+              "examples": [
+                "For example, if you say, “If I have cross and add walk, what new word do I have?” your child will respond, “Crosswalk.”"
+              ]
+            },
+            {
+              "id": "kindergarten-04",
+              "prompt": "My child can substitute syllables in a word.",
+              "examples": [
+                "For example, if you say, “If I have crosswalk and switch out cross for side, what new word do I have?” your child will respond, “Sidewalk.”"
+              ]
+            },
+            {
+              "id": "kindergarten-05",
+              "prompt": "My child can take away syllables in a word.",
+              "examples": [
+                "For example, if you say, “If I have sidewalk and take away side, what word do I have left?” your child will respond, “Walk.”"
+              ]
+            },
+            {
+              "id": "kindergarten-06",
+              "prompt": "My child can name words that rhyme.",
+              "examples": [
+                "For example, if you say, “Tell me a word that rhymes with light,” your child might respond, “Bright.”"
+              ]
+            },
+            {
+              "id": "kindergarten-07",
+              "prompt": "My child can name words that begin with the same sound.",
+              "examples": [
+                "For example, if you say, “Tell me a word that starts with the same sound as map,” your child could respond with, “Mom” (or another word that starts with m)."
+              ]
+            },
+            {
+              "id": "kindergarten-08",
+              "prompt": "My child can break apart a word into the first sound and the rest of the word.",
+              "examples": [
+                "For example, if you say, “Tell me the first sound in the word sun and then the rest of the word,” your child will respond, “/s/ and un.”"
+              ]
+            },
+            {
+              "id": "kindergarten-09",
+              "prompt": "My child can identify the sounds in a spoken word.",
+              "examples": [
+                "For example, if you say, “Tell me the first sound you hear in the word dog,” your child will respond, “/d/.”",
+                "For example, if you say, “Tell me the middle sound you hear in the word dog,” your child will respond, “/o/.”",
+                "For example, if you say, “Tell me the final sound you hear in the word dog,” your child will respond, “/g/.”"
+              ]
+            },
+            {
+              "id": "kindergarten-10",
+              "prompt": "My child can put together three sounds to make a word.",
+              "examples": [
+                "For example, if you say, “Tell me what word has these sounds /b/ /a/ /t/,” your child will respond, “bat.”"
+              ]
+            },
+            {
+              "id": "kindergarten-11",
+              "prompt": "My child can break apart the sounds in a word with three sounds.",
+              "examples": [
+                "For example, if you say, “Tell me the sounds you hear in the word cup,” your child will respond, “/c/ /u/ /p/.”"
+              ]
+            }
+          ]
+        },
+        {
+          "title": "Letters and early phonics",
+          "continueAt": 4,
+          "questions": [
+            {
+              "id": "kindergarten-12",
+              "prompt": "My child can identify the names of each uppercase and lowercase letter in the alphabet.",
+              "examples": []
+            },
+            {
+              "id": "kindergarten-13",
+              "prompt": "My child can say the sound each consonant makes.",
+              "examples": []
+            },
+            {
+              "id": "kindergarten-14",
+              "prompt": "My child can say the short and long sounds that each vowel (a, e, i, o, u) makes.",
+              "examples": []
+            },
+            {
+              "id": "kindergarten-15",
+              "prompt": "My child can read words with a consonant-vowel-consonant (CVC) syllable pattern.",
+              "examples": [
+                "My child can read words like yet, wax, fig, mud, and rob."
+              ]
+            },
+            {
+              "id": "kindergarten-16",
+              "prompt": "My child can spell words with a consonant-vowel-consonant (CVC) syllable pattern.",
+              "examples": [
+                "My child can spell words like rub, fin, sob, wet, and mad."
+              ]
+            }
+          ]
+        },
+        {
+          "title": "Irregular words",
+          "questions": [
+            {
+              "id": "kindergarten-17",
+              "prompt": "My child can read some words that occur frequently in texts but are irregularly spelled.",
+              "examples": [
+                "My child can read and spell words like is, was, are, the, do, and you."
+              ]
+            }
+          ]
+        },
+        {
+          "title": "Comprehension",
+          "questions": [
+            {
+              "id": "kindergarten-18",
+              "prompt": "My child can accurately retell a story using details about the character(s), setting, and important events in the order they occurred in the story.",
+              "examples": []
+            }
+          ]
+        },
+        {
+          "title": "Writing",
+          "questions": [
+            {
+              "id": "kindergarten-19",
+              "prompt": "My child can write all upper and lowercase letters.",
+              "examples": []
+            },
+            {
+              "id": "kindergarten-20",
+              "prompt": "My child begins sentences with a capital letter and ends sentences with punctuation.",
+              "examples": []
+            }
+          ]
+        }
+      ]
+    },
+    "firstGrade": {
+      "label": "First Grade",
+      "resourceAt": 16,
+      "groups": [
+        {
+          "title": "Advanced sound awareness",
+          "continueAt": 4,
+          "questions": [
+            {
+              "id": "first-grade-01",
+              "prompt": "My child can break apart a word into sounds.",
+              "examples": [
+                "For example, if you say, “Tell me the sounds you hear in the word shop,” your child will respond, “/sh/ /o/ /p/.”",
+                "For example, if you say, “Tell me the sounds you hear in the word send,” your child will respond, “/s/ /e/ /n/ /d/.”"
+              ]
+            },
+            {
+              "id": "first-grade-02",
+              "prompt": "My child can put together sounds to make a word.",
+              "examples": [
+                "For example, if you say, “Tell me what word has these sounds /ch/ /a/ /t/,” your child will respond, “chat.”",
+                "For example, if you say, “Tell me what word has these sounds /c/ /l/ /a/ /p/,” your child will respond, “clap.”"
+              ]
+            },
+            {
+              "id": "first-grade-03",
+              "prompt": "My child can put together a word that has at least five sounds.",
+              "examples": [
+                "For example, if you say, “Tell me what word has these sounds /s/ /t/ /r/ /o/ /l/,” your child will respond, “stroll.”"
+              ]
+            },
+            {
+              "id": "first-grade-04",
+              "prompt": "My child can break apart a word that has at least five sounds.",
+              "examples": [
+                "For example, if you say, “Tell me the sounds you hear in the word stump,” your child will respond, “/s/ /t/ /u/ /m/ /p/.”"
+              ]
+            },
+            {
+              "id": "first-grade-05",
+              "prompt": "My child can add sounds in a word.",
+              "examples": [
+                "For example, if you say, “If I have ranch and add /b/ to the beginning, what new word do I have?” your child will respond, “Branch.”"
+              ]
+            },
+            {
+              "id": "first-grade-06",
+              "prompt": "My child can substitute sounds in a word.",
+              "examples": [
+                "For example, if you say, “If I have track and switch out /c/ for /p/, what new word do I have?” your child will respond, “Trap.”"
+              ]
+            },
+            {
+              "id": "first-grade-07",
+              "prompt": "My child can take away sounds in a word.",
+              "examples": [
+                "For example, if you say, “If I have steam and take away the /s/, what word do I have left?” your child will respond, “Team.”"
+              ]
+            }
+          ]
+        },
+        {
+          "title": "Phonics and spelling",
+          "continueAt": 9,
+          "questions": [
+            {
+              "id": "first-grade-08",
+              "prompt": "My child can read and spell words with digraphs like shop, chat, them, sick, and which.",
+              "examples": []
+            },
+            {
+              "id": "first-grade-09",
+              "prompt": "My child can read and spell words with blends like grip, plug, strap, belt, and went.",
+              "examples": []
+            },
+            {
+              "id": "first-grade-10",
+              "prompt": "My child can read and spell words with glued sounds like strong, bring, trunk, and bank.",
+              "examples": []
+            },
+            {
+              "id": "first-grade-11",
+              "prompt": "My child can read and spell words with a vowel-consonant-e (VCe) syllable pattern.",
+              "examples": [
+                "For example, my child can read and spell words like shine, blame, joke, mute, and eve."
+              ]
+            },
+            {
+              "id": "first-grade-12",
+              "prompt": "My child can read and spell words with an r-controlled syllable pattern.",
+              "examples": [
+                "For example, my child can read and spell words like storm, park, third, fern, and church."
+              ]
+            },
+            {
+              "id": "first-grade-13",
+              "prompt": "My child can read and spell words with trigraphs like catch, fetch, dodge, and pledge.",
+              "examples": []
+            },
+            {
+              "id": "first-grade-14",
+              "prompt": "My child can read and spell words with soft c /s/ and soft g /j/ like space, nice, page, and verge.",
+              "examples": []
+            },
+            {
+              "id": "first-grade-15",
+              "prompt": "My child can read and spell two-syllable words like rabbit, goblet, velvet, and contest.",
+              "examples": []
+            },
+            {
+              "id": "first-grade-16",
+              "prompt": "My child can read and spell words with y as a vowel like baby, hobby, spy, and fly.",
+              "examples": []
+            },
+            {
+              "id": "first-grade-17",
+              "prompt": "My child can read and spell two-syllable words like fifty, combo, disco, and gusto.",
+              "examples": []
+            },
+            {
+              "id": "first-grade-18",
+              "prompt": "My child can read and spell words with suffixes like cats, lashes, jumped, hopeful, helpless, swinging, surfer, and sharpest.",
+              "examples": []
+            }
+          ]
+        },
+        {
+          "title": "Irregular words and fluency",
+          "questions": [
+            {
+              "id": "first-grade-19",
+              "prompt": "My child can read and spell some words that occur frequently in texts but are irregularly spelled.",
+              "examples": [
+                "My child can read and spell words like one, good, from, who, what, and where."
+              ]
+            },
+            {
+              "id": "first-grade-20",
+              "prompt": "When my child reads a text aloud, they read accurately and use phrasing and expression without having to sound out too many words.",
+              "examples": []
+            }
+          ]
+        },
+        {
+          "title": "Comprehension",
+          "questions": [
+            {
+              "id": "first-grade-21",
+              "prompt": "My child can accurately retell a story orally or in writing using details about the character(s), setting, and important events in the order they occurred in the story.",
+              "examples": []
+            },
+            {
+              "id": "first-grade-22",
+              "prompt": "My child can tell me a lesson a character learned after listening to or reading a story.",
+              "examples": []
+            }
+          ]
+        },
+        {
+          "title": "Writing",
+          "questions": [
+            {
+              "id": "first-grade-23",
+              "prompt": "My child writes in complete sentences with subject-verb agreement.",
+              "examples": []
+            }
+          ]
+        },
+        {
+          "title": "Vocabulary",
+          "questions": [
+            {
+              "id": "first-grade-24",
+              "prompt": "My child has a wide vocabulary that they use appropriately in speaking and writing.",
+              "examples": []
+            },
+            {
+              "id": "first-grade-25",
+              "prompt": "When my child comes across an unfamiliar word in a text, they can use context clues to determine the meaning of the unfamiliar word.",
+              "examples": []
+            }
+          ]
+        }
+      ]
+    },
+    "secondGrade": {
+      "label": "Second Grade",
+      "resourceAt": 19,
+      "groups": [
+        {
+          "title": "Phonics and spelling review",
+          "continueAt": 10,
+          "questions": [
+            {
+              "id": "second-grade-01",
+              "prompt": "My child can read and spell words with digraphs like shop, chat, them, sick, and which.",
+              "examples": []
+            },
+            {
+              "id": "second-grade-02",
+              "prompt": "My child can read and spell words with blends like grip, plug, strap, belt, and went.",
+              "examples": []
+            },
+            {
+              "id": "second-grade-03",
+              "prompt": "My child can read and spell words with glued sounds like strong, bring, trunk, and bank.",
+              "examples": []
+            },
+            {
+              "id": "second-grade-04",
+              "prompt": "My child can read and spell words with a vowel-consonant-e (VCe) syllable pattern.",
+              "examples": [
+                "For example, my child can read and spell words like shine, blame, joke, mute, and eve."
+              ]
+            },
+            {
+              "id": "second-grade-05",
+              "prompt": "My child can read and spell words with an r-controlled syllable pattern.",
+              "examples": [
+                "For example, my child can read and spell words like storm, park, third, fern, and church."
+              ]
+            },
+            {
+              "id": "second-grade-06",
+              "prompt": "My child can read and spell words with trigraphs like catch, fetch, dodge, and pledge.",
+              "examples": []
+            },
+            {
+              "id": "second-grade-07",
+              "prompt": "My child can read and spell words with soft c /s/ and soft g /j/ like space, nice, page, and verge.",
+              "examples": []
+            },
+            {
+              "id": "second-grade-08",
+              "prompt": "My child can read and spell two-syllable words like rabbit, goblet, velvet, and contest.",
+              "examples": []
+            },
+            {
+              "id": "second-grade-09",
+              "prompt": "My child can read and spell words with y as a vowel like baby, hobby, spy, and fly.",
+              "examples": []
+            },
+            {
+              "id": "second-grade-10",
+              "prompt": "My child can read and spell two-syllable words like fifty, combo, disco, and gusto.",
+              "examples": []
+            },
+            {
+              "id": "second-grade-11",
+              "prompt": "My child can read and spell words with suffixes like cats, lashes, jumped, hopeful, helpless, swinging, surfer, and sharpest.",
+              "examples": []
+            }
+          ]
+        },
+        {
+          "title": "Advanced phonics and spelling",
+          "continueAt": 4,
+          "questions": [
+            {
+              "id": "second-grade-12",
+              "prompt": "My child can read and spell words with a vowel team syllable pattern.",
+              "examples": [
+                "My child can read and spell words like rain, stay, boat, snow, light, tree, cheap, join, toy, book, food, count, and howl."
+              ]
+            },
+            {
+              "id": "second-grade-13",
+              "prompt": "My child can read and spell two-syllable words like fifty, combo, disco, and gusto.",
+              "examples": []
+            },
+            {
+              "id": "second-grade-14",
+              "prompt": "My child can read and spell words with the consonant -le syllable pattern.",
+              "examples": [
+                "My child can read and spell words like marble, bugle, battle, and staple."
+              ]
+            },
+            {
+              "id": "second-grade-15",
+              "prompt": "My child can read and spell words with common prefixes and suffixes.",
+              "examples": [
+                "My child can read and spell words like replying, singer, hoping, and disconnected."
+              ]
+            },
+            {
+              "id": "second-grade-16",
+              "prompt": "My child can read and spell words like island, knight, and ghost.",
+              "examples": []
+            }
+          ]
+        },
+        {
+          "title": "Irregular words and fluency",
+          "questions": [
+            {
+              "id": "second-grade-17",
+              "prompt": "My child can read and spell some words that occur frequently in texts but are irregularly spelled.",
+              "examples": [
+                "My child can read and spell words like always, ready, before, and through."
+              ]
+            },
+            {
+              "id": "second-grade-18",
+              "prompt": "When my child reads a text aloud, they read accurately and use phrasing and expression without having to sound out too many words.",
+              "examples": []
+            }
+          ]
+        },
+        {
+          "title": "Comprehension",
+          "questions": [
+            {
+              "id": "second-grade-19",
+              "prompt": "My child can accurately retell a story orally or in writing using details about the character(s), setting, and important events in the order they occurred in the story.",
+              "examples": []
+            },
+            {
+              "id": "second-grade-20",
+              "prompt": "My child can tell me a theme or lesson a character learned after listening to or reading a story.",
+              "examples": []
+            },
+            {
+              "id": "second-grade-21",
+              "prompt": "My child can explain why an author wrote an informational text and tell me the text’s main idea and relevant details.",
+              "examples": []
+            }
+          ]
+        },
+        {
+          "title": "Writing",
+          "questions": [
+            {
+              "id": "second-grade-22",
+              "prompt": "My child writes in complete sentences with subject-verb agreement.",
+              "examples": []
+            },
+            {
+              "id": "second-grade-23",
+              "prompt": "My child varied sentence structure with simple and compound sentences.",
+              "examples": []
+            }
+          ]
+        },
+        {
+          "title": "Vocabulary",
+          "questions": [
+            {
+              "id": "second-grade-24",
+              "prompt": "My child has a wide vocabulary that they use appropriately in speaking and writing.",
+              "examples": []
+            },
+            {
+              "id": "second-grade-25",
+              "prompt": "When my child comes across an unfamiliar word in a text, they can use context clues to determine the meaning of the unfamiliar word.",
+              "examples": []
+            }
+          ]
+        }
+      ]
+    },
+    "thirdGradeAndAbove": {
+      "label": "Third Grade and Above",
+      "resourceAt": 19,
+      "groups": [
+        {
+          "title": "Phonics and spelling review",
+          "continueAt": 8,
+          "questions": [
+            {
+              "id": "third-plus-01",
+              "prompt": "My child can read and spell words with a vowel-consonant-e (VCe) syllable pattern.",
+              "examples": [
+                "For example, my child can read and spell words like shine, blame, joke, mute, and eve."
+              ]
+            },
+            {
+              "id": "third-plus-02",
+              "prompt": "My child can read and spell words with an r-controlled syllable pattern.",
+              "examples": [
+                "For example, my child can read and spell words like storm, park, third, fern, and church."
+              ]
+            },
+            {
+              "id": "third-plus-03",
+              "prompt": "My child can read and spell words with trigraphs like catch, fetch, dodge, and pledge.",
+              "examples": []
+            },
+            {
+              "id": "third-plus-04",
+              "prompt": "My child can read and spell words with soft c /s/ and soft g /j/ like space, nice, page, and verge.",
+              "examples": []
+            },
+            {
+              "id": "third-plus-05",
+              "prompt": "My child can read and spell two-syllable words like rabbit, goblet, velvet, and contest.",
+              "examples": []
+            },
+            {
+              "id": "third-plus-06",
+              "prompt": "My child can read and spell words with y as a vowel like baby, hobby, spy, and fly.",
+              "examples": []
+            },
+            {
+              "id": "third-plus-07",
+              "prompt": "My child can read and spell two-syllable words like fifty, combo, disco, and gusto.",
+              "examples": []
+            },
+            {
+              "id": "third-plus-08",
+              "prompt": "My child can read and spell words with suffixes like cats, lashes, jumped, hopeful, helpless, swinging, surfer, and sharpest.",
+              "examples": []
+            }
+          ]
+        },
+        {
+          "title": "Advanced phonics and spelling",
+          "continueAt": 4,
+          "questions": [
+            {
+              "id": "third-plus-09",
+              "prompt": "My child can read and spell words with a vowel team syllable pattern.",
+              "examples": [
+                "My child can read and spell words like rain, stay, boat, snow, light, tree, cheap, join, toy, book, food, count, and howl."
+              ]
+            },
+            {
+              "id": "third-plus-10",
+              "prompt": "My child can read and spell two-syllable words like fifty, combo, disco, and gusto.",
+              "examples": []
+            },
+            {
+              "id": "third-plus-11",
+              "prompt": "My child can read and spell words with the consonant -le syllable pattern.",
+              "examples": [
+                "My child can read and spell words like marble, bugle, battle, and staple."
+              ]
+            },
+            {
+              "id": "third-plus-12",
+              "prompt": "My child can read and spell words with common prefixes and suffixes.",
+              "examples": [
+                "My child can read and spell words like replying, singer, hoping, and disconnected."
+              ]
+            },
+            {
+              "id": "third-plus-13",
+              "prompt": "My child can read and spell words like island, knight, and ghost.",
+              "examples": []
+            }
+          ]
+        },
+        {
+          "title": "Multisyllabic words",
+          "continueAt": 2,
+          "questions": [
+            {
+              "id": "third-plus-14",
+              "prompt": "My child can read words like malfunction, inspection, judgement, and beneficial.",
+              "examples": []
+            },
+            {
+              "id": "third-plus-15",
+              "prompt": "My child can read words with suffixes like hopeful, harmless, and gentlest.",
+              "examples": []
+            },
+            {
+              "id": "third-plus-16",
+              "prompt": "My child can read words like underground, misconduct, collectable, and employment.",
+              "examples": []
+            }
+          ]
+        },
+        {
+          "title": "Fluency",
+          "questions": [
+            {
+              "id": "third-plus-17",
+              "prompt": "When my child reads a text aloud, they read accurately and use phrasing and expression without having to sound out too many words.",
+              "examples": []
+            }
+          ]
+        },
+        {
+          "title": "Comprehension",
+          "questions": [
+            {
+              "id": "third-plus-18",
+              "prompt": "My child can accurately summarize a story orally and in writing using details about the character(s), setting, and important events in the order they occurred in the story.",
+              "examples": []
+            },
+            {
+              "id": "third-plus-19",
+              "prompt": "My child can tell me a theme or lesson a character learned after listening to or reading a story.",
+              "examples": []
+            },
+            {
+              "id": "third-plus-20",
+              "prompt": "My child can explain why an author wrote an informational text and tell me the text’s main idea and relevant details.",
+              "examples": []
+            }
+          ]
+        },
+        {
+          "title": "Writing",
+          "questions": [
+            {
+              "id": "third-plus-21",
+              "prompt": "My child writes in complete sentences with subject-verb agreement.",
+              "examples": []
+            },
+            {
+              "id": "third-plus-22",
+              "prompt": "My child varied sentence structure with simple, compound, and complex sentences.",
+              "examples": []
+            }
+          ]
+        },
+        {
+          "title": "Vocabulary",
+          "questions": [
+            {
+              "id": "third-plus-23",
+              "prompt": "My child has a wide vocabulary that they use appropriately in speaking and writing.",
+              "examples": []
+            },
+            {
+              "id": "third-plus-24",
+              "prompt": "When my child comes across an unfamiliar word in a text, they can use context clues to determine the meaning of the unfamiliar word.",
+              "examples": []
+            }
+          ]
+        }
+      ]
+    }
+  }
+}

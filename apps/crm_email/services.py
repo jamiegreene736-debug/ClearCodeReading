@@ -170,8 +170,13 @@ def build_mime(message: Message) -> bytes:
     for attachment in message.attachments.all():
         mail.add_attachment(
             decrypt(bytes(attachment.encrypted_data)),
-            maintype="application",
-            subtype="octet-stream",
+            maintype="text" if attachment.filename.endswith(".ics") else "application",
+            subtype="calendar"
+            if attachment.filename.endswith(".ics")
+            else "octet-stream",
+            params={"method": "REQUEST"}
+            if attachment.filename.endswith(".ics")
+            else None,
             filename=attachment.filename,
         )
     return mail.as_bytes()

@@ -655,3 +655,7 @@ class CrmActivity(TimestampedModel):
 
 # Keep the hiring workflow separate from sales models while registering it with Django.
 from apps.crm.hiring_models import HiringCandidate, HiringEvent  # noqa: E402,F401
+# Register the assessment workflow models alongside the existing CRM models.
+from apps.crm.inventory_models import (  # noqa: E402,F401
+    ConsultationSlot, InventoryBooking, InventoryChild, InventoryInvitation, InventoryMail,
+)
