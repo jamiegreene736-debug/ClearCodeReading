@@ -295,7 +295,9 @@ class InventoryDetailView(CrmAccessMixin, View):
 class InventoryPublicView(View):
     def dispatch(self, request, *args, **kwargs):
         response = super().dispatch(request, *args, **kwargs)
-        response["Referrer-Policy"] = "no-referrer"
+        # HTTPS CSRF checks need a same-origin referrer when Origin is absent.
+        # Keep signed invitation URLs out of requests to external sites.
+        response["Referrer-Policy"] = "same-origin"
         response["X-Robots-Tag"] = "noindex, nofollow"
         return response
 
