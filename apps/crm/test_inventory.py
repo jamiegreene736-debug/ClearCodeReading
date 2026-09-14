@@ -489,6 +489,32 @@ class InventoryWorkflowTests(TestCase):
         self.assertEqual(Message.objects.count(), 1)
 
     @override_settings(CRM_EMAIL_ENABLED=True)
+    def test_assessments_use_each_creator_actual_mailbox(self):
+        from apps.crm_email.models import Mailbox
+
+        other = get_user_model().objects.create_user(
+            username="second-sender", email="second@example.com", role="crm_user"
+        )
+        for user in (self.staff, other):
+            mailbox = Mailbox.objects.create(
+                user=user, email=user.email, status="connected"
+            )
+            invitation = InventoryInvitation.objects.create(
+                child=self.child, created_by=user,
+                expires_at=timezone.now() + timedelta(days=7),
+            )
+            email = queue_mail(
+                invitation, f"inventory_send_{user.pk}",
+                self.parent.contact_email, "Assessment", "Please complete assessment.",
+            )
+            with patch("apps.crm.inventory_mail.require_configured"):
+                deliver_mail(email.pk)
+            email.refresh_from_db()
+            self.assertEqual(email.status, "queued")
+            self.assertEqual(email.provider_message.mailbox, mailbox)
+            self.assertEqual(email.provider_message.sender, user.email)
+
+    @override_settings(CRM_EMAIL_ENABLED=True)
     def test_google_missing_setup_is_visible_failure(self):
         from apps.crm_email.security import EmailError
 

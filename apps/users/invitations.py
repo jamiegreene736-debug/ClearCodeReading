@@ -119,7 +119,9 @@ def _send(invitation: UserInvitation, actor: CustomUser) -> None:
         body += (
             "\nOn your first login, we will help you connect your work Gmail account.\n"
         )
-    if settings.CRM_EMAIL_ENABLED:
+    if settings.CRM_EMAIL_ENABLED or not getattr(
+        settings, "USER_INVITATIONS_ALLOW_TEST_EMAIL", False
+    ):
         require_configured()
         mailbox = active_mailbox(actor)
         message = EmailMessage()

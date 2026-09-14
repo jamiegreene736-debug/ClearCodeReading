@@ -685,6 +685,15 @@ Minimal API example:
 {"mode":"quick_complete","child":42,"accuracy_numerator":9,"accuracy_denominator":10}
 ```
 
+### CRM email sender
+
+CRM messages and assessment invitations use the initiating user's connected Google
+mailbox. Assessment reminders and booking follow-ups retain the original invitation
+sender. A missing or disconnected mailbox blocks sending; user invitations also require
+Gmail instead of falling back to the shared SMTP sender. Queued messages are checked
+against the active mailbox address before delivery. `USER_INVITATIONS_ALLOW_TEST_EMAIL`
+is only for explicit test delivery and must remain disabled in production.
+
 ### Website form confirmation emails
 
 Accepted consultation, assessment follow-up, family resource, support, general inquiry,

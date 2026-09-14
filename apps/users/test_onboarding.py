@@ -240,6 +240,14 @@ class UserOnboardingTests(TestCase):
         self.assertEqual(user.invitation.status, "failed")
         self.assertIsNone(user.invitation.sent_at)
 
+    @override_settings(USER_INVITATIONS_ALLOW_TEST_EMAIL=False, CRM_EMAIL_ENABLED=False)
+    @patch("apps.users.invitations.send_mail")
+    def test_disabled_gmail_never_falls_back_to_shared_sender(self, send):
+        user = self.invite()
+        self.assertEqual(user.invitation.status, "failed")
+        self.assertIsNone(user.invitation.sent_at)
+        send.assert_not_called()
+
     @patch("apps.users.invitations.send_mail", side_effect=OSError("private error"))
     def test_ambiguous_delivery_is_visible_and_not_automatically_retried(self, send):
         user = self.invite()
