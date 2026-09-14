@@ -74,8 +74,10 @@ https://developers.google.com/workspace/gmail/api/guides/push,
 https://cloud.google.com/pubsub/docs/authenticate-push-subscriptions.
 
 ## Railway deployment and verification
-Web: existing Dockerfile and migration predeploy. Worker: same repository/commit, using
-`railway-email-worker.json` as its Railway config file. The worker shares DATABASE_URL and
+Web: existing Dockerfile and migration predeploy. Worker: same repository/commit with Dockerfile builds, start command
+`python manage.py crm_email_worker`, one replica, no predeploy command and no HTTP healthcheck.
+Configure these settings on the Railway service; new Railway services no longer support legacy
+Config as Code files. The worker shares DATABASE_URL and
 CRM_EMAIL_* variables with web, runs one replica, and has no public domain or HTTP healthcheck.
 It publishes a database heartbeat. The existing Redis/Celery configuration is not needed by
 this integration. Disabling CRM_EMAIL_ENABLED pauses all outbound/background Google actions.
