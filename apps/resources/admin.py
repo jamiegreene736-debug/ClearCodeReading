@@ -1,15 +1,27 @@
+from __future__ import annotations
+
+from typing import TYPE_CHECKING
+
 from django.contrib import admin
+from django.http import HttpRequest
 
 from apps.resources.models import Resource, Topic
 
+if TYPE_CHECKING:
+    TopicModelAdmin = admin.ModelAdmin[Topic]
+    ResourceModelAdmin = admin.ModelAdmin[Resource]
+else:
+    TopicModelAdmin = admin.ModelAdmin
+    ResourceModelAdmin = admin.ModelAdmin
+
 
 @admin.register(Topic)
-class TopicAdmin(admin.ModelAdmin):
+class TopicAdmin(TopicModelAdmin):
     search_fields = ("name",)
 
 
 @admin.register(Resource)
-class ResourceAdmin(admin.ModelAdmin):
+class ResourceAdmin(ResourceModelAdmin):
     list_display = ("id", "owner", "state", "updated_at")
     readonly_fields = (
         "id",
@@ -25,11 +37,15 @@ class ResourceAdmin(admin.ModelAdmin):
         "updated_at",
     )
 
-    def has_add_permission(self, request) -> bool:
+    def has_add_permission(self, request: HttpRequest) -> bool:
         return False
 
-    def has_change_permission(self, request, obj=None) -> bool:
+    def has_change_permission(
+        self, request: HttpRequest, obj: Resource | None = None
+    ) -> bool:
         return False
 
-    def has_delete_permission(self, request, obj=None) -> bool:
+    def has_delete_permission(
+        self, request: HttpRequest, obj: Resource | None = None
+    ) -> bool:
         return False

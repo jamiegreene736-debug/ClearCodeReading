@@ -1,5 +1,7 @@
 """Render one PDF page in a bounded process; never execute embedded PDF actions."""
 
+from __future__ import annotations
+
 import sys
 from io import BytesIO
 

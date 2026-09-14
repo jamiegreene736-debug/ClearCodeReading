@@ -1,12 +1,16 @@
+from __future__ import annotations
+
 from io import BytesIO
+from typing import Any
 from uuid import UUID, uuid4
 
 from django.contrib import messages
 from django.core.exceptions import PermissionDenied, ValidationError
 from django.core.paginator import Paginator
 from django.db import transaction
-from django.db.models import Count, F, Q
-from django.http import FileResponse, Http404, HttpRequest, HttpResponse, JsonResponse
+from django.db.models import Count, F, Q, QuerySet
+from django.http import FileResponse, Http404, HttpRequest, JsonResponse
+from django.http.response import HttpResponseBase
 from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse
 from django.utils import timezone
@@ -15,6 +19,7 @@ from django.views.decorators.http import require_GET, require_http_methods, requ
 
 from apps.crm.views import FAMILY_RESOURCES_SESSION_KEY
 from apps.resources.access import (
+    EditorRequest,
     can_publish,
     editor_required,
     public_site,
@@ -41,7 +46,7 @@ from apps.resources.services import (
 )
 
 
-def published_revisions():
+def published_revisions() -> QuerySet[Revision]:
     now = timezone.now()
     return (
         Revision.objects.filter(resource__archived=False)
@@ -60,7 +65,7 @@ def published_revisions():
     )
 
 
-def library_context(request: HttpRequest) -> dict:
+def library_context(request: HttpRequest) -> dict[str, Any]:
     revisions = published_revisions()
     query = request.GET.get("q", "").strip()[:200]
     audience = request.GET.get("audience", "")
@@ -91,7 +96,7 @@ def library_context(request: HttpRequest) -> dict:
 
 @editor_required
 @require_GET
-def manager(request: HttpRequest) -> HttpResponse:
+def manager(request: EditorRequest) -> HttpResponseBase:
     resources = scoped_resources(request.user)
     query = request.GET.get("q", "").strip()[:200]
     tab = request.GET.get("tab", "all")
@@ -137,7 +142,7 @@ def manager(request: HttpRequest) -> HttpResponse:
 
 @editor_required
 @require_http_methods(["GET", "POST"])
-def add(request: HttpRequest) -> HttpResponse:
+def add(request: EditorRequest) -> HttpResponseBase:
     errors = []
     if request.method == "POST":
         kind = request.POST.get("kind", "")
@@ -185,8 +190,8 @@ def add(request: HttpRequest) -> HttpResponse:
 
 
 def editor_context(
-    request: HttpRequest, resource: Resource, form: ResourceForm | None = None
-) -> dict:
+    request: EditorRequest, resource: Resource, form: ResourceForm | None = None
+) -> dict[str, Any]:
     if form is None:
         form = ResourceForm(
             instance=Revision(**revision_values(resource.draft)),
@@ -207,7 +212,7 @@ def editor_context(
 
 @editor_required
 @require_http_methods(["GET", "POST"])
-def edit(request: HttpRequest, pk: UUID) -> HttpResponse:
+def edit(request: EditorRequest, pk: UUID) -> HttpResponseBase:
     resource = get_object_or_404(scoped_resources(request.user), pk=pk)
     if request.method == "GET":
         return render(request, "resources/edit.html", editor_context(request, resource))
@@ -236,6 +241,7 @@ def edit(request: HttpRequest, pk: UUID) -> HttpResponse:
                 )
             save_draft(resource, form, request.user)
         if autosave:
+            assert resource.draft is not None
             return JsonResponse(
                 {
                     "version": resource.version,
@@ -243,7 +249,7 @@ def edit(request: HttpRequest, pk: UUID) -> HttpResponse:
                     "title": resource.draft.title,
                     "asset_id": str(resource.draft.asset_id or ""),
                     "asset_name": resource.draft.asset.name
-                    if resource.draft.asset_id
+                    if resource.draft.asset
                     else "",
                     "cover_id": str(resource.draft.cover_id or ""),
                 }
@@ -273,7 +279,7 @@ def edit(request: HttpRequest, pk: UUID) -> HttpResponse:
 
 @editor_required
 @require_POST
-def action(request: HttpRequest, pk: UUID) -> HttpResponse:
+def action(request: EditorRequest, pk: UUID) -> HttpResponseBase:
     try:
         with transaction.atomic():
             resource = get_object_or_404(
@@ -362,7 +368,7 @@ def action(request: HttpRequest, pk: UUID) -> HttpResponse:
     return redirect("resources:edit", pk=pk)
 
 
-def revision_context(revision: Revision, *, preview: bool = False) -> dict:
+def revision_context(revision: Revision, *, preview: bool = False) -> dict[str, Any]:
     route = "resources:preview_asset" if preview else "resources:asset"
     asset_url = reverse(route, args=[revision.resource_id, "file"])
     cover_url = reverse(route, args=[revision.resource_id, "cover"])
@@ -382,7 +388,7 @@ def revision_context(revision: Revision, *, preview: bool = False) -> dict:
 @editor_required
 @require_GET
 @xframe_options_sameorigin
-def preview(request: HttpRequest, pk: UUID) -> HttpResponse:
+def preview(request: EditorRequest, pk: UUID) -> HttpResponseBase:
     resource = get_object_or_404(scoped_resources(request.user), pk=pk)
     revision_id = request.GET.get("revision")
     revision = (
@@ -390,6 +396,8 @@ def preview(request: HttpRequest, pk: UUID) -> HttpResponse:
         if revision_id and revision_id.isdigit()
         else resource.draft
     )
+    if revision is None:
+        raise Http404
     return render(
         request, "resources/detail.html", revision_context(revision, preview=True)
     )
@@ -397,7 +405,7 @@ def preview(request: HttpRequest, pk: UUID) -> HttpResponse:
 
 @public_site
 @require_GET
-def detail(request: HttpRequest, pk: UUID, slug: str) -> HttpResponse:
+def detail(request: HttpRequest, pk: UUID, slug: str) -> HttpResponseBase:
     revision = get_object_or_404(
         published_revisions(), resource_id=pk, resource__slug=slug
     )
@@ -411,7 +419,9 @@ def detail(request: HttpRequest, pk: UUID, slug: str) -> HttpResponse:
     return render(request, "resources/detail.html", revision_context(revision))
 
 
-def asset_response(revision: Revision, role: str, request: HttpRequest) -> HttpResponse:
+def asset_response(
+    revision: Revision, role: str, request: HttpRequest
+) -> HttpResponseBase:
     if role not in {"file", "cover"}:
         raise Http404
     asset = revision.asset if role == "file" else revision.image_asset
@@ -421,6 +431,8 @@ def asset_response(revision: Revision, role: str, request: HttpRequest) -> HttpR
         if not asset.preview_id:
             raise Http404
         asset = asset.preview
+        if asset is None:
+            raise Http404
     inline = (
         role == "cover"
         or request.GET.get("thumbnail") == "1"
@@ -443,7 +455,7 @@ def asset_response(revision: Revision, role: str, request: HttpRequest) -> HttpR
 @public_site
 @require_GET
 @xframe_options_sameorigin
-def asset(request: HttpRequest, pk: UUID, role: str) -> HttpResponse:
+def asset(request: HttpRequest, pk: UUID, role: str) -> HttpResponseBase:
     revision = get_object_or_404(published_revisions(), resource_id=pk)
     if revision.access == Revision.Access.FAMILY and not request.session.get(
         FAMILY_RESOURCES_SESSION_KEY
@@ -458,7 +470,7 @@ def asset(request: HttpRequest, pk: UUID, role: str) -> HttpResponse:
 @editor_required
 @require_GET
 @xframe_options_sameorigin
-def preview_asset(request: HttpRequest, pk: UUID, role: str) -> HttpResponse:
+def preview_asset(request: EditorRequest, pk: UUID, role: str) -> HttpResponseBase:
     resource = get_object_or_404(scoped_resources(request.user), pk=pk)
     revision_id = request.GET.get("revision", "")
     revision = (
@@ -466,12 +478,14 @@ def preview_asset(request: HttpRequest, pk: UUID, role: str) -> HttpResponse:
         if revision_id.isdigit()
         else resource.draft
     )
+    if revision is None:
+        raise Http404
     return asset_response(revision, role, request)
 
 
 @editor_required
 @require_GET
-def media_library(request: HttpRequest) -> HttpResponse:
+def media_library(request: EditorRequest) -> HttpResponseBase:
     assets = (
         scoped_assets(request.user)
         .annotate(uses=Count("file_revisions__resource", distinct=True))

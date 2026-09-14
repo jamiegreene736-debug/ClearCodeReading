@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 from django.contrib.auth.views import LoginView
 from django.urls import path, reverse_lazy
 

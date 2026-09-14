@@ -1,21 +1,36 @@
+from __future__ import annotations
+
 import time
+from datetime import datetime
 from pathlib import Path
-from uuid import uuid4
+from typing import Any
+from uuid import UUID, uuid4
 
 from django.core.exceptions import ValidationError
+from django.core.files.uploadedfile import UploadedFile
 from django.db import transaction
 from django.utils.text import slugify
 
 from apps.resources.forms import REVISION_FIELDS, ResourceForm, validate_publication
-from apps.resources.models import Asset, Resource, ResourceEvent, Revision, UploadBatch
+from apps.resources.models import (
+    Asset,
+    Resource,
+    ResourceEvent,
+    Revision,
+    Topic,
+    UploadBatch,
+)
 from apps.resources.uploads import MAX_BATCH_SIZE, save_upload
+from apps.users.models import CustomUser
 
 
 class EditConflict(ValidationError):
     pass
 
 
-def revision_values(revision: Revision) -> dict:
+def revision_values(revision: Revision | None) -> dict[str, Any]:
+    if revision is None:
+        raise ValidationError("This resource has no saved draft.")
     return {field: getattr(revision, field) for field in REVISION_FIELDS}
 
 
@@ -26,7 +41,7 @@ def check_version(resource: Resource, version: str | int | None) -> None:
         )
 
 
-def record_change(resource: Resource, user, action: str) -> None:
+def record_change(resource: Resource, user: CustomUser, action: str) -> None:
     resource.version += 1
     resource.save()
     ResourceEvent.objects.create(
@@ -35,7 +50,7 @@ def record_change(resource: Resource, user, action: str) -> None:
 
 
 def create_resource(
-    user, *, kind: str, title: str = "Untitled resource", **values
+    user: CustomUser, *, kind: str, title: str = "Untitled resource", **values: Any
 ) -> Resource:
     resource = Resource.objects.create(
         owner=user, slug=f"{slugify(title)[:120] or 'resource'}-{uuid4().hex[:8]}"
@@ -47,7 +62,7 @@ def create_resource(
     return resource
 
 
-def save_draft(resource: Resource, form: ResourceForm, user) -> Revision:
+def save_draft(resource: Resource, form: ResourceForm, user: CustomUser) -> Revision:
     check_version(resource, form.cleaned_data["version"])
     draft = form.save(commit=False)
     if form.cleaned_data.get("upload"):
@@ -69,7 +84,7 @@ def save_draft(resource: Resource, form: ResourceForm, user) -> Revision:
         draft.url = ""
     if draft.kind != Revision.Kind.ARTICLE:
         draft.body = ""
-    if resource.draft_id and revision_values(resource.draft) == revision_values(draft):
+    if resource.draft and revision_values(resource.draft) == revision_values(draft):
         return resource.draft
     draft.resource = resource
     draft.author = user
@@ -80,7 +95,9 @@ def save_draft(resource: Resource, form: ResourceForm, user) -> Revision:
     return draft
 
 
-def publish(resource: Resource, user, *, at=None) -> None:
+def publish(
+    resource: Resource, user: CustomUser, *, at: datetime | None = None
+) -> None:
     if resource.archived:
         raise ValidationError("Restore this resource before publishing.")
     validate_publication(resource.draft)
@@ -98,7 +115,7 @@ def publish(resource: Resource, user, *, at=None) -> None:
     record_change(resource, user, "scheduled" if at else "published")
 
 
-def duplicate(resource: Resource, user) -> Resource:
+def duplicate(resource: Resource, user: CustomUser) -> Resource:
     values = revision_values(resource.draft)
     values["title"] = f"{values['title'][:190]} (copy)"
     values["featured"] = False
@@ -120,10 +137,16 @@ def duplicate(resource: Resource, user) -> Resource:
 
 
 @transaction.atomic
-def bulk_upload(user, uploads: list, token, topic, audience: str) -> list[Resource]:
+def bulk_upload(
+    user: CustomUser,
+    uploads: list[UploadedFile[bytes]],
+    token: UUID,
+    topic: Topic | None,
+    audience: str,
+) -> list[Resource]:
     if not uploads or len(uploads) > 10:
         raise ValidationError("Choose between 1 and 10 files.")
-    if sum(upload.size for upload in uploads) > MAX_BATCH_SIZE:
+    if sum(upload.size or 0 for upload in uploads) > MAX_BATCH_SIZE:
         raise ValidationError("The combined upload must be 50 MB or smaller.")
     batch, created = UploadBatch.objects.get_or_create(
         token=token, defaults={"owner": user}

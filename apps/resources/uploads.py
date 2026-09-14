@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import hashlib
 import logging
 import re
@@ -13,6 +15,7 @@ from django.db import transaction
 from PIL import Image, UnidentifiedImageError
 
 from apps.resources.models import Asset
+from apps.users.models import CustomUser
 
 MAX_FILE_SIZE = 10 * 1024 * 1024
 MAX_BATCH_SIZE = 50 * 1024 * 1024
@@ -28,12 +31,12 @@ ALLOWED_EXTENSIONS = {
 }
 
 
-def validated_upload(upload: UploadedFile) -> tuple[bytes, str, str]:
-    name = Path(upload.name).name[:200]
+def validated_upload(upload: UploadedFile[bytes]) -> tuple[bytes, str, str]:
+    name = Path(upload.name or "upload").name[:200]
     extension = Path(name).suffix.lower()
     if extension not in ALLOWED_EXTENSIONS:
         raise ValidationError("Choose a PDF, DOCX, PPTX, TXT, JPEG, PNG or WebP file.")
-    if upload.size > MAX_FILE_SIZE:
+    if upload.size is None or upload.size > MAX_FILE_SIZE:
         raise ValidationError("Each file must be 10 MB or smaller.")
     data = upload.read(MAX_FILE_SIZE + 1)
     if not data or len(data) > MAX_FILE_SIZE:
@@ -104,7 +107,11 @@ def validated_upload(upload: UploadedFile) -> tuple[bytes, str, str]:
 
 @transaction.atomic
 def save_upload(
-    upload: UploadedFile, user, *, image_only: bool = False, render_timeout: float = 8
+    upload: UploadedFile[bytes],
+    user: CustomUser,
+    *,
+    image_only: bool = False,
+    render_timeout: float = 8,
 ) -> Asset:
     data, content_type, name = validated_upload(upload)
     if image_only and not content_type.startswith("image/"):

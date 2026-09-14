@@ -30,7 +30,7 @@ Uploads are limited to 10 MB each, 10 files per batch, 50 MB total. Images are d
 
 Automated coverage lives in `apps/resources/tests.py`; run it with the existing blog, CRM and user tests against local PostgreSQL. The browser smoke test in `scripts/test_resource_browser.py` uses a separate local-only test database/account and exercises article creation, autosave, preview, publishing, draft isolation, family signup return, mobile layout and file replacement. Install Playwright in the development environment, start Django on port 8876, and run the script with the same local database environment. It refuses a non-local database host. No production fixture content is published.
 
-Current validation: 131 Django tests passed across resources, blog, CRM and users; responsive browser publishing flow passed with no JavaScript errors. Static collection, CSS build and migration drift checks passed.
+Current validation: 204 Django tests passed across resources, blog, CRM, CRM email and users (including hiring); responsive browser publishing flow passed with no JavaScript errors. Static collection, CSS build and migration drift checks passed. Strict mypy checks pass for all 16 production resource modules using `mypy-resources.ini` and the existing development typing dependencies.
 
 ### Initial staff access
 

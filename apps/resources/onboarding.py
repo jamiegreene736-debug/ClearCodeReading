@@ -1,6 +1,9 @@
 """One-use publisher setup links, issued only by an authenticated server operator."""
 
+from __future__ import annotations
+
 import hashlib
+from typing import TYPE_CHECKING
 from uuid import uuid4
 
 from django.contrib.auth import login
@@ -16,8 +19,13 @@ from apps.resources.access import DEMO_IDENTITIES, public_site
 from apps.resources.models import StaffSetupToken
 from apps.users.models import CustomUser
 
+if TYPE_CHECKING:
+    StaffCreationForm = UserCreationForm[CustomUser]
+else:
+    StaffCreationForm = UserCreationForm
 
-class StaffSetupForm(UserCreationForm):
+
+class StaffSetupForm(StaffCreationForm):
     class Meta(UserCreationForm.Meta):
         model = CustomUser
         fields = ("email", "first_name", "last_name")
@@ -25,7 +33,7 @@ class StaffSetupForm(UserCreationForm):
     def clean_email(self) -> str:
         from django.core.exceptions import ValidationError
 
-        email = self.cleaned_data["email"].strip().lower()
+        email = str(self.cleaned_data["email"]).strip().lower()
         if email in DEMO_IDENTITIES:
             raise ValidationError(
                 "Use your own email address, not a public demo identity."

@@ -1,6 +1,9 @@
+from __future__ import annotations
+
 import ipaddress
 import re
-from typing import ClassVar
+from datetime import datetime
+from typing import TYPE_CHECKING, Any, ClassVar, cast
 from urllib.parse import parse_qs, urlparse
 
 from django import forms
@@ -8,7 +11,8 @@ from django.core.exceptions import ValidationError
 from django.utils import timezone
 
 from apps.resources.access import can_publish, scoped_assets
-from apps.resources.models import Revision, Topic
+from apps.resources.models import Asset, Revision, Topic
+from apps.users.models import CustomUser
 
 REVISION_FIELDS = (
     "title",
@@ -74,7 +78,23 @@ def video_embed(value: str) -> str:
     return ""
 
 
-class ResourceForm(forms.ModelForm):
+if TYPE_CHECKING:
+    RevisionModelForm = forms.ModelForm[Revision]
+    AssetModelChoiceField = forms.ModelChoiceField[Asset]
+else:
+    RevisionModelForm = forms.ModelForm
+    AssetModelChoiceField = forms.ModelChoiceField
+
+
+class AssetChoiceField(AssetModelChoiceField):
+    def label_from_instance(self, obj: Asset) -> str:
+        return obj.name
+
+
+class ResourceForm(RevisionModelForm):
+    asset = AssetChoiceField(
+        queryset=Asset.objects.none(), required=False, label="Or reuse a file"
+    )
     version = forms.IntegerField(min_value=0, widget=forms.HiddenInput)
     upload = forms.FileField(required=False, label="Upload or replace file")
     cover_upload = forms.FileField(required=False, label="Cover image")
@@ -109,15 +129,18 @@ class ResourceForm(forms.ModelForm):
             "cover": forms.HiddenInput,
         }
 
-    def __init__(self, *args, user, **kwargs) -> None:
+    def __init__(self, *args: Any, user: CustomUser, **kwargs: Any) -> None:
         super().__init__(*args, **kwargs)
-        self.fields["asset"].queryset = scoped_assets(user)
-        self.fields["asset"].label_from_instance = lambda asset: asset.name
+        cast(
+            "forms.ModelChoiceField[Asset]", self.fields["asset"]
+        ).queryset = scoped_assets(user)
         # The hidden retained cover is validated against the same owner boundary.
-        self.fields["cover"].queryset = scoped_assets(user).filter(
-            content_type__startswith="image/"
-        )
-        self.fields["topic"].queryset = Topic.objects.all()
+        cast(
+            "forms.ModelChoiceField[Asset]", self.fields["cover"]
+        ).queryset = scoped_assets(user).filter(content_type__startswith="image/")
+        cast(
+            "forms.ModelChoiceField[Topic]", self.fields["topic"]
+        ).queryset = Topic.objects.all()
         if not can_publish(user):
             self.fields.pop("access")
             self.fields.pop("featured")
@@ -138,7 +161,9 @@ class ResourceForm(forms.ModelForm):
         return self.cleaned_data.get("title", "").strip() or "Untitled resource"
 
 
-def validate_publication(revision: Revision) -> None:
+def validate_publication(revision: Revision | None) -> None:
+    if revision is None:
+        raise ValidationError("This resource has no saved draft.")
     errors = []
     if not revision.title.strip() or revision.title == "Untitled resource":
         errors.append("Add a title.")
@@ -166,8 +191,8 @@ class ScheduleForm(forms.Form):
         ),
     )
 
-    def clean_publish_at(self):
-        value = self.cleaned_data["publish_at"]
+    def clean_publish_at(self) -> datetime:
+        value = cast(datetime, self.cleaned_data["publish_at"])
         if value <= timezone.now():
             raise ValidationError("Choose a future date and time in UTC.")
         return value

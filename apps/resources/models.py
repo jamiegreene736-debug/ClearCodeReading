@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 from typing import ClassVar
 from uuid import uuid4
 
@@ -77,10 +79,10 @@ class Resource(TimeStampedModel):
         ]
 
     @property
-    def published_revision(self) -> "Revision | None":
+    def published_revision(self) -> Revision | None:
         if self.archived:
             return None
-        if self.scheduled_id and self.publish_at <= timezone.now():
+        if self.scheduled_id and self.publish_at and self.publish_at <= timezone.now():
             return self.scheduled
         return self.live
 
@@ -90,7 +92,7 @@ class Resource(TimeStampedModel):
             return "Archived"
         if self.submitted:
             return "In review"
-        if self.scheduled_id and self.publish_at > timezone.now():
+        if self.scheduled_id and self.publish_at and self.publish_at > timezone.now():
             return "Scheduled"
         return "Published" if self.published_revision else "Draft"
 
@@ -163,13 +165,13 @@ class Revision(models.Model):
 
     @property
     def is_pdf(self) -> bool:
-        return bool(self.asset_id and self.asset.content_type == "application/pdf")
+        return bool(self.asset and self.asset.content_type == "application/pdf")
 
     @property
     def image_asset(self) -> Asset | None:
         if self.cover_id:
             return self.cover
-        if self.asset_id:
+        if self.asset:
             if self.asset.is_image:
                 return self.asset
             if self.asset.preview_id:
