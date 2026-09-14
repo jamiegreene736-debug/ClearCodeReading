@@ -72,7 +72,7 @@
                     <button class="rm-button secondary" id="save-button">Save draft</button>
                     <span class="rm-save-state"
                           id="save-state"
-                          aria-live="polite">Draft saved · {{ resource.updated_at|date:"M j, H:i" }} UTC</span>
+                          aria-live="polite">Draft saved · {{ resource.updated_at|date:"M j, H:i T" }}</span>
                     <div id="save-errors" class="rm-notice rm-error" role="alert" hidden></div>
                 </section>
             </form>
@@ -84,7 +84,7 @@
                     {% for revision in history %}
                         <li>
                             <strong>{{ revision.title }}</strong>
-                            <br>{{ revision.created_at|date:"M j, Y H:i" }} UTC · {{ revision.author|default:'Former editor' }} {% if revision.pk == resource.draft_id %}· Current draft{% endif %}
+                            <br>{{ revision.created_at|date:"M j, Y H:i T" }} · {{ revision.author|default:'Former editor' }} {% if revision.pk == resource.draft_id %}· Current draft{% endif %}
                             <div>
                                 <a href="{% url 'resources:preview' resource.pk %}?revision={{ revision.pk }}"
                                    target="_blank"
@@ -158,7 +158,7 @@
                             <button class="rm-button secondary">Schedule</button>
                         </form>
                         {% if resource.scheduled_id %}
-                            <p class="rm-subtle">Scheduled version: {{ resource.publish_at|date:"M j, Y H:i" }} UTC. Later draft edits require rescheduling.</p>
+                            <p class="rm-subtle">Scheduled version: {{ resource.publish_at|date:"M j, Y H:i T" }}. Later draft edits require rescheduling.</p>
                             <form class="resource-action"
                                   action="{% url 'resources:action' resource.pk %}"
                                   method="post">
@@ -196,7 +196,7 @@
                 <ul class="rm-history">
                     {% for event in events %}
                         <li>
-                            {{ event.display_action }} · {{ event.created_at|date:"M j, H:i" }} UTC
+                            {{ event.display_action }} · {{ event.created_at|date:"M j, H:i T" }}
                             <br>
                             <span class="rm-muted">{{ event.actor|default:'Former editor' }}</span>
                         </li>

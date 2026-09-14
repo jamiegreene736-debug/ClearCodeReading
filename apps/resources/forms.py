@@ -185,7 +185,7 @@ def validate_publication(revision: Revision | None) -> None:
 
 class ScheduleForm(forms.Form):
     publish_at = forms.DateTimeField(
-        label="Publish at (UTC)",
+        label="Publish at (Eastern Time)",
         widget=forms.DateTimeInput(
             attrs={"type": "datetime-local"}, format="%Y-%m-%dT%H:%M"
         ),
@@ -194,5 +194,5 @@ class ScheduleForm(forms.Form):
     def clean_publish_at(self) -> datetime:
         value = cast(datetime, self.cleaned_data["publish_at"])
         if value <= timezone.now():
-            raise ValidationError("Choose a future date and time in UTC.")
+            raise ValidationError("Choose a future date and time in Eastern Time.")
         return value

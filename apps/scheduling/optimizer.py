@@ -5,6 +5,7 @@ from datetime import UTC, date, datetime, time, timedelta
 from hashlib import sha256
 from zoneinfo import ZoneInfo, ZoneInfoNotFoundError
 
+from django.conf import settings
 from django.db import transaction
 from django.db.models import Q
 from django.utils import timezone
@@ -63,7 +64,7 @@ def _window_bounds(window: dict, target_date: date) -> tuple[datetime, datetime]
     if starts_at is None or ends_at is None or ends_at <= starts_at:
         return None
     try:
-        tz = ZoneInfo(window.get("timezone") or "UTC")
+        tz = ZoneInfo(window.get("timezone") or settings.TIME_ZONE)
     except ZoneInfoNotFoundError:
         return None
     return datetime.combine(target_date, starts_at, tz), datetime.combine(target_date, ends_at, tz)

@@ -9,6 +9,7 @@ from django.db import transaction
 from django.db.models import Q
 from django.template.loader import render_to_string
 from django.urls import reverse
+from django.utils import timezone
 
 from apps.core.models import RecruitingInterest
 from apps.crm.models import FormSubmission, NewsletterSubscription, WebsiteReceipt
@@ -153,8 +154,10 @@ def receipt_context(submission: FormSubmission, *, team: bool) -> dict[str, obje
             [
                 {"label": "Submitted from", "value": submission.source_path},
                 {
-                    "label": "Received (UTC)",
-                    "value": submission.created_at.strftime("%Y-%m-%d %H:%M UTC"),
+                    "label": "Received (Eastern Time)",
+                    "value": timezone.localtime(submission.created_at).strftime(
+                        "%Y-%m-%d %I:%M %p %Z"
+                    ),
                 },
                 {"label": "Reference", "value": str(submission.pk)},
             ]

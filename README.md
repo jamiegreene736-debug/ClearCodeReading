@@ -700,3 +700,9 @@ and handles Gmail rate limits and uncertain delivery without blindly resending. 
 sender configuration leaves receipts pending for recovery. The form submission's admin
 page shows each delivery status. `sent` means Gmail accepted the email, not proof that it
 arrived in the recipient's inbox. Historical submissions are not automatically emailed.
+
+### Server timezone
+
+The web app, background worker, and container use `America/New_York` (EST in winter, EDT in summer). Django forms, admin pages, reports, and default scheduling use Eastern Time. Resource publishing inputs are Eastern Time; nonexistent or ambiguous daylight-saving times must be corrected before saving. Explicit availability timezones and existing profile preferences are retained. New profiles default to Eastern Time.
+
+`USE_TZ=True` remains enabled: database connections and stored instants stay UTC, and API timestamps retain their offsets. Do not shift stored timestamps during deployment. Django converts them for display; see the [Django timezone documentation](https://docs.djangoproject.com/en/5.2/topics/i18n/timezones/).

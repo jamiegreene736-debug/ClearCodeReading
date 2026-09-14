@@ -311,7 +311,7 @@ def action(request: EditorRequest, pk: UUID) -> HttpResponseBase:
                 publish(resource, request.user, at=at)
                 messages.success(
                     request,
-                    "Publication scheduled (UTC)."
+                    "Publication scheduled (Eastern Time)."
                     if at
                     else "Published — your resource is now available.",
                 )
