@@ -562,6 +562,23 @@ class FormSubmission(TimestampedModel):
         return f"{self.get_form_type_display()} at {self.created_at:%Y-%m-%d %H:%M}"
 
 
+class WebsiteReceipt(TimestampedModel):
+    """One durable pair of confirmations for each accepted website submission."""
+
+    submission = models.OneToOneField(
+        FormSubmission, on_delete=models.CASCADE, related_name="receipt"
+    )
+    customer_message = models.OneToOneField(
+        "crm_email.Message", null=True, blank=True, on_delete=models.SET_NULL,
+        related_name="website_customer_receipt",
+    )
+    team_message = models.OneToOneField(
+        "crm_email.Message", null=True, blank=True, on_delete=models.SET_NULL,
+        related_name="website_team_receipt",
+    )
+    error = models.CharField(max_length=255, blank=True)
+
+
 class IntakeTriage(TimestampedModel):
     class SourceSignal(models.TextChoices):
         PARTNER_INTEREST = "partner_interest", "Family partner interest"

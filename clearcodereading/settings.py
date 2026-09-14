@@ -321,3 +321,6 @@ CRM_EMAIL_PUBSUB_TOPIC = os.getenv("CRM_EMAIL_PUBSUB_TOPIC", "")
 CRM_EMAIL_PUBSUB_AUDIENCE = os.getenv("CRM_EMAIL_PUBSUB_AUDIENCE", "")
 CRM_EMAIL_PUBSUB_EMAIL = os.getenv("CRM_EMAIL_PUBSUB_EMAIL", "")
 CRM_EMAIL_ATTACHMENT_LIMIT = 10 * 1024 * 1024
+
+# Explicit connected mailbox used for automated website confirmations.
+WEBSITE_EMAIL_SENDER = os.getenv("WEBSITE_EMAIL_SENDER", "").strip().lower()

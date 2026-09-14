@@ -71,7 +71,7 @@ def resolve_unsubscribe_token(token):
     ).first()
 
 
-def _unsubscribe_url(subscription):
+def _unsubscribe_url(subscription: NewsletterSubscription) -> str:
     path = reverse("newsletter_unsubscribe", kwargs={"token": make_unsubscribe_token(subscription)})
     return urljoin(f"{settings.PUBLIC_APP_URL.rstrip('/')}/", path.lstrip("/"))
 

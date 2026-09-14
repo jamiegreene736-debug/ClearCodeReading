@@ -110,7 +110,7 @@ def message_content(
 
 
 def ensure_follow_up(message: Message) -> None:
-    if message.follow_up_days and not message.follow_up_id:
+    if message.lead is not None and message.follow_up_days and not message.follow_up_id:
         task = CrmActivity.objects.create(
             lead=message.lead,
             activity_type=CrmActivity.ActivityType.TASK,

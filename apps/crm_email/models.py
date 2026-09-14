@@ -79,7 +79,12 @@ class Message(models.Model):
     mailbox = models.ForeignKey(
         Mailbox, on_delete=models.CASCADE, related_name="messages"
     )
-    lead = models.ForeignKey("crm.Lead", on_delete=models.CASCADE)
+    lead = models.ForeignKey(
+        "crm.Lead", on_delete=models.CASCADE, null=True, blank=True
+    )
+    recruiting_interest = models.ForeignKey(
+        "core.RecruitingInterest", on_delete=models.CASCADE, null=True, blank=True
+    )
     conversation = models.ForeignKey(
         Conversation,
         on_delete=models.CASCADE,
@@ -117,9 +122,16 @@ class Message(models.Model):
 
     class Meta:
         constraints: ClassVar = [
+            models.CheckConstraint(
+                condition=(
+                    models.Q(lead__isnull=False, recruiting_interest__isnull=True)
+                    | models.Q(lead__isnull=True, recruiting_interest__isnull=False)
+                ),
+                name="crm_email_exactly_one_contact",
+            ),
             models.UniqueConstraint(
                 fields=["mailbox", "gmail_id"], name="crm_email_message_unique"
-            )
+            ),
         ]
         ordering: ClassVar = ["sent_at", "created_at"]
 

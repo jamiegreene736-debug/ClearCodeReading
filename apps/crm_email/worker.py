@@ -38,22 +38,24 @@ def backoff(attempts: int) -> timedelta:
 
 def accepted(message: Message, gmail_id: str, thread_id: str) -> None:
     with transaction.atomic():
-        conversation, _ = Conversation.objects.get_or_create(
-            mailbox=message.mailbox,
-            gmail_thread_id=thread_id,
-            defaults={"lead": message.lead, "subject": message.subject},
-        )
-        if conversation.lead_id != message.lead_id:
-            raise EmailError(
-                "Google attached this message to a thread linked to another contact. Review in Gmail."
+        if message.lead is not None:
+            conversation, _ = Conversation.objects.get_or_create(
+                mailbox=message.mailbox,
+                gmail_thread_id=thread_id,
+                defaults={"lead": message.lead, "subject": message.subject},
             )
-        message.conversation = conversation
+            if conversation.lead_id != message.lead_id:
+                raise EmailError(
+                    "Google attached this message to a thread linked to another contact. Review in Gmail."
+                )
+            message.conversation = conversation
         message.gmail_id = gmail_id
         message.sent_at = timezone.now()
         message.status = Message.Status.SENT
         message.last_error = ""
         message.save()
-        ensure_follow_up(message)
+        if message.lead is not None:
+            ensure_follow_up(message)
         AuditLog.objects.create(
             actor=message.mailbox.user,
             action="crm.email.sent",
@@ -112,7 +114,7 @@ def send(client: Gmail, message: Message) -> None:
         message.last_error = "Assessment link expired or was withdrawn before delivery."
         message.save()
         return
-    if message.lead.is_deleted:
+    if message.lead is not None and message.lead.is_deleted:
         message.status = Message.Status.CANCELLED
         message.last_error = "Contact was deleted before sending."
         message.save()
@@ -182,6 +184,9 @@ def run_pass() -> int:
         if not settings.CRM_EMAIL_ENABLED:
             return 0
         require_configured()
+        from apps.crm.website_emails import enqueue_pending_receipts
+
+        enqueue_pending_receipts()
         # Recover invitations committed just before a web request was interrupted.
         from apps.crm.inventory_mail import enqueue_google
         from apps.crm.inventory_models import InventoryMail

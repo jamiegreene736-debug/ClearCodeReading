@@ -226,7 +226,7 @@ class WebsiteSignupView(View):
                 owner = owner_query.filter(email__iexact=settings.RECRUITING_OWNER_EMAIL).first()
             if owner is None:
                 owner = owner_query.filter(Q(is_superuser=True) | Q(is_staff=True)).order_by("pk").first()
-        RecruitingInterest.objects.create(
+        application = RecruitingInterest.objects.create(
             name=form.cleaned_data["name"].strip(),
             email=form.cleaned_data["email"],
             phone=form.cleaned_data["phone"].strip(),
@@ -246,6 +246,23 @@ class WebsiteSignupView(View):
             owner=owner,
             status=RecruitingInterest.Status.REVIEWING if owner else RecruitingInterest.Status.NEW,
         )
+        from apps.crm.models import WebsiteReceipt
+
+        submission = FormSubmission.objects.create(
+            form_type=FormSubmission.FormType.CAREER,
+            source_path="/careers/",
+            submitted_data={
+                "name": application.name,
+                "email": application.email,
+                "phone": application.phone,
+                "role_interest": application.role_interest,
+                "how_heard": how_heard,
+                "resume": application.resume_original_name,
+                "cover_letter": application.cover_letter_original_name,
+                "application_id": application.pk,
+            },
+        )
+        WebsiteReceipt.objects.create(submission=submission)
         messages.success(request, "Thanks. Your interest is with the ClearCode recruiting team.")
         return redirect(self._redirect_target(request, "thanks"))
 
