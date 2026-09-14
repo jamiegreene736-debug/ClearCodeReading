@@ -4,7 +4,8 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<meta name="referrer" content="no-referrer">
+<!-- Same-site POSTs need their origin for CSRF validation; external sites receive no referrer. -->
+<meta name="referrer" content="same-origin">
 <title>
 {% block title %}
 Account setup
