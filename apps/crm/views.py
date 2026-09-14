@@ -26,6 +26,7 @@ from rest_framework.response import Response
 
 from apps.core.forms import RecruitingInterestForm
 from apps.core.models import RecruitingInterest
+from apps.crm.hiring import select_intake_owner
 from apps.crm.access import crm_owner_queryset
 from apps.crm.forms import CompanyForm, ContactForm, CrmTeamMemberForm, DealForm
 from apps.crm.models import Company, CrmActivity, FormSubmission, IntakeTriage, Lead, NewsletterSubscription, Opportunity
@@ -188,6 +189,7 @@ class WebsiteSignupView(View):
         messages.success(request, "Thanks. Your request is with the ClearCode Reading team, and we’ll follow up about next steps.")
         return redirect(self._redirect_target(request, "thanks"))
 
+    @transaction.atomic
     def _record_recruiting_interest(self, request):
         form = RecruitingInterestForm(request.POST, request.FILES)
         if not form.is_valid():
@@ -201,12 +203,15 @@ class WebsiteSignupView(View):
         resume = form.cleaned_data["resume"]
         cover_letter = form.cleaned_data["cover_letter"]
         how_heard = form.cleaned_data["how_heard"].strip()
-        owner_query = CustomUser.objects.filter(is_active=True, is_deleted=False)
-        owner = None
-        if settings.RECRUITING_OWNER_EMAIL:
-            owner = owner_query.filter(email__iexact=settings.RECRUITING_OWNER_EMAIL).first()
-        if owner is None:
-            owner = owner_query.filter(Q(is_superuser=True) | Q(is_staff=True)).order_by("pk").first()
+        if career_path == "teacher":
+            owner = select_intake_owner()
+        else:
+            owner_query = CustomUser.objects.filter(is_active=True, is_deleted=False)
+            owner = None
+            if settings.RECRUITING_OWNER_EMAIL:
+                owner = owner_query.filter(email__iexact=settings.RECRUITING_OWNER_EMAIL).first()
+            if owner is None:
+                owner = owner_query.filter(Q(is_superuser=True) | Q(is_staff=True)).order_by("pk").first()
         RecruitingInterest.objects.create(
             name=form.cleaned_data["name"].strip(),
             email=form.cleaned_data["email"],

@@ -47,6 +47,7 @@ class RecruitingInterestAdmin(admin.ModelAdmin):
         "created_at",
         "updated_at",
         "source_path",
+        "hiring_workspace",
     )
     fieldsets = (
         (
@@ -69,6 +70,7 @@ class RecruitingInterestAdmin(admin.ModelAdmin):
             "Workflow",
             {
                 "fields": (
+                    "hiring_workspace",
                     "candidate_pool",
                     "owner",
                     "status",
@@ -80,6 +82,18 @@ class RecruitingInterestAdmin(admin.ModelAdmin):
         ),
     )
     autocomplete_fields = ("owner",)
+
+    def get_readonly_fields(self, request, obj=None):
+        fields = super().get_readonly_fields(request, obj)
+        if obj and obj.career_path == "teacher" and hasattr(obj, "hiring"):
+            return (*fields, "owner", "status", "career_path")
+        return fields
+
+    @admin.display(description="Teacher hiring")
+    def hiring_workspace(self, obj):
+        if obj and hasattr(obj, "hiring"):
+            return format_html('<a href="{}?owner=all&candidate={}">Open hiring record</a>', reverse("crm_hiring"), obj.hiring.pk)
+        return "—"
 
     def get_urls(self):
         return [

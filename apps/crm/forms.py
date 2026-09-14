@@ -159,6 +159,7 @@ class DealForm(forms.ModelForm):
 
 
 class CrmTeamMemberForm(forms.Form):
+    hiring_enabled = forms.BooleanField(required=False, label="Teacher hiring access")
     first_name = forms.CharField(max_length=150, label="First name")
     last_name = forms.CharField(max_length=150, required=False, label="Last name")
     email = forms.EmailField(max_length=254, label="Work email")
@@ -209,6 +210,7 @@ class CrmTeamMemberForm(forms.Form):
             is_active=True,
             is_staff=False,
             is_superuser=False,
+            hiring_enabled=self.cleaned_data.get("hiring_enabled", False),
             metadata={
                 "created_from_crm": True,
                 "created_by_admin_id": created_by.pk,

@@ -652,3 +652,6 @@ class CrmActivity(TimestampedModel):
 
     def __str__(self):
         return self.subject or f"{self.get_activity_type_display()} for {self.lead.contact_name}"
+
+# Keep the hiring workflow separate from sales models while registering it with Django.
+from apps.crm.hiring_models import HiringCandidate, HiringEvent  # noqa: E402,F401

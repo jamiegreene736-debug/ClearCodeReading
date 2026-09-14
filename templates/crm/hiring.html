@@ -1,0 +1,78 @@
+{% extends "crm/base.html" %}
+{% block title %}Teacher hiring{% endblock %}
+{% block extra_style %}
+.hiring-head,.hiring-row,.hiring-meta { display:flex; justify-content:space-between; gap:12px; flex-wrap:wrap; align-items:center; }
+.hiring-filters { display:flex; flex-wrap:wrap; align-items:end; gap:10px; margin:22px 0; }
+.hiring-filters .field { flex:1 1 140px; }.hiring-filters .search { flex:2 1 190px; }
+.hiring-layout { display:grid; grid-template-columns:minmax(260px,1fr) minmax(340px,1fr); gap:20px; align-items:start; }
+.hiring-list-head { padding:16px; border-bottom:1px solid var(--line); }
+.candidate-row { display:block; padding:18px; border-bottom:1px solid var(--line); text-decoration:none; overflow-wrap:anywhere; }
+.candidate-row:last-child { border-bottom:0; }.candidate-row:hover { background:#f4f9f8; }.candidate-row.selected { background:var(--teal-soft); border-left:3px solid var(--teal); padding-left:15px; }
+.candidate-row strong { font-size:16px; }.hiring-next { margin:9px 0 5px; }.hiring-meta { font-size:12px; color:var(--muted); }.overdue { color:#a13d23; font-weight:700; }
+.hiring-detail { padding:22px; min-width:0; overflow-wrap:anywhere; }.hiring-detail h2 { margin:0 0 5px; }.hiring-detail .field { margin:12px 0; }
+.hiring-detail .journey { display:flex; flex-wrap:wrap; gap:5px; padding:0; list-style:none; margin:18px 0; }.journey li { font-size:11px; padding:4px 7px; border-radius:4px; background:var(--bg); }.journey li.current { background:var(--teal-soft); color:#145d56; font-weight:700; }
+.hiring-detail details { border-top:1px solid var(--line); padding:12px 0; }.hiring-detail summary { cursor:pointer; font-weight:700; min-height:32px; }.hiring-detail .btn-primary { width:100%; }
+.hiring-detail fieldset { border:0; padding:0; margin:0 0 12px; }.hiring-detail legend { font-weight:700; font-size:12px; padding:6px 0; }
+.hiring-detail input[type=checkbox],.hiring-filters input[type=checkbox] { width:18px; min-height:18px; height:18px; margin-right:8px; flex-shrink:0; }.check-item { display:flex; align-items:center; gap:6px; min-height:44px; }.errorlist { color:#a32929; padding-left:20px; }
+.hiring-activity { padding-left:18px; font-size:13px; }.hiring-activity li { margin:12px 0; }.hiring-notice { padding:12px; border:1px solid var(--line); border-radius:5px; background:var(--bg); margin:12px 0; }.hiring-pagination { display:flex; padding:14px; gap:15px; flex-wrap:wrap; align-items:center; }
+@media(max-width:1100px) { .hiring-layout { grid-template-columns:1fr; } }
+@media(max-width:540px) { .hiring-detail { padding:16px; }.hiring-head { align-items:start; }.hiring-filters .field { flex-basis:100%; }.hiring-layout { grid-template-columns:minmax(0,1fr); } }
+{% endblock %}
+{% block content %}
+<div class="hiring-head"><div><p class="eyebrow">One owner, start to finish</p><h1>Teacher hiring</h1><p class="subtle">Every teacher. One owner. A clear next step.</p></div><a class="btn" href="{% url 'crm_contact_list' %}">Find an existing contact</a></div>
+{% if unassigned_count %}<div class="hiring-notice"><a href="?owner=unassigned">{{ unassigned_count }} active candidate{{ unassigned_count|pluralize }} need an eligible owner</a></div>{% endif %}
+<form method="get" class="hiring-filters" aria-label="Filter hiring candidates">
+ <div class="field"><label for="owner-filter">Show candidates</label><select id="owner-filter" name="owner"><option value="mine" {% if owner_filter == 'mine' %}selected{% endif %}>My candidates</option><option value="all" {% if owner_filter == 'all' %}selected{% endif %}>Everyone</option><option value="unassigned" {% if owner_filter == 'unassigned' %}selected{% endif %}>Needs owner</option>{% for owner in owners %}<option value="{{ owner.pk }}" {% if owner_filter == owner.pk|stringformat:'s' %}selected{% endif %}>{{ owner }}</option>{% endfor %}</select></div>
+ <div class="field"><label for="stage-filter">Stage</label><select id="stage-filter" name="stage"><option value="active" {% if stage_filter == 'active' %}selected{% endif %}>Active candidates</option><option value="all" {% if stage_filter == 'all' %}selected{% endif %}>All stages</option>{% for value,label in stages %}<option value="{{ value }}" {% if stage_filter == value %}selected{% endif %}>{{ label }}</option>{% endfor %}</select></div>
+ <div class="field search"><label for="candidate-search">Find a candidate</label><input id="candidate-search" name="q" value="{{ query }}" placeholder="Name or email" maxlength="255"></div>
+ <label class="check-item"><input type="checkbox" name="attention" value="1" {% if attention %}checked{% endif %}>Needs attention</label><button class="btn" type="submit">Apply</button>
+</form>
+<div class="hiring-layout">
+ <section class="card" aria-label="Candidate next actions"><div class="hiring-list-head hiring-row"><strong>Next actions</strong><span class="subtle">{{ page_obj.paginator.count }} candidate{{ page_obj.paginator.count|pluralize }}</span></div>
+ {% for item in page_obj %}<a class="candidate-row {% if candidate.pk == item.pk %}selected{% endif %}" href="{{ item.selection_url }}" {% if candidate.pk == item.pk %}aria-current="true"{% endif %}><div class="hiring-row"><strong>{{ item.application.name }}</strong><span class="badge badge-neutral">{{ item.get_stage_display }}</span></div><div class="hiring-next">{{ item.next_action|default:'No next action recorded' }}</div><div class="hiring-meta"><span>{{ item.application.owner|default:'Needs owner' }} · {{ item.days_in_stage }} day{{ item.days_in_stage|pluralize }} in stage</span><span {% if item.is_overdue %}class="overdue"{% endif %}>{% if item.is_terminal %}Complete{% elif item.is_overdue %}Overdue · {{ item.due_date|date:'M j' }}{% elif item.due_date %}Due {{ item.due_date|date:'M j' }}{% else %}Needs due date{% endif %}</span></div>{% if item.blocker %}<div class="overdue">Blocked: {{ item.blocker|truncatechars:100 }}</div>{% endif %}</a>
+ {% empty %}<div class="empty">No candidates match this view. <a href="?owner=all">View everyone's candidates</a> or open a CRM contact to confirm their hiring interest.</div>{% endfor %}
+ {% if page_obj.has_other_pages %}<nav class="hiring-pagination" aria-label="Candidate pages">{% if page_obj.has_previous %}<a href="?{{ filter_query }}&page={{ page_obj.previous_page_number }}">Previous</a>{% endif %}<span>Page {{ page_obj.number }} of {{ page_obj.paginator.num_pages }}</span>{% if page_obj.has_next %}<a href="?{{ filter_query }}&page={{ page_obj.next_page_number }}">Next</a>{% endif %}</nav>{% endif %}
+ </section>
+ <aside class="card hiring-detail" id="candidate-record" aria-label="Candidate record">
+ {% if candidate %}
+ <p class="eyebrow">Candidate record</p><h2>{{ candidate.application.name }}</h2><div class="subtle">{{ candidate.application.email }}{% if candidate.application.phone %} · {{ candidate.application.phone }}{% endif %}</div><div class="subtle">Applied {{ candidate.application.created_at|date:'M j, Y' }}</div>
+ <p style="margin-top:16px"><strong>{{ candidate.application.owner|default:'Needs owner' }}</strong> owns the entire hiring process.</p>
+ <details {% if owner_form.errors %}open{% endif %}><summary>Reassign full ownership</summary><form method="post" action="{% url 'crm_hiring_assign' candidate.pk %}">{% csrf_token %}{{ owner_form.revision }}{{ owner_form.non_field_errors }}<div class="field">{{ owner_form.owner.label_tag }}{{ owner_form.owner }}{{ owner_form.owner.errors }}</div><button class="btn" type="submit">Transfer ownership</button></form></details>
+ <ol class="journey" aria-label="Hiring stages">{% for value,label in journey %}<li {% if candidate.stage == value %}class="current" aria-current="step"{% endif %}>{{ label }}</li>{% endfor %}</ol>
+ <details><summary>Application and documents</summary><p>{{ candidate.application.role_interest }}</p><p>{{ candidate.application.notes|linebreaksbr }}</p>{% if candidate.lead %}<p><a href="{% url 'crm_contact_detail' candidate.lead.pk %}">View linked CRM contact</a></p>{% endif %}<div class="hiring-row">{% if candidate.application.resume_original_name or candidate.application.resume %}<a class="btn" href="{% url 'crm_hiring_document' candidate.pk 'resume' %}">Download resume</a>{% endif %}{% if candidate.application.cover_letter_original_name or candidate.application.cover_letter %}<a class="btn" href="{% url 'crm_hiring_document' candidate.pk 'cover-letter' %}">Download cover letter</a>{% endif %}</div><p class="subtle">Documents are available only when supplied with the application.</p></details>
+ {% if not can_edit %}<div class="hiring-notice">Only the assigned owner can update this record. Transfer ownership to yourself to take over the full process.</div>{% endif %}
+ <form method="post" action="{% url 'crm_hiring_update' candidate.pk %}">{% csrf_token %}{{ form.revision }}
+ {% if form.errors %}<div role="alert" class="hiring-notice"><strong>Updates were not saved.</strong>{{ form.non_field_errors }}{% for field in form %}{% if field.errors %}<div><a href="#{{ field.id_for_label }}">{{ field.label }}</a>: {{ field.errors }}</div>{% endif %}{% endfor %}<a href="?owner=all&candidate={{ candidate.pk }}#candidate-record">Reload saved record</a></div>{% endif %}
+ <fieldset {% if not can_edit %}disabled{% endif %}>
+ <div class="field">{{ form.stage.label_tag }}{{ form.stage }}</div><div class="field">{{ form.next_action.label_tag }}{{ form.next_action }}</div><div class="field">{{ form.due_date.label_tag }}{{ form.due_date }}<small class="subtle">Aim to review applications and make decisions within two business days.</small></div><div class="field">{{ form.blocker.label_tag }}{{ form.blocker }}</div>
+ <details {% if form.checklist.errors %}open{% endif %}><summary id="id_checklist">Stage checklists</summary>{% for label,items in checklist_groups %}<fieldset><legend>{{ label }}</legend>{% for key,title in items %}<label class="check-item"><input type="checkbox" name="checklist" value="{{ key }}" {% if key in form.checklist.value %}checked{% endif %}>{{ title }}</label>{% endfor %}</fieldset>{% endfor %}</details>
+ <details {% if candidate.stage == 'interview' or candidate.stage == 'decision' or form.evaluation_notes.errors or form.decision_notes.errors %}open{% endif %}><summary>Evaluation and hiring decision</summary><div class="field">{{ form.evaluation_notes.label_tag }}{{ form.evaluation_notes }}</div><div class="field">{{ form.decision.label_tag }}{{ form.decision }}</div><div class="field">{{ form.decision_notes.label_tag }}{{ form.decision_notes }}</div></details>
+ <details {% if candidate.stage == 'offer' or form.offer_terms.errors or form.offer_response.errors or form.offer_responded_on.errors %}open{% endif %}><summary>Offer record</summary><p class="subtle">Record the offer you sent and the candidate's response.</p><div class="field">{{ form.offer_sent_on.label_tag }}{{ form.offer_sent_on }}</div><div class="field">{{ form.offer_terms.label_tag }}{{ form.offer_terms }}</div><div class="field">{{ form.offer_response.label_tag }}{{ form.offer_response }}</div><div class="field">{{ form.offer_responded_on.label_tag }}{{ form.offer_responded_on }}</div></details>
+ <details {% if candidate.stage == 'onboarding' %}open{% endif %}><summary>Onboarding record</summary><div class="field">{{ form.onboarding_notes.label_tag }}{{ form.onboarding_notes }}</div><p class="subtle">Use the onboarding checklist to confirm paperwork, training, and readiness. Keep tax and bank details in the workforce system.</p></details>
+ <details {% if candidate.stage == 'hold' or candidate.stage == 'not_selected' or candidate.stage == 'withdrawn' or form.outcome_reason.errors or form.review_date.errors %}open{% endif %}><summary>Hold or close candidate</summary><p class="subtle">Choose On hold, Not selected, or Withdrawn in the stage field.</p><div class="field">{{ form.outcome_reason.label_tag }}{{ form.outcome_reason }}</div><div class="field">{{ form.review_date.label_tag }}{{ form.review_date }}<small class="subtle">For a hold, this becomes the next due date.</small></div></details>
+ {% if can_edit %}<button class="btn btn-primary" type="submit">Save candidate updates</button>{% endif %}
+ </fieldset></form>
+ <details><summary>Activity history</summary><ol class="hiring-activity">{% for event in events %}<li>{{ event.summary }}<div class="subtle">{{ event.actor|default:'Application intake' }} · {{ event.created_at|date:'M j, Y H:i' }}</div>{% if event.changes.fields %}<div class="subtle">Updated: {{ event.changed_field_labels|join:', ' }}</div>{% endif %}</li>{% endfor %}</ol></details>
+ {% else %}<h2>Select a candidate</h2><p class="subtle">New teaching applications appear here automatically. Confirm hiring interest from an existing contact to add them.</p>{% endif %}
+ </aside>
+</div>
+{% if can_edit %}
+{{ action_defaults|json_script:"hiring-action-defaults" }}
+<script>
+(() => {
+ const stage = document.getElementById('id_stage');
+ const action = document.getElementById('id_next_action');
+ const due = document.getElementById('id_due_date');
+ const defaults = JSON.parse(document.getElementById('hiring-action-defaults').textContent);
+ let previousAction = action.value;
+ let previousDue = due.value;
+ stage.addEventListener('change', () => {
+   if (action.value === previousAction) { action.value = defaults[stage.value] || ''; }
+   if (due.value === previousDue) { due.value = defaults[stage.value] ? '{{ suggested_due_date }}' : ''; }
+   previousAction = action.value;
+   previousDue = due.value;
+ });
+})();
+</script>
+{% endif %}
+{% endblock %}
