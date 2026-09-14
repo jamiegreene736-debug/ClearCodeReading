@@ -359,3 +359,67 @@ class UserOnboardingTests(TestCase):
         self.assertEqual(response.status_code, 400)
         self.assertContains(response, "254 characters", status_code=400)
         self.assertFalse(CustomUser.objects.filter(email=email).exists())
+
+    def test_https_creation_accepts_valid_csrf_and_same_origin(self):
+        client = Client(enforce_csrf_checks=True)
+        client.force_login(self.admin)
+        page = client.get(reverse("manage_users"), secure=True)
+        self.assertContains(page, '<meta name="referrer" content="same-origin">')
+        response = client.post(
+            reverse("manage_users"),
+            {
+                "first_name": "Secure",
+                "email": "secure@example.com",
+                "role": "crm_user",
+                "csrfmiddlewaretoken": client.cookies["csrftoken"].value,
+            },
+            secure=True,
+            HTTP_ORIGIN="https://testserver",
+            HTTP_REFERER="https://testserver/portal/users/",
+        )
+        self.assertEqual(response.status_code, 302)
+        self.assertEqual(
+            CustomUser.objects.get(email="secure@example.com").invitation.status, "sent"
+        )
+
+    def test_https_origin_null_and_foreign_origin_remain_rejected(self):
+        client = Client(enforce_csrf_checks=True)
+        client.force_login(self.admin)
+        client.get(reverse("manage_users"), secure=True)
+        for origin in ["null", "https://untrusted.example"]:
+            response = client.post(
+                reverse("manage_users"),
+                {
+                    "first_name": "Blocked",
+                    "email": "blocked@example.com",
+                    "role": "crm_user",
+                    "csrfmiddlewaretoken": client.cookies["csrftoken"].value,
+                },
+                secure=True,
+                HTTP_ORIGIN=origin,
+            )
+            self.assertEqual(response.status_code, 403)
+        self.assertFalse(
+            CustomUser.objects.filter(email="blocked@example.com").exists()
+        )
+
+    def test_https_password_setup_accepts_same_site_referer_without_origin(self):
+        self.invite()
+        client = Client(enforce_csrf_checks=True)
+        target = client.get(self.setup_path(), secure=True).url
+        page = client.get(target, secure=True)
+        self.assertContains(page, '<meta name="referrer" content="same-origin">')
+        response = client.post(
+            target,
+            {
+                "new_password1": "Browser-Password-839!",
+                "new_password2": "Browser-Password-839!",
+                "csrfmiddlewaretoken": client.cookies["csrftoken"].value,
+            },
+            secure=True,
+            HTTP_REFERER="https://testserver" + target,
+        )
+        self.assertEqual(response.status_code, 302)
+        self.assertIsNotNone(
+            UserInvitation.objects.get(user__email="new@example.com").accepted_at
+        )

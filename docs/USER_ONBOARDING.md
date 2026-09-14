@@ -25,3 +25,11 @@ A backend user with no previous login and no connected mailbox lands on **Welcom
 - [Django 5.2 authentication views](https://docs.djangoproject.com/en/5.2/topics/auth/default/#django.contrib.auth.views.PasswordResetConfirmView): reuse token validation and password setup rather than distribute temporary passwords.
 - [Google web-server OAuth](https://developers.google.com/identity/protocols/oauth2/web-server): reuse the existing explicit consent and server-side OAuth connection.
 - `apps/users/test_onboarding.py` covers role boundaries, CSRF, delivery failures/uncertainty, private Gmail sends, expiration, one-time use, resend revocation (including already-open browser sessions), and first-login routing.
+
+### HTTPS browser submissions
+
+The onboarding layout uses `Referrer-Policy: same-origin` through its meta tag. Do not change this to `no-referrer`: browsers then send `Origin: null` on native form POSTs, and Django correctly rejects them even when the CSRF token is valid. Same-origin retains the headers needed for local forms and suppresses the referrer on external navigation. CSRF origin and token validation remain enabled.
+
+`python scripts/test_onboarding_browser.py` (Playwright Chromium/WebKit installed, migrated local database configured through `POSTGRES_*`, no `DATABASE_URL`) captures real browser form submissions and replays them through Django with CSRF checks enforced. It exercises account creation, invitation email, and password setup, checks external navigation privacy, rolls back all database changes, and captures email in memory. Django regression tests also reject null/foreign origins and cover browsers that send only a same-site Referer.
+
+Reference: [Django CSRF documentation, removing the Referer header](https://docs.djangoproject.com/en/5.2/ref/csrf/#how-it-works).
