@@ -43,3 +43,11 @@ Run `python manage.py test apps.crm.test_inventory apps.crm.tests` against an is
 - Parent survey and CRM compose layout were inspected at desktop and 390px mobile widths with no horizontal overflow.
 - Production Google email is currently disabled pending provider setup. No live parent emails or consultation availability were seeded. `PUBLIC_APP_URL` is set to the verified Railway HTTPS site on web and email worker services.
 - Final Google email integration follow-up: 73 focused tests passed, plus a dedicated worker-recovery regression. Strict email mypy checks passed for 17 source files. The worker now picks up pending inventory outbox rows left by interrupted web requests.
+
+### Send confirmation
+
+The send form shows a focused error summary when validation prevents sending and preserves entered values. Submission disables the button and announces progress. The assessment record displays the latest invitation/reminder receipt prominently: queued, sending confirmation pending, sent, or not sent. Sent means provider acceptance, not recipient opening. Failures retain the invitation and link to email settings and the existing retry controls.
+
+While delivery is pending, a CRM-authorized, non-cacheable status endpoint refreshes the confirmation and email history every ten seconds while the page is visible, up to ten minutes of active polling. Manual refresh remains available. Receipt refreshes preserve expanded messages and defer history replacement while a user is interacting with it. Duplicate submissions preserve the original send timestamp.
+
+Verification: 37 focused inventory tests; Django system/migration checks; Ruff on changed Python modules; existing strict email type checks. Desktop and 390px mobile checks confirmed visible validation, retained input, responsive failure/success cards, and queued-to-sent automatic updates without horizontal overflow or browser errors. UI checks used synthetic local receipts and did not send external email.

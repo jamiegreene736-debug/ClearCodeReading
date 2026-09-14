@@ -6,8 +6,9 @@ from django.contrib import messages
 from django.core import signing
 from django.core.paginator import Paginator
 from django.db import transaction
-from django.http import Http404
+from django.http import Http404, JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
+from django.template.loader import render_to_string
 from django.urls import reverse
 from django.utils import timezone
 from django.utils.decorators import method_decorator
@@ -27,6 +28,7 @@ from apps.crm.inventory import (
     queue_mail,
     resolve_token,
 )
+from apps.crm.inventory_feedback import delivery_feedback
 from apps.crm.inventory_forms import BookingForm, InvitationForm, SectionForm, SlotForm
 from apps.crm.inventory_models import (
     ConsultationSlot,
@@ -141,10 +143,6 @@ class InventorySendView(CrmAccessMixin, View):
                     )
                     log_activity(invitation, "Invitation created", request.user)
             deliver_pending(invitation)
-            if invitation.emails.filter(status="sent").exists():
-                InventoryInvitation.objects.filter(pk=invitation.pk).update(
-                    sent_at=timezone.now()
-                )
             return redirect("inventory_detail", pk=invitation.pk)
         return render(
             request,
@@ -153,6 +151,7 @@ class InventorySendView(CrmAccessMixin, View):
         )
 
 
+@method_decorator(never_cache, name="dispatch")
 class InventoryDetailView(CrmAccessMixin, View):
     def get(self, request, pk):
         invitation = get_object_or_404(
@@ -160,6 +159,27 @@ class InventoryDetailView(CrmAccessMixin, View):
             pk=pk,
             child__parent__is_deleted=False,
         )
+        feedback = delivery_feedback(invitation)
+        emails = list(invitation.emails.all())
+        receipts = [
+            (str(mail.pk), mail.status, str(mail.sent_at), mail.error)
+            for mail in emails
+        ]
+        if request.GET.get("delivery_status") == "1":
+            return JsonResponse(
+                {
+                    "html": render_to_string(
+                        "crm/_inventory_delivery.html", {"feedback": feedback}
+                    ),
+                    "refresh": feedback.refresh,
+                    "receipts": receipts,
+                    "history": render_to_string(
+                        "crm/_inventory_email_history.html",
+                        {"emails": emails},
+                        request=request,
+                    ),
+                }
+            )
         sections = []
         for group in definition(invitation.child.grade)["groups"]:
             sections.append(
@@ -181,8 +201,10 @@ class InventoryDetailView(CrmAccessMixin, View):
             "crm/inventory_detail.html",
             {
                 "invitation": invitation,
+                "feedback": feedback,
                 "sections": sections,
-                "emails": invitation.emails.all(),
+                "emails": emails,
+                "email_receipts": receipts,
             },
         )
 

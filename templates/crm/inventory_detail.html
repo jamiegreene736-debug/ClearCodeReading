@@ -1,11 +1,56 @@
-{% extends "crm/base.html" %}{% block title %}Assessment responses{% endblock %}{% block content %}
+{% extends "crm/base.html" %}{% block title %}Assessment responses{% endblock %}{% block extra_style %}{% include "crm/_inventory_delivery_style.html" %}{% endblock %}{% block content %}
 <p><a href="{% url 'crm_contact_detail' invitation.child.parent.pk %}">← {{ invitation.child.parent.contact_name }}</a> · <a href="{% url 'inventory_list' %}">All assessments</a></p><h1>Parent Reading Inventory</h1><p>{{ invitation.child.name }} · {{ invitation.child.grade_label }} · {{ invitation.recipient }}</p><p><span class="badge">{{ invitation.status }}</span> · Version {{ invitation.version }} · Link expires {{ invitation.expires_at|date:"M j, Y" }}</p>
+<div id="delivery-feedback" role="status" aria-live="polite" aria-atomic="true">{% include "crm/_inventory_delivery.html" %}</div>
+<div class="delivery-refresh"><a class="btn btn-small" id="refresh-delivery" href="{% url 'inventory_detail' invitation.pk %}">Refresh email status</a><span id="delivery-refresh-note">{% if feedback.refresh %}Checking automatically. You can leave this page; sending continues in the background.{% else %}Latest recorded email status.{% endif %}</span></div>
 <div class="card" style="padding:20px;margin:20px 0"><h2>Next step</h2>{% if invitation.completed_at %}<p>Outcome: <strong>{{ invitation.result.outcome|title }}</strong> · {{ invitation.result.yes_count }} Yes answers out of {{ invitation.result.answered }} answered ({{ invitation.result.total }} in full inventory).</p><p>Rule: {{ invitation.result.rule }}. Early stopping can shorten the inventory.</p>{% if invitation.result.outcome == "review" %}<p>The source cutoff is ambiguous at this score. Review the responses before recommending resources or intervention.</p>{% endif %}{% if not invitation.reviewed_at %}<form method="post">{% csrf_token %}<button class="btn btn-primary" name="action" value="review">Mark reviewed</button></form>{% else %}<p>Reviewed {{ invitation.reviewed_at }} by {{ invitation.reviewed_by.get_full_name }}.</p>{% endif %}{% else %}<p>Awaiting the parent’s completed responses.</p><form method="post">{% csrf_token %}<button class="btn" name="action" value="resend">Send reminder</button> <button class="btn" name="action" value="revoke">Withdraw link</button></form>{% endif %}</div>
 {% if invitation.booking %}<div class="card" style="padding:20px;margin-bottom:20px"><h2>Consultation booked</h2><p>{{ invitation.booking.slot.starts_at }} — {{ invitation.booking.slot.ends_at }}<br>Host: {{ invitation.booking.slot.host.get_full_name }}<br>Call: {{ invitation.booking.phone }}<br>Parent time zone: {{ invitation.booking.timezone }}</p></div>{% endif %}
-<h2>Email history</h2>{% for email in emails %}<article class="card" style="padding:16px;margin-bottom:12px"><strong>{{ email.subject }}</strong><p>{{ email.recipient }} · <span class="badge">{{ email.get_status_display }}</span>{% if email.sent_at %} · {{ email.sent_at }}{% endif %}</p>{% if email.error %}<p role="alert">{{ email.error }}</p>{% endif %}<details><summary>View message</summary>{{ email.body|linebreaks }}</details>{% if email.status == "failed" or email.status == "sending" or email.status == "pending" %}<form method="post">{% csrf_token %}<input type="hidden" name="mail" value="{{ email.pk }}">{% if email.status == "sending" %}<label style="display:block"><input style="width:auto;
-              min-height:auto"
-       type="checkbox"
-       name="checked_provider"
-       value="yes"
-       required> I checked provider records and this message was not delivered.</label>{% endif %}<button class="btn" name="action" value="retry">Retry delivery</button></form>{% endif %}</article>{% endfor %}
-<h2>Responses</h2><div class="survey-response">{% for section in sections %}<section class="survey-section"><h3 class="survey-section-title">{{ section.title }}</h3><div class="survey-answer-grid">{% for answer in section.answers %}<div class="survey-answer"><div class="survey-answer-label">{{ answer.prompt }}</div><div class="survey-answer-value">{{ answer.answer }}</div></div>{% endfor %}</div></section>{% endfor %}</div>{% endblock %}
+<div id="inventory-email-history">{% include "crm/_inventory_email_history.html" %}</div>
+{{ email_receipts|json_script:"email-receipts" }}
+<h2>Responses</h2><div class="survey-response">{% for section in sections %}<section class="survey-section"><h3 class="survey-section-title">{{ section.title }}</h3><div class="survey-answer-grid">{% for answer in section.answers %}<div class="survey-answer"><div class="survey-answer-label">{{ answer.prompt }}</div><div class="survey-answer-value">{{ answer.answer }}</div></div>{% endfor %}</div></section>{% endfor %}</div><script>
+(() => {
+    const panel = document.getElementById('delivery-feedback');
+    const button = document.getElementById('refresh-delivery');
+    const note = document.getElementById('delivery-refresh-note');
+    const history = document.getElementById('inventory-email-history');
+    let receipts = JSON.stringify(JSON.parse(document.getElementById('email-receipts').textContent));
+    let active = {{ feedback.refresh|yesno:"true,false" }}, busy = false, attempts = 0, timer;
+    async function refresh() {
+        if (busy) return;
+        clearTimeout(timer);
+        busy = true;
+        button.setAttribute('aria-busy', 'true');
+        button.textContent = 'Checking…';
+        try {
+            const response = await fetch('?delivery_status=1', {credentials: 'same-origin', cache: 'no-store', headers: {'Accept': 'application/json'}});
+            if (!response.ok || response.redirected) throw new Error('Status unavailable');
+            const data = await response.json();
+            if (panel.innerHTML !== data.html) panel.innerHTML = data.html;
+            const nextReceipts = JSON.stringify(data.receipts);
+            if (nextReceipts !== receipts && !history.contains(document.activeElement)) {
+                const opened = [...history.querySelectorAll('details')].map(item => item.open);
+                history.innerHTML = data.history;
+                history.querySelectorAll('details').forEach((item, index) => { item.open = opened[index] || false; });
+                receipts = nextReceipts;
+            }
+            active = data.refresh || nextReceipts !== receipts;
+            note.textContent = active ? 'Waiting for confirmation. Sending continues in the background.' : 'Email status is up to date.';
+        } catch {
+            note.textContent = 'Could not refresh. The last recorded status is shown; try Refresh email status.';
+        } finally {
+            busy = false;
+            button.removeAttribute('aria-busy');
+            button.textContent = 'Refresh email status';
+            schedule();
+        }
+    }
+    function schedule() {
+        if (active && attempts < 60) timer = setTimeout(() => {
+            if (!document.hidden) { attempts++; refresh(); } else schedule();
+        }, 10000);
+        else if (active) note.textContent = 'Sending continues in the background. Use Refresh email status for the latest result.';
+    }
+    button.addEventListener('click', event => {event.preventDefault(); attempts = 0; refresh();});
+    schedule();
+})();
+</script>
+{% endblock %}

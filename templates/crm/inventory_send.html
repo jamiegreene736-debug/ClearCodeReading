@@ -1,18 +1,68 @@
-{% extends "crm/base.html" %}{% block title %}Send assessment{% endblock %}{% block content %}
-<p><a href="{% url 'crm_contact_detail' lead.pk %}">← {{ lead.contact_name }}</a></p><h1>Send an assessment</h1><p>Parent Reading Inventory · About 5 minutes · One child per invitation</p>
-<div style="display:grid;
-            grid-template-columns:repeat(auto-fit,minmax(min(100%,320px),1fr));
-            gap:24px;
-            align-items:start">
-    <form method="post" class="card" style="padding:24px" id="invitation-form">{% csrf_token %}<input type="hidden" name="nonce" value="{{ nonce }}">{{ form.as_p }}<p>Messages are sent from your connected Google mailbox. <a href="{% url 'crm_email_settings' %}">Email connection settings</a></p><p>The link stays available for 30 days. Existing child records retain their saved grade.</p><button class="btn btn-primary" type="submit">Send invitation</button> <a class="btn" href="{% url 'crm_contact_detail' lead.pk %}">Cancel</a></form>
-    <aside class="card" style="padding:24px">
+{% extends "crm/base.html" %}
+{% block title %}Send assessment{% endblock %}
+{% block extra_style %}
+.invitation-layout{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,340px),1fr));gap:24px;align-items:start}.invitation-form,.invitation-preview{padding:24px}.invitation-field{margin-bottom:20px}.invitation-field label{display:block;font-weight:700;margin-bottom:7px}.invitation-field .errorlist{color:#963420;padding-left:20px;margin:8px 0}.invitation-field.has-error input,.invitation-field.has-error select{border:2px solid #b64a32}.invitation-errors{padding:20px;margin:20px 0;background:#fff5f2;border:1px solid #ebc4b8;border-left:5px solid #b64a32;border-radius:8px}.invitation-errors h2{font-size:20px;margin:0 0 8px}.invitation-errors a{color:#963420}.invitation-errors ul{margin-bottom:0}.invitation-footer{padding-top:18px;border-top:1px solid var(--line)}.invitation-actions{display:flex;flex-wrap:wrap;gap:10px}.invitation-submit-note{min-height:24px;margin:12px 0 0;color:var(--muted)}.invitation-preview{border-top:4px solid var(--teal)}.invitation-preview h2{font-size:22px;overflow-wrap:anywhere}.invitation-preview-message{white-space:pre-wrap;overflow-wrap:anywhere}.invitation-subtitle{max-width:650px;color:var(--muted)}button[disabled]{opacity:.65;cursor:wait}@media(max-width:600px){.invitation-form,.invitation-preview{padding:18px}.invitation-actions .btn{width:100%}}
+{% endblock %}
+{% block content %}
+<p><a href="{% url 'crm_contact_detail' lead.pk %}">← {{ lead.contact_name }}</a></p>
+<h1>Send an assessment</h1>
+<p class="invitation-subtitle">Parent Reading Inventory · About 5 minutes · One child per invitation</p>
+{% if form.errors %}
+<section class="invitation-errors" id="invitation-errors" role="alert" tabindex="-1" aria-labelledby="invitation-error-title">
+    <h2 id="invitation-error-title">Assessment invitation not sent</h2>
+    <p>Check the details below, then send again. Your entries have been kept.</p>
+    {{ form.non_field_errors }}
+    <ul>{% for field in form %}{% for error in field.errors %}<li><a href="#{{ field.id_for_label }}">{{ field.label }}: {{ error }}</a></li>{% endfor %}{% endfor %}</ul>
+</section>
+{% endif %}
+<div class="invitation-layout">
+    <form method="post" class="card invitation-form" id="invitation-form" novalidate>
+        {% csrf_token %}<input type="hidden" name="nonce" value="{{ nonce }}">
+        {% for field in form %}<div class="invitation-field {% if field.errors %}has-error{% endif %}"><label for="{{ field.id_for_label }}">{{ field.label }}</label>{{ field }}{{ field.errors }}{% if field.help_text %}<p>{{ field.help_text }}</p>{% endif %}</div>{% endfor %}
+        <div class="invitation-footer">
+            <p>Sent from your connected Google mailbox. <a href="{% url 'crm_email_settings' %}">Email connection settings</a></p>
+            <p>The private link is available for 30 days. We’ll show whether the invitation is queued, sent, or needs attention.</p>
+            <div class="invitation-actions"><button class="btn btn-primary" id="send-invitation" type="submit">Send invitation</button><a class="btn" href="{% url 'crm_contact_detail' lead.pk %}">Cancel</a></div>
+            <p class="invitation-submit-note" id="invitation-submit-note" role="status" aria-live="polite"></p>
+        </div>
+    </form>
+    <aside class="card invitation-preview" aria-label="Email preview">
         <p class="badge">Email preview</p>
         <p style="color:var(--teal);font-weight:800">ClearCode Reading</p>
-        <h2 id="preview-subject">Your ClearCode Parent Reading Inventory</h2>
-        <p id="preview-message" style="white-space:pre-wrap"></p>
+        <h2 id="preview-subject">{{ form.subject.value|default:"Your ClearCode Parent Reading Inventory" }}</h2>
+        <p id="preview-message" class="invitation-preview-message">{{ form.message.value|default:"" }}</p>
         <span class="btn btn-primary">Complete assessment</span>
-        <p class="subtle">Each invitation includes a private link that opens the survey page.</p>
+        <p class="subtle">The parent opens this button to complete their child’s survey.</p>
     </aside>
 </div>
-<script>const fields=['subject','message'];function preview(){for(const name of fields){document.getElementById('preview-'+name).textContent=document.getElementById('id_'+name).value;}}document.getElementById('invitation-form').addEventListener('input',preview);preview();</script>
+<script>
+(() => {
+    const form = document.getElementById('invitation-form');
+    const button = document.getElementById('send-invitation');
+    const note = document.getElementById('invitation-submit-note');
+    let submitting = false;
+    function preview() {
+        for (const name of ['subject', 'message']) document.getElementById('preview-' + name).textContent = document.getElementById('id_' + name).value;
+    }
+    form.addEventListener('input', preview);
+    form.addEventListener('submit', event => {
+        if (submitting) {event.preventDefault(); return;}
+        submitting = true;
+        button.disabled = true;
+        button.textContent = 'Sending invitation…';
+        form.setAttribute('aria-busy', 'true');
+        note.textContent = 'Saving your invitation and checking email delivery. Please wait.';
+    });
+    window.addEventListener('pageshow', () => {
+        submitting = false;
+        button.disabled = false;
+        button.textContent = 'Send invitation';
+        form.removeAttribute('aria-busy');
+        note.textContent = '';
+    });
+    const errors = document.getElementById('invitation-errors');
+    if (errors) errors.focus();
+    preview();
+})();
+</script>
 {% endblock %}

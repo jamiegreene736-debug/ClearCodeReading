@@ -1,0 +1,14 @@
+<section class="delivery-card delivery-card--{{ feedback.tone }}" aria-labelledby="delivery-title">
+    <span class="delivery-icon" aria-hidden="true">{% if feedback.tone == 'success' %}✓{% elif feedback.tone == 'error' %}!{% else %}↗{% endif %}</span>
+    <div class="delivery-content">
+        <p class="delivery-eyebrow">Email confirmation</p>
+        <h2 id="delivery-title">{{ feedback.title }}</h2>
+        {% if feedback.mail %}<p class="delivery-recipient">To <strong>{{ feedback.mail.recipient }}</strong></p>{% endif %}
+        <p>{{ feedback.description }}</p>
+        {% if feedback.mail.sent_at %}<p class="delivery-time">Sent {{ feedback.mail.sent_at|date:"M j, Y · g:i A T" }}</p>{% endif %}
+        {% if feedback.tone == 'error' %}
+            <p>Your assessment is saved. You do not need to create it again.</p>
+            <div class="delivery-actions"><a class="btn" href="{% url 'crm_email_settings' %}">Check email settings</a><a class="btn" href="#email-history">Review and retry email</a></div>
+        {% endif %}
+    </div>
+</section>

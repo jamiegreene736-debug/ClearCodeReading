@@ -178,7 +178,14 @@ class InventoryWorkflowTests(TestCase):
             "message": "Please complete the inventory.",
         }
         self.client.post(url, payload)
+        sent_at = (
+            InventoryInvitation.objects.exclude(pk=self.invitation.pk).get().sent_at
+        )
         self.client.post(url, payload)
+        self.assertEqual(
+            InventoryInvitation.objects.exclude(pk=self.invitation.pk).get().sent_at,
+            sent_at,
+        )
         self.assertEqual(len(mail.outbox), 1)
         self.assertIn("/reading-inventory/", mail.outbox[0].body)
         self.assertEqual(InventoryInvitation.objects.count(), 2)
@@ -571,3 +578,121 @@ class InventoryWorkflowTests(TestCase):
         ):
             run_pass()
         enqueue.assert_called_once_with(email.pk)
+
+    def test_invalid_send_has_prominent_failure_and_preserves_entries(self):
+        url = reverse("inventory_send", args=[self.parent.pk])
+        nonce = self.client.get(url).context["nonce"]
+        response = self.client.post(
+            url,
+            {
+                "nonce": nonce,
+                "recipient": "not-an-email",
+                "subject": "My invitation",
+                "message": "Please keep this message.",
+                "grade": "grade_3",
+            },
+        )
+        self.assertContains(response, "Assessment invitation not sent")
+        self.assertContains(response, 'id="invitation-errors"')
+        self.assertContains(response, "Please keep this message.")
+        self.assertEqual(self.invitation.emails.count(), 0)
+        self.assertEqual(InventoryInvitation.objects.count(), 1)
+
+    def test_sent_confirmation_shows_recipient_and_receipt(self):
+        url = reverse("inventory_send", args=[self.parent.pk])
+        nonce = self.client.get(url).context["nonce"]
+        response = self.client.post(
+            url,
+            {
+                "nonce": nonce,
+                "child": self.child.pk,
+                "grade": self.child.grade,
+                "recipient": self.parent.contact_email,
+                "subject": "Inventory",
+                "message": "Complete your inventory.",
+            },
+            follow=True,
+        )
+        self.assertContains(response, "Assessment email sent")
+        self.assertContains(response, self.parent.contact_email)
+        self.assertContains(response, "provider confirmed sending")
+        self.assertFalse(response.context["feedback"].refresh)
+
+    @override_settings(DEBUG=False)
+    def test_send_setup_failure_is_prominent_on_redirect(self):
+        url = reverse("inventory_send", args=[self.parent.pk])
+        nonce = self.client.get(url).context["nonce"]
+        response = self.client.post(
+            url,
+            {
+                "nonce": nonce,
+                "child": self.child.pk,
+                "grade": self.child.grade,
+                "recipient": self.parent.contact_email,
+                "subject": "Inventory",
+                "message": "Complete your inventory.",
+            },
+            follow=True,
+        )
+        self.assertContains(response, "Assessment email not sent")
+        self.assertContains(response, "Your assessment is saved")
+        self.assertContains(response, "Check email settings")
+
+    def test_delivery_status_refresh_tracks_actual_receipt_not_other_mail(self):
+        email = queue_mail(
+            self.invitation,
+            "inventory_send_feedback",
+            self.parent.contact_email,
+            "Inventory",
+            "Message",
+        )
+        InventoryMail.objects.filter(pk=email.pk).update(status="queued")
+        owner_mail = queue_mail(
+            self.invitation, "owner", self.staff.email, "Notice", "Message"
+        )
+        InventoryMail.objects.filter(pk=owner_mail.pk).update(status="sent")
+        url = (
+            reverse("inventory_detail", args=[self.invitation.pk])
+            + "?delivery_status=1"
+        )
+        response = self.client.get(url)
+        self.assertIn("Assessment email queued", response.json()["html"])
+        self.assertTrue(response.json()["refresh"])
+        self.assertIn("Queued", response.json()["history"])
+        self.assertIn("no-store", response["Cache-Control"])
+        InventoryMail.objects.filter(pk=email.pk).update(
+            status="sent", sent_at=timezone.now()
+        )
+        response = self.client.get(url)
+        self.assertIn("Assessment email sent", response.json()["html"])
+        self.assertFalse(response.json()["refresh"])
+        self.assertNotIn("Queued", response.json()["history"])
+
+    def test_uncertain_send_is_not_shown_as_sent(self):
+        email = queue_mail(
+            self.invitation,
+            "inventory_send_feedback",
+            self.parent.contact_email,
+            "Inventory",
+            "Message",
+        )
+        InventoryMail.objects.filter(pk=email.pk).update(status="sending")
+        response = self.client.get(
+            reverse("inventory_detail", args=[self.invitation.pk])
+        )
+        self.assertContains(response, "sending confirmation pending")
+        self.assertNotContains(response, "Assessment email sent")
+
+    def test_status_endpoint_requires_crm_access(self):
+        url = (
+            reverse("inventory_detail", args=[self.invitation.pk])
+            + "?delivery_status=1"
+        )
+        self.assertEqual(Client().get(url).status_code, 302)
+        outsider = get_user_model().objects.create_user(
+            username="status-outsider",
+            email="status-outsider@example.com",
+            role="parent",
+        )
+        self.client.force_login(outsider)
+        self.assertEqual(self.client.get(url).status_code, 403)
