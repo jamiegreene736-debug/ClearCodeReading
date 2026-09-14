@@ -218,3 +218,25 @@ class WebsiteEmailTests(TestCase):
         receipt.customer_message.refresh_from_db()
         self.assertEqual(receipt.customer_message.status, "sent")
         self.assertIsNone(receipt.customer_message.conversation)
+
+    def test_removed_application_does_not_block_other_receipts(self):
+        application = RecruitingInterest.objects.create(
+            name="Applicant", email="applicant@example.com", career_path="company"
+        )
+        submission = FormSubmission.objects.create(
+            form_type="career",
+            source_path="/careers/",
+            submitted_data={
+                "email": application.email,
+                "application_id": application.pk,
+            },
+        )
+        receipt = WebsiteReceipt.objects.create(submission=submission)
+        application.delete()
+        valid = self.submit()
+        enqueue_pending_receipts()
+        receipt.refresh_from_db()
+        self.assertIn("removed", receipt.error)
+        self.assertIsNotNone(
+            WebsiteReceipt.objects.get(submission=valid).customer_message
+        )

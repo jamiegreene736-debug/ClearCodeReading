@@ -10,6 +10,7 @@ from django.db.models import Q
 from django.template.loader import render_to_string
 from django.urls import reverse
 
+from apps.core.models import RecruitingInterest
 from apps.crm.models import FormSubmission, NewsletterSubscription, WebsiteReceipt
 from apps.crm.newsletters import _unsubscribe_url
 from apps.crm.templatetags.crm_display import crm_field_label, crm_field_value
@@ -267,6 +268,15 @@ def enqueue_receipt(pk: int) -> None:
             ):
                 raise EmailError(
                     "The submission contact is unavailable. Review the CRM record."
+                )
+            application_id = submission.submitted_data.get("application_id")
+            if (
+                submission.form_type == "career"
+                and application_id
+                and not RecruitingInterest.objects.filter(pk=application_id).exists()
+            ):
+                raise EmailError(
+                    "The recruiting application was removed; confirmations will not be sent."
                 )
             for team, field in ((False, "customer_message"), (True, "team_message")):
                 if getattr(receipt, field + "_id"):
