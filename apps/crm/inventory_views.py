@@ -642,7 +642,11 @@ class InventoryBookingView(InventoryPublicView):
                 if InventoryBooking.objects.filter(invitation=invitation).exists():
                     return redirect("inventory_booking", token=token)
                 slot = get_object_or_404(
-                    ConsultationSlot.objects.select_for_update().select_related("host"),
+                    # Availability changes lock the host before its slot; booking
+                    # needs only the slot lock, avoiding the opposite lock order.
+                    ConsultationSlot.objects.select_for_update(
+                        of=("self",)
+                    ).select_related("host"),
                     pk=form.cleaned_data["slot"],
                 )
                 if (
