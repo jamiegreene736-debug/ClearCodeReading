@@ -90,7 +90,7 @@
               <td>{{ contact.organization_name|default:contact.school_name }}</td>
               <td>{% if contact.assigned_to %}{{ contact.assigned_to.get_full_name|default:contact.assigned_to.email }}{% else %}<span class="subtle">Unassigned</span>{% endif %}</td>
               <td>{{ contact.submission_count }}</td>
-              <td>{% if contact.last_submission_at %}{{ contact.last_submission_at|date:"M j, Y, g:i A" }}{% else %}<span class="subtle">No captured form</span>{% endif %}</td>
+              <td>{% if contact.last_submission_at %}{{ contact.last_submission_at|date:"M j, Y, g:i A T" }}{% else %}<span class="subtle">No captured form</span>{% endif %}</td>
             </tr>
           {% empty %}<tr><td class="empty" colspan="9"><strong>No contacts match this view.</strong><br>Try removing a filter or wait for the next website submission.</td></tr>{% endfor %}
         </tbody>
@@ -107,7 +107,7 @@
             <div><dt>Organization</dt><dd>{{ contact.organization_name|default:contact.school_name|default:"—" }}</dd></div>
             <div><dt>Owner</dt><dd>{% if contact.assigned_to %}{{ contact.assigned_to.get_full_name|default:contact.assigned_to.email }}{% else %}Unassigned{% endif %}</dd></div>
             <div><dt>Submissions</dt><dd>{{ contact.submission_count }}</dd></div>
-            <div><dt>Last submission</dt><dd>{% if contact.last_submission_at %}{{ contact.last_submission_at|date:"M j, Y" }}{% else %}No captured form{% endif %}</dd></div>
+            <div><dt>Last submission</dt><dd>{% if contact.last_submission_at %}{{ contact.last_submission_at|date:"M j, Y, g:i A T" }}{% else %}No captured form{% endif %}</dd></div>
           </dl>
         </article>
       {% empty %}<div class="empty"><strong>No contacts match this view.</strong><br>Try removing a filter or wait for the next website submission.</div>{% endfor %}

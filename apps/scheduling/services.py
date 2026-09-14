@@ -4,6 +4,7 @@ from collections import Counter
 from datetime import date, datetime, time, timedelta
 from zoneinfo import ZoneInfo, ZoneInfoNotFoundError
 
+from django.conf import settings
 from django.db import transaction
 from django.utils import timezone
 
@@ -26,7 +27,7 @@ def _window_key(window):
         window.get("day_of_week"),
         window.get("start_time"),
         window.get("end_time"),
-        window.get("timezone", "UTC"),
+        window.get("timezone") or settings.TIME_ZONE,
     )
 
 
@@ -127,7 +128,7 @@ def _window_capacity_hours(windows: list[dict], start_date: date, end_date: date
             try:
                 starts_at = time.fromisoformat(window["start_time"])
                 ends_at = time.fromisoformat(window["end_time"])
-                ZoneInfo(window.get("timezone") or "UTC")
+                ZoneInfo(window.get("timezone") or settings.TIME_ZONE)
             except (KeyError, TypeError, ValueError, ZoneInfoNotFoundError):
                 continue
             if ends_at > starts_at:
@@ -139,7 +140,7 @@ def _window_capacity_hours(windows: list[dict], start_date: date, end_date: date
 
 
 def operations_metrics(center, start=None, end=None):
-    start = start or timezone.now().replace(hour=0, minute=0, second=0, microsecond=0)
+    start = start or timezone.localtime().replace(hour=0, minute=0, second=0, microsecond=0)
     end = end or start + timedelta(days=28)
     if end <= start:
         raise ValueError("Metrics end must be after start.")

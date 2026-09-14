@@ -118,7 +118,7 @@ class Profile(TimestampedModel, SoftDeleteModel):
     user = models.OneToOneField(CustomUser, on_delete=models.CASCADE, related_name="profile")
     display_name = models.CharField(max_length=255, blank=True)
     avatar = models.ImageField(upload_to="profiles/avatars/", blank=True)
-    timezone = models.CharField(max_length=64, default="UTC")
+    timezone = models.CharField(max_length=64, default="America/New_York")
     preferences = models.JSONField(default=dict, blank=True)
     onboarding_completed_at = models.DateTimeField(null=True, blank=True)
 

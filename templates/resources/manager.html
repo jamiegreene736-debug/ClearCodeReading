@@ -58,7 +58,7 @@
                             <td>
                                 {{ resource.updated_at|date:"M j, Y" }}
                                 <br>
-                                <span class="rm-subtle">{{ resource.updated_at|date:"H:i" }} UTC</span>
+                                <span class="rm-subtle">{{ resource.updated_at|date:"H:i T" }}</span>
                             </td>
                         </tr>
                     {% endfor %}

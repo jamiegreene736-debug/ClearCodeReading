@@ -78,7 +78,7 @@
         if (removeCover && data.get("remove_cover") && removeCover.checked)
           removeCover.checked = false;
         savedGeneration = currentGeneration;
-        state.textContent = `Draft saved · ${new Date(result.saved_at).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}`;
+        state.textContent = `Draft saved · ${new Date(result.saved_at).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit", timeZone: "America/New_York", timeZoneName: "short" })}`;
         return true;
       } catch (error) {
         state.textContent = "Not saved — your edits are still on this page.";
