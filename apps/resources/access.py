@@ -31,6 +31,7 @@ class EditorRequest(HttpRequest):
 def can_edit(user: CustomUser | AnonymousUser) -> bool:
     return bool(
         user.is_authenticated
+        and user.pk is not None
         and user.is_active
         and not getattr(user, "is_deleted", False)
         and getattr(user, "email", "").lower() not in DEMO_IDENTITIES
@@ -47,6 +48,7 @@ def can_edit(user: CustomUser | AnonymousUser) -> bool:
 def can_publish(user: CustomUser | AnonymousUser) -> bool:
     return bool(
         user.is_authenticated
+        and user.pk is not None
         and user.is_active
         and not getattr(user, "is_deleted", False)
         and getattr(user, "email", "").lower() not in DEMO_IDENTITIES
