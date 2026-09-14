@@ -3,8 +3,9 @@
 import base64
 import hashlib
 import secrets
+from collections.abc import Callable
 from datetime import datetime, timedelta
-from typing import Any
+from typing import Any, cast
 from urllib.parse import urlencode
 
 import requests
@@ -65,13 +66,16 @@ def provider_request(url: str, **kwargs: Any) -> dict[str, Any]:
 
 def authorization_url(request: HttpRequest) -> str:
     require_configured()
+    user = request.user
+    if not isinstance(user, CustomUser):
+        raise CalendarError("Sign in to connect your calendar.")
     if not request.session.session_key:
         request.session.save()
     state = STATE_PREFIX + secrets.token_urlsafe(32)
     verifier, nonce = secrets.token_urlsafe(64), secrets.token_urlsafe(32)
     CalendarAuthorization.objects.create(
         state_hash=digest(state),
-        user=request.user,
+        user=user,
         session_hash=digest(request.session.session_key or ""),
         encrypted_verifier=cipher().encrypt(verifier.encode()).decode(),
         nonce=nonce,
@@ -100,12 +104,15 @@ def authorization_url(request: HttpRequest) -> str:
 
 def connect(request: HttpRequest) -> None:
     require_configured()
+    user = request.user
+    if not isinstance(user, CustomUser):
+        raise CalendarError("Sign in to connect your calendar.")
     with transaction.atomic():
         authorization = (
             CalendarAuthorization.objects.select_for_update()
             .filter(
                 state_hash=digest(request.GET.get("state", "")),
-                user=request.user,
+                user=user,
                 session_hash=digest(request.session.session_key or ""),
                 consumed=False,
                 expires_at__gt=timezone.now(),
@@ -140,7 +147,7 @@ def connect(request: HttpRequest) -> None:
         },
     )
     try:
-        claims = id_token.verify_oauth2_token(
+        claims = cast(Callable[..., dict[str, Any]], id_token.verify_oauth2_token)(
             token.get("id_token", ""),
             Request(),
             settings.CRM_CALENDAR_GOOGLE_CLIENT_ID,
@@ -172,9 +179,9 @@ def connect(request: HttpRequest) -> None:
     # Prove the Calendar API is enabled and this grant works before replacing a connection.
     freebusy(access_token, now, now + timedelta(days=1))
     with transaction.atomic():
-        CustomUser.objects.select_for_update().get(pk=request.user.pk)
+        CustomUser.objects.select_for_update().get(pk=user.pk)
         HostCalendar.objects.update_or_create(
-            host=request.user,
+            host=user,
             defaults={
                 "encrypted_google_refresh_token": cipher()
                 .encrypt(refresh_token.encode())
