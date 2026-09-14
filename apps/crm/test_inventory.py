@@ -476,7 +476,7 @@ class InventoryWorkflowTests(TestCase):
             self.assertLess(
                 content.index("Complete assessment"), content.index("Thank you,")
             )
-        self.assertIn("cc-lockup-linen-ui.png", email.provider_message.body_html)
+        self.assertIn('aria-label="ClearCode Reading"', email.provider_message.body_html)
         self.assertEqual(Message.objects.count(), 1)
         self.assertIsNone(self.invitation.sent_at)
         message = email.provider_message
@@ -825,8 +825,18 @@ class InventoryWorkflowTests(TestCase):
 
 
 class InventoryEmailLayoutTests(SimpleTestCase):
+    def test_all_confirmation_templates_share_unboxed_brand(self):
+        brand = render_to_string("crm/_email_brand.html")
+        self.assertIn("background:transparent", brand)
+        self.assertNotIn("<img", brand)
+        for template in ("crm/inventory_email.html", "crm/website_email.html"):
+            with self.subTest(template=template):
+                html = render_to_string(template, {"email": InventoryMail()})
+                self.assertIn(brand, html)
+                self.assertNotIn("cc-lockup-", html)
+
     @override_settings(PUBLIC_APP_URL="https://reading.example.com/")
-    def test_button_precedes_signoff_with_escaped_content_and_absolute_logo(self):
+    def test_button_precedes_signoff_with_escaped_content_and_shared_brand(self):
         from apps.crm.inventory_email import plain_text
 
         email = InventoryMail(
@@ -843,10 +853,8 @@ class InventoryEmailLayoutTests(SimpleTestCase):
             self.assertLess(
                 content.index("Complete assessment"), content.index("Thank you,")
             )
-        self.assertIn(
-            "https://reading.example.com/assets/logo/cc-lockup-linen-ui.png", html
-        )
-        self.assertIn('alt="ClearCode Reading"', html)
+        self.assertIn('aria-label="ClearCode Reading"', html)
+        self.assertNotIn("<img", html)
         self.assertIn("&lt;Parent&gt;", html)
         self.assertNotIn("<Parent>", html)
 

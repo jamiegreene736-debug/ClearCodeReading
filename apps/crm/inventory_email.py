@@ -2,11 +2,7 @@
 
 import re
 
-from django.conf import settings
-
 from apps.crm.inventory_models import InventoryMail
-
-LOGO_PATH = "/assets/logo/cc-lockup-linen-ui.png"
 
 
 def split_signoff(body: str) -> tuple[str, str]:
@@ -17,10 +13,6 @@ def split_signoff(body: str) -> tuple[str, str]:
     if match is None:
         return body, ""
     return body[: match.start()].rstrip(), body[match.start() :]
-
-
-def logo_url() -> str:
-    return settings.PUBLIC_APP_URL.rstrip("/") + LOGO_PATH
 
 
 def plain_text(mail: InventoryMail) -> str:
