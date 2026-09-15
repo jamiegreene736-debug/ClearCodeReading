@@ -7,6 +7,7 @@
 
 {% block extra_head %}
   <style>
+    .carousel-slide[hidden] { display: none; }
     .about-copy, .about-eyebrow { font-family: "Plus Jakarta Sans", ui-sans-serif, system-ui, sans-serif; }
   </style>
 {% endblock %}
@@ -45,19 +46,20 @@
     <div class="mx-auto max-w-6xl px-4 text-center sm:px-6 lg:px-8">
       <p class="about-eyebrow text-sm font-bold uppercase tracking-[.2em] text-deepTeal">The Interventions</p>
       <h2 class="mt-4 text-4xl font-black sm:text-5xl">Reading intervention that works</h2>
-      <p class="about-copy mx-auto mt-5 max-w-3xl text-sm leading-8 text-ink/60">Two established programs, both grounded in the Science of Reading and used by reading specialists for decades. We didn't invent the curriculum your child learns from, and that is the point.</p>
+      <p class="about-copy mx-auto mt-5 max-w-3xl text-sm leading-8 text-ink/60">Age-appropriate, evidence-based interventions delivered by specialists who know each child.</p>
       <div class="mx-auto mt-12 grid max-w-4xl gap-6 text-left md:grid-cols-2">
         <article class="rounded-[2rem] border-t-4 border-forest bg-white p-8 shadow-sm sm:p-9">
           <p class="text-sm font-black uppercase tracking-[.16em] text-deepTeal">Grades K&ndash;2</p>
-          <h3 class="mt-3 text-3xl font-black">Orton-Gillingham</h3>
-          <p class="about-copy mt-4 text-sm leading-7 text-ink/60">The approach structured literacy is built on. Direct, multi-sensory, cumulative, and diagnostic-prescriptive, developed specifically for students with dyslexia and related reading difficulties.</p>
-          <p class="about-copy mt-6 border-t border-ink/10 pt-5 text-[11px] leading-5 text-ink/40">Academy of Orton-Gillingham Practitioners and Educators</p>
+          <h3 class="mt-3 text-3xl font-black">IMSE Orton-Gillingham Plus (OG+)</h3>
+          <p class="about-copy mt-4 text-sm leading-7 text-ink/60">An evidence-based, diagnostic-prescriptive roadmap for struggling readers and students with dyslexia — direct, multi-sensory, cumulative instruction, sequenced by assessment.</p>
+          <div class="mt-6 rounded-2xl bg-seafoam p-5 text-ink"><p class="font-bold">42.82-point oral reading fluency (ORF) gain</p><p class="mt-2 font-bold">Up to +0.48 MAP Growth effect size</p><p class="mt-3 text-xs leading-6">ORF: IMSE group, grades 1–3, versus 33.38 points in the comparison group. MAP Growth: grade 1 result in a K–1 study of 397 students. These are study findings, not ClearCode results or individual guarantees.</p></div>
+          <p class="about-copy mt-6 border-t border-ink/10 pt-5 text-[11px] leading-5 text-ink/40"><a href="https://imse-production-010821.s3.amazonaws.com/IMSE.Brochure.2024.pdf" class="underline">Kent State / IMSE ORF study</a>; <a href="https://imse-production-010821.s3.us-east-1.amazonaws.com/digital_downloads/IMSE%20OG%2B%20Research%20Brief.pdf" class="underline">LXD Research, 2025 (MAP Growth)</a></p>
         </article>
         <article class="rounded-[2rem] border-t-4 border-eucalyptus bg-white p-8 shadow-sm sm:p-9">
           <p class="text-sm font-black uppercase tracking-[.16em] text-deepTeal">Grades 3&ndash;8</p>
           <h3 class="mt-3 text-3xl font-black">Phonics for Reading</h3>
-          <p class="about-copy mt-4 text-sm leading-7 text-ink/60">Developed by Dr. Anita Archer, drawing on decades of research into the Science of Reading. Explicit decoding instruction with fluency and comprehension support built in.</p>
-          <p class="about-copy mt-6 border-t border-ink/10 pt-5 text-[11px] leading-5 text-ink/40">Curriculum Associates</p>
+          <p class="about-copy mt-4 text-sm leading-7 text-ink/60">Dr. Anita Archer’s explicit instruction framework for older readers with severe foundational gaps — explicit phonics and decoding, paired with fluency practice and decodable texts.</p>
+          <p class="about-copy mt-6 border-t border-ink/10 pt-5 text-[11px] leading-5 text-ink/40"><a href="https://www.curriculumassociates.com/research-and-efficacy/phonics-for-reading-summary" class="underline">Curriculum Associates Research Base (ESSA Level 4)</a></p>
         </article>
       </div>
     </div>
@@ -69,7 +71,7 @@
       <h2 class="mt-4 text-4xl font-black sm:text-5xl">Four principles</h2>
       <p class="about-copy mx-auto mt-5 max-w-2xl text-sm leading-8 text-ink/55">The beliefs that shape how we teach, communicate, remove barriers, and support the specialists doing the work.</p>
       <div class="mt-16 grid gap-x-8 gap-y-14 sm:grid-cols-2 lg:grid-cols-4">
-        <article class="border-t border-ink/15 pt-7">
+        <article class="rounded-[2rem] bg-seafoam p-6">
           <p class="about-copy text-[11px] font-bold tracking-[.22em] text-deepTeal/65">01 / GROWTH</p>
           <svg data-testid="principle-icon" data-icon-style="editorial-mark" class="mx-auto mt-5 h-40 w-40 max-w-full" viewBox="0 0 128 128" fill="none" aria-hidden="true" focusable="false">
             <circle cx="64" cy="64" r="57" fill="#F7F2EA"></circle>
@@ -84,7 +86,7 @@
           <h3 class="mt-6 text-2xl font-black leading-tight">Nearly all reading challenges are solvable</h3>
           <p class="about-copy mt-3 text-xs leading-6 text-ink/55">Not a matter of intelligence or effort. A specific set of skill gaps, and the right instruction closes them.</p>
         </article>
-        <article class="border-t border-ink/15 pt-7">
+        <article class="rounded-[2rem] bg-linen p-6">
           <p class="about-copy text-[11px] font-bold tracking-[.22em] text-deepTeal/65">02 / CLARITY</p>
           <svg data-testid="principle-icon" data-icon-style="editorial-mark" class="mx-auto mt-5 h-40 w-40 max-w-full" viewBox="0 0 128 128" fill="none" aria-hidden="true" focusable="false">
             <circle cx="64" cy="64" r="57" fill="#F7F2EA"></circle>
@@ -99,7 +101,7 @@
           <h3 class="mt-6 text-2xl font-black leading-tight">Families deserve clarity</h3>
           <p class="about-copy mt-3 text-xs leading-6 text-ink/55">Published rates, a clear starting point, and an honest timeline before anyone commits.</p>
         </article>
-        <article class="border-t border-ink/15 pt-7">
+        <article class="rounded-[2rem] bg-seafoam p-6">
           <p class="about-copy text-[11px] font-bold tracking-[.22em] text-deepTeal/65">03 / ACCESS</p>
           <svg data-testid="principle-icon" data-icon-style="editorial-mark" class="mx-auto mt-5 h-40 w-40 max-w-full" viewBox="0 0 128 128" fill="none" aria-hidden="true" focusable="false">
             <circle cx="64" cy="64" r="57" fill="#F7F2EA"></circle>
@@ -115,7 +117,7 @@
           <h3 class="mt-6 text-2xl font-black leading-tight">Cost shouldn't decide who reads</h3>
           <p class="about-copy mt-3 text-xs leading-6 text-ink/55">Florida education scholarships accepted alongside private pay.</p>
         </article>
-        <article class="border-t border-ink/15 pt-7">
+        <article class="rounded-[2rem] bg-linen p-6">
           <p class="about-copy text-[11px] font-bold tracking-[.22em] text-deepTeal/65">04 / EXPERTISE</p>
           <svg data-testid="principle-icon" data-icon-style="editorial-mark" class="mx-auto mt-5 h-40 w-40 max-w-full" viewBox="0 0 128 128" fill="none" aria-hidden="true" focusable="false">
             <circle cx="64" cy="64" r="57" fill="#F7F2EA"></circle>
@@ -136,28 +138,32 @@
   <section class="bg-linen py-20 sm:py-24">
     <div class="mx-auto max-w-7xl px-4 text-center sm:px-6 lg:px-8">
       <p class="about-eyebrow text-sm font-bold uppercase tracking-[.2em] text-deepTeal">How We're Built</p>
-      <h2 class="mx-auto mt-4 max-w-4xl text-4xl font-black sm:text-5xl">A sustainable model built for students, educators, and families</h2>
+      <h2 class="mx-auto mt-4 max-w-4xl text-4xl font-black sm:text-5xl">A model built for students, educators, and families</h2>
       <p class="about-copy mx-auto mt-5 max-w-3xl text-sm leading-8 text-ink/60">Great reading intervention usually depends on one exceptional person in one location. We built ClearCode so it doesn't have to.</p>
-      <div class="mt-12 grid gap-6 text-left md:grid-cols-3">
-        <article class="rounded-[2rem] border-t-4 border-forest bg-white p-8 shadow-sm">
-          <h3 class="text-3xl font-black">For Students</h3>
-          <p class="about-copy mt-4 text-sm leading-7 text-ink/60">Small groups, established programs, and instruction that adjusts as progress data comes in. The same clinical rigor at every center.</p>
-        </article>
-        <article class="rounded-[2rem] border-t-4 border-eucalyptus bg-white p-8 shadow-sm">
-          <h3 class="text-3xl font-black">For Educators</h3>
-          <p class="about-copy mt-4 text-sm leading-7 text-ink/60">Compensation, profit sharing, and covered certification that make this a career worth staying in. Retained specialists are what keep quality consistent.</p>
-        </article>
-        <article class="rounded-[2rem] border-t-4 border-seafoam bg-white p-8 shadow-sm">
-          <h3 class="text-3xl font-black">For Families</h3>
-          <p class="about-copy mt-4 text-sm leading-7 text-ink/60">Transparent pricing, scholarships accepted, visible progress, and scheduling that works around a working parent's week.</p>
-        </article>
+      <div class="mt-12" data-carousel role="region" aria-roledescription="carousel" aria-label="A model for students, educators, and families">
+        <div id="about-model-slides" class="overflow-hidden rounded-[2rem] bg-white shadow-sm" aria-live="polite">
+<figure class="carousel-slide grid text-left lg:grid-cols-2" data-carousel-slide role="group" aria-roledescription="slide" aria-label="1 of 3" >
+  <img src="/assets/images/session-carousel-multiple-groups.jpg" srcset="/assets/images/session-carousel-multiple-groups-640.webp 640w, /assets/images/session-carousel-multiple-groups-1024.webp 1024w, /assets/images/session-carousel-multiple-groups.jpg 1536w" sizes="(max-width: 1023px) 100vw, 50vw" alt="A reading specialist teaches two children at a small table." width="1536" height="1024" loading="lazy" class="aspect-[3/2] h-full w-full object-cover">
+  <figcaption class="flex flex-col justify-center p-8 sm:p-12"><h3 class="text-3xl font-black">For Students</h3><p class="about-copy mt-4 leading-8 text-ink/70">Small groups, established programs, and instruction that adjusts as progress data comes in. The same clinical rigor at every center.</p></figcaption>
+</figure>
+<figure class="carousel-slide grid text-left lg:grid-cols-2" data-carousel-slide role="group" aria-roledescription="slide" aria-label="2 of 3" hidden>
+  <img src="/assets/images/educator-team-collaboration.jpg" srcset="/assets/images/educator-team-collaboration-640.webp 640w, /assets/images/educator-team-collaboration-1024.webp 1024w, /assets/images/educator-team-collaboration.jpg 1536w" sizes="(max-width: 1023px) 100vw, 50vw" alt="Reading educators collaborate on instructional planning." width="1536" height="1024" loading="lazy" class="aspect-[3/2] h-full w-full object-cover">
+  <figcaption class="flex flex-col justify-center p-8 sm:p-12"><h3 class="text-3xl font-black">For Educators</h3><p class="about-copy mt-4 leading-8 text-ink/70">Compensation, profit sharing, and covered certification that make this a career worth staying in. Retained specialists are what keep quality consistent.</p></figcaption>
+</figure>
+<figure class="carousel-slide grid text-left lg:grid-cols-2" data-carousel-slide role="group" aria-roledescription="slide" aria-label="3 of 3" hidden>
+  <img src="/assets/images/family-reading-practice.jpg" srcset="/assets/images/family-reading-practice-640.webp 640w, /assets/images/family-reading-practice-1024.webp 1024w, /assets/images/family-reading-practice.jpg 1536w" sizes="(max-width: 1023px) 100vw, 50vw" alt="A parent and child read together at home." width="1536" height="1024" loading="lazy" class="aspect-[3/2] h-full w-full object-cover">
+  <figcaption class="flex flex-col justify-center p-8 sm:p-12"><h3 class="text-3xl font-black">For Families</h3><p class="about-copy mt-4 leading-8 text-ink/70">Transparent pricing and progress updates. Each center has supervised childcare for siblings and work spaces for parents.</p></figcaption>
+</figure>
+        </div>
+        <div class="mt-6 flex items-center justify-center gap-4">
+          <button type="button" data-carousel-prev aria-controls="about-model-slides" aria-label="Show previous model benefit" class="focus-ring h-12 w-12 rounded-full bg-ink text-xl text-white">&#8592;</button>
+          <span data-carousel-status class="font-bold">1 / 3</span>
+          <button type="button" data-carousel-next aria-controls="about-model-slides" aria-label="Show next model benefit" class="focus-ring h-12 w-12 rounded-full bg-ink text-xl text-white">&#8594;</button>
+        </div>
       </div>
     </div>
   </section>
 
-  <section class="bg-ink px-4 py-24 text-center text-white sm:px-6">
-    <h2 class="text-4xl font-black sm:text-5xl">Let's find your child's starting point</h2>
-    <p class="about-copy mx-auto mt-5 max-w-2xl text-sm leading-8 text-white/60">We'll explain what the assessment involves, what it costs, and whether ClearCode is the right fit for your family.</p>
-    <a href="/contact/#consultation-form" class="focus-ring mt-8 inline-flex rounded-full bg-mediumTeal px-8 py-4 font-black text-ink shadow-mediumTealGlow transition hover:-translate-y-1 hover:bg-[#42c6c6]">Join the Priority Waitlist</a>
-  </section>
 {% endblock %}
+
+{% block scripts %}{% include "_carousel_script.html" %}{% endblock %}

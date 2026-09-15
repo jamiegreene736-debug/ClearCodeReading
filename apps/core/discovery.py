@@ -19,7 +19,6 @@ MARKETING_SITEMAP_ROUTES = (
     "marketing_home",
     "marketing_about",
     "marketing_how_it_works",
-    "marketing_families",
     "marketing_resources",
     "marketing_orlando",
     "marketing_faq",
@@ -325,7 +324,6 @@ ClearCode provides educational reading intervention. It does not diagnose dyslex
 - [Orlando reading help]({origin}/orlando/): Reading center, reading app, and reading help for Orlando and Florida
 - [About]({origin}/about/): Why ClearCode exists and the Florida reading context
 - [How it works]({origin}/how-it-works/): Assessment, placement, sessions, and progress
-- [For families]({origin}/families/): Live parent visibility
 - [Free family resources]({origin}/resources/): Practical reading-help tools
 - [FAQ]({origin}/faq/): Common questions about services, methods, and getting started
 - [Contact]({origin}/contact/): Request a consultation

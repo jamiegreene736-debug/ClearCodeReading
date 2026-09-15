@@ -1,0 +1,33 @@
+<script>
+    document.querySelectorAll('[data-carousel]').forEach((carousel) => {
+      const slides = Array.from(carousel.querySelectorAll('[data-carousel-slide]'));
+      const dots = Array.from(carousel.querySelectorAll('[data-carousel-dot]'));
+      const status = carousel.querySelector('[data-carousel-status]');
+      let currentIndex = 0;
+
+      const showSlide = (nextIndex) => {
+        currentIndex = (nextIndex + slides.length) % slides.length;
+        slides.forEach((slide, index) => {
+          slide.hidden = index !== currentIndex;
+        });
+        dots.forEach((dot, index) => {
+          dot.setAttribute('aria-current', String(index === currentIndex));
+        });
+        status.textContent = `${currentIndex + 1} / ${slides.length}`;
+      };
+
+      carousel.querySelector('[data-carousel-prev]').addEventListener('click', () => showSlide(currentIndex - 1));
+      carousel.querySelector('[data-carousel-next]').addEventListener('click', () => showSlide(currentIndex + 1));
+      dots.forEach((dot, index) => dot.addEventListener('click', () => showSlide(index)));
+      carousel.addEventListener('keydown', (event) => {
+        if (event.key === 'ArrowLeft') {
+          event.preventDefault();
+          showSlide(currentIndex - 1);
+        }
+        if (event.key === 'ArrowRight') {
+          event.preventDefault();
+          showSlide(currentIndex + 1);
+        }
+      });
+    });
+</script>

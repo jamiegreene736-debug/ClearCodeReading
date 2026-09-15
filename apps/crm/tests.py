@@ -135,7 +135,7 @@ class CrmTests(SimpleTestCase):
 
         self.assertIn("Unlock Reading. Unlock Everything.", homepage)
         self.assertIn("K–8 structured literacy intervention built to close the gap", homepage)
-        self.assertIn("A straightforward process, built around your child.", homepage)
+        self.assertIn("A straightforward process, built for your child.", homepage)
         self.assertIn("Request a consultation", homepage)
         self.assertIn("Phonics for Reading", homepage)
         self.assertIn("Orton-Gillingham", homepage)

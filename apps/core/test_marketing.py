@@ -3,8 +3,6 @@ from pathlib import Path
 
 from django.conf import settings
 from django.contrib.auth import get_user_model
-from django.contrib.messages import constants as message_constants
-from django.contrib.messages.storage.base import Message
 from django.core.files.uploadedfile import SimpleUploadedFile
 from django.template.loader import get_template
 from django.test import RequestFactory, SimpleTestCase, TestCase, override_settings
@@ -18,7 +16,6 @@ PUBLIC_PAGES = {
     "marketing_home": "index.html",
     "marketing_about": "about.html",
     "marketing_how_it_works": "how-it-works.html",
-    "marketing_families": "families.html",
     "marketing_resources": "resources.html",
     "marketing_orlando": "orlando.html",
     "marketing_faq": "faq.html",
@@ -59,7 +56,6 @@ BRAND_KIT_FILES = {
 LEARNING_PHOTOS_BY_PAGE = {
     "marketing_home": {
         "session-carousel-arrival.jpg",
-        "session-carousel-settle-in.jpg",
         "session-carousel-multiple-groups.jpg",
         "session-carousel-hands-on.jpg",
         "session-carousel-wrap-up.jpg",
@@ -69,7 +65,6 @@ LEARNING_PHOTOS_BY_PAGE = {
         "inclusive-literacy-lesson.jpg",
         "specialist-reading-session.jpg",
     },
-    "marketing_families": {"family-reading-practice.jpg"},
     "marketing_careers": {"educator-team-collaboration.jpg"},
 }
 
@@ -100,25 +95,25 @@ class MarketingPageTests(SimpleTestCase):
         )
         self.assertIn("Join Priority Waitlist", content)
         self.assertIn("See how it works", content)
-        self.assertNotIn("Our Approach", content)
+        self.assertIn("Our Approach", content)
         self.assertIn("One connected reading path.", content)
         self.assertNotIn("Three steps.", content)
-        self.assertIn("A straightforward process, built around your child.", content)
+        self.assertIn("A straightforward process, built for your child.", content)
         self.assertIn("Precise Placement", content)
         self.assertIn(
-            "Every child completes an initial assessment and is placed into one "
-            "structured literacy sequence.",
+            "An initial assessment places every child into one "
+            "structured literacy sequence:",
             content,
         )
         self.assertIn("Specialist-Led Sessions", content)
         self.assertIn(
-            "Reading specialists deliver lessons aligned to each program’s methodology",
+            "Reading specialists teach each program with fidelity",
             content,
         )
         self.assertIn("Progress you can follow", content)
         self.assertEqual(content.count('data-testid="homepage-approach-step"'), 3)
         self.assertIn('href="/survey/"', content)
-        self.assertIn("Join Our Waitlist", content)
+        self.assertIn("Join Our Priority Waitlist", content)
         self.assertNotIn("How ClearCode works", content)
         removed_sections = [
             'id="progress"',
@@ -132,7 +127,7 @@ class MarketingPageTests(SimpleTestCase):
             with self.subTest(text=text):
                 self.assertNotIn(text, content)
         self.assertNotIn("Frequently asked questions", content)
-        self.assertIn("A little clarity can change the whole conversation.", content)
+        self.assertIn("Get Connected Today.", content)
         self.assertEqual(content.count('data-testid="homepage-next-step-tile"'), 3)
 
     def test_homepage_hero_actions_follow_the_photo_without_tagline(self):
@@ -180,10 +175,10 @@ class MarketingPageTests(SimpleTestCase):
         self.assertIn('data-testid="mobile-blog-link"', content)
         self.assertIn('<details class="relative lg:hidden">', content)
         self.assertIn('aria-labelledby="next-step-title"', content)
-        self.assertIn("Choose your next step", content)
-        self.assertIn("Read smarter. Support with confidence.", content)
-        self.assertIn("Be first in line for focused support.", content)
-        self.assertIn("Less guessing. More useful next steps.", content)
+        self.assertIn("Start Your Journey", content)
+        self.assertNotIn("Read smarter. Support with confidence.", content)
+        self.assertNotIn("Be first in line for focused support.", content)
+        self.assertNotIn("Less guessing. More useful next steps.", content)
         self.assertIn('href="/blog/"', content)
         self.assertIn('href="/survey/"', content)
         self.assertIn('href="/resources/"', content)
@@ -239,13 +234,13 @@ class MarketingPageTests(SimpleTestCase):
         self.assertNotIn("Learning in motion", content)
         self.assertNotIn('aria-label="ClearCode learning experiences"', content)
         self.assertEqual(content.count('aria-roledescription="carousel"'), 1)
-        self.assertEqual(content.count('data-carousel-slide role="group"'), 5)
-        self.assertEqual(content.count('aria-roledescription="slide"'), 5)
-        self.assertEqual(content.count('data-carousel-dot='), 5)
+        self.assertEqual(content.count('data-carousel-slide role="group"'), 4)
+        self.assertEqual(content.count('aria-roledescription="slide"'), 4)
+        self.assertEqual(content.count('data-carousel-dot='), 4)
         self.assertIn('aria-label="Show previous session moment"', content)
         self.assertIn('aria-label="Show next session moment"', content)
-        self.assertIn("A ClearCode session feels calm, focused, and connected.", content)
-        self.assertIn("no more than three students", content)
+        self.assertIn("A ClearCode session feels focused and connected.", content)
+        self.assertIn("Groups never exceed three students", content)
         self.assertIn("event.key === 'ArrowLeft'", content)
         self.assertIn("event.key === 'ArrowRight'", content)
         self.assertNotIn("setInterval", content)
@@ -299,7 +294,6 @@ class MarketingPageTests(SimpleTestCase):
             "marketing_home",
             "marketing_about",
             "marketing_how_it_works",
-            "marketing_families",
             "marketing_resources",
             "marketing_orlando",
             "marketing_faq",
@@ -313,7 +307,6 @@ class MarketingPageTests(SimpleTestCase):
             "/about/",
             "/orlando/",
             "/how-it-works/",
-            "/families/",
             "/resources/",
             "/faq/",
             "/foundation/",
@@ -346,15 +339,15 @@ class MarketingPageTests(SimpleTestCase):
         self.assertEqual(response.status_code, 301)
         self.assertEqual(response.url, reverse("marketing_how_it_works"))
 
-    def test_foundation_is_a_secondary_path_with_explicit_updates_opt_in(self):
+    def test_foundation_keeps_a_contact_path_without_newsletter(self):
         homepage = self._render("marketing_home")
         foundation = self._render("marketing_foundation")
 
         self.assertNotIn("Explore the Foundation", homepage)
         self.assertIn('href="/foundation/"', homepage)
         self.assertIn("Help more children find their way into reading.", foundation)
-        self.assertIn('href="#newsletter-signup"', foundation)
-        self.assertIn('name="consent"', foundation)
+        self.assertIn('href="/contact/"', foundation)
+        self.assertNotIn('id="newsletter-signup"', foundation)
 
     def test_family_resources_page_offers_free_actionable_paths(self):
         content = self._render("marketing_resources", {"resources_unlocked": True})
@@ -435,32 +428,38 @@ class MarketingPageTests(SimpleTestCase):
         self.assertIn("Never send a password", content)
         self.assertIn('href="/privacy/#privacy-choices"', content)
 
-    def test_public_pages_include_explicit_consent_newsletter_signup(self):
+    def test_public_pages_share_waitlist_footer_without_newsletter_or_retired_links(self):
         for route_name in PUBLIC_PAGES:
             content = self._render(route_name)
             with self.subTest(route_name=route_name):
-                self.assertIn('id="newsletter-signup"', content)
-                self.assertIn('action="/newsletter/subscribe/"', content)
-                self.assertIn('name="consent"', content)
-                self.assertIn("I can unsubscribe at any time", content)
+                self.assertEqual(content.count('id="priority-waitlist"'), 1)
+                self.assertIn("Opening Early 2027", content)
+                self.assertIn("Be first in line", content)
+                self.assertNotIn('id="newsletter-signup"', content)
+                self.assertNotIn('href="/families/"', content)
 
-    def test_newsletter_confirmation_is_prominent_at_signup_on_shared_and_standalone_pages(self):
-        confirmation = "You’re subscribed. Look for ClearCode Reading updates in your inbox."
+    def test_retired_families_page_redirects_permanently(self):
+        response = resolve("/families/").func(RequestFactory().get("/families/"))
+        self.assertEqual(response.status_code, 301)
+        self.assertEqual(response.url, "/how-it-works/")
 
-        for route_name in ("marketing_home", "reading_assessment"):
-            request = RequestFactory().get("/?newsletter=thanks")
-            content = get_template(PUBLIC_PAGES[route_name]).render(
-                {"messages": [Message(message_constants.SUCCESS, confirmation)]},
-                request,
-            )
+    def test_homepage_action_cards_have_only_photo_and_action(self):
+        content = self._render("marketing_home")
+        cards = re.findall(r'<article[^>]+data-testid="homepage-next-step-tile".*?</article>', content, re.DOTALL)
+        self.assertEqual(len(cards), 3)
+        for card in cards:
+            self.assertEqual(card.count("<img "), 1)
+            self.assertEqual(card.count("<a "), 1)
+            self.assertNotIn("<h3", card)
+            self.assertNotIn("<p ", card)
+        self.assertNotIn('aria-label="ClearCode trust indicators"', content)
+        self.assertNotIn('>Transition<', content)
 
-            with self.subTest(route_name=route_name):
-                self.assertEqual(content.count(confirmation), 1)
-                self.assertLess(content.index('id="newsletter-signup"'), content.index(confirmation))
-                self.assertIn('data-testid="newsletter-signup-feedback"', content)
-                self.assertIn('role="status"', content)
-                self.assertIn("Newsletter signup confirmed", content)
-                self.assertIn("border-4 border-gold bg-ink", content)
+    def test_about_model_carousel_has_three_accessible_photo_slides(self):
+        content = self._render("marketing_about")
+        self.assertEqual(content.count('aria-roledescription="slide"'), 3)
+        self.assertIn('aria-label="Show next model benefit"', content)
+        self.assertIn("supervised childcare for siblings", content)
 
     def test_touched_pages_only_reference_existing_local_assets(self):
         marketing_root = Path(settings.BASE_DIR) / "marketing-website"
@@ -582,7 +581,7 @@ class MarketingPageTests(SimpleTestCase):
         self.assertIn("Orton-Gillingham", content)
         self.assertIn("Phonics for Reading", content)
         self.assertIn("Four principles", content)
-        self.assertIn("A sustainable model built for students, educators, and families", content)
+        self.assertIn("A model built for students, educators, and families", content)
         self.assertIn("Florida Department of Education", content)
         self.assertIn('href="/contact/#consultation-form"', content)
 
