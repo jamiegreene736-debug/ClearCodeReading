@@ -90,7 +90,7 @@ urlpatterns = [
         name="favicon",
     ),
     path("how-it-works/", TemplateView.as_view(template_name="how-it-works.html"), name="marketing_how_it_works"),
-    path("families/", TemplateView.as_view(template_name="families.html"), name="marketing_families"),
+    path("families/", RedirectView.as_view(pattern_name="marketing_how_it_works", permanent=True), name="marketing_families"),
     path("resources/", FamilyResourcesView.as_view(template_name="resources.html"), name="marketing_resources"),
     path("resources/", include("apps.resources.urls")),
     path("orlando/", TemplateView.as_view(template_name="orlando.html"), name="marketing_orlando"),

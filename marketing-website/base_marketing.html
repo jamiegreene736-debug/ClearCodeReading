@@ -114,7 +114,6 @@
         <a class="focus-ring rounded-lg transition hover:text-gold" href="/about/">About</a>
         <a class="focus-ring rounded-lg transition hover:text-gold" href="/orlando/">Orlando</a>
         <a class="focus-ring rounded-lg transition hover:text-gold" href="/how-it-works/">How it works</a>
-        <a class="focus-ring rounded-lg transition hover:text-gold" href="/families/">For Families</a>
         <a class="focus-ring rounded-lg transition hover:text-gold" href="/survey/">Survey</a>
         <a class="focus-ring rounded-lg transition hover:text-gold" href="/faq/">FAQ</a>
         <a class="focus-ring rounded-lg transition hover:text-gold" href="/blog/" data-testid="desktop-blog-link">Blog</a>
@@ -130,7 +129,6 @@
             <a class="focus-ring rounded-xl px-4 py-3 hover:bg-seafoam" href="/about/">About</a>
             <a class="focus-ring rounded-xl px-4 py-3 hover:bg-seafoam" href="/orlando/">Orlando reading help</a>
             <a class="focus-ring rounded-xl px-4 py-3 hover:bg-seafoam" href="/how-it-works/">How it works</a>
-            <a class="focus-ring rounded-xl px-4 py-3 hover:bg-seafoam" href="/families/">For Families</a>
             <a class="focus-ring rounded-xl px-4 py-3 hover:bg-seafoam" href="/resources/">Free Family Resources</a>
             <a class="focus-ring rounded-xl px-4 py-3 hover:bg-seafoam" href="/survey/">Early interest survey</a>
             <a class="focus-ring rounded-xl px-4 py-3 hover:bg-seafoam" href="/faq/">FAQ</a>
@@ -148,7 +146,7 @@
     </nav>
   </header>
 
-  {% if messages and not request.GET.newsletter and not request.GET.survey %}
+  {% if messages and not request.GET.survey %}
     <div class="mx-auto max-w-7xl space-y-2 px-4 pt-4 sm:px-6 lg:px-8" aria-live="polite">
       {% for message in messages %}
         <p class="rounded-2xl bg-linen px-5 py-4 text-sm font-black shadow-sm ring-1 ring-gold/40">{{ message }}</p>
@@ -160,7 +158,7 @@
     {% block content %}{% endblock %}
   </main>
 
-  {% include "_newsletter_signup.html" %}
+  {% include "_priority_waitlist.html" %}
 
   <footer class="bg-ink px-4 py-12 text-white sm:px-6 lg:px-8">
     <div class="mx-auto grid max-w-7xl gap-10 lg:grid-cols-[1fr_auto] lg:items-start">
@@ -173,7 +171,6 @@
         <a href="/about/" class="focus-ring inline-flex min-h-11 items-center rounded hover:text-gold">About</a>
         <a href="/orlando/" class="focus-ring inline-flex min-h-11 items-center rounded hover:text-gold">Orlando</a>
         <a href="/how-it-works/" class="focus-ring inline-flex min-h-11 items-center rounded hover:text-gold">How it works</a>
-        <a href="/families/" class="focus-ring inline-flex min-h-11 items-center rounded hover:text-gold">For Families</a>
         <a href="/resources/" class="focus-ring inline-flex min-h-11 items-center rounded hover:text-gold">Free Resources</a>
         <a href="/blog/" class="focus-ring inline-flex min-h-11 items-center rounded hover:text-gold">Blog</a>
         <a href="/careers/" class="focus-ring inline-flex min-h-11 items-center rounded hover:text-gold">Careers</a>
