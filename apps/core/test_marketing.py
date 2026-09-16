@@ -62,7 +62,7 @@ LEARNING_PHOTOS_BY_PAGE = {
     },
     "marketing_how_it_works": {
         "inclusive-literacy-lesson.jpg",
-        "specialist-reading-session.jpg",
+        "session-carousel-multiple-groups.jpg",
     },
     "marketing_careers": {"educator-team-collaboration.jpg"},
 }
