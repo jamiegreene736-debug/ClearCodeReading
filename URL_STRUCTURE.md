@@ -74,8 +74,8 @@
 | Route | Purpose |
 |---|---|
 | `/` | Intervention Intelligence Platform homepage |
-| `/orlando/` | Orlando / Florida reading-center, reading-app, and reading-help landing page |
-| `/florida/` | Permanent redirect to `/orlando/` |
+| `/orlando/` | Permanent redirect to `/` |
+| `/florida/` | Permanent redirect to `/` |
 | `/robots.txt` | Public crawl rules, including AI search crawlers |
 | `/sitemap.xml` | Public marketing pages and published blog posts |
 | `/llms.txt` | Plain-language brief for AI assistants |

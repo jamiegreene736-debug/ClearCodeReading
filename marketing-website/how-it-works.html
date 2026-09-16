@@ -1,15 +1,21 @@
 {% extends "base_marketing.html" %}
 
 {% block title %}How ClearCode Works | Structured Literacy Intervention{% endblock %}
-{% block meta_description %}See how ClearCode’s Orlando reading center connects assessment, structured-literacy placement, specialist-led sessions, visible progress, and family support.{% endblock %}
+{% block meta_description %}See how ClearCode places each child, delivers specialist-led sessions, and shows families live reading progress.{% endblock %}
+
+{% block extra_head %}
+  <style>
+    .carousel-slide[hidden] { display: none; }
+  </style>
+{% endblock %}
 
 {% block content %}
   <section class="hero-wash overflow-hidden py-16 sm:py-24">
     <div class="mx-auto grid max-w-7xl items-center gap-12 px-4 sm:px-6 lg:grid-cols-[1fr_.9fr] lg:px-8">
       <div>
         <p class="text-sm font-black uppercase tracking-[.18em] text-deepTeal">How it works</p>
-        <h1 class="mt-4 text-4xl font-black leading-tight sm:text-6xl">A clear intervention path, from first placement to every next step.</h1>
-        <p class="mt-6 max-w-3xl text-lg leading-8 text-ink/70">Your child’s learning evidence determines the program and exactly where they begin. ClearCode keeps placement, instruction, progress, and family communication connected without replacing the expertise of a trained reading specialist.</p>
+        <h1 class="mt-4 text-4xl font-black leading-tight sm:text-6xl">Three connected steps. One reading path.</h1>
+        <p class="mt-6 max-w-3xl text-lg leading-8 text-ink/70">ClearCode places every child in the right structured-literacy sequence, teaches in specialist-led groups of three or fewer, and shows families real progress on a live dashboard.</p>
       </div>
       <figure class="overflow-hidden rounded-[2rem] bg-white p-2 shadow-2xl shadow-deepTeal/15 ring-1 ring-deepTeal/10 sm:p-3">
         <img src="/assets/images/inclusive-literacy-lesson.jpg" srcset="/assets/images/inclusive-literacy-lesson-640.webp 640w, /assets/images/inclusive-literacy-lesson-1024.webp 1024w, /assets/images/inclusive-literacy-lesson.jpg 1536w" sizes="(max-width: 1023px) 100vw, 50vw" alt="A reading specialist guides a student wearing a hearing aid through a multisensory literacy lesson." class="aspect-[3/2] w-full rounded-[1.55rem] object-cover" width="1536" height="1024" loading="eager" fetchpriority="high">
@@ -18,111 +24,108 @@
   </section>
 
   <nav class="sticky top-[4.75rem] z-30 flex gap-2 overflow-x-auto border-y border-ink/10 bg-white/95 px-4 py-2 shadow-sm backdrop-blur" aria-label="How ClearCode works steps">
-    <a class="focus-ring min-h-11 shrink-0 rounded-full bg-linen px-4 py-3 text-sm font-bold text-deepTeal" href="#assessment">Assessment</a>
-    <a class="focus-ring min-h-11 shrink-0 rounded-full bg-linen px-4 py-3 text-sm font-bold text-deepTeal" href="#placement">Placement</a>
-    <a class="focus-ring min-h-11 shrink-0 rounded-full bg-linen px-4 py-3 text-sm font-bold text-deepTeal" href="#sessions">Sessions</a>
-    <a class="focus-ring min-h-11 shrink-0 rounded-full bg-linen px-4 py-3 text-sm font-bold text-deepTeal" href="#progress">Progress</a>
-    <a class="focus-ring min-h-11 shrink-0 rounded-full bg-linen px-4 py-3 text-sm font-bold text-deepTeal" href="#specialists">Specialists</a>
+    <a class="focus-ring min-h-11 shrink-0 rounded-full bg-linen px-4 py-3 text-sm font-bold text-deepTeal" href="#placement">Precise Placement</a>
+    <a class="focus-ring min-h-11 shrink-0 rounded-full bg-linen px-4 py-3 text-sm font-bold text-deepTeal" href="#sessions">Specialist-led sessions</a>
+    <a class="focus-ring min-h-11 shrink-0 rounded-full bg-linen px-4 py-3 text-sm font-bold text-deepTeal" href="#progress">Progress you can follow</a>
   </nav>
 
   <section class="bg-white py-20">
-    <div class="mx-auto max-w-6xl space-y-8 px-4 sm:px-6 lg:px-8">
-      <article id="assessment" class="scroll-mt-36 grid overflow-hidden rounded-[2rem] bg-white shadow-sm ring-1 ring-ink/10 lg:grid-cols-[1fr_.34fr]">
-        <div class="p-8 sm:p-10 lg:order-1">
-          <p class="text-sm font-black uppercase tracking-[.16em] text-deepTeal">The Assessment</p>
-          <h2 class="mt-2 text-3xl font-black">Understand where the breakdown is happening.</h2>
-          <p class="mt-4 text-lg leading-8 text-ink/70">Before instruction begins, your child completes a comprehensive evaluation aligned to the intervention they may receive. It establishes a precise baseline in decoding, word recognition, and spelling, identifies unmastered skills, and gives your family a clear picture of what comes next.</p>
-          <div class="mt-5 grid gap-3 text-sm font-bold text-ink/70 sm:grid-cols-3">
-            <span class="rounded-2xl bg-linen px-4 py-3">Where they are</span>
-            <span class="rounded-2xl bg-linen px-4 py-3">What is getting in the way</span>
-            <span class="rounded-2xl bg-linen px-4 py-3">What it will take</span>
+    <div class="mx-auto max-w-6xl space-y-16 px-4 sm:px-6 lg:px-8">
+      <article id="placement" class="scroll-mt-36" data-testid="how-it-works-step-1">
+        <p class="text-sm font-black uppercase tracking-[.16em] text-deepTeal">Step 1</p>
+        <h2 class="mt-2 text-3xl font-black sm:text-5xl">Precise Placement</h2>
+        <p class="mt-4 max-w-3xl text-lg leading-8 text-ink/70">A specialist uses your child’s age, grade band, and methodology-specific assessment evidence to select the program and exact starting point. Each child follows one methodology at a time—never a blended sequence and never pushed past a gap.</p>
+        <div class="mt-8 grid gap-4 md:grid-cols-2">
+          <div class="rounded-[2rem] bg-seafoam p-6 sm:p-8" data-testid="placement-card">
+            <p class="text-xs font-black uppercase tracking-[.14em] text-deepTeal">Grades K–2</p>
+            <h3 class="mt-2 text-2xl font-black">IMSE Orton-Gillingham Plus</h3>
+            <p class="mt-3 text-sm leading-6 text-ink/65">Direct, multisensory, cumulative, and diagnostic-prescriptive instruction, with the starting position determined by assessment results.</p>
           </div>
-        </div>
-        <div class="dot-grid grid min-h-48 place-items-center bg-mediumTeal/20 p-8 lg:order-2"><span class="grid h-24 w-24 place-items-center rounded-[2rem] bg-mediumTeal text-5xl font-black text-white shadow-lg">1</span></div>
-      </article>
-
-      <article id="placement" class="scroll-mt-36 grid overflow-hidden rounded-[2rem] bg-linen shadow-sm lg:grid-cols-[.34fr_1fr]">
-        <div class="dot-grid grid min-h-48 place-items-center bg-gold/55 p-8"><span class="grid h-24 w-24 place-items-center rounded-[2rem] bg-white text-5xl font-black shadow-lg">2</span></div>
-        <div class="p-8 sm:p-10">
-          <p class="text-sm font-black uppercase tracking-[.16em] text-mediumTeal">Precise Placement</p>
-          <h2 class="mt-2 text-3xl font-black">Start in the right structured-literacy sequence.</h2>
-          <p class="mt-4 text-lg leading-8 text-ink/70">A specialist uses your child’s age, grade band, and methodology-specific assessment evidence to select the program and exact starting point. Each child follows one methodology at a time—never a blended sequence and never pushed past a gap.</p>
-          <div class="mt-6 grid gap-4 md:grid-cols-2">
-            <div class="rounded-2xl bg-white p-5">
-              <p class="text-xs font-black uppercase tracking-[.14em] text-deepTeal">Grades K–2</p>
-              <h3 class="mt-2 text-xl font-black">Orton-Gillingham</h3>
-              <p class="mt-2 text-sm leading-6 text-ink/65">Direct, multisensory, cumulative, and diagnostic-prescriptive instruction, with the starting position determined by assessment results.</p>
-            </div>
-            <div class="rounded-2xl bg-white p-5">
-              <p class="text-xs font-black uppercase tracking-[.14em] text-deepTeal">Grades 3–8</p>
-              <h3 class="mt-2 text-xl font-black">Phonics for Reading</h3>
-              <p class="mt-2 text-sm leading-6 text-ink/65">Explicit phonics and decoding instruction paired with fluency practice and comprehension support through decodable text.</p>
-            </div>
+          <div class="rounded-[2rem] bg-sand p-6 sm:p-8" data-testid="placement-card">
+            <p class="text-xs font-black uppercase tracking-[.14em] text-deepTeal">Grades 3–8</p>
+            <h3 class="mt-2 text-2xl font-black">Phonics for Reading</h3>
+            <p class="mt-3 text-sm leading-6 text-ink/65">Explicit phonics and decoding instruction paired with fluency practice and comprehension support through decodable text.</p>
           </div>
         </div>
       </article>
 
-      <article id="sessions" class="scroll-mt-36 grid overflow-hidden rounded-[2rem] bg-seafoam shadow-sm lg:grid-cols-[1fr_.34fr]">
-        <div class="p-8 sm:p-10 lg:order-1">
-          <p class="text-sm font-black uppercase tracking-[.16em] text-deepTeal">What a Session Looks Like</p>
-          <h2 class="mt-2 text-3xl font-black">Direct instruction, captured while it is fresh.</h2>
-          <p class="mt-4 text-lg leading-8 text-ink/70">Trained specialists lead every intervention session. Fast structured capture records the target, accuracy, observed patterns, mastery signals, next direction, and home-practice suggestion in under five minutes.</p>
-          <dl class="mt-6 grid grid-cols-2 gap-4 sm:grid-cols-4">
-            <div class="rounded-2xl bg-white p-4 text-center"><dt class="text-2xl font-black">3</dt><dd class="mt-1 text-xs leading-5 text-ink/60">Students per group, maximum</dd></div>
-            <div class="rounded-2xl bg-white p-4 text-center"><dt class="text-2xl font-black">60</dt><dd class="mt-1 text-xs leading-5 text-ink/60">Minutes per session</dd></div>
-            <div class="rounded-2xl bg-white p-4 text-center"><dt class="text-2xl font-black">1:1</dt><dd class="mt-1 text-xs leading-5 text-ink/60">Available when it is the better fit</dd></div>
-            <div class="rounded-2xl bg-white p-4 text-center"><dt class="text-2xl font-black">Every</dt><dd class="mt-1 text-xs leading-5 text-ink/60">Session logged and tracked</dd></div>
-          </dl>
-          <p class="mt-5 rounded-2xl bg-white px-5 py-4 font-bold text-ink/70">The platform organizes evidence; the specialist remains responsible for instruction.</p>
-        </div>
-        <div class="dot-grid grid min-h-48 place-items-center bg-deepTeal/20 p-8 lg:order-2"><span class="grid h-24 w-24 place-items-center rounded-[2rem] bg-deepTeal text-5xl font-black text-white shadow-lg">3</span></div>
-      </article>
-
-      <article id="progress" class="scroll-mt-36 grid overflow-hidden rounded-[2rem] bg-sand shadow-sm lg:grid-cols-[.34fr_1fr]">
-        <div class="dot-grid grid min-h-48 place-items-center bg-mediumTeal/20 p-8"><span class="grid h-24 w-24 place-items-center rounded-[2rem] bg-mediumTeal text-5xl font-black text-white shadow-lg">4</span></div>
-        <div class="p-8 sm:p-10">
-          <p class="text-sm font-black uppercase tracking-[.16em] text-mediumTeal">How Progress Is Tracked</p>
-          <h2 class="mt-2 text-3xl font-black">Progress families can understand now—not next month.</h2>
-          <p class="mt-4 text-lg leading-8 text-ink/70">Parents see foundational-skill mastery, fluency trends, the latest specialist note, sequence milestones, realistic next steps, and home practice connected to actual sessions. When evidence shows that a skill is not sticking, instruction is adjusted instead of relying on guesswork.</p>
-          <div class="mt-5 flex flex-wrap gap-2 text-sm font-black">
-            <span class="rounded-full bg-white px-4 py-2">Mastery</span>
-            <span class="rounded-full bg-white px-4 py-2">Fluency</span>
-            <span class="rounded-full bg-white px-4 py-2">Specialist notes</span>
-            <span class="rounded-full bg-white px-4 py-2">Home practice</span>
-          </div>
-        </div>
-      </article>
-
-      <article class="grid overflow-hidden rounded-[2rem] bg-ink text-white shadow-sm lg:grid-cols-[1fr_.34fr]">
-        <div class="p-8 sm:p-10 lg:order-1">
-          <p class="text-sm font-black uppercase tracking-[.16em] text-gold">Ongoing support</p>
-          <h2 class="mt-2 text-3xl font-black">Keep instruction on track as evidence changes.</h2>
-          <p class="mt-4 text-lg leading-8 text-white/75">Advisory decision support highlights pacing, regrouping, and review needs. Specialists and instructional leaders review the evidence and make the final decision.</p>
-          <p class="mt-5 rounded-2xl bg-white/8 px-5 py-4 font-bold text-white/80 ring-1 ring-white/10">ClearCode recommendations are explainable and human-controlled.</p>
-        </div>
-        <div class="dot-grid grid min-h-48 place-items-center bg-white/5 p-8 lg:order-2"><span class="grid h-24 w-24 place-items-center rounded-[2rem] bg-white text-5xl font-black text-ink shadow-lg">5</span></div>
-      </article>
-    </div>
-  </section>
-
-  <section id="specialists" class="scroll-mt-36 bg-linen py-20">
-    <div class="mx-auto max-w-6xl px-4 sm:px-6 lg:px-8">
-      <div class="grid items-center gap-10 lg:grid-cols-[.85fr_1.15fr]">
-        <figure class="overflow-hidden rounded-[2rem] bg-white p-2 shadow-xl ring-1 ring-ink/10">
-          <img src="/assets/images/specialist-reading-session.jpg" srcset="/assets/images/specialist-reading-session-640.webp 640w, /assets/images/specialist-reading-session-1024.webp 1024w, /assets/images/specialist-reading-session.jpg 1536w" sizes="(max-width: 1023px) 100vw, 45vw" alt="A reading specialist and student sound out a word together using letter tiles." class="aspect-[3/2] w-full rounded-[1.55rem] object-cover" width="1536" height="1024" loading="lazy">
+      <article id="sessions" class="scroll-mt-36" data-testid="how-it-works-step-2">
+        <p class="text-sm font-black uppercase tracking-[.16em] text-deepTeal">Step 2</p>
+        <h2 class="mt-2 text-3xl font-black sm:text-5xl">Specialist-led sessions</h2>
+        <p class="mt-4 max-w-3xl text-lg leading-8 text-ink/70">Trained specialists lead every intervention session. Fast structured capture records the target, accuracy, observed patterns, mastery signals, next direction, and home-practice suggestion in under five minutes.</p>
+        <figure class="mt-8 overflow-hidden rounded-[2rem] bg-white p-2 shadow-lg ring-1 ring-ink/5">
+          <img src="/assets/images/session-carousel-multiple-groups.jpg" srcset="/assets/images/session-carousel-multiple-groups-640.webp 640w, /assets/images/session-carousel-multiple-groups-1024.webp 1024w, /assets/images/session-carousel-multiple-groups.jpg 1536w" sizes="100vw" alt="A reading specialist leads two elementary students through reading cards at a small classroom table." class="aspect-[16/7] w-full rounded-[1.65rem] object-cover object-center" width="1536" height="1024" loading="lazy">
         </figure>
-        <div>
-          <p class="text-sm font-black uppercase tracking-[.16em] text-deepTeal">Trained Reading Specialists</p>
-          <h2 class="mt-3 text-4xl font-black">The Same Faces, Every Session</h2>
-          <p class="mt-5 text-lg leading-8 text-ink/70">Structured literacy is specialized instructional practice. Your child works with the same methodology-trained specialist over time—someone who learns which strategies work, what motivates them, and how to move them forward.</p>
-          <div class="mt-6 grid gap-4 sm:grid-cols-2">
-            <div class="rounded-2xl bg-white p-5 ring-1 ring-ink/5"><h3 class="font-black">Trust that supports risk-taking</h3><p class="mt-2 text-sm leading-6 text-ink/65">Consistent relationships help guarded readers feel safe enough to try, make mistakes, and grow.</p></div>
-            <div class="rounded-2xl bg-white p-5 ring-1 ring-ink/5"><h3 class="font-black">Training that keeps growing</h3><p class="mt-2 text-sm leading-6 text-ink/65">Specialists receive ongoing supervision and professional development, including a sponsored Orton-Gillingham certification pathway.</p></div>
-          </div>
-          <p class="mt-6 rounded-2xl border border-deepTeal/15 bg-seafoam/35 px-5 py-4 text-sm leading-6 text-ink/65">ClearCode provides educational reading instruction, not diagnosis, treatment, therapy, or medical care.</p>
+        <dl class="mt-8 grid grid-cols-2 gap-4 rounded-[2rem] bg-white p-5 shadow-sm ring-1 ring-ink/10 sm:grid-cols-4 sm:p-6" data-testid="session-numbers-banner">
+          <div class="rounded-2xl bg-linen p-4 text-center" data-testid="session-stat-card"><dt class="text-2xl font-black">3</dt><dd class="mt-1 text-xs leading-5 text-ink/60">Students per group, maximum</dd></div>
+          <div class="rounded-2xl bg-seafoam p-4 text-center" data-testid="session-stat-card"><dt class="text-2xl font-black">60</dt><dd class="mt-1 text-xs leading-5 text-ink/60">Minutes per session</dd></div>
+          <div class="rounded-2xl bg-sand p-4 text-center" data-testid="session-stat-card"><dt class="text-2xl font-black">1:1</dt><dd class="mt-1 text-xs leading-5 text-ink/60">Available when it is the better fit</dd></div>
+          <div class="rounded-2xl bg-gold p-4 text-center" data-testid="session-stat-card"><dt class="text-2xl font-black">Every</dt><dd class="mt-1 text-xs leading-5 text-ink/60">Session logged and tracked</dd></div>
+        </dl>
+        <div class="mt-6 grid gap-4 md:grid-cols-2">
+          <div class="rounded-[2rem] bg-linen p-6" data-testid="session-support-card"><h3 class="text-xl font-black">Trust that supports risk-taking</h3><p class="mt-2 text-sm leading-6 text-ink/65">Your child works with the same methodology-trained specialist over time—someone who learns which strategies work and how to move them forward.</p></div>
+          <div class="rounded-[2rem] bg-seafoam p-6" data-testid="session-support-card"><h3 class="text-xl font-black">The platform organizes evidence</h3><p class="mt-2 text-sm leading-6 text-ink/65">The specialist remains responsible for instruction. ClearCode recommendations are explainable and human-controlled.</p></div>
         </div>
-      </div>
+      </article>
+
+      <article id="progress" class="scroll-mt-36" data-testid="how-it-works-step-3">
+        <p class="text-sm font-black uppercase tracking-[.16em] text-deepTeal">Step 3</p>
+        <h2 class="mt-2 text-3xl font-black sm:text-5xl">Progress you can follow</h2>
+        <p class="mt-4 max-w-3xl text-lg leading-8 text-ink/70">Parents see foundational-skill mastery, fluency trends, the latest specialist note, sequence milestones, realistic next steps, and home practice connected to actual sessions.</p>
+
+        <div class="mt-8" data-carousel role="region" aria-roledescription="carousel" aria-label="Family dashboard views" data-testid="dashboard-carousel">
+          <div id="dashboard-carousel-slides" class="overflow-hidden rounded-[2rem] bg-linen p-3 shadow-lg ring-1 ring-ink/10 sm:p-5" aria-live="polite">
+            <figure class="carousel-slide" data-carousel-slide role="group" aria-roledescription="slide" aria-label="1 of 3">
+              <div class="rounded-[1.6rem] bg-white p-5 shadow-sm sm:p-8" data-testid="dashboard-slide">
+                <p class="text-xs font-black uppercase tracking-[.16em] text-deepTeal">This week's reading growth</p>
+                <h3 class="mt-2 text-2xl font-black sm:text-3xl">Avery's live progress</h3>
+                <p class="mt-1 text-sm text-ink/55">Updated automatically from completed sessions.</p>
+                <div class="mt-6 grid gap-3 sm:grid-cols-3">
+                  <article class="rounded-3xl bg-seafoam p-5"><p class="text-xs font-black uppercase text-deepTeal">Latest accuracy</p><p class="mt-2 text-4xl font-black">92%</p></article>
+                  <article class="rounded-3xl bg-linen p-5"><p class="text-xs font-black uppercase text-ink/60">Tracked skills</p><p class="mt-2 text-4xl font-black">14</p></article>
+                  <article class="rounded-3xl bg-sand p-5"><p class="text-xs font-black uppercase text-mediumTeal">Sessions complete</p><p class="mt-2 text-4xl font-black">8</p></article>
+                </div>
+              </div>
+            </figure>
+            <figure class="carousel-slide" data-carousel-slide role="group" aria-roledescription="slide" aria-label="2 of 3" hidden>
+              <div class="rounded-[1.6rem] bg-white p-5 shadow-sm sm:p-8" data-testid="dashboard-slide">
+                <p class="text-xs font-black uppercase tracking-[.16em] text-deepTeal">Skill mastery</p>
+                <h3 class="mt-2 text-2xl font-black sm:text-3xl">What is sticking, and what still needs work</h3>
+                <div class="mt-6 space-y-3">
+                  <div class="flex items-center justify-between gap-3 rounded-2xl bg-seafoam px-4 py-3"><div><p class="font-black">Closed syllables</p><p class="text-xs font-bold text-ink/50">Decoding</p></div><span class="rounded-full bg-white px-3 py-1 text-xs font-black text-deepTeal">Mastered</span></div>
+                  <div class="flex items-center justify-between gap-3 rounded-2xl bg-linen px-4 py-3"><div><p class="font-black">Silent e</p><p class="text-xs font-bold text-ink/50">Decoding</p></div><span class="rounded-full bg-white px-3 py-1 text-xs font-black text-deepTeal">Practicing</span></div>
+                  <div class="flex items-center justify-between gap-3 rounded-2xl bg-sand px-4 py-3"><div><p class="font-black">Oral reading fluency</p><p class="text-xs font-bold text-ink/50">Fluency</p></div><span class="rounded-full bg-white px-3 py-1 text-xs font-black text-deepTeal">Building</span></div>
+                </div>
+              </div>
+            </figure>
+            <figure class="carousel-slide" data-carousel-slide role="group" aria-roledescription="slide" aria-label="3 of 3" hidden>
+              <div class="rounded-[1.6rem] bg-white p-5 shadow-sm sm:p-8" data-testid="dashboard-slide">
+                <p class="text-xs font-black uppercase tracking-[.16em] text-deepTeal">Specialist note</p>
+                <h3 class="mt-2 text-2xl font-black sm:text-3xl">Progress families can understand now</h3>
+                <p class="mt-4 rounded-[1.4rem] bg-linen p-5 text-sm leading-7 text-ink/70">Accuracy stayed high on practiced patterns. Next session reviews silent e before introducing a new vowel team. Home practice: the two-minute word list from today's session.</p>
+                <div class="mt-5 flex flex-wrap gap-2 text-sm font-black">
+                  <span class="rounded-full bg-seafoam px-4 py-2">Mastery</span>
+                  <span class="rounded-full bg-sand px-4 py-2">Fluency</span>
+                  <span class="rounded-full bg-linen px-4 py-2">Home practice</span>
+                </div>
+              </div>
+            </figure>
+          </div>
+          <div class="mt-6 flex items-center justify-center gap-4">
+            <button type="button" data-carousel-prev aria-controls="dashboard-carousel-slides" aria-label="Show previous dashboard view" class="focus-ring h-12 w-12 rounded-full bg-ink text-xl text-white">&#8592;</button>
+            <span data-carousel-status class="font-bold">1 / 3</span>
+            <button type="button" data-carousel-next aria-controls="dashboard-carousel-slides" aria-label="Show next dashboard view" class="focus-ring h-12 w-12 rounded-full bg-ink text-xl text-white">&#8594;</button>
+          </div>
+        </div>
+      </article>
     </div>
   </section>
 
+  <section class="bg-linen py-16">
+    <div class="mx-auto max-w-3xl px-4 text-center sm:px-6 lg:px-8">
+      <p class="rounded-2xl border border-deepTeal/15 bg-white px-5 py-4 text-sm leading-6 text-ink/65">ClearCode provides educational reading instruction, not diagnosis, treatment, therapy, or medical care.</p>
+    </div>
+  </section>
 {% endblock %}
+
+{% block scripts %}{% include "_carousel_script.html" %}{% endblock %}

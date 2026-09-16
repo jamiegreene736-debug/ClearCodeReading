@@ -20,7 +20,6 @@ MARKETING_SITEMAP_ROUTES = (
     "marketing_about",
     "marketing_how_it_works",
     "marketing_resources",
-    "marketing_orlando",
     "marketing_faq",
     "marketing_foundation",
     "marketing_careers",
@@ -213,7 +212,7 @@ def organization_graph():
                 ),
                 "areaServed": "Orlando, Florida",
                 "availabilityStarts": "2027",
-                "url": f"{origin}/orlando/",
+                "url": f"{origin}/",
             },
             {
                 "@type": "Offer",
@@ -261,26 +260,6 @@ def faq_page_graph():
     }
 
 
-def orlando_page_graph():
-    origin = public_origin()
-    return {
-        "@type": "WebPage",
-        "@id": f"{origin}/orlando/#webpage",
-        "url": f"{origin}/orlando/",
-        "name": "Reading help in Orlando, Florida | ClearCode Reading",
-        "description": (
-            "ClearCode Reading is an evidence-based reading center and reading app "
-            "for K–8 families in Orlando and Central Florida."
-        ),
-        "isPartOf": {"@id": f"{origin}/#website"},
-        "about": {"@id": f"{origin}/#organization"},
-        "speakable": {
-            "@type": "SpeakableSpecification",
-            "cssSelector": ["[data-ai-answer]"],
-        },
-    }
-
-
 def llms_txt():
     origin = public_origin()
     return f"""# {ORGANIZATION_NAME}
@@ -321,7 +300,6 @@ ClearCode provides educational reading intervention. It does not diagnose dyslex
 ## Pages
 
 - [Home]({origin}/): What ClearCode is and how families start
-- [Orlando reading help]({origin}/orlando/): Reading center, reading app, and reading help for Orlando and Florida
 - [About]({origin}/about/): Why ClearCode exists and the Florida reading context
 - [How it works]({origin}/how-it-works/): Assessment, placement, sessions, and progress
 - [Free family resources]({origin}/resources/): Practical reading-help tools

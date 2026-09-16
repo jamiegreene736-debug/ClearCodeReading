@@ -133,7 +133,7 @@ class CrmTests(SimpleTestCase):
     def test_homepage_positions_clear_code_as_family_first_intervention(self):
         homepage = render_to_string("index.html")
 
-        self.assertIn("Unlock Reading. Unlock Everything.", homepage)
+        self.assertIn("Unlock Reading.<br>Unlock Everything.", homepage)
         self.assertIn("K–8 structured literacy intervention built to close the gap", homepage)
         self.assertIn("A straightforward process, built for your child.", homepage)
         self.assertIn("Request a consultation", homepage)

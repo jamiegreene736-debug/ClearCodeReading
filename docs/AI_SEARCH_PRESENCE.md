@@ -26,8 +26,8 @@ The off-site work below is what actually gets a local business recommended.
 
 | URL | Purpose |
 | --- | --- |
-| `/orlando/` | The page built for “reading center / reading app / reading help in Orlando or Florida.” |
-| `/florida/` | Permanent redirect to `/orlando/`. |
+| `/orlando/` | Permanent redirect to the homepage. |
+| `/florida/` | Permanent redirect to the homepage. |
 | `/faq/` | Question-and-answer copy with FAQ structured data. |
 | `/llms.txt` | A plain-language brief for AI crawlers. |
 | `/robots.txt` | Allows GPTBot, OAI-SearchBot, ClaudeBot, PerplexityBot, and related crawlers. |
@@ -48,7 +48,7 @@ or service-area listing.
 - Primary category: something families actually search, such as **Tutoring service**
   or **Educational consultant**, plus reading / literacy if available.
 - Service area: Orlando metro and Central Florida.
-- Description: the same facts as `/orlando/` and `/llms.txt`.
+- Description: the same facts as the homepage and `/llms.txt`.
 - Services: structured literacy, Orton-Gillingham, Phonics for Reading, dyslexia
   educational support, family progress app.
 - Photos of real instruction, specialists, and materials. No stock-only profile.
@@ -92,7 +92,7 @@ AI answers lean on sources other people wrote. Priority targets:
 - Guest posts that cite Florida FAST reading data and then name ClearCode as a
   2027 Orlando option
 - Thoughtful answers on Reddit, Nextdoor, and local Facebook groups that link to
-  `/orlando/` or a resource, not a hard sell
+  the homepage or a resource, not a hard sell
 
 A single accurate article in an Orlando family publication is worth more than
 another homepage rewrite.
@@ -107,7 +107,7 @@ Publish blog and resource pieces whose titles are the query:
 - Florida education scholarships and reading intervention
 - Signs a child needs reading help, and what to do this week
 
-Open with a two-sentence answer. Add one or two sourced facts. Link to `/orlando/`,
+Open with a two-sentence answer. Add one or two sourced facts. Link to `/`,
 `/how-it-works/`, and `/contact/`. Models extract that shape more reliably than
 brand copy.
 
