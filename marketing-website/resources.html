@@ -165,19 +165,23 @@
     (() => {
       const previewDialog = document.querySelector('[data-testid="pack-preview-dialog"]');
       const previewFrame = document.querySelector('[data-pack-preview-frame]');
+      const previewCover = document.querySelector('[data-pack-preview-cover]');
       const previewTitle = document.getElementById('pack-preview-title');
       const previewDownload = document.querySelector('[data-pack-preview-download]');
       const previewOpen = document.querySelector('[data-pack-preview-open]');
-      if (previewDialog && typeof previewDialog.showModal === 'function' && previewFrame && previewTitle && previewDownload && previewOpen) {
+      if (previewDialog && typeof previewDialog.showModal === 'function' && previewFrame && previewCover && previewTitle && previewDownload && previewOpen) {
         const openPreview = (event) => {
           const trigger = event.currentTarget;
           const src = trigger.getAttribute('data-pack-src') || trigger.getAttribute('href');
           const title = trigger.getAttribute('data-pack-title') || 'Comprehension Strategy Pack';
           const downloadName = trigger.getAttribute('data-pack-download') || '';
+          const cover = trigger.getAttribute('data-pack-cover') || '';
           if (!src) return;
           event.preventDefault();
           previewTitle.textContent = title;
-          previewFrame.src = src;
+          previewCover.src = cover;
+          previewCover.alt = title + ' cover';
+          previewFrame.setAttribute('data', src);
           previewDownload.href = src;
           previewDownload.setAttribute('download', downloadName);
           previewOpen.href = src;
@@ -189,7 +193,8 @@
         });
         previewDialog.querySelector('[data-close-pack-preview]').addEventListener('click', () => previewDialog.close());
         previewDialog.addEventListener('close', () => {
-          previewFrame.src = 'about:blank';
+          previewFrame.setAttribute('data', '');
+          previewCover.removeAttribute('src');
           document.documentElement.style.overflow = '';
         });
       }
