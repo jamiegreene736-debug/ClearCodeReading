@@ -283,6 +283,17 @@ class EmailTests(TestCase):
         self.assertEqual(message.status, Message.Status.FAILED)
         client.request.assert_not_called()
 
+    @override_settings(WEBSITE_EMAIL_FROM="hello@clearcodereading.com")
+    def test_website_from_cannot_spoof_regular_crm_mail(self) -> None:
+        message = self.draft()
+        message.sender = "hello@clearcodereading.com"
+        message.save()
+        client = MagicMock(spec=Gmail)
+        send(client, message)
+        message.refresh_from_db()
+        self.assertEqual(message.status, Message.Status.FAILED)
+        client.request.assert_not_called()
+
     def test_disconnected_sender_is_rejected_before_gmail_send(self) -> None:
         message = self.draft()
         Mailbox.objects.filter(pk=self.mailbox.pk).update(

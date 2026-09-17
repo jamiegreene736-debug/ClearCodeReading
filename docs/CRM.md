@@ -89,4 +89,4 @@ python manage.py makemigrations --check --dry-run
 
 Use a PostgreSQL-backed test database because the production project uses `django-tenants` with PostgreSQL.
 
-Successful survey submissions replace the form with a prominent, focused confirmation card. The success state requires a saved session marker and survives refresh. Every accepted survey creates a durable WebsiteReceipt for the existing Gmail worker to deliver customer confirmation and team notice; unavailable-mailbox failures remain visible and retryable in that outbox.
+Successful survey submissions replace the form with a prominent, focused confirmation card. The success state requires a saved session marker and survives refresh. Every accepted survey creates a durable WebsiteReceipt for the existing Gmail worker to deliver customer confirmation and team notice from `hello@clearcodereading.com`; unavailable-mailbox failures remain visible and retryable in that outbox.

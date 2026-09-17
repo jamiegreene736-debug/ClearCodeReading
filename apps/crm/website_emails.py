@@ -22,6 +22,15 @@ from apps.crm_email.services import active_mailbox
 TEAM_EMAIL = "hello@clearcodereading.com"
 
 
+def website_from_address() -> str:
+    """Visible From address for website receipts; must stay on the Workspace domain."""
+    configured = getattr(settings, "WEBSITE_EMAIL_FROM", TEAM_EMAIL).strip().lower()
+    address = configured or TEAM_EMAIL
+    if address.rsplit("@", 1)[-1] != settings.CRM_EMAIL_DOMAIN:
+        raise EmailError("Website From address must use the organization email domain.")
+    return address
+
+
 @dataclass(frozen=True)
 class ReceiptCopy:
     label: str
@@ -294,7 +303,7 @@ def enqueue_receipt(pk: int) -> None:
                     )
                     if submission.form_type == "career"
                     else None,
-                    sender=mailbox.email,
+                    sender=website_from_address(),
                     to=[TEAM_EMAIL if team else email],
                     reply_to=email if team else TEAM_EMAIL,
                     subject=context["subject"],

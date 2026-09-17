@@ -325,7 +325,10 @@ CRM_EMAIL_PUBSUB_EMAIL = os.getenv("CRM_EMAIL_PUBSUB_EMAIL", "")
 CRM_EMAIL_ATTACHMENT_LIMIT = 10 * 1024 * 1024
 
 # Explicit connected mailbox used for automated website confirmations.
+# Recipients see WEBSITE_EMAIL_FROM; Gmail still authenticates as WEBSITE_EMAIL_SENDER.
 WEBSITE_EMAIL_SENDER = os.getenv("WEBSITE_EMAIL_SENDER", "").strip().lower()
+WEBSITE_EMAIL_FROM = os.getenv("WEBSITE_EMAIL_FROM", "hello@clearcodereading.com").strip().lower()
+WEBSITE_EMAIL_FROM_NAME = os.getenv("WEBSITE_EMAIL_FROM_NAME", "ClearCode Reading").strip()
 
 # Optional stable account override for the default consultation calendar.
 CRM_DEFAULT_CONSULTATION_HOST_EMAIL = os.getenv("CRM_DEFAULT_CONSULTATION_HOST_EMAIL", "")

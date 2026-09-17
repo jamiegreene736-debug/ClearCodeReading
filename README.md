@@ -707,11 +707,16 @@ team replies go to the submitter. Assessment results and application documents s
 secured records. Career applicants remain separate from sales contacts.
 
 Set `WEBSITE_EMAIL_SENDER` to an authorized, connected CRM Google mailbox on both the
-web service and `CRM Email Worker`. The existing worker processes receipts every pass
-and handles Gmail rate limits and uncertain delivery without blindly resending. Missing
-sender configuration leaves receipts pending for recovery. The form submission's admin
-page shows each delivery status. `sent` means Gmail accepted the email, not proof that it
-arrived in the recipient's inbox. Historical submissions are not automatically emailed.
+web service and `CRM Email Worker`. Recipients see `WEBSITE_EMAIL_FROM` (default
+`hello@clearcodereading.com`) as the From address, with customer replies still going
+to that inbox. Add that address as a Gmail **Send mail as** alias on the connected
+sender mailbox so Google delivers it without rewriting the From header. Regular CRM
+compose still sends only from the signed-in user's own mailbox. The existing worker
+processes receipts every pass and handles Gmail rate limits and uncertain delivery
+without blindly resending. Missing sender configuration leaves receipts pending for
+recovery. The form submission's admin page shows each delivery status. `sent` means
+Gmail accepted the email, not proof that it arrived in the recipient's inbox.
+Historical submissions are not automatically emailed.
 
 ### Server timezone
 
