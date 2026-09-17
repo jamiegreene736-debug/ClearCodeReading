@@ -26,10 +26,7 @@
             </nav>
         </header>
         <main id="main" class="rm-main">
-            {% for message in messages %}
-                <div class="rm-notice {% if message.tags == 'error' %}rm-error{% endif %}"
-                     role="status">{{ message }}</div>
-            {% endfor %}
+            {% include "_site_messages.html" with site_messages_layout="block" %}
             {% block content %}{% endblock %}
         </main>
         {% block scripts %}{% endblock %}

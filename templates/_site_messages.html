@@ -1,0 +1,46 @@
+{% if messages %}
+{% include "_site_message_styles.html" %}
+<section
+  id="site-confirmation"
+  class="site-confirmation{% if site_messages_layout == 'block' %} site-confirmation--block{% endif %}"
+  data-testid="site-confirmation"
+  tabindex="-1"
+  aria-label="Submission confirmation"
+>
+  <div class="site-confirmation__list">
+    {% for message in messages %}
+      {% if "error" in message.tags %}
+        <div class="site-confirmation__card site-confirmation__card--error" role="alert">
+          <span class="site-confirmation__icon" aria-hidden="true">!</span>
+          <div class="site-confirmation__copy">
+            <p class="site-confirmation__eyebrow">Please check this</p>
+            <p class="site-confirmation__text">{{ message }}</p>
+          </div>
+        </div>
+      {% elif "warning" in message.tags %}
+        <div class="site-confirmation__card site-confirmation__card--warning" role="status">
+          <span class="site-confirmation__icon" aria-hidden="true">!</span>
+          <div class="site-confirmation__copy">
+            <p class="site-confirmation__eyebrow">Please note</p>
+            <p class="site-confirmation__text">{{ message }}</p>
+          </div>
+        </div>
+      {% else %}
+        <div class="site-confirmation__card" role="status">
+          <span class="site-confirmation__icon" aria-hidden="true">✓</span>
+          <div class="site-confirmation__copy">
+            <p class="site-confirmation__eyebrow">{% if "info" in message.tags %}Update{% else %}Confirmed{% endif %}</p>
+            <p class="site-confirmation__text">{{ message }}</p>
+          </div>
+        </div>
+      {% endif %}
+    {% endfor %}
+  </div>
+</section>
+<script>
+  (() => {
+    const banner = document.getElementById("site-confirmation");
+    banner?.focus({ preventScroll: true });
+  })();
+</script>
+{% endif %}

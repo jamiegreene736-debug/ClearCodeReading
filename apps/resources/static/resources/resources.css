@@ -371,24 +371,30 @@
   gap: 18px;
 }
 .rm-notice {
-  background: #e6f2e9;
-  border-left: 4px solid var(--rm-teal);
-  padding: 14px 18px;
-  border-radius: 8px;
+  background: #102F38;
+  color: #fff;
+  border: 3px solid #F5A623;
+  padding: 16px 18px;
+  border-radius: 12px;
   margin: 0 0 22px;
+  font-weight: 800;
 }
 .rm-error,
 .errorlist {
-  color: #922c25;
-  background: #fff0ed;
+  color: #fff;
+  background: #4a1714;
 }
 .errorlist {
-  border-radius: 8px;
-  padding: 10px 10px 10px 28px;
+  border: 3px solid #ffb4a8;
+  border-radius: 12px;
+  padding: 12px 12px 12px 28px;
   font-size: 14px;
+  font-weight: 800;
 }
 .rm-notice.rm-error {
-  border-color: #b83830;
+  border-color: #ffb4a8;
+  background: #4a1714;
+  color: #fff;
 }
 .rm-save-state {
   font-size: 13px;

@@ -26,7 +26,7 @@
   {% include "portal/_header.html" %}
   <main class="mx-auto grid max-w-7xl gap-6 px-4 py-6 lg:grid-cols-[minmax(0,1fr)_280px]">
     <section class="min-w-0">
-      {% for message in messages %}<p class="mb-4 rounded-2xl bg-white p-4 font-bold">{{ message }}</p>{% endfor %}
+      {% if messages %}<div class="mb-4">{% include "_site_messages.html" with site_messages_layout="block" %}</div>{% endif %}
       {% if saved_session %}
         <div class="rounded-[2rem] bg-white p-8 shadow-xl">
           <p class="font-black uppercase tracking-widest text-deepTeal">Session saved</p>
@@ -42,7 +42,20 @@
           {% csrf_token %}
           <p class="font-black uppercase tracking-widest text-deepTeal">Specialist rapid entry</p>
           <h1 class="mt-2 break-words text-3xl font-black sm:text-4xl">Finish the log in one screen.</h1>
-          {% if form_errors %}<div class="mt-4 rounded-2xl bg-sand p-4 text-sm font-bold ring-1 ring-gold/40">{{ form_errors }}</div>{% endif %}
+          {% if form_errors %}
+            {% include "_site_message_styles.html" %}
+            <div class="site-confirmation site-confirmation--block mt-4">
+              <div class="site-confirmation__list">
+                <div class="site-confirmation__card site-confirmation__card--error" role="alert">
+                  <span class="site-confirmation__icon" aria-hidden="true">!</span>
+                  <div class="site-confirmation__copy">
+                    <p class="site-confirmation__eyebrow">Please check this</p>
+                    <p class="site-confirmation__text">{{ form_errors }}</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+          {% endif %}
           <label class="mt-6 block font-black" for="child_id">Reader</label>
           <select id="child_id" name="child_id" onchange="location='?child='+this.value" class="focus-ring mt-2 w-full rounded-2xl border p-4 text-lg" required>
             <option value="">Choose a reader</option>
