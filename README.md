@@ -75,7 +75,7 @@ docker compose run --rm web python manage.py createsuperuser
 Useful URLs:
 
 - Marketing homepage: `http://localhost:8000/`
-- Orlando / Florida reading help: `http://localhost:8000/orlando/`
+- Orlando / Florida routes redirect home: `http://localhost:8000/orlando/`
 - AI crawler brief: `http://localhost:8000/llms.txt`
 - Family consultation: `http://localhost:8000/contact/`
 - Public blog: `http://localhost:8000/blog/`

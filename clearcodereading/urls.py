@@ -93,10 +93,14 @@ urlpatterns = [
     path("families/", RedirectView.as_view(pattern_name="marketing_how_it_works", permanent=True), name="marketing_families"),
     path("resources/", FamilyResourcesView.as_view(template_name="resources.html"), name="marketing_resources"),
     path("resources/", include("apps.resources.urls")),
-    path("orlando/", TemplateView.as_view(template_name="orlando.html"), name="marketing_orlando"),
+    path(
+        "orlando/",
+        RedirectView.as_view(pattern_name="marketing_home", permanent=True),
+        name="marketing_orlando",
+    ),
     path(
         "florida/",
-        RedirectView.as_view(pattern_name="marketing_orlando", permanent=True),
+        RedirectView.as_view(pattern_name="marketing_home", permanent=True),
         name="marketing_florida",
     ),
     path("faq/", TemplateView.as_view(template_name="faq.html"), name="marketing_faq"),

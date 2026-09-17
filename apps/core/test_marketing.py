@@ -17,7 +17,6 @@ PUBLIC_PAGES = {
     "marketing_about": "about.html",
     "marketing_how_it_works": "how-it-works.html",
     "marketing_resources": "resources.html",
-    "marketing_orlando": "orlando.html",
     "marketing_faq": "faq.html",
     "marketing_foundation": "foundation.html",
     "marketing_careers": "careers.html",
@@ -63,7 +62,7 @@ LEARNING_PHOTOS_BY_PAGE = {
     },
     "marketing_how_it_works": {
         "inclusive-literacy-lesson.jpg",
-        "specialist-reading-session.jpg",
+        "session-carousel-multiple-groups.jpg",
     },
     "marketing_careers": {"educator-team-collaboration.jpg"},
 }
@@ -86,15 +85,15 @@ class MarketingPageTests(SimpleTestCase):
     def test_homepage_matches_family_first_waitlist_flow(self):
         content = self._render("marketing_home")
 
-        self.assertIn("Unlock Reading. Unlock Everything.", content)
+        self.assertIn("Unlock Reading.<br>Unlock Everything.", content)
         self.assertIn(
-            "ClearCode is K–8 structured literacy intervention built to close the gap: "
-            "precise placement, expert specialists, and a live dashboard that shows you "
+            "ClearCode is K–8 structured literacy intervention built to close the gap:"
+            "<br>precise placement, expert specialists, and a live dashboard that shows you "
             "real progress, week by week.",
             content,
         )
-        self.assertIn("Join Priority Waitlist", content)
-        self.assertIn("See how it works", content)
+        self.assertIn("Join Our Priority Waitlist", content)
+        self.assertIn("See How It Works", content)
         self.assertIn("Our Approach", content)
         self.assertIn("One connected reading path.", content)
         self.assertNotIn("Three steps.", content)
@@ -140,9 +139,13 @@ class MarketingPageTests(SimpleTestCase):
             hero_actions_start,
         )
         self.assertIn('href="/survey/"', hero_actions)
-        self.assertIn("Join Priority Waitlist", hero_actions)
+        self.assertIn("Join Our Priority Waitlist", hero_actions)
         self.assertIn('href="#how-it-works"', hero_actions)
-        self.assertIn("See how it works", hero_actions)
+        self.assertIn("See How It Works", hero_actions)
+        self.assertGreater(
+            content.index("The flagship reading center opens"),
+            hero_actions_start,
+        )
         self.assertNotIn(
             "Opening in the Orlando metro area · Priority access available",
             content,
@@ -295,7 +298,6 @@ class MarketingPageTests(SimpleTestCase):
             "marketing_about",
             "marketing_how_it_works",
             "marketing_resources",
-            "marketing_orlando",
             "marketing_faq",
             "marketing_foundation",
             "marketing_careers",
@@ -305,7 +307,6 @@ class MarketingPageTests(SimpleTestCase):
         ]
         expected_links = [
             "/about/",
-            "/orlando/",
             "/how-it-works/",
             "/resources/",
             "/faq/",
@@ -326,6 +327,16 @@ class MarketingPageTests(SimpleTestCase):
 
             with self.subTest(route_name=route_name, link="/approach/"):
                 self.assertNotIn('href="/approach/"', content)
+            with self.subTest(route_name=route_name, link="/orlando/"):
+                self.assertNotIn('href="/orlando/"', content)
+            self.assertLess(
+                content.index('data-testid="desktop-blog-link"'),
+                content.index('data-testid="desktop-resources-link"'),
+            )
+            self.assertLess(
+                content.index('data-testid="mobile-blog-link"'),
+                content.index('data-testid="mobile-resources-link"'),
+            )
 
     def test_legacy_approach_route_redirects_to_combined_page(self):
         route = resolve(reverse("marketing_approach"))
@@ -358,6 +369,14 @@ class MarketingPageTests(SimpleTestCase):
         self.assertIn("Take the Reading Inventory", content)
         self.assertIn("Bring Better Questions", content)
         self.assertIn("See the Full Pathway", content)
+        self.assertIn('data-testid="comprehension-packs"', content)
+        self.assertIn("Comprehension Strategy Packs", content)
+        self.assertIn("Preview pack", content)
+        self.assertIn("Download PDF", content)
+        self.assertIn("/assets/resources/gk-2-comprehension-strategy-pack.pdf", content)
+        self.assertIn("/assets/resources/g3-5-comprehension-strategy-pack.pdf", content)
+        self.assertIn("/assets/resources/g6-8-comprehension-strategy-pack.pdf", content)
+        self.assertIn('data-testid="pack-preview-dialog"', content)
         self.assertIn('href="/assessment/"', content)
         self.assertIn('href="/faq/"', content)
         self.assertIn('href="/how-it-works/"', content)
@@ -378,6 +397,9 @@ class MarketingPageTests(SimpleTestCase):
         self.assertIn('name="redirect_to" value="/resources/"', content)
         self.assertIn('name="audience" value="parent"', content)
         self.assertIn("Unlock My Free Resources", content)
+        self.assertIn('data-testid="comprehension-packs"', content)
+        self.assertIn("/assets/resources/gk-2-comprehension-strategy-pack.pdf", content)
+        self.assertIn("Preview the strategy packs", content)
         self.assertNotIn("Three moves for a calmer reading week.", content)
 
     def test_contact_form_is_short_and_supports_audience_routing(self):
@@ -433,7 +455,8 @@ class MarketingPageTests(SimpleTestCase):
             content = self._render(route_name)
             with self.subTest(route_name=route_name):
                 self.assertEqual(content.count('id="priority-waitlist"'), 1)
-                self.assertIn("Opening Early 2027", content)
+                self.assertIn("Opening 2027", content)
+                self.assertNotIn("Opening Early 2027", content)
                 self.assertIn("Be first in line", content)
                 self.assertNotIn('id="newsletter-signup"', content)
                 self.assertNotIn('href="/families/"', content)
@@ -583,6 +606,11 @@ class MarketingPageTests(SimpleTestCase):
         self.assertIn("Four principles", content)
         self.assertIn("A model built for students, educators, and families", content)
         self.assertIn("Florida Department of Education", content)
+        self.assertIn("Source: Institute for Multi-Sensory Education", content)
+        self.assertIn("imse.com", content)
+        self.assertNotIn("42.82-point", content)
+        self.assertNotIn("MAP Growth", content)
+        self.assertIn("one location.<br>We built ClearCode so it doesn't have to.", content)
         self.assertIn('href="/contact/#consultation-form"', content)
 
     def test_contact_page_uses_the_short_local_consultation_form(self):
@@ -641,18 +669,25 @@ class MarketingPageTests(SimpleTestCase):
         content = self._render("marketing_how_it_works")
 
         expected_sections = [
-            "The Assessment",
             "Precise Placement",
-            "What a Session Looks Like",
-            "How Progress Is Tracked",
-            "The Same Faces, Every Session",
-            "Trained Reading Specialists",
-            "Ongoing support",
+            "Specialist-led sessions",
+            "Progress you can follow",
         ]
         for section in expected_sections:
             with self.subTest(section=section):
                 self.assertIn(section, content)
 
+        self.assertIn('data-testid="how-it-works-step-1"', content)
+        self.assertIn('data-testid="how-it-works-step-2"', content)
+        self.assertIn('data-testid="how-it-works-step-3"', content)
+        self.assertIn("IMSE Orton-Gillingham Plus", content)
+        self.assertIn("Phonics for Reading", content)
+        self.assertIn("bg-seafoam", content)
+        self.assertIn("bg-sand", content)
+        self.assertIn("session-carousel-multiple-groups.jpg", content)
+        self.assertIn('data-testid="session-numbers-banner"', content)
+        self.assertIn('data-testid="dashboard-carousel"', content)
+        self.assertEqual(content.count('data-testid="dashboard-slide"'), 3)
         self.assertIn("Students per group, maximum", content)
         self.assertIn("ClearCode provides educational reading instruction", content)
         self.assertIn("ClearCode recommendations are explainable and human-controlled.", content)
@@ -762,27 +797,20 @@ class MarketingPageTests(SimpleTestCase):
         self.assertIn("https://clearcodereading.com/", content)
         self.assertIn('rel="canonical"', content)
 
-    def test_orlando_page_answers_local_reading_help_queries(self):
-        content = self._render("marketing_orlando")
+    def test_retired_orlando_and_florida_routes_redirect_home(self):
+        orlando = resolve(reverse("marketing_orlando"))
+        orlando_response = orlando.func(RequestFactory().get("/orlando/"))
+        self.assertEqual(orlando.func.view_initkwargs["pattern_name"], "marketing_home")
+        self.assertTrue(orlando.func.view_initkwargs["permanent"])
+        self.assertEqual(orlando_response.status_code, 301)
+        self.assertEqual(orlando_response.url, reverse("marketing_home"))
 
-        self.assertIn("Reading help in Orlando, Florida.", content)
-        self.assertIn("reading center opening in the Orlando metro area in 2027", content)
-        self.assertIn("ClearCode Reading iOS app", content)
-        self.assertIn("Florida education scholarships", content)
-        self.assertIn("Orton-Gillingham", content)
-        self.assertIn("Phonics for Reading", content)
-        self.assertIn("data-ai-answer", content)
-        self.assertIn("FAQPage", content)
-        self.assertIn('href="/survey/"', content)
-
-    def test_florida_route_redirects_to_the_orlando_page(self):
-        route = resolve(reverse("marketing_florida"))
-        response = route.func(RequestFactory().get("/florida/"))
-
-        self.assertEqual(route.func.view_initkwargs["pattern_name"], "marketing_orlando")
-        self.assertTrue(route.func.view_initkwargs["permanent"])
-        self.assertEqual(response.status_code, 301)
-        self.assertEqual(response.url, reverse("marketing_orlando"))
+        florida = resolve(reverse("marketing_florida"))
+        florida_response = florida.func(RequestFactory().get("/florida/"))
+        self.assertEqual(florida.func.view_initkwargs["pattern_name"], "marketing_home")
+        self.assertTrue(florida.func.view_initkwargs["permanent"])
+        self.assertEqual(florida_response.status_code, 301)
+        self.assertEqual(florida_response.url, reverse("marketing_home"))
 
     def test_robots_and_llms_files_invite_ai_crawlers(self):
         robots = resolve("/robots.txt").func(RequestFactory().get("/robots.txt"))
@@ -801,11 +829,11 @@ class MarketingPageTests(SimpleTestCase):
         self.assertEqual(llms.status_code, 200)
         self.assertIn("ClearCode Reading", llms.content.decode())
         self.assertIn("Orlando metro area, Florida", llms.content.decode())
-        self.assertIn("https://clearcodereading.com/orlando/", llms.content.decode())
+        self.assertNotIn("https://clearcodereading.com/orlando/", llms.content.decode())
         self.assertIn("does not diagnose dyslexia", llms.content.decode())
 
         self.assertEqual(sitemap.status_code, 200)
-        self.assertIn("https://clearcodereading.com/orlando/", sitemap.content.decode())
+        self.assertNotIn("https://clearcodereading.com/orlando/", sitemap.content.decode())
         self.assertIn("https://clearcodereading.com/faq/", sitemap.content.decode())
 
 

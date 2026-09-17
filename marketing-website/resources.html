@@ -16,7 +16,10 @@
         <p class="text-sm font-black uppercase tracking-[.18em] text-deepTeal">Free family resources</p>
         <h1 class="mt-5 max-w-3xl text-5xl font-black leading-[1.03] tracking-[-.04em] text-ink sm:text-6xl">Less guessing. More useful next steps.</h1>
         <p class="mt-6 max-w-2xl text-lg leading-8 text-ink/70">You do not need another pile of worksheets. Start with practical tools that help you notice patterns, ask sharper questions, and keep reading practice calm.</p>
-        <a href="#start-here" class="focus-ring mt-8 inline-flex rounded-full bg-deepTeal px-7 py-4 font-bold text-white shadow-glow transition hover:-translate-y-0.5 hover:bg-[#176a6a]">Find the right starting point</a>
+        <div class="mt-8 flex flex-col gap-3 sm:flex-row">
+          <a href="#comprehension-packs" class="focus-ring inline-flex rounded-full bg-deepTeal px-7 py-4 text-center font-bold text-white shadow-glow transition hover:-translate-y-0.5 hover:bg-[#176a6a]">Preview the strategy packs</a>
+          <a href="#start-here" class="focus-ring inline-flex rounded-full border border-ink/15 bg-white px-7 py-4 text-center font-bold text-ink transition hover:-translate-y-0.5 hover:border-deepTeal hover:text-deepTeal">Find the right starting point</a>
+        </div>
       </div>
       <aside class="rounded-[2rem] bg-ink p-7 text-white shadow-2xl shadow-ink/20 sm:p-9" aria-label="A simple family plan">
         <p class="text-xs font-black uppercase tracking-[.18em] text-gold">A simple family plan</p>
@@ -28,6 +31,8 @@
       </aside>
     </div>
   </section>
+
+  {% include "_comprehension_packs.html" %}
 
   <section id="start-here" class="scroll-mt-24 bg-white px-4 py-20 sm:px-6 sm:py-24 lg:px-8" aria-labelledby="resource-tools-title">
     <div class="mx-auto max-w-6xl">
@@ -97,19 +102,24 @@
         <p class="text-sm font-black uppercase tracking-[.18em] text-deepTeal">Free family resources</p>
         <h1 class="mt-5 max-w-3xl text-5xl font-black leading-[1.03] tracking-[-.04em] text-ink sm:text-6xl">Less guessing. More useful next steps.</h1>
         <p class="mt-6 max-w-2xl text-lg leading-8 text-ink/70">Get immediate access to practical tools for noticing reading patterns, asking stronger questions, and keeping practice calm.</p>
-        <button type="button" data-open-resource-gate class="focus-ring mt-8 inline-flex min-h-12 items-center justify-center rounded-full bg-deepTeal px-7 py-4 font-black text-white shadow-glow transition hover:-translate-y-0.5 hover:bg-[#176a6a]">Unlock Free Family Resources</button>
-        <p class="mt-4 text-sm font-semibold text-ink/55">Free access. No worksheets pileup. Just a clearer place to start.</p>
+        <div class="mt-8 flex flex-col gap-3 sm:flex-row">
+          <a href="#comprehension-packs" class="focus-ring inline-flex min-h-12 items-center justify-center rounded-full bg-deepTeal px-7 py-4 text-center font-black text-white shadow-glow transition hover:-translate-y-0.5 hover:bg-[#176a6a]">Preview the strategy packs</a>
+          <button type="button" data-open-resource-gate class="focus-ring inline-flex min-h-12 items-center justify-center rounded-full border border-ink/15 bg-white px-7 py-4 text-center font-black text-ink transition hover:-translate-y-0.5 hover:border-deepTeal hover:text-deepTeal">Unlock more family tools</button>
+        </div>
+        <p class="mt-4 text-sm font-semibold text-ink/55">The comprehension packs are ready now. Unlock the rest of the toolkit if you want more.</p>
       </div>
       <aside class="rounded-[2rem] bg-ink p-7 text-white shadow-2xl shadow-ink/20 sm:p-9" aria-label="What is inside the family resource library">
         <p class="text-xs font-black uppercase tracking-[.18em] text-gold">Inside the library</p>
         <ul class="mt-7 space-y-5">
-          <li class="flex gap-4"><span class="display-type grid h-10 w-10 shrink-0 place-items-center rounded-full bg-gold font-black text-ink">01</span><div><h2 class="font-black">Spot the pattern</h2><p class="mt-1 text-sm leading-6 text-white/65">A simpler way to notice what is actually getting in the way.</p></div></li>
+          <li class="flex gap-4"><span class="display-type grid h-10 w-10 shrink-0 place-items-center rounded-full bg-gold font-black text-ink">01</span><div><h2 class="font-black">Comprehension strategy packs</h2><p class="mt-1 text-sm leading-6 text-white/65">Grade-banded PDFs you can preview and download for K–2, 3–5, and 6–8.</p></div></li>
           <li class="flex gap-4"><span class="display-type grid h-10 w-10 shrink-0 place-items-center rounded-full bg-mediumTeal font-black text-ink">02</span><div><h2 class="font-black">Ask sharper questions</h2><p class="mt-1 text-sm leading-6 text-white/65">Prompts that make school and support conversations more useful.</p></div></li>
           <li class="flex gap-4"><span class="display-type grid h-10 w-10 shrink-0 place-items-center rounded-full bg-white font-black text-ink">03</span><div><h2 class="font-black">Practice without pressure</h2><p class="mt-1 text-sm leading-6 text-white/65">Small moves that protect confidence while building momentum.</p></div></li>
         </ul>
       </aside>
     </div>
   </section>
+
+  {% include "_comprehension_packs.html" %}
 
   <dialog
     data-testid="family-resources-gate"
@@ -151,6 +161,45 @@
 
 {% block scripts %}
   {{ block.super }}
+  <script>
+    (() => {
+      const previewDialog = document.querySelector('[data-testid="pack-preview-dialog"]');
+      const previewFrame = document.querySelector('[data-pack-preview-frame]');
+      const previewCover = document.querySelector('[data-pack-preview-cover]');
+      const previewTitle = document.getElementById('pack-preview-title');
+      const previewDownload = document.querySelector('[data-pack-preview-download]');
+      const previewOpen = document.querySelector('[data-pack-preview-open]');
+      if (previewDialog && typeof previewDialog.showModal === 'function' && previewFrame && previewCover && previewTitle && previewDownload && previewOpen) {
+        const openPreview = (event) => {
+          const trigger = event.currentTarget;
+          const src = trigger.getAttribute('data-pack-src') || trigger.getAttribute('href');
+          const title = trigger.getAttribute('data-pack-title') || 'Comprehension Strategy Pack';
+          const downloadName = trigger.getAttribute('data-pack-download') || '';
+          const cover = trigger.getAttribute('data-pack-cover') || '';
+          if (!src) return;
+          event.preventDefault();
+          previewTitle.textContent = title;
+          previewCover.src = cover;
+          previewCover.alt = title + ' cover';
+          previewFrame.setAttribute('data', src);
+          previewDownload.href = src;
+          previewDownload.setAttribute('download', downloadName);
+          previewOpen.href = src;
+          if (!previewDialog.open) previewDialog.showModal();
+          document.documentElement.style.overflow = 'hidden';
+        };
+        document.querySelectorAll('[data-preview-pack]').forEach((trigger) => {
+          trigger.addEventListener('click', openPreview);
+        });
+        previewDialog.querySelector('[data-close-pack-preview]').addEventListener('click', () => previewDialog.close());
+        previewDialog.addEventListener('close', () => {
+          previewFrame.setAttribute('data', '');
+          previewCover.removeAttribute('src');
+          document.documentElement.style.overflow = '';
+        });
+      }
+    })();
+  </script>
   {% if not resources_unlocked %}
     <script>
       (() => {
