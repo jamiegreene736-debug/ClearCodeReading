@@ -39,11 +39,18 @@ class WebsiteEmailTests(TestCase):
         self.addCleanup(self.config.stop)
 
     def test_survey_post_queues_customer_confirmation_and_team_notice_once(self):
-        self.client.post(reverse("crm_survey_submit"), {
-            "source_path": "/survey/", "name": "Survey Visitor", "email": "visitor@example.com",
-            "email_consent": "yes", "home_zip": "32789", "respondent_situation": "community_supporter",
-            "engagement_interests": ["donor", "referral_partner"],
-        })
+        self.client.post(
+            reverse("crm_survey_submit"),
+            {
+                "source_path": "/survey/",
+                "name": "Survey Visitor",
+                "email": "visitor@example.com",
+                "email_consent": "yes",
+                "home_zip": "32789",
+                "respondent_situation": "community_supporter",
+                "engagement_interests": ["donor", "referral_partner"],
+            },
+        )
         enqueue_pending_receipts()
         enqueue_pending_receipts()
         receipt = WebsiteReceipt.objects.get()
@@ -248,7 +255,7 @@ class WebsiteEmailTests(TestCase):
         enqueue_pending_receipts()
         receipt = WebsiteReceipt.objects.get(submission=submission)
         client = MagicMock()
-        client.request.return_value = {"id": "gmail123", "threadId": "thread123"}
+        client.request.return_value = {"id": "def", "threadId": "abc"}
         send(client, receipt.customer_message)
         receipt.customer_message.refresh_from_db()
         self.assertEqual(receipt.customer_message.status, "sent")
