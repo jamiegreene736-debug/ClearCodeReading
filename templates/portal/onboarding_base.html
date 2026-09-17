@@ -43,9 +43,7 @@ a { color:#1a7a7a}
 </header>
 {% endif %}
 <main>
-{% for message in messages %}
-<p role="status" class="card">{{ message }}</p>
-{% endfor %}
+{% include "_site_messages.html" with site_messages_layout="block" %}
 
 {% block content %}
 

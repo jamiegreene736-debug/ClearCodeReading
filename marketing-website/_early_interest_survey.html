@@ -11,7 +11,9 @@
         </div>
       {% else %}
         {% if request.GET.survey and messages %}
-          {% for message in messages %}<p role="alert">{{ message }}</p>{% endfor %}
+          <div class="mb-6" data-testid="survey-submission-feedback">
+            {% include "_site_messages.html" with site_messages_layout="block" %}
+          </div>
         {% endif %}
       <div class="grid gap-7 lg:grid-cols-[.72fr_1.28fr]">
         <div class="order-last lg:order-first">

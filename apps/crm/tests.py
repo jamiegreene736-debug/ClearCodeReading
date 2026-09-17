@@ -460,6 +460,24 @@ class FormSubmissionIntakeTests(TestCase):
 
         self.assertTrue(self._resources_context()["resources_unlocked"])
 
+    def test_family_resources_thanks_page_shows_a_prominent_confirmation(self):
+        response = self.client.post(
+            reverse("crm_signup"),
+            {
+                "name": "Taylor Reader",
+                "email": "taylor@example.com",
+                "audience": Lead.Audience.PARENT,
+                "redirect_to": "/resources/",
+            },
+            follow=True,
+        )
+
+        self.assertContains(response, 'data-testid="site-confirmation"')
+        self.assertContains(response, "You’re in—your free family resources are ready.")
+        self.assertContains(response, "site-confirmation__text")
+        self.assertContains(response, "Confirmed")
+        self.assertContains(response, 'role="status"')
+
     def test_invalid_family_resources_signup_does_not_unlock_or_create_records(self):
         response = self.client.post(
             reverse("crm_signup"),

@@ -82,24 +82,39 @@
     <section class="min-w-0 rounded-[2rem] bg-white p-6 shadow-2xl shadow-ink/10 ring-1 ring-ink/10 sm:p-8">
       <h2 class="text-3xl font-black">Sign in</h2>
 
+      {% include "_site_message_styles.html" %}
       {% if request.GET.csrf == "refreshed" %}
-        <p class="mt-5 rounded-2xl bg-sand px-4 py-3 text-sm font-bold text-ink">
-          Your sign-in form had expired. We refreshed it securely; please submit your login again.
-        </p>
+        <div class="site-confirmation site-confirmation--block mt-5">
+          <div class="site-confirmation__list">
+            <div class="site-confirmation__card site-confirmation__card--warning" role="status">
+              <span class="site-confirmation__icon" aria-hidden="true">!</span>
+              <div class="site-confirmation__copy">
+                <p class="site-confirmation__eyebrow">Please note</p>
+                <p class="site-confirmation__text">Your sign-in form had expired. We refreshed it securely; please submit your login again.</p>
+              </div>
+            </div>
+          </div>
+        </div>
       {% endif %}
 
       {% if messages %}
-        <div class="mt-5 space-y-2">
-          {% for message in messages %}
-            <p class="rounded-2xl bg-linen px-4 py-3 text-sm font-bold text-ink">{{ message }}</p>
-          {% endfor %}
+        <div class="mt-5">
+          {% include "_site_messages.html" with site_messages_layout="block" %}
         </div>
       {% endif %}
 
       {% if form.errors %}
-        <p class="mt-5 rounded-2xl bg-sand px-4 py-3 text-sm font-bold text-mediumTeal">
-          That email and password did not match. Please try again.
-        </p>
+        <div class="site-confirmation site-confirmation--block mt-5">
+          <div class="site-confirmation__list">
+            <div class="site-confirmation__card site-confirmation__card--error" role="alert">
+              <span class="site-confirmation__icon" aria-hidden="true">!</span>
+              <div class="site-confirmation__copy">
+                <p class="site-confirmation__eyebrow">Please check this</p>
+                <p class="site-confirmation__text">That email and password did not match. Please try again.</p>
+              </div>
+            </div>
+          </div>
+        </div>
       {% endif %}
 
       <form class="mt-6 space-y-5" method="post">

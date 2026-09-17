@@ -37,7 +37,7 @@
     h1 { margin-bottom:6px; color:var(--navy); font:800 32px/1.2 "Plus Jakarta Sans",sans-serif; letter-spacing:-.035em; }
     h2 { color:var(--navy); font:800 22px/1.25 "Plus Jakarta Sans",sans-serif; letter-spacing:-.025em; }
     .subtle { color:var(--muted); }
-    .flash { margin:0 28px 12px; padding:12px 15px; border:1px solid #8bc7bd; border-radius:5px; background:var(--teal-soft); font-weight:600; }
+    .flash { margin:0 28px 12px; padding:16px 18px; border:3px solid var(--orange); border-radius:12px; background:#102F38; color:#fff; font-weight:800; font-size:16px; }
     .card { background:white; border:1px solid var(--line); border-radius:7px; box-shadow:0 1px 2px rgba(33,51,67,.05); }
     .stats { display:grid; grid-template-columns:repeat(auto-fit,minmax(150px,1fr)); gap:14px; margin:24px 0; }
     .stat { padding:18px; }
@@ -154,7 +154,7 @@
         <div><strong>CRM workspace</strong><br><small>From first inquiry to next action</small></div>
         <div class="top-actions"><a class="btn btn-primary" href="{% url 'crm_contact_create' %}">+ Add contact</a><a href="/">View website</a><form method="post" action="{% url 'logout' %}">{% csrf_token %}<button class="logout" type="submit">Log out</button></form></div>
       </header>
-      {% if messages %}{% for message in messages %}<div class="flash" role="status">{{ message }}</div>{% endfor %}{% endif %}
+      {% include "_site_messages.html" %}
       <main class="content" id="main-content">{% block content %}{% endblock %}</main>
     </div>
   </div>

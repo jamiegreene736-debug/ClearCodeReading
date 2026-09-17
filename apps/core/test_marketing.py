@@ -571,6 +571,41 @@ class MarketingPageTests(SimpleTestCase):
         self.assertIn("check Spam or Promotions", content)
         self.assertIn("mailto:hello@clearcodereading.com", content)
 
+    def test_django_messages_use_a_high_contrast_sticky_confirmation(self):
+        class Notice:
+            def __init__(self, text, tags="success"):
+                self.tags = tags
+                self._text = text
+
+            def __str__(self):
+                return self._text
+
+        request = RequestFactory().get("/resources/")
+        content = get_template(PUBLIC_PAGES["marketing_resources"]).render(
+            {
+                "resources_unlocked": True,
+                "messages": [Notice("You’re in—your free family resources are ready.")],
+            },
+            request,
+        )
+
+        self.assertIn('data-testid="site-confirmation"', content)
+        self.assertIn("You’re in—your free family resources are ready.", content)
+        self.assertIn("site-confirmation__text", content)
+        self.assertIn("Confirmed", content)
+        self.assertIn("sticky inset-x-0 top-0 z-50", content)
+        self.assertIn("#0F2B35", content)
+        self.assertIn("#F5A623", content)
+        self.assertNotIn("ring-1 ring-gold/40", content)
+
+        error_content = get_template(PUBLIC_PAGES["marketing_contact"]).render(
+            {"messages": [Notice("Enter a valid email address so we can follow up.", "error")]},
+            RequestFactory().get("/contact/"),
+        )
+        self.assertIn("Please check this", error_content)
+        self.assertIn('role="alert"', error_content)
+        self.assertIn("site-confirmation__card--error", error_content)
+
     def test_about_page_preserves_the_supplied_positioning_and_sources(self):
         content = self._render("marketing_about")
 

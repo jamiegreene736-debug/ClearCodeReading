@@ -27,10 +27,8 @@
 
   <main class="mx-auto max-w-7xl px-4 py-10 sm:px-6 lg:px-8">
     {% if messages %}
-      <div class="mb-6 space-y-2">
-        {% for message in messages %}
-          <p class="rounded-2xl bg-white px-4 py-3 text-sm font-bold text-ink shadow-sm ring-1 ring-deepTeal/10">{{ message }}</p>
-        {% endfor %}
+      <div class="mb-6">
+        {% include "_site_messages.html" with site_messages_layout="block" %}
       </div>
     {% endif %}
 

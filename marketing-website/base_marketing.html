@@ -105,7 +105,8 @@
       </a>
     </div>
   </aside>
-  <header class="sticky inset-x-0 top-0 z-50 border-b border-gold/20 bg-ink">
+  <div class="sticky inset-x-0 top-0 z-50">
+  <header class="border-b border-gold/20 bg-ink">
     <nav class="mx-auto flex max-w-7xl items-center justify-between gap-3 px-4 py-3 sm:px-6 lg:px-8" aria-label="Main navigation">
       <a href="/" class="focus-ring flex shrink-0 items-center rounded-lg" aria-label="ClearCode Reading home">
         {% include "_brand_lockup.html" %}
@@ -145,14 +146,10 @@
       </details>
     </nav>
   </header>
-
   {% if messages and not request.GET.survey %}
-    <div class="mx-auto max-w-7xl space-y-2 px-4 pt-4 sm:px-6 lg:px-8" aria-live="polite">
-      {% for message in messages %}
-        <p class="rounded-2xl bg-linen px-5 py-4 text-sm font-black shadow-sm ring-1 ring-gold/40">{{ message }}</p>
-      {% endfor %}
-    </div>
+    {% include "_site_messages.html" %}
   {% endif %}
+  </div>
 
   <main id="main-content">
     {% block content %}{% endblock %}
