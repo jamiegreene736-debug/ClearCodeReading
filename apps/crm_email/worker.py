@@ -85,6 +85,24 @@ def reconcile(client: Gmail, message: Message) -> None:
     message.save()
 
 
+def _sender_allowed(mailbox: Mailbox, message: Message) -> bool:
+    sender = message.sender.lower()
+    if sender == mailbox.email.lower():
+        return True
+    allowed = getattr(settings, "WEBSITE_EMAIL_FROM", "").strip().lower()
+    if (
+        not allowed
+        or sender != allowed
+        or allowed.rsplit("@", 1)[-1] != settings.CRM_EMAIL_DOMAIN
+    ):
+        return False
+    from apps.crm.models import WebsiteReceipt
+
+    return WebsiteReceipt.objects.filter(
+        Q(customer_message_id=message.pk) | Q(team_message_id=message.pk)
+    ).exists()
+
+
 def send(client: Gmail, message: Message) -> None:
     if message.status not in {
         Message.Status.QUEUED,
@@ -102,7 +120,7 @@ def send(client: Gmail, message: Message) -> None:
         or not mailbox.user.is_active
         or mailbox.user.is_deleted
         or mailbox.email.lower() != mailbox.user.email.lower()
-        or message.sender.lower() != mailbox.email.lower()
+        or not _sender_allowed(mailbox, message)
     ):
         message.status = Message.Status.FAILED
         message.last_error = "Sender no longer matches an active connected Gmail account. Reconnect your Gmail and create a new message."

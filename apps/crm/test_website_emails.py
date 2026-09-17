@@ -1,6 +1,7 @@
+import base64
 from email import policy
 from email.parser import BytesParser
-from unittest.mock import patch
+from unittest.mock import MagicMock, patch
 
 from django.db import transaction
 from django.test import TestCase, override_settings
@@ -12,13 +13,16 @@ from apps.crm.services import LeadIntake, record_form_submission
 from apps.crm.website_emails import enqueue_pending_receipts, receipt_context
 from apps.crm_email.models import Mailbox, Message
 from apps.crm_email.services import build_mime
-from apps.crm_email.worker import accepted
+from apps.crm_email.worker import accepted, send
 from apps.users.models import CustomUser
 
 
 @override_settings(
     PUBLIC_APP_URL="https://example.com",
     WEBSITE_EMAIL_SENDER="sender@clearcodereading.com",
+    WEBSITE_EMAIL_FROM="hello@clearcodereading.com",
+    WEBSITE_EMAIL_FROM_NAME="ClearCode Reading",
+    CRM_EMAIL_DOMAIN="clearcodereading.com",
 )
 class WebsiteEmailTests(TestCase):
     def setUp(self):
@@ -35,11 +39,18 @@ class WebsiteEmailTests(TestCase):
         self.addCleanup(self.config.stop)
 
     def test_survey_post_queues_customer_confirmation_and_team_notice_once(self):
-        self.client.post(reverse("crm_survey_submit"), {
-            "source_path": "/survey/", "name": "Survey Visitor", "email": "visitor@example.com",
-            "email_consent": "yes", "home_zip": "32789", "respondent_situation": "community_supporter",
-            "engagement_interests": ["donor", "referral_partner"],
-        })
+        self.client.post(
+            reverse("crm_survey_submit"),
+            {
+                "source_path": "/survey/",
+                "name": "Survey Visitor",
+                "email": "visitor@example.com",
+                "email_consent": "yes",
+                "home_zip": "32789",
+                "respondent_situation": "community_supporter",
+                "engagement_interests": ["donor", "referral_partner"],
+            },
+        )
         enqueue_pending_receipts()
         enqueue_pending_receipts()
         receipt = WebsiteReceipt.objects.get()
@@ -71,6 +82,8 @@ class WebsiteEmailTests(TestCase):
                 customer, team = receipt.customer_message, receipt.team_message
                 self.assertEqual(customer.to, ["parent@example.com"])
                 self.assertEqual(team.to, ["hello@clearcodereading.com"])
+                self.assertEqual(customer.sender, "hello@clearcodereading.com")
+                self.assertEqual(team.sender, "hello@clearcodereading.com")
                 self.assertEqual(customer.reply_to, "hello@clearcodereading.com")
                 self.assertEqual(team.reply_to, "parent@example.com")
                 self.assertEqual(customer.status, "queued")
@@ -78,6 +91,9 @@ class WebsiteEmailTests(TestCase):
                 self.assertIn("What happens next", customer.body_text)
                 mime = BytesParser(policy=policy.default).parsebytes(
                     build_mime(customer)
+                )
+                self.assertEqual(
+                    mime["From"], "ClearCode Reading <hello@clearcodereading.com>"
                 )
                 self.assertEqual(mime["Reply-To"], "hello@clearcodereading.com")
                 self.assertEqual(
@@ -233,6 +249,29 @@ class WebsiteEmailTests(TestCase):
         receipt.customer_message.refresh_from_db()
         self.assertEqual(receipt.customer_message.status, "sent")
         self.assertIsNone(receipt.customer_message.conversation)
+
+    def test_worker_sends_website_receipt_as_public_inbox(self):
+        submission = self.submit()
+        enqueue_pending_receipts()
+        receipt = WebsiteReceipt.objects.get(submission=submission)
+        client = MagicMock()
+        client.request.return_value = {"id": "def", "threadId": "abc"}
+        send(client, receipt.customer_message)
+        receipt.customer_message.refresh_from_db()
+        self.assertEqual(receipt.customer_message.status, "sent")
+        raw = client.request.call_args.kwargs["json"]["raw"]
+        mime = BytesParser(policy=policy.default).parsebytes(
+            base64.urlsafe_b64decode(raw + "==")
+        )
+        self.assertEqual(mime["From"], "ClearCode Reading <hello@clearcodereading.com>")
+
+    def test_off_domain_website_from_is_rejected(self):
+        submission = self.submit()
+        with override_settings(WEBSITE_EMAIL_FROM="hello@example.com"):
+            enqueue_pending_receipts()
+        receipt = WebsiteReceipt.objects.get(submission=submission)
+        self.assertIn("organization email domain", receipt.error)
+        self.assertIsNone(receipt.customer_message_id)
 
     def test_removed_application_does_not_block_other_receipts(self):
         application = RecruitingInterest.objects.create(

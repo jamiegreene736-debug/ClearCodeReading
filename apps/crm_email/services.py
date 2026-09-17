@@ -2,7 +2,7 @@ import re
 from datetime import timedelta
 from email.message import EmailMessage
 from email.policy import SMTP
-from email.utils import format_datetime
+from email.utils import format_datetime, formataddr
 from pathlib import PurePath
 from typing import Any
 
@@ -150,10 +150,20 @@ def save_message(
         return message
 
 
+def outgoing_from_header(message: Message) -> str:
+    """Brand website receipts as the public inbox while leaving personal CRM mail unchanged."""
+    sender = message.sender
+    configured = getattr(settings, "WEBSITE_EMAIL_FROM", "").strip().lower()
+    name = getattr(settings, "WEBSITE_EMAIL_FROM_NAME", "").strip()
+    if configured and name and sender.lower() == configured:
+        return formataddr((name, sender))
+    return sender
+
+
 def build_mime(message: Message) -> bytes:
     mail = EmailMessage(policy=SMTP)
     for name, value in [
-        ("From", message.sender),
+        ("From", outgoing_from_header(message)),
         ("To", ", ".join(message.to)),
         ("Cc", ", ".join(message.cc)),
         ("Bcc", ", ".join(message.bcc)),
