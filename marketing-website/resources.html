@@ -103,10 +103,9 @@
         <h1 class="mt-5 max-w-3xl text-5xl font-black leading-[1.03] tracking-[-.04em] text-ink sm:text-6xl">Less guessing. More useful next steps.</h1>
         <p class="mt-6 max-w-2xl text-lg leading-8 text-ink/70">Get immediate access to practical tools for noticing reading patterns, asking stronger questions, and keeping practice calm.</p>
         <div class="mt-8 flex flex-col gap-3 sm:flex-row">
-          <a href="#comprehension-packs" class="focus-ring inline-flex min-h-12 items-center justify-center rounded-full bg-deepTeal px-7 py-4 text-center font-black text-white shadow-glow transition hover:-translate-y-0.5 hover:bg-[#176a6a]">Preview the strategy packs</a>
-          <button type="button" data-open-resource-gate class="focus-ring inline-flex min-h-12 items-center justify-center rounded-full border border-ink/15 bg-white px-7 py-4 text-center font-black text-ink transition hover:-translate-y-0.5 hover:border-deepTeal hover:text-deepTeal">Unlock more family tools</button>
+          <button type="button" data-open-resource-gate class="focus-ring inline-flex min-h-12 items-center justify-center rounded-full bg-deepTeal px-7 py-4 text-center font-black text-white shadow-glow transition hover:-translate-y-0.5 hover:bg-[#176a6a]">Unlock the family toolkit</button>
         </div>
-        <p class="mt-4 text-sm font-semibold text-ink/55">The comprehension packs are ready now. Unlock the rest of the toolkit if you want more.</p>
+        <p class="mt-4 text-sm font-semibold text-ink/55">Tell us your name and email and the whole library—strategy packs included—opens right away.</p>
       </div>
       <aside class="rounded-[2rem] bg-ink p-7 text-white shadow-2xl shadow-ink/20 sm:p-9" aria-label="What is inside the family resource library">
         <p class="text-xs font-black uppercase tracking-[.18em] text-gold">Inside the library</p>
@@ -119,18 +118,16 @@
     </div>
   </section>
 
-  {% include "_comprehension_packs.html" %}
-
   <dialog
+    open
     data-testid="family-resources-gate"
     aria-labelledby="resource-gate-title"
     aria-describedby="resource-gate-description"
     class="m-auto w-[calc(100%-2rem)] max-w-lg overflow-hidden rounded-[2rem] bg-white p-0 text-ink shadow-2xl backdrop:bg-ink/80 backdrop:backdrop-blur-sm"
   >
     <div class="relative border-t-8 border-gold p-6 sm:p-9">
-      <button type="button" data-close-resource-gate class="focus-ring absolute right-4 top-4 grid h-11 w-11 place-items-center rounded-full bg-linen text-xl font-black text-ink transition hover:bg-seafoam" aria-label="Close resource access form">&times;</button>
-      <p class="pr-14 text-xs font-black uppercase tracking-[.18em] text-deepTeal">Your free toolkit is ready</p>
-      <h2 id="resource-gate-title" class="mt-4 pr-10 text-3xl font-black leading-tight sm:text-4xl">Unlock your family toolkit.</h2>
+      <p class="text-xs font-black uppercase tracking-[.18em] text-deepTeal">Your free toolkit is ready</p>
+      <h2 id="resource-gate-title" class="mt-4 text-3xl font-black leading-tight sm:text-4xl">Unlock your family toolkit.</h2>
       <p id="resource-gate-description" class="mt-4 leading-7 text-ink/65">Tell us who you are and unlock the full family resource library right away.</p>
 
       {% if resource_gate_result == "missing" %}
@@ -204,20 +201,25 @@
     <script>
       (() => {
         const dialog = document.querySelector('[data-testid="family-resources-gate"]');
+        // Without dialog support the markup already renders the form inline via [open].
         if (!dialog || typeof dialog.showModal !== 'function') return;
 
+        // The gate is the only route into the library, so it cannot be dismissed:
+        // Escape is cancelled and any close reopens it as a modal.
+        let upgraded = false;
         const openDialog = () => {
+          if (!upgraded) {
+            dialog.removeAttribute('open');
+            upgraded = true;
+          }
           if (!dialog.open) dialog.showModal();
           document.documentElement.style.overflow = 'hidden';
         };
-        const closeDialog = () => dialog.close();
 
+        dialog.addEventListener('cancel', (event) => event.preventDefault());
+        dialog.addEventListener('close', openDialog);
         document.querySelectorAll('[data-open-resource-gate]').forEach((button) => {
           button.addEventListener('click', openDialog);
-        });
-        dialog.querySelector('[data-close-resource-gate]').addEventListener('click', closeDialog);
-        dialog.addEventListener('close', () => {
-          document.documentElement.style.overflow = '';
         });
         openDialog();
       })();
