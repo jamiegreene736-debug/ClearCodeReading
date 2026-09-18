@@ -1423,6 +1423,41 @@ class CrmWorkspaceTests(TestCase):
 
         self.assertEqual(response.context["contacts"][0].pk, self.lead.pk)
 
+    def test_contact_index_shows_linked_deals_and_sorts_by_deal_name(self):
+        Opportunity.objects.create(lead=self.lead, name="Zeta enrollment")
+        Opportunity.objects.create(lead=self.lead, name="Hidden deal", is_deleted=True)
+        alpha_contact = Lead.objects.create(
+            school_name="Alpha school",
+            contact_name="Blake Alpha",
+            contact_email="blake@example.com",
+            audience=Lead.Audience.OTHER,
+        )
+        Opportunity.objects.create(lead=alpha_contact, name="Alpha partnership")
+        no_deal_contact = Lead.objects.create(
+            school_name="No deal",
+            contact_name="Casey Nodeal",
+            contact_email="casey@example.com",
+            audience=Lead.Audience.OTHER,
+        )
+        self.client.force_login(self.admin_user)
+
+        response = self.client.get(reverse("crm_contact_list"), {"sort": "deal"})
+
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "Zeta enrollment")
+        self.assertContains(response, "Alpha partnership")
+        self.assertNotContains(response, "Hidden deal")
+        self.assertEqual(
+            [contact.pk for contact in response.context["contacts"]],
+            [alpha_contact.pk, self.lead.pk, no_deal_contact.pk],
+        )
+
+        descending = self.client.get(reverse("crm_contact_list"), {"sort": "deal_desc"})
+        self.assertEqual(
+            [contact.pk for contact in descending.context["contacts"]],
+            [self.lead.pk, alpha_contact.pk, no_deal_contact.pk],
+        )
+
     def test_contact_index_filters_each_relationship_interest_separately(self):
         donor = Lead.objects.create(
             school_name="Donor inquiry",
