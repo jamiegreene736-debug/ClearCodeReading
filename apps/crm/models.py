@@ -52,16 +52,44 @@ class Company(TimestampedModel, SoftDeleteModel):
         return self.name
 
 
+class PipelineCategory(models.TextChoices):
+    """One shared set of categories for CRM contacts and deals.
+
+    Contacts store a category in ``Lead.audience`` (shown as "Pipeline category"),
+    and deals use the same values, minus ``OTHER``, as their ``Opportunity.Pipeline``.
+    """
+
+    FAMILY_ENROLLMENT = "family_enrollment", "Families / Enrollment"
+    REFERRAL_PARTNERS = "referral_partners", "School & Teacher Referral Partners"
+    FOUNDATION_DONORS = "foundation_donors", "Foundation Donors"
+    FOUNDATION_GRANTS = "foundation_grants", "Foundation Grants / PRIs"
+    EQUITY_INVESTMENT = "equity_investment", "Equity / Investment"
+    OTHER = "other", "Other"
+
+
+# Values accepted by the website forms and stored on older contacts, mapped to the
+# merged categories above.
+LEGACY_AUDIENCE_TO_PIPELINE_CATEGORY = {
+    "parent": PipelineCategory.FAMILY_ENROLLMENT,
+    "teacher": PipelineCategory.REFERRAL_PARTNERS,
+    "school": PipelineCategory.REFERRAL_PARTNERS,
+    "teacher_partnership": PipelineCategory.REFERRAL_PARTNERS,
+    "foundation_donor": PipelineCategory.FOUNDATION_DONORS,
+    "foundation_grants": PipelineCategory.FOUNDATION_GRANTS,
+    "equity_investment": PipelineCategory.EQUITY_INVESTMENT,
+    "other": PipelineCategory.OTHER,
+}
+
+
+def pipeline_category_for(value, default=PipelineCategory.OTHER):
+    """Resolve a submitted or stored value to a PipelineCategory."""
+    if value in PipelineCategory.values:
+        return PipelineCategory(value)
+    return LEGACY_AUDIENCE_TO_PIPELINE_CATEGORY.get(value, default)
+
+
 class Lead(TimestampedModel, SoftDeleteModel):
-    class Audience(models.TextChoices):
-        PARENT = "parent", "Parent"
-        TEACHER = "teacher", "Teacher"
-        SCHOOL = "school", "School or District"
-        FOUNDATION_DONOR = "foundation_donor", "Foundation Donor"
-        FOUNDATION_GRANTS = "foundation_grants", "Foundation Grants"
-        EQUITY_INVESTMENT = "equity_investment", "Equity Investment"
-        TEACHER_PARTNERSHIP = "teacher_partnership", "Teacher Partnership"
-        OTHER = "other", "Other"
+    PipelineCategory = PipelineCategory
 
     class Source(models.TextChoices):
         WEBSITE = "website", "Website"
@@ -86,7 +114,13 @@ class Lead(TimestampedModel, SoftDeleteModel):
     contact_name = models.CharField(max_length=255)
     contact_email = models.EmailField()
     contact_phone = models.CharField(max_length=32, blank=True)
-    audience = models.CharField(max_length=32, choices=Audience.choices, default=Audience.PARENT, db_index=True)
+    audience = models.CharField(
+        "pipeline category",
+        max_length=32,
+        choices=PipelineCategory.choices,
+        default=PipelineCategory.FAMILY_ENROLLMENT,
+        db_index=True,
+    )
     organization_name = models.CharField(max_length=255, blank=True)
     company = models.ForeignKey(
         Company,
@@ -127,11 +161,13 @@ class Lead(TimestampedModel, SoftDeleteModel):
 
 class Opportunity(TimestampedModel, SoftDeleteModel):
     class Pipeline(models.TextChoices):
-        FAMILY_ENROLLMENT = "family_enrollment", "Families / Enrollment"
-        REFERRAL_PARTNERS = "referral_partners", "School & Teacher Referral Partners"
-        FOUNDATION_DONORS = "foundation_donors", "Foundation Donors"
-        FOUNDATION_GRANTS = "foundation_grants", "Foundation Grants / PRIs"
-        EQUITY_INVESTMENT = "equity_investment", "Equity / Investment"
+        # Same values and labels as the contact "Pipeline category" (PipelineCategory),
+        # minus OTHER, which has no deal stages.
+        FAMILY_ENROLLMENT = PipelineCategory.FAMILY_ENROLLMENT.value, PipelineCategory.FAMILY_ENROLLMENT.label
+        REFERRAL_PARTNERS = PipelineCategory.REFERRAL_PARTNERS.value, PipelineCategory.REFERRAL_PARTNERS.label
+        FOUNDATION_DONORS = PipelineCategory.FOUNDATION_DONORS.value, PipelineCategory.FOUNDATION_DONORS.label
+        FOUNDATION_GRANTS = PipelineCategory.FOUNDATION_GRANTS.value, PipelineCategory.FOUNDATION_GRANTS.label
+        EQUITY_INVESTMENT = PipelineCategory.EQUITY_INVESTMENT.value, PipelineCategory.EQUITY_INVESTMENT.label
 
     class Stage(models.TextChoices):
         FAMILY_LEAD_NURTURE = "family_lead_nurture", "Lead / Nurture"

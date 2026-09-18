@@ -904,7 +904,7 @@ class FamilyResourcePackDownloadTests(TestCase):
             {
                 "name": "Taylor Reader",
                 "email": "taylor@example.com",
-                "audience": Lead.Audience.PARENT,
+                "audience": Lead.PipelineCategory.FAMILY_ENROLLMENT,
                 "redirect_to": "/resources/",
             },
         )
@@ -946,7 +946,7 @@ class ContactFormTests(TestCase):
             {
                 "name": "Jamie Reader",
                 "email": "reader@example.com",
-                "audience": Lead.Audience.OTHER,
+                "audience": Lead.PipelineCategory.OTHER,
                 "organization_name": "Website contact",
                 "notes": "I have a question about ClearCode Reading.",
                 "redirect_to": "/contact/",
@@ -960,7 +960,7 @@ class ContactFormTests(TestCase):
         )
         lead = Lead.objects.get(contact_email="reader@example.com")
         submission = FormSubmission.objects.get(lead=lead)
-        self.assertEqual(lead.audience, Lead.Audience.OTHER)
+        self.assertEqual(lead.audience, Lead.PipelineCategory.OTHER)
         self.assertEqual(lead.notes, "I have a question about ClearCode Reading.")
         self.assertEqual(submission.form_type, FormSubmission.FormType.WEBSITE)
         self.assertEqual(submission.source_path, "/contact/")
@@ -972,7 +972,7 @@ class ContactFormTests(TestCase):
             {
                 "name": "Taylor Specialist",
                 "email": "taylor@example.com",
-                "audience": Lead.Audience.TEACHER,
+                "audience": Lead.PipelineCategory.REFERRAL_PARTNERS,
                 "organization_name": "ClearCode support",
                 "support_topic": "technical",
                 "notes": "The session queue is not clearing after reconnecting.",
@@ -1002,7 +1002,7 @@ class ContactFormTests(TestCase):
             {
                 "name": "Avery Guardian",
                 "email": "avery@example.com",
-                "audience": Lead.Audience.PARENT,
+                "audience": Lead.PipelineCategory.FAMILY_ENROLLMENT,
                 "organization_name": "ClearCode support",
                 "support_topic": "not-a-real-topic",
                 "notes": "I need help with my account.",
@@ -1035,7 +1035,7 @@ class ContactFormTests(TestCase):
             {
                 "name": "Jamie Reader",
                 "email": "reader@example.com",
-                "audience": Lead.Audience.OTHER,
+                "audience": Lead.PipelineCategory.OTHER,
                 "organization_name": "Website contact",
                 "notes": "   ",
                 "redirect_to": "/contact/",

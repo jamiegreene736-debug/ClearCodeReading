@@ -33,7 +33,16 @@ from apps.crm.hiring import select_intake_owner
 from apps.crm.contact_lifecycle import set_contact_deleted
 from apps.crm.access import crm_owner_queryset
 from apps.crm.forms import CompanyForm, ContactForm, CrmTeamMemberForm, DealForm, EnrollmentPersonForm
-from apps.crm.models import Company, CrmActivity, FormSubmission, IntakeTriage, Lead, NewsletterSubscription, Opportunity
+from apps.crm.models import (
+    Company,
+    CrmActivity,
+    FormSubmission,
+    IntakeTriage,
+    Lead,
+    NewsletterSubscription,
+    Opportunity,
+    pipeline_category_for,
+)
 from apps.crm.newsletters import resolve_unsubscribe_token
 from apps.crm.serializers import CompanySerializer, LeadSerializer, OpportunitySerializer
 from apps.crm.services import (
@@ -136,9 +145,10 @@ class WebsiteSignupView(View):
             messages.error(request, "Enter a valid email address so we can follow up.")
             return redirect(self._redirect_target(request, "invalid"))
 
-        audience = request.POST.get("audience", Lead.Audience.PARENT)
-        if audience not in Lead.Audience.values:
-            audience = Lead.Audience.OTHER
+        # The website forms still post their own values ("parent", "teacher",
+        # "school", "other"); map them onto the merged pipeline categories.
+        submitted_audience = request.POST.get("audience", "parent")
+        audience = pipeline_category_for(submitted_audience)
 
         contact_phone = request.POST.get("phone", "").strip()[:32]
         notes = submitted_notes
@@ -152,7 +162,7 @@ class WebsiteSignupView(View):
         if child_age_grade:
             notes = "\n".join(part for part in [f"Child age or grade: {child_age_grade}", notes] if part)
         estimated_students = self._clean_positive_int(request.POST.get("estimated_students"))
-        school_name = self._school_name_for_signup(audience, organization_name)
+        school_name = self._school_name_for_signup(submitted_audience, organization_name)
         source_path = self._source_path(request, organization_name)
         relationship_interests = normalize_relationship_interests(
             request.POST.getlist("relationship_interests")
@@ -319,11 +329,11 @@ class WebsiteSignupView(View):
     def _school_name_for_signup(audience, organization_name):
         if organization_name:
             return organization_name
-        if audience == Lead.Audience.PARENT:
+        if audience in ("parent", Lead.PipelineCategory.FAMILY_ENROLLMENT):
             return "Family inquiry"
-        if audience == Lead.Audience.TEACHER:
+        if audience == "teacher":
             return "Teacher inquiry"
-        if audience == Lead.Audience.SCHOOL:
+        if audience in ("school", Lead.PipelineCategory.REFERRAL_PARTNERS):
             return "School or district inquiry"
         return "Website inquiry"
 
@@ -419,7 +429,7 @@ class NewsletterSignupView(View):
                     contact_email=email,
                     contact_name=submitted_name or existing_name or email.split("@", 1)[0],
                     school_name="Newsletter subscriber",
-                    audience=Lead.Audience.OTHER,
+                    audience=Lead.PipelineCategory.OTHER,
                 ),
                 form_type=FormSubmission.FormType.NEWSLETTER,
                 source_path=redirect_path,
@@ -747,7 +757,7 @@ class CrmContactCreateView(CrmAccessMixin, View):
                 contact.company = company
             if contact.company and not contact.organization_name:
                 contact.organization_name = contact.company.name
-            contact.school_name = contact.organization_name or dict(Lead.Audience.choices)[contact.audience]
+            contact.school_name = contact.organization_name or dict(Lead.PipelineCategory.choices)[contact.audience]
             contact.full_clean()
             contact.save()
             if contact.notes:
@@ -1259,7 +1269,7 @@ class CrmContactListView(CrmAccessMixin, TemplateView):
             )
         if status_filter in Lead.Status.values:
             contacts = contacts.filter(status=status_filter)
-        if audience_filter in Lead.Audience.values:
+        if audience_filter in Lead.PipelineCategory.values:
             contacts = contacts.filter(audience=audience_filter)
         if relationship_interest_filter in Lead.RelationshipInterest.values:
             contacts = contacts.filter(
@@ -1302,7 +1312,7 @@ class CrmContactListView(CrmAccessMixin, TemplateView):
                 "pending_triage": IntakeTriage.objects.filter(status=IntakeTriage.Status.PENDING, lead__is_deleted=False).count(),
                 "owners": crm_owner_queryset(),
                 "status_choices": Lead.Status.choices,
-                "audience_choices": Lead.Audience.choices,
+                "audience_choices": Lead.PipelineCategory.choices,
                 "relationship_interest_choices": Lead.RelationshipInterest.choices,
                 "active_filters": {
                     "q": query,
@@ -1355,7 +1365,7 @@ class CrmContactDetailView(CrmAccessMixin, TemplateView):
                 "related_deal_choices": Opportunity.objects.filter(is_deleted=False).select_related("company", "lead").order_by("company__name", "name"),
                 "pending_triage_count": lead.triage_items.filter(status=IntakeTriage.Status.PENDING).count(),
                 "status_choices": Lead.Status.choices,
-                "audience_choices": Lead.Audience.choices,
+                "audience_choices": Lead.PipelineCategory.choices,
             }
         )
         return context
@@ -1397,8 +1407,8 @@ class CrmContactUpdateView(CrmAccessMixin, View):
         owner_value = data.get("assigned_to", "")
         company_value = data.get("company", "")
         company_name = data.get("company_name", "").strip()[:255]
-        if status_value not in Lead.Status.values or audience not in Lead.Audience.values:
-            messages.error(request, "Choose a valid status and audience.")
+        if status_value not in Lead.Status.values or audience not in Lead.PipelineCategory.values:
+            messages.error(request, "Choose a valid status and pipeline category.")
             return redirect("crm_contact_detail", pk=lead.pk)
 
         for value in (owner_value, company_value):

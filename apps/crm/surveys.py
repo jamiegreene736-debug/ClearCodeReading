@@ -184,8 +184,8 @@ class EarlyInterestSurveyAnswers:
     @property
     def audience(self) -> str:
         if self.respondent_situation in PARENT_AUDIENCE_SITUATIONS:
-            return Lead.Audience.PARENT
-        return Lead.Audience.OTHER
+            return Lead.PipelineCategory.FAMILY_ENROLLMENT
+        return Lead.PipelineCategory.OTHER
 
     @property
     def estimated_students(self) -> int | None:
@@ -332,7 +332,7 @@ def record_early_interest_survey(*, answers: EarlyInterestSurveyAnswers, source:
         intake=LeadIntake(
             contact_email=answers.contact_email,
             contact_name=answers.contact_name,
-            school_name="Family interest survey" if answers.audience == Lead.Audience.PARENT else "Community interest survey",
+            school_name="Family interest survey" if answers.audience == Lead.PipelineCategory.FAMILY_ENROLLMENT else "Community interest survey",
             audience=answers.audience,
             estimated_students=answers.estimated_students,
             notes=notes,
@@ -354,7 +354,7 @@ def record_early_interest_survey(*, answers: EarlyInterestSurveyAnswers, source:
         submitted_data=submission_data,
     )
 
-    if answers.audience == Lead.Audience.PARENT:
+    if answers.audience == Lead.PipelineCategory.FAMILY_ENROLLMENT:
         deal, _created = ensure_family_enrollment_deal(lead=lead)
         deal.grade_band = _grade_band_for_situation(answers.respondent_situation)
         deal.in_catchment_zip = answers.home_zip
