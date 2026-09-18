@@ -124,6 +124,21 @@ class Lead(TimestampedModel, SoftDeleteModel):
         selected = set(stored) if isinstance(stored, list) else set()
         return [label for value, label in self.RelationshipInterest.choices if value in selected]
 
+    FREE_RESOURCES_MODAL_LABEL = "Free resources modal"
+
+    @property
+    def came_from_free_resources_modal(self) -> bool:
+        """True when this contact entered the CRM by unlocking the free family resources."""
+        return bool((self.metadata or {}).get("family_resources_access_requested"))
+
+    @property
+    def origin_labels(self) -> list[str]:
+        """Human-readable markers for how a contact first reached the CRM."""
+        labels = []
+        if self.came_from_free_resources_modal:
+            labels.append(self.FREE_RESOURCES_MODAL_LABEL)
+        return labels
+
 
 class Opportunity(TimestampedModel, SoftDeleteModel):
     class Pipeline(models.TextChoices):
@@ -543,6 +558,7 @@ class FormSubmission(TimestampedModel):
         CAREER = "career", "Career interest"
         NEWSLETTER = "newsletter", "Newsletter signup"
         WEBSITE = "website", "Website inquiry"
+        FAMILY_RESOURCES = "family_resources", "Free resources modal"
 
     lead = models.ForeignKey(
         Lead,

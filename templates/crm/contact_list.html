@@ -83,7 +83,7 @@
           {% for contact in contacts %}
             <tr>
               <td><input class="select-contact" type="checkbox" name="lead_ids" value="{{ contact.pk }}" aria-label="Select {{ contact.contact_name }}"></td>
-              <td><div class="contact-cell"><span class="avatar">{{ contact.contact_name|slice:":1" }}</span><div><a class="contact-name" href="{% url 'crm_contact_detail' contact.pk %}">{{ contact.contact_name }}</a><div class="contact-email">{{ contact.contact_email }}</div></div></div></td>
+              <td><div class="contact-cell"><span class="avatar">{{ contact.contact_name|slice:":1" }}</span><div><a class="contact-name" href="{% url 'crm_contact_detail' contact.pk %}">{{ contact.contact_name }}</a>{% for label in contact.origin_labels %} <span class="badge badge-origin" data-testid="contact-origin">{{ label }}</span>{% endfor %}<div class="contact-email">{{ contact.contact_email }}</div></div></div></td>
               <td><span class="badge {% if contact.status == 'new' %}badge-warn{% endif %}">{{ contact.get_status_display }}</span></td>
               <td>{{ contact.get_audience_display }}</td>
               <td>{% for label in contact.relationship_interest_labels %}<span class="badge">{{ label }}</span>{% empty %}<span class="subtle">—</span>{% endfor %}</td>
@@ -100,7 +100,7 @@
       {% for contact in contacts %}
         <article class="card contact-card">
           <label class="mobile-select"><input class="select-contact" type="checkbox" name="lead_ids" value="{{ contact.pk }}"> Select {{ contact.contact_name }}</label>
-          <div class="contact-cell"><span class="avatar">{{ contact.contact_name|slice:":1" }}</span><div><a class="contact-name" href="{% url 'crm_contact_detail' contact.pk %}">{{ contact.contact_name }}</a><div class="contact-email">{{ contact.contact_email }}</div></div></div>
+          <div class="contact-cell"><span class="avatar">{{ contact.contact_name|slice:":1" }}</span><div><a class="contact-name" href="{% url 'crm_contact_detail' contact.pk %}">{{ contact.contact_name }}</a>{% for label in contact.origin_labels %} <span class="badge badge-origin" data-testid="contact-origin">{{ label }}</span>{% endfor %}<div class="contact-email">{{ contact.contact_email }}</div></div></div>
           <dl>
             <div><dt>Status</dt><dd><span class="badge {% if contact.status == 'new' %}badge-warn{% endif %}">{{ contact.get_status_display }}</span></dd></div>
             <div><dt>Audience</dt><dd>{{ contact.get_audience_display }}</dd></div>
