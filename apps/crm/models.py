@@ -57,6 +57,10 @@ class Lead(TimestampedModel, SoftDeleteModel):
         PARENT = "parent", "Parent"
         TEACHER = "teacher", "Teacher"
         SCHOOL = "school", "School or District"
+        FOUNDATION_DONOR = "foundation_donor", "Foundation Donor"
+        FOUNDATION_GRANTS = "foundation_grants", "Foundation Grants"
+        EQUITY_INVESTMENT = "equity_investment", "Equity Investment"
+        TEACHER_PARTNERSHIP = "teacher_partnership", "Teacher Partnership"
         OTHER = "other", "Other"
 
     class Source(models.TextChoices):
