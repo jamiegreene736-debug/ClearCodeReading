@@ -21,6 +21,7 @@
   .contact-deals-meta { display:flex; flex-wrap:wrap; gap:5px; margin-top:5px; font-size:12px; color:#405767; }
   .contact-deals-stage { padding:2px 7px; border-radius:20px; background:white; border:1px solid #cfe3e1; }
   .help { color:var(--muted); font-size:12px; }
+  .stacked-label { display:block; margin-top:10px; }
   [data-pipeline-fields] { display:none; }
   @media (max-width:700px) { .form-grid { grid-template-columns:1fr; } .full,.form-section { grid-column:auto; } .form-head { align-items:start; flex-direction:column; } }
 {% endblock %}
@@ -34,7 +35,7 @@
         <div class="field"><label for="{{ form.lead.id_for_label }}">Contact</label>{{ form.lead }}{{ form.lead.errors }}{% if deal.pipeline == "family_enrollment" and deal.lead_id and not deal.lead.is_deleted %}<a class="btn" href="{% url 'crm_enrollment_person_edit' deal.pk %}">Edit person: {{ deal.lead.contact_name }}</a><span class="help">Save enrollment changes before opening the person editor.</span>{% endif %}<span class="help">A person appears once; add deals for each distinct opportunity.</span>
           <div class="contact-deals" id="contact-deals" aria-live="polite" hidden></div>
         </div>
-        <div class="field"><label for="{{ form.company.id_for_label }}">Company</label>{{ form.company }}{{ form.company.errors }}<span class="help">One company can have separate grant and investment deals.</span></div>
+        <div class="field"><label for="{{ form.company.id_for_label }}">Company</label>{{ form.company }}{{ form.company.errors }}<label class="stacked-label" for="{{ form.company_name.id_for_label }}">{{ form.company_name.label }}</label>{{ form.company_name }}{{ form.company_name.errors }}<span class="help">{{ form.company_name.help_text }} One company can have separate grant and investment deals.</span></div>
         <div class="field"><label for="{{ form.pipeline.id_for_label }}">Pipeline</label>{{ form.pipeline }}{{ form.pipeline.errors }}</div>
         <div class="field"><label for="{{ form.stage.id_for_label }}">Stage</label>{{ form.stage }}{{ form.stage.errors }}</div>
         <div class="field"><label for="{{ form.owner.id_for_label }}">Owner</label>{{ form.owner }}{{ form.owner.errors }}</div>

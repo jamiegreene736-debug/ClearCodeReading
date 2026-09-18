@@ -936,7 +936,7 @@ class CrmDealCreateView(CrmAccessMixin, View):
                 is_deleted=False,
             )
             initial.update({"lead": lead, "company": lead.company})
-        form = DealForm(pipeline=pipeline, initial=initial)
+        form = DealForm(pipeline=pipeline, initial=initial, user=request.user)
         return render(request, self.template_name, {"form": form, "deal": None})
 
     def post(self, request, pk=None):
@@ -944,7 +944,7 @@ class CrmDealCreateView(CrmAccessMixin, View):
         if pk is not None:
             lead = get_object_or_404(Lead, pk=pk, is_deleted=False)
             data["lead"] = lead.pk
-        form = DealForm(data)
+        form = DealForm(data, user=request.user)
         if form.is_valid():
             deal = form.save()
             AuditLog.objects.create(
@@ -974,12 +974,12 @@ class CrmDealDetailView(CrmAccessMixin, View):
             pk=pk,
             is_deleted=False,
         )
-        return render(request, self.template_name, {"form": DealForm(instance=deal), "deal": deal})
+        return render(request, self.template_name, {"form": DealForm(instance=deal, user=request.user), "deal": deal})
 
     def post(self, request, pk):
         deal = get_object_or_404(Opportunity, pk=pk, is_deleted=False)
         before = {"pipeline": deal.pipeline, "stage": deal.stage, "name": deal.name}
-        form = DealForm(request.POST, instance=deal)
+        form = DealForm(request.POST, instance=deal, user=request.user)
         if form.is_valid():
             deal = form.save()
             deal.closed_at = timezone.now() if deal.stage in TERMINAL_DEAL_STAGES else None
