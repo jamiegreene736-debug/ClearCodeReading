@@ -2,7 +2,7 @@ from django.contrib import admin
 from django.conf import settings
 from django.conf.urls.static import static
 from django.contrib.auth.views import LogoutView
-from django.urls import include, path
+from django.urls import include, path, re_path
 from django.views.generic import RedirectView, TemplateView
 from django.views.static import serve
 
@@ -33,6 +33,7 @@ from apps.crm.views import (
     CrmTriageListView,
     CrmTriageResolveView,
     FamilyResourcesView,
+    family_resource_pack,
     NewsletterSignupView,
     NewsletterUnsubscribeView,
     SurveySubmissionView,
@@ -177,6 +178,11 @@ urlpatterns = [
     path("demo-login/<str:role>/", DemoLoginView.as_view(), name="demo_login"),
     path("assessment-audio/status/", assessment_audio_status, name="assessment_audio_status"),
     path("assessment-audio/<str:key>.mp3", assessment_audio, name="assessment_audio"),
+    re_path(
+        r"^assets/resources/(?P<filename>[\w-]+\.pdf)$",
+        family_resource_pack,
+        name="family_resource_pack",
+    ),
     path("assets/<path:path>", serve, {"document_root": settings.BASE_DIR / "marketing-website" / "assets"}, name="marketing_assets"),
     path("admin/", admin.site.urls),
     path("api/", include("apps.api.urls")),

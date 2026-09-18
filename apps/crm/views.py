@@ -19,7 +19,9 @@ from django.utils.decorators import method_decorator
 from django.utils.http import url_has_allowed_host_and_scheme
 from django.views import View
 from django.views.decorators.csrf import csrf_exempt
+from django.views.decorators.http import require_GET
 from django.views.generic import TemplateView
+from django.views.static import serve
 from rest_framework import status, viewsets
 from rest_framework.decorators import action
 from rest_framework.permissions import BasePermission, IsAuthenticated
@@ -60,6 +62,17 @@ from apps.users.models import AuditLog, CustomUser
 
 
 FAMILY_RESOURCES_SESSION_KEY = "family_resources_unlocked"
+FAMILY_RESOURCE_PACK_ROOT = (
+    settings.BASE_DIR / "marketing-website" / "assets" / "resources"
+)
+
+
+@require_GET
+def family_resource_pack(request: HttpRequest, filename: str) -> HttpResponse:
+    """Serve a downloadable pack only to visitors who completed the email gate."""
+    if not request.session.get(FAMILY_RESOURCES_SESSION_KEY):
+        return redirect("marketing_resources")
+    return serve(request, filename, document_root=FAMILY_RESOURCE_PACK_ROOT)
 
 
 class FamilyResourcesView(TemplateView):
