@@ -3,7 +3,7 @@ from django.db import migrations, models
 
 class Migration(migrations.Migration):
     dependencies = [
-        ("crm", "0016_calendar_blocks"),
+        ("crm", "0017_alter_lead_audience"),
     ]
 
     operations = [
