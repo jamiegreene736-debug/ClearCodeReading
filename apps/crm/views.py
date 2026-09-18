@@ -339,6 +339,8 @@ class WebsiteSignupView(View):
             return FormSubmission.FormType.WEBSITE
         if request.POST.get("redirect_to") == "/contact/":
             return FormSubmission.FormType.CONSULTATION
+        if request.POST.get("redirect_to") == "/resources/":
+            return FormSubmission.FormType.FAMILY_RESOURCES
         return FormSubmission.FormType.WEBSITE
 
     @staticmethod

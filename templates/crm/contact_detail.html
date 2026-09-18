@@ -25,6 +25,7 @@
   .identity .avatar { width:72px; height:72px; margin:0 auto 13px; font-size:24px; }
   .identity h1 { font-size:27px; }
   .identity a { color:var(--teal); text-decoration:none; }
+  .origin-badges { margin:6px 0 0; }
   .quick-actions { display:grid; grid-template-columns:1fr 1fr; gap:8px; margin:18px 0; }
   .properties { border-top:1px solid var(--line); padding-top:15px; text-align:left; }
   .property { margin:0 0 13px; }
@@ -71,6 +72,7 @@
       <span class="avatar">{{ lead.contact_name|slice:":1" }}</span>
       <h1>{{ lead.contact_name }}</h1>
       <p class="subtle">{{ lead.organization_name|default:lead.school_name }}</p>
+      {% if lead.origin_labels %}<p class="origin-badges">{% for label in lead.origin_labels %}<span class="badge badge-origin" data-testid="contact-origin">{{ label }}</span>{% endfor %}</p>{% endif %}
       <p><a href="mailto:{{ lead.contact_email }}">{{ lead.contact_email }}</a>{% if lead.contact_phone %}<br><a href="tel:{{ lead.contact_phone }}">{{ lead.contact_phone }}</a>{% endif %}</p>
       {% if request.user.can_manage_crm_users %}
       <button class="btn btn-small btn-danger" type="button" onclick="document.getElementById('delete-contact-dialog').showModal()">Delete contact</button>
@@ -128,6 +130,7 @@
             </form>
           </details>
         </dd></div>
+        <div class="property"><dt>Came from</dt><dd>{% if lead.came_from_free_resources_modal %}Submitted the free resources modal on /resources/{% else %}{{ lead.metadata.source_path|default:"Website" }}{% endif %}</dd></div>
         <div class="property"><dt>First seen</dt><dd>{{ lead.created_at|date:"M j, Y, g:i A" }}</dd></div>
         <div class="property"><dt>Linked account</dt><dd>{% if lead.linked_user %}{{ lead.linked_user.get_full_name|default:lead.linked_user.email }}{% else %}No account yet{% endif %}</dd></div>
       </dl>

@@ -454,11 +454,32 @@ class FormSubmissionIntakeTests(TestCase):
         self.assertTrue(lead.metadata["family_resources_access_requested"])
         self.assertEqual(lead.metadata["source_path"], "/resources/")
         submission = lead.form_submissions.get()
-        self.assertEqual(submission.form_type, FormSubmission.FormType.WEBSITE)
+        self.assertEqual(submission.form_type, FormSubmission.FormType.FAMILY_RESOURCES)
+        self.assertEqual(submission.get_form_type_display(), "Free resources modal")
         self.assertEqual(submission.source_path, "/resources/")
         self.assertEqual(submission.submitted_data["resource_access"], "family_resources")
+        self.assertTrue(lead.came_from_free_resources_modal)
+        self.assertEqual(lead.origin_labels, ["Free resources modal"])
 
         self.assertTrue(self._resources_context()["resources_unlocked"])
+
+    def test_other_website_signups_are_not_marked_as_free_resources_modal(self):
+        self.client.post(
+            reverse("crm_signup"),
+            {
+                "name": "Jordan Contact",
+                "email": "jordan@example.com",
+                "audience": Lead.Audience.PARENT,
+                "organization_name": "Website contact",
+                "notes": "Looking for tutoring options.",
+                "redirect_to": "/contact/",
+            },
+        )
+
+        lead = Lead.objects.get(contact_email="jordan@example.com")
+        self.assertFalse(lead.came_from_free_resources_modal)
+        self.assertEqual(lead.origin_labels, [])
+        self.assertEqual(lead.form_submissions.get().form_type, FormSubmission.FormType.WEBSITE)
 
     def test_family_resources_thanks_page_shows_a_prominent_confirmation(self):
         response = self.client.post(
@@ -1056,6 +1077,42 @@ class CrmWorkspaceTests(TestCase):
 
         self.assertRedirects(response, reverse("crm_contact_detail", args=[self.lead.pk]))
         self.assertEqual(Lead.objects.filter(contact_email__iexact="alex@example.com").count(), 1)
+
+    def test_contacts_from_the_free_resources_modal_are_visibly_marked(self):
+        self.client.post(
+            reverse("crm_signup"),
+            {
+                "name": "Taylor Reader",
+                "email": "taylor@example.com",
+                "audience": Lead.Audience.PARENT,
+                "redirect_to": "/resources/",
+            },
+        )
+        lead = Lead.objects.get(contact_email="taylor@example.com")
+        self.client.force_login(self.admin_user)
+
+        contact_list = self.client.get(reverse("crm_contact_list"))
+        contact_detail = self.client.get(reverse("crm_contact_detail", args=[lead.pk]))
+
+        self.assertContains(
+            contact_list,
+            '<span class="badge badge-origin" data-testid="contact-origin">Free resources modal</span>',
+        )
+        self.assertContains(
+            contact_detail,
+            '<span class="badge badge-origin" data-testid="contact-origin">Free resources modal</span>',
+        )
+        self.assertContains(contact_detail, "Submitted the free resources modal on /resources/")
+        self.assertContains(contact_detail, "Free resources modal submitted")
+
+    def test_contacts_from_other_forms_carry_no_free_resources_badge(self):
+        self.client.force_login(self.admin_user)
+
+        contact_list = self.client.get(reverse("crm_contact_list"))
+        contact_detail = self.client.get(reverse("crm_contact_detail", args=[self.lead.pk]))
+
+        self.assertNotContains(contact_list, 'data-testid="contact-origin"')
+        self.assertNotContains(contact_detail, 'data-testid="contact-origin"')
 
     def test_generic_admin_cannot_create_leads(self):
         self.client.force_login(self.admin_user)
