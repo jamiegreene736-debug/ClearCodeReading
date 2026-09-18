@@ -34,7 +34,7 @@ def restore_legacy_audiences(apps, schema_editor):
 class Migration(migrations.Migration):
 
     dependencies = [
-        ("crm", "0017_alter_lead_audience"),
+        ("crm", "0018_formsubmission_family_resources_form_type"),
     ]
 
     operations = [

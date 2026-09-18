@@ -469,7 +469,7 @@ class FormSubmissionIntakeTests(TestCase):
             {
                 "name": "Jordan Contact",
                 "email": "jordan@example.com",
-                "audience": Lead.Audience.PARENT,
+                "audience": Lead.PipelineCategory.FAMILY_ENROLLMENT,
                 "organization_name": "Website contact",
                 "notes": "Looking for tutoring options.",
                 "redirect_to": "/contact/",
@@ -1172,7 +1172,7 @@ class CrmWorkspaceTests(TestCase):
             {
                 "name": "Taylor Reader",
                 "email": "taylor@example.com",
-                "audience": Lead.Audience.PARENT,
+                "audience": Lead.PipelineCategory.FAMILY_ENROLLMENT,
                 "redirect_to": "/resources/",
             },
         )
@@ -1518,14 +1518,14 @@ class CrmWorkspaceTests(TestCase):
             school_name="Alpha school",
             contact_name="Blake Alpha",
             contact_email="blake@example.com",
-            audience=Lead.Audience.OTHER,
+            audience=Lead.PipelineCategory.OTHER,
         )
         Opportunity.objects.create(lead=alpha_contact, name="Alpha partnership")
         no_deal_contact = Lead.objects.create(
             school_name="No deal",
             contact_name="Casey Nodeal",
             contact_email="casey@example.com",
-            audience=Lead.Audience.OTHER,
+            audience=Lead.PipelineCategory.OTHER,
         )
         self.client.force_login(self.admin_user)
 
