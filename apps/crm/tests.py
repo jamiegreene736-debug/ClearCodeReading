@@ -984,6 +984,94 @@ class CrmWorkspaceTests(TestCase):
         self.assertContains(response, 'id="contact-deals"')
         self.assertContains(response, "aria-live=\"polite\"")
 
+    def test_deal_company_can_be_typed_instead_of_selected(self):
+        self.client.force_login(self.admin_user)
+
+        response = self.client.post(
+            reverse("crm_deal_new"),
+            {
+                "lead": "",
+                "company": "",
+                "company_name": " Pine Foundation ",
+                "pipeline": Opportunity.Pipeline.FOUNDATION_GRANTS,
+                "stage": Opportunity.initial_stage_for_pipeline(Opportunity.Pipeline.FOUNDATION_GRANTS),
+                "program_name": "Literacy fund",
+                "cycle_year": "2026",
+                "value": "25000",
+            },
+        )
+
+        company = Company.objects.get(name="Pine Foundation")
+        deal = Opportunity.objects.get(company=company)
+        self.assertRedirects(response, reverse("crm_deal_detail", args=[deal.pk]))
+        self.assertEqual(company.owner, self.admin_user)
+        self.assertEqual(deal.name, "Pine Foundation — Literacy fund — 2026")
+
+    def test_typed_deal_company_reuses_an_existing_name_and_rejects_both(self):
+        self.client.force_login(self.admin_user)
+        existing = Company.objects.create(name="Pine Foundation")
+
+        reused = self.client.post(
+            reverse("crm_deal_new"),
+            {
+                "lead": "",
+                "company": "",
+                "company_name": "pine foundation",
+                "pipeline": Opportunity.Pipeline.EQUITY_INVESTMENT,
+                "stage": Opportunity.initial_stage_for_pipeline(Opportunity.Pipeline.EQUITY_INVESTMENT),
+                "investment_round": "Seed",
+                "value": "0",
+            },
+        )
+        both = self.client.post(
+            reverse("crm_deal_new"),
+            {
+                "lead": "",
+                "company": str(existing.pk),
+                "company_name": "Second company",
+                "pipeline": Opportunity.Pipeline.EQUITY_INVESTMENT,
+                "stage": Opportunity.initial_stage_for_pipeline(Opportunity.Pipeline.EQUITY_INVESTMENT),
+                "investment_round": "Series A",
+                "value": "0",
+            },
+        )
+
+        self.assertEqual(reused.status_code, 302)
+        self.assertEqual(Company.objects.filter(name__iexact="pine foundation").count(), 1)
+        self.assertEqual(Opportunity.objects.get(investment_round="Seed").company, existing)
+        self.assertEqual(both.status_code, 400)
+        self.assertContains(both, "Choose an existing company or create a new one, not both.", status_code=400)
+        self.assertFalse(Company.objects.filter(name="Second company").exists())
+
+    def test_typed_deal_company_is_not_created_when_the_deal_fails_to_save(self):
+        self.client.force_login(self.admin_user)
+
+        response = self.client.post(
+            reverse("crm_deal_new"),
+            {
+                "lead": "",
+                "company": "",
+                "company_name": "Abandoned Foundation",
+                "pipeline": Opportunity.Pipeline.FOUNDATION_GRANTS,
+                "stage": Opportunity.initial_stage_for_pipeline(Opportunity.Pipeline.FOUNDATION_GRANTS),
+                "program_name": "",
+                "cycle_year": "",
+                "value": "0",
+            },
+        )
+
+        self.assertEqual(response.status_code, 400)
+        self.assertFalse(Opportunity.objects.filter(is_deleted=False).exists())
+        self.assertFalse(Company.objects.filter(name="Abandoned Foundation").exists())
+
+    def test_deal_form_offers_a_company_text_field(self):
+        self.client.force_login(self.admin_user)
+
+        response = self.client.get(reverse("crm_deal_new"))
+
+        self.assertContains(response, 'name="company_name"')
+        self.assertContains(response, "Or create a company")
+
     def test_workspace_requires_central_crm_access(self):
         anonymous_response = self.client.get(reverse("crm_dashboard"))
         self.client.force_login(self.guardian)
