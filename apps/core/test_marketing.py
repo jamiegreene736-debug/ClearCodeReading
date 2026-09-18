@@ -741,7 +741,10 @@ class MarketingPageTests(SimpleTestCase):
         self.assertEqual(content.count('data-testid="dashboard-slide"'), 3)
         self.assertIn("Students per group, maximum", content)
         self.assertIn("ClearCode provides educational reading instruction", content)
-        self.assertIn("ClearCode recommendations are explainable and human-controlled.", content)
+        self.assertEqual(content.count('data-testid="session-support-card"'), 4)
+        for card in ("Trained and Supported", "The Same Specialist", "Kids Who Get It", "High Expectations"):
+            with self.subTest(card=card):
+                self.assertIn(card, content)
         self.assertIn('href="/contact/"', content)
         self.assertNotIn('href="waitlist.html"', content)
 
