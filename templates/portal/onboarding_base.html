@@ -33,6 +33,7 @@ a { color:#1a7a7a}
 .card { padding:18px}
 }
 </style>
+{% block extra_head %}{% endblock %}
 </head>
 <body>
 {% if request.user.is_authenticated %}
@@ -49,5 +50,6 @@ a { color:#1a7a7a}
 
 {% endblock %}
 </main>
+{% block scripts %}{% endblock %}
 </body>
 </html>

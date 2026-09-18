@@ -10,7 +10,7 @@ from django.core.paginator import Paginator
 from django.core.validators import validate_email
 from django.db import IntegrityError, transaction
 from django.http import HttpRequest, HttpResponse
-from django.db.models import Count, F, Max, OuterRef, Q, Subquery, Sum
+from django.db.models import Count, F, Max, Min, OuterRef, Prefetch, Q, Subquery, Sum
 from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse
 from django.utils import timezone
@@ -349,6 +349,8 @@ class WebsiteSignupView(View):
             return FormSubmission.FormType.WEBSITE
         if request.POST.get("redirect_to") == "/contact/":
             return FormSubmission.FormType.CONSULTATION
+        if request.POST.get("redirect_to") == "/resources/":
+            return FormSubmission.FormType.FAMILY_RESOURCES
         return FormSubmission.FormType.WEBSITE
 
     @staticmethod
@@ -946,7 +948,7 @@ class CrmDealCreateView(CrmAccessMixin, View):
                 is_deleted=False,
             )
             initial.update({"lead": lead, "company": lead.company})
-        form = DealForm(pipeline=pipeline, initial=initial)
+        form = DealForm(pipeline=pipeline, initial=initial, user=request.user)
         return render(request, self.template_name, {"form": form, "deal": None})
 
     def post(self, request, pk=None):
@@ -954,7 +956,7 @@ class CrmDealCreateView(CrmAccessMixin, View):
         if pk is not None:
             lead = get_object_or_404(Lead, pk=pk, is_deleted=False)
             data["lead"] = lead.pk
-        form = DealForm(data)
+        form = DealForm(data, user=request.user)
         if form.is_valid():
             deal = form.save()
             AuditLog.objects.create(
@@ -984,12 +986,12 @@ class CrmDealDetailView(CrmAccessMixin, View):
             pk=pk,
             is_deleted=False,
         )
-        return render(request, self.template_name, {"form": DealForm(instance=deal), "deal": deal})
+        return render(request, self.template_name, {"form": DealForm(instance=deal, user=request.user), "deal": deal})
 
     def post(self, request, pk):
         deal = get_object_or_404(Opportunity, pk=pk, is_deleted=False)
         before = {"pipeline": deal.pipeline, "stage": deal.stage, "name": deal.name}
-        form = DealForm(request.POST, instance=deal)
+        form = DealForm(request.POST, instance=deal, user=request.user)
         if form.is_valid():
             deal = form.save()
             deal.closed_at = timezone.now() if deal.stage in TERMINAL_DEAL_STAGES else None
@@ -1249,9 +1251,20 @@ class CrmContactListView(CrmAccessMixin, TemplateView):
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         all_contacts = Lead.objects.filter(is_deleted=False)
-        contacts = all_contacts.select_related("assigned_to", "company").annotate(
-            submission_count=Count("form_submissions", distinct=True),
-            last_submission_at=Max("form_submissions__created_at"),
+        contacts = (
+            all_contacts.select_related("assigned_to", "company")
+            .prefetch_related(
+                Prefetch(
+                    "opportunities",
+                    queryset=Opportunity.objects.filter(is_deleted=False).order_by("name", "pk"),
+                    to_attr="active_deals",
+                )
+            )
+            .annotate(
+                submission_count=Count("form_submissions", distinct=True),
+                last_submission_at=Max("form_submissions__created_at"),
+                first_deal_name=Min("opportunities__name", filter=Q(opportunities__is_deleted=False)),
+            )
         )
 
         query = self.request.GET.get("q", "").strip()[:255]
@@ -1285,18 +1298,23 @@ class CrmContactListView(CrmAccessMixin, TemplateView):
             "name": ("contact_name", "contact_email"),
             "oldest": ("created_at",),
             "recent": (F("last_submission_at").desc(nulls_last=True), "-created_at"),
+            "deal": (F("first_deal_name").asc(nulls_last=True), "contact_name", "contact_email"),
+            "deal_desc": (F("first_deal_name").desc(nulls_last=True), "contact_name", "contact_email"),
         }.get(ordering, (F("last_submission_at").desc(nulls_last=True), "-created_at"))
         contacts = contacts.order_by(*order_by)
         paginator = Paginator(contacts, 50)
         page_obj = paginator.get_page(self.request.GET.get("page"))
         query_params = self.request.GET.copy()
         query_params.pop("page", None)
+        sort_params = query_params.copy()
+        sort_params.pop("sort", None)
         now = timezone.now()
         context.update(
             {
                 "contacts": page_obj.object_list,
                 "page_obj": page_obj,
                 "filter_query": query_params.urlencode(),
+                "sort_base_query": sort_params.urlencode(),
                 "total_contacts": all_contacts.count(),
                 "new_contacts": all_contacts.filter(status=Lead.Status.NEW).count(),
                 "unassigned_contacts": all_contacts.filter(assigned_to__isnull=True).count(),

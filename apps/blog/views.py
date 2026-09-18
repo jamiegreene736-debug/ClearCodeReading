@@ -17,6 +17,13 @@ class BlogPostListView(ListView):
         context.update(
             {
                 "substack_publication_url": SUBSTACK_PUBLICATION_URL,
+                "categories": list(
+                    BlogPost.objects.published()
+                    .exclude(category="")
+                    .order_by("category")
+                    .values_list("category", flat=True)
+                    .distinct()
+                ),
             }
         )
         return context
@@ -29,3 +36,11 @@ class BlogPostDetailView(DetailView):
 
     def get_queryset(self):
         return BlogPost.objects.published().select_related("author")
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        post = context["post"]
+        context["related_posts"] = list(
+            BlogPost.objects.published().exclude(pk=post.pk).select_related("author")[:3]
+        )
+        return context

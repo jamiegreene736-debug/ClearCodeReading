@@ -104,6 +104,12 @@ class DealForm(forms.ModelForm):
         queryset=Lead.objects.none(), required=False, label="Contact",
         empty_label="Choose a contact…", widget=ContactDealSelect,
     )
+    company_name = forms.CharField(
+        max_length=255,
+        required=False,
+        label="Or create a company",
+        help_text="Leave this blank when selecting an existing company.",
+    )
 
     class Meta:
         model = Opportunity
@@ -145,8 +151,10 @@ class DealForm(forms.ModelForm):
             "related_deals": forms.SelectMultiple(attrs={"size": 4}),
         }
 
-    def __init__(self, *args, pipeline=None, **kwargs):
+    def __init__(self, *args, pipeline=None, user=None, **kwargs):
         super().__init__(*args, **kwargs)
+        self.user = user
+        self._created_company = None
         selected_pipeline = (
             self.data.get("pipeline")
             or pipeline
@@ -189,6 +197,8 @@ class DealForm(forms.ModelForm):
 
     def clean(self):
         cleaned_data = super().clean()
+        if cleaned_data.get("company") and cleaned_data.get("company_name", "").strip():
+            self.add_error("company_name", "Choose an existing company or create a new one, not both.")
         pipeline = cleaned_data.get("pipeline") or self.instance.pipeline
         stage = cleaned_data.get("stage")
         if stage and stage not in Opportunity.stage_values_for_pipeline(pipeline):
@@ -208,6 +218,21 @@ class DealForm(forms.ModelForm):
         elif pipeline == Opportunity.Pipeline.EQUITY_INVESTMENT and capital_lane == Opportunity.CapitalLane.FOUNDATION:
             self.add_error("capital_lane", "Use ClearCode, Inc. or Both for an investment deal.")
         return cleaned_data
+
+    def _post_clean(self):
+        # The deal's own validation reads company, so resolve a typed name before it runs.
+        company_name = (self.cleaned_data.get("company_name") or "").strip()
+        if company_name and not self.cleaned_data.get("company"):
+            company = Company.objects.filter(name__iexact=company_name, is_deleted=False).first()
+            if company is None:
+                company = Company.objects.create(name=company_name, owner=self.user)
+                self._created_company = company
+            self.cleaned_data["company"] = company
+        super()._post_clean()
+        if self._created_company is not None and self.errors:
+            # The deal never saved, so the company it would have belonged to should not linger.
+            Company.objects.filter(pk=self._created_company.pk).delete()
+            self._created_company = None
 
 
 class CrmTeamMemberForm(forms.Form):

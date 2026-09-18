@@ -241,3 +241,252 @@ class BlogAdminTests(TestCase):
         self.assertEqual(post.status, BlogPost.Status.DRAFT)
         self.assertFalse(post.is_featured)
         self.assertFalse(BlogPost.objects.published().filter(pk=post.pk).exists())
+
+
+def _png_bytes() -> bytes:
+    from io import BytesIO
+
+    from PIL import Image
+
+    buffer = BytesIO()
+    Image.new("RGB", (4, 4), color=(26, 122, 122)).save(buffer, format="PNG")
+    return buffer.getvalue()
+
+
+class BlogCmsAccessTests(TestCase):
+    @classmethod
+    def setUpTestData(cls):
+        cls.editor = CustomUser.objects.create_user(
+            username="cms-editor",
+            email="cms-editor@example.com",
+            role=CustomUser.Role.SUPER_ADMIN,
+        )
+        cls.parent = CustomUser.objects.create_user(
+            username="cms-parent",
+            email="cms-parent@example.com",
+            role=CustomUser.Role.GUARDIAN,
+        )
+
+    def test_anonymous_visitors_are_sent_to_login(self):
+        response = self.client.get(reverse("blog_manage:list"))
+
+        self.assertEqual(response.status_code, 302)
+        self.assertIn("/login/", response["Location"])
+
+    def test_parents_cannot_open_the_blog_manager(self):
+        self.client.force_login(self.parent)
+
+        response = self.client.get(reverse("blog_manage:list"))
+
+        self.assertEqual(response.status_code, 403)
+
+    def test_manage_menu_links_to_the_blog_cms_for_editors(self):
+        self.client.force_login(self.editor)
+
+        response = self.client.get(reverse("blog_manage:list"))
+        content = response.content.decode()
+
+        self.assertEqual(response.status_code, 200)
+        self.assertIn('data-testid="blog-manage-menu-link"', content)
+        self.assertIn('data-testid="blog-new-menu-link"', content)
+        self.assertIn('data-testid="blog-empty-state"', content)
+        self.assertNotIn("/admin/blog/blogpost/", content)
+
+
+class BlogCmsWorkflowTests(TestCase):
+    @classmethod
+    def setUpTestData(cls):
+        cls.editor = CustomUser.objects.create_user(
+            username="cms-writer",
+            email="cms-writer@example.com",
+            first_name="Bethany",
+            last_name="Fleming",
+            is_staff=True,
+        )
+
+    def setUp(self):
+        self.client.force_login(self.editor)
+
+    def _form_data(self, **overrides):
+        data = {
+            "title": "How to make reading practice stick",
+            "slug": "",
+            "category": "For families",
+            "excerpt": "Three small routines that help practice actually happen.",
+            "body_format": BlogPost.BodyFormat.HTML,
+            "body": "<h2>Start small</h2><p>Ten minutes <strong>every day</strong> beats an hour on Sunday.</p><script>alert('x')</script>",
+            "cover_image_alt": "",
+            "status": BlogPost.Status.DRAFT,
+            "published_at": "",
+            "seo_title": "",
+            "seo_description": "",
+        }
+        data.update(overrides)
+        return data
+
+    def test_new_post_is_saved_as_a_private_sanitised_draft(self):
+        response = self.client.post(reverse("blog_manage:create"), self._form_data())
+
+        post = BlogPost.objects.get()
+        self.assertRedirects(response, reverse("blog_manage:edit", args=[post.pk]))
+        self.assertEqual(post.author, self.editor)
+        self.assertEqual(post.slug, "how-to-make-reading-practice-stick")
+        self.assertEqual(post.status, BlogPost.Status.DRAFT)
+        self.assertIn("<h2>Start small</h2>", post.body)
+        self.assertNotIn("<script>", post.body)
+        self.assertFalse(BlogPost.objects.published().exists())
+
+        public = self.client.get(reverse("blog:list"))
+        self.assertNotIn(post.title, public.content.decode())
+
+    def test_publishing_adds_a_tile_to_the_public_blog(self):
+        self.client.post(reverse("blog_manage:create"), self._form_data())
+        post = BlogPost.objects.get()
+
+        response = self.client.post(
+            reverse("blog_manage:publish", args=[post.pk]),
+            {"next": reverse("blog_manage:list") + "?tab=published"},
+        )
+
+        self.assertRedirects(response, reverse("blog_manage:list") + "?tab=published")
+        post.refresh_from_db()
+        self.assertTrue(post.is_live)
+
+        public = self.client.get(reverse("blog:list"))
+        content = public.content.decode()
+        self.assertIn('data-testid="blog-tile"', content)
+        self.assertIn(post.title, content)
+        self.assertIn(post.excerpt, content)
+        self.assertIn("For families", content)
+        self.assertIn("Bethany Fleming", content)
+        self.assertIn(post.get_absolute_url(), content)
+
+        article = self.client.get(post.get_absolute_url())
+        self.assertContains(article, "<h2>Start small</h2>", html=False)
+        self.assertNotContains(article, "<script>alert")
+
+    def test_cover_image_is_stored_in_the_database_and_served_publicly_once_live(self):
+        from django.core.files.uploadedfile import SimpleUploadedFile
+
+        upload = SimpleUploadedFile("cover.png", _png_bytes(), content_type="image/png")
+        response = self.client.post(
+            reverse("blog_manage:create"),
+            self._form_data(cover_image_alt="A child reading on a sofa"),
+        )
+        post = BlogPost.objects.get()
+        response = self.client.post(
+            reverse("blog_manage:edit", args=[post.pk]),
+            {**self._form_data(cover_image_alt="A child reading on a sofa"), "cover_upload": upload},
+        )
+        self.assertEqual(response.status_code, 302)
+
+        post.refresh_from_db()
+        self.assertTrue(post.has_cover)
+        self.assertEqual(post.cover_content_type, "image/png")
+        self.assertEqual(post.cover_url, reverse("blog:cover", args=[post.slug]))
+
+        # Drafts keep their cover private from the public.
+        self.client.logout()
+        self.assertEqual(self.client.get(post.cover_url).status_code, 404)
+
+        post.status = BlogPost.Status.PUBLISHED
+        post.save()
+        served = self.client.get(post.cover_url)
+        self.assertEqual(served.status_code, 200)
+        self.assertEqual(served["Content-Type"], "image/png")
+        self.assertEqual(served.content, bytes(post.cover_data))
+
+        tiles = self.client.get(reverse("blog:list")).content.decode()
+        self.assertIn(f'src="{post.cover_url}"', tiles)
+        self.assertIn('alt="A child reading on a sofa"', tiles)
+
+    def test_cover_requires_a_description(self):
+        from django.core.files.uploadedfile import SimpleUploadedFile
+
+        upload = SimpleUploadedFile("cover.png", _png_bytes(), content_type="image/png")
+        response = self.client.post(
+            reverse("blog_manage:create"),
+            {**self._form_data(), "cover_upload": upload},
+        )
+
+        self.assertEqual(response.status_code, 200)
+        self.assertFalse(BlogPost.objects.exists())
+        self.assertIn("Describe the cover image", response.content.decode())
+
+    def test_scheduled_posts_stay_private_until_their_publish_time(self):
+        later = timezone.localtime(timezone.now() + timedelta(days=2)).strftime("%Y-%m-%dT%H:%M")
+        self.client.post(
+            reverse("blog_manage:create"),
+            self._form_data(status=BlogPost.Status.PUBLISHED, published_at=later),
+        )
+        post = BlogPost.objects.get()
+
+        self.assertTrue(post.is_scheduled)
+        self.assertEqual(post.state, "Scheduled")
+        self.assertFalse(BlogPost.objects.published().exists())
+        self.assertNotIn('data-testid="blog-tile"', self.client.get(reverse("blog:list")).content.decode())
+        manager = self.client.get(reverse("blog_manage:list") + "?tab=scheduled").content.decode()
+        self.assertIn(post.title, manager)
+
+        preview = self.client.get(reverse("blog_manage:preview", args=[post.pk]))
+        self.assertEqual(preview.status_code, 200)
+        self.assertIn('data-testid="blog-preview-banner"', preview.content.decode())
+
+    def test_unpublish_feature_duplicate_and_delete_actions(self):
+        post = BlogPost.objects.create(
+            title="Workflow post",
+            excerpt="Summary.",
+            body="Body.",
+            status=BlogPost.Status.PUBLISHED,
+            author=self.editor,
+        )
+
+        self.client.post(reverse("blog_manage:feature", args=[post.pk]))
+        post.refresh_from_db()
+        self.assertTrue(post.is_featured)
+
+        self.client.post(reverse("blog_manage:unpublish", args=[post.pk]))
+        post.refresh_from_db()
+        self.assertEqual(post.status, BlogPost.Status.DRAFT)
+        self.assertFalse(post.is_featured)
+        self.assertFalse(BlogPost.objects.published().exists())
+
+        response = self.client.post(reverse("blog_manage:duplicate", args=[post.pk]))
+        copy = BlogPost.objects.exclude(pk=post.pk).get()
+        self.assertRedirects(response, reverse("blog_manage:edit", args=[copy.pk]))
+        self.assertEqual(copy.title, "Workflow post (copy)")
+        self.assertEqual(copy.slug, "workflow-post-copy")
+        self.assertEqual(copy.status, BlogPost.Status.DRAFT)
+
+        response = self.client.post(reverse("blog_manage:delete", args=[copy.pk]))
+        self.assertRedirects(response, reverse("blog_manage:list"))
+        self.assertFalse(BlogPost.objects.filter(pk=copy.pk).exists())
+
+    def test_editor_search_and_tabs_filter_posts(self):
+        BlogPost.objects.create(title="Fluency at home", excerpt="a", body="b", status=BlogPost.Status.PUBLISHED)
+        BlogPost.objects.create(title="Phonics draft", excerpt="a", body="b")
+
+        drafts = self.client.get(reverse("blog_manage:list") + "?tab=drafts").content.decode()
+        self.assertIn("Phonics draft", drafts)
+        self.assertNotIn("Fluency at home", drafts)
+
+        search = self.client.get(reverse("blog_manage:list") + "?q=fluency").content.decode()
+        self.assertIn("Fluency at home", search)
+        self.assertNotIn("Phonics draft", search)
+
+    def test_rich_text_article_keeps_safe_links_and_strips_dangerous_markup(self):
+        post = BlogPost.objects.create(
+            title="Links",
+            excerpt="Summary.",
+            body='<p>Read <a href="https://example.com" onclick="steal()">this</a> and <a href="javascript:alert(1)">that</a>.</p><iframe src="https://evil"></iframe>',
+            body_format=BlogPost.BodyFormat.HTML,
+            status=BlogPost.Status.PUBLISHED,
+        )
+
+        rendered = str(post.rendered_body)
+        self.assertIn('href="https://example.com"', rendered)
+        self.assertIn('rel="noopener noreferrer"', rendered)
+        self.assertNotIn("onclick", rendered)
+        self.assertNotIn("javascript:", rendered)
+        self.assertNotIn("<iframe", rendered)
+        self.assertEqual(post.reading_time_minutes, 1)

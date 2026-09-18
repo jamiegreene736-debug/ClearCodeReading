@@ -71,6 +71,12 @@ class CustomUser(AbstractUser, TimestampedModel, SoftDeleteModel):
         return can_edit(self)
 
     @property
+    def can_manage_blog(self) -> bool:
+        from apps.blog.access import can_manage_blog
+
+        return can_manage_blog(self)
+
+    @property
     def has_crm_access(self) -> bool:
         return bool(
             self.is_superuser

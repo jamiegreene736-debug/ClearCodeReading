@@ -454,11 +454,32 @@ class FormSubmissionIntakeTests(TestCase):
         self.assertTrue(lead.metadata["family_resources_access_requested"])
         self.assertEqual(lead.metadata["source_path"], "/resources/")
         submission = lead.form_submissions.get()
-        self.assertEqual(submission.form_type, FormSubmission.FormType.WEBSITE)
+        self.assertEqual(submission.form_type, FormSubmission.FormType.FAMILY_RESOURCES)
+        self.assertEqual(submission.get_form_type_display(), "Free resources modal")
         self.assertEqual(submission.source_path, "/resources/")
         self.assertEqual(submission.submitted_data["resource_access"], "family_resources")
+        self.assertTrue(lead.came_from_free_resources_modal)
+        self.assertEqual(lead.origin_labels, ["Free resources modal"])
 
         self.assertTrue(self._resources_context()["resources_unlocked"])
+
+    def test_other_website_signups_are_not_marked_as_free_resources_modal(self):
+        self.client.post(
+            reverse("crm_signup"),
+            {
+                "name": "Jordan Contact",
+                "email": "jordan@example.com",
+                "audience": Lead.Audience.PARENT,
+                "organization_name": "Website contact",
+                "notes": "Looking for tutoring options.",
+                "redirect_to": "/contact/",
+            },
+        )
+
+        lead = Lead.objects.get(contact_email="jordan@example.com")
+        self.assertFalse(lead.came_from_free_resources_modal)
+        self.assertEqual(lead.origin_labels, [])
+        self.assertEqual(lead.form_submissions.get().form_type, FormSubmission.FormType.WEBSITE)
 
     def test_family_resources_thanks_page_shows_a_prominent_confirmation(self):
         response = self.client.post(
@@ -963,6 +984,94 @@ class CrmWorkspaceTests(TestCase):
         self.assertContains(response, 'id="contact-deals"')
         self.assertContains(response, "aria-live=\"polite\"")
 
+    def test_deal_company_can_be_typed_instead_of_selected(self):
+        self.client.force_login(self.admin_user)
+
+        response = self.client.post(
+            reverse("crm_deal_new"),
+            {
+                "lead": "",
+                "company": "",
+                "company_name": " Pine Foundation ",
+                "pipeline": Opportunity.Pipeline.FOUNDATION_GRANTS,
+                "stage": Opportunity.initial_stage_for_pipeline(Opportunity.Pipeline.FOUNDATION_GRANTS),
+                "program_name": "Literacy fund",
+                "cycle_year": "2026",
+                "value": "25000",
+            },
+        )
+
+        company = Company.objects.get(name="Pine Foundation")
+        deal = Opportunity.objects.get(company=company)
+        self.assertRedirects(response, reverse("crm_deal_detail", args=[deal.pk]))
+        self.assertEqual(company.owner, self.admin_user)
+        self.assertEqual(deal.name, "Pine Foundation — Literacy fund — 2026")
+
+    def test_typed_deal_company_reuses_an_existing_name_and_rejects_both(self):
+        self.client.force_login(self.admin_user)
+        existing = Company.objects.create(name="Pine Foundation")
+
+        reused = self.client.post(
+            reverse("crm_deal_new"),
+            {
+                "lead": "",
+                "company": "",
+                "company_name": "pine foundation",
+                "pipeline": Opportunity.Pipeline.EQUITY_INVESTMENT,
+                "stage": Opportunity.initial_stage_for_pipeline(Opportunity.Pipeline.EQUITY_INVESTMENT),
+                "investment_round": "Seed",
+                "value": "0",
+            },
+        )
+        both = self.client.post(
+            reverse("crm_deal_new"),
+            {
+                "lead": "",
+                "company": str(existing.pk),
+                "company_name": "Second company",
+                "pipeline": Opportunity.Pipeline.EQUITY_INVESTMENT,
+                "stage": Opportunity.initial_stage_for_pipeline(Opportunity.Pipeline.EQUITY_INVESTMENT),
+                "investment_round": "Series A",
+                "value": "0",
+            },
+        )
+
+        self.assertEqual(reused.status_code, 302)
+        self.assertEqual(Company.objects.filter(name__iexact="pine foundation").count(), 1)
+        self.assertEqual(Opportunity.objects.get(investment_round="Seed").company, existing)
+        self.assertEqual(both.status_code, 400)
+        self.assertContains(both, "Choose an existing company or create a new one, not both.", status_code=400)
+        self.assertFalse(Company.objects.filter(name="Second company").exists())
+
+    def test_typed_deal_company_is_not_created_when_the_deal_fails_to_save(self):
+        self.client.force_login(self.admin_user)
+
+        response = self.client.post(
+            reverse("crm_deal_new"),
+            {
+                "lead": "",
+                "company": "",
+                "company_name": "Abandoned Foundation",
+                "pipeline": Opportunity.Pipeline.FOUNDATION_GRANTS,
+                "stage": Opportunity.initial_stage_for_pipeline(Opportunity.Pipeline.FOUNDATION_GRANTS),
+                "program_name": "",
+                "cycle_year": "",
+                "value": "0",
+            },
+        )
+
+        self.assertEqual(response.status_code, 400)
+        self.assertFalse(Opportunity.objects.filter(is_deleted=False).exists())
+        self.assertFalse(Company.objects.filter(name="Abandoned Foundation").exists())
+
+    def test_deal_form_offers_a_company_text_field(self):
+        self.client.force_login(self.admin_user)
+
+        response = self.client.get(reverse("crm_deal_new"))
+
+        self.assertContains(response, 'name="company_name"')
+        self.assertContains(response, "Or create a company")
+
     def test_workspace_requires_central_crm_access(self):
         anonymous_response = self.client.get(reverse("crm_dashboard"))
         self.client.force_login(self.guardian)
@@ -1056,6 +1165,42 @@ class CrmWorkspaceTests(TestCase):
 
         self.assertRedirects(response, reverse("crm_contact_detail", args=[self.lead.pk]))
         self.assertEqual(Lead.objects.filter(contact_email__iexact="alex@example.com").count(), 1)
+
+    def test_contacts_from_the_free_resources_modal_are_visibly_marked(self):
+        self.client.post(
+            reverse("crm_signup"),
+            {
+                "name": "Taylor Reader",
+                "email": "taylor@example.com",
+                "audience": Lead.Audience.PARENT,
+                "redirect_to": "/resources/",
+            },
+        )
+        lead = Lead.objects.get(contact_email="taylor@example.com")
+        self.client.force_login(self.admin_user)
+
+        contact_list = self.client.get(reverse("crm_contact_list"))
+        contact_detail = self.client.get(reverse("crm_contact_detail", args=[lead.pk]))
+
+        self.assertContains(
+            contact_list,
+            '<span class="badge badge-origin" data-testid="contact-origin">Free resources modal</span>',
+        )
+        self.assertContains(
+            contact_detail,
+            '<span class="badge badge-origin" data-testid="contact-origin">Free resources modal</span>',
+        )
+        self.assertContains(contact_detail, "Submitted the free resources modal on /resources/")
+        self.assertContains(contact_detail, "Free resources modal submitted")
+
+    def test_contacts_from_other_forms_carry_no_free_resources_badge(self):
+        self.client.force_login(self.admin_user)
+
+        contact_list = self.client.get(reverse("crm_contact_list"))
+        contact_detail = self.client.get(reverse("crm_contact_detail", args=[self.lead.pk]))
+
+        self.assertNotContains(contact_list, 'data-testid="contact-origin"')
+        self.assertNotContains(contact_detail, 'data-testid="contact-origin"')
 
     def test_generic_admin_cannot_create_leads(self):
         self.client.force_login(self.admin_user)
@@ -1365,6 +1510,41 @@ class CrmWorkspaceTests(TestCase):
         response = self.client.get(reverse("crm_contact_list"))
 
         self.assertEqual(response.context["contacts"][0].pk, self.lead.pk)
+
+    def test_contact_index_shows_linked_deals_and_sorts_by_deal_name(self):
+        Opportunity.objects.create(lead=self.lead, name="Zeta enrollment")
+        Opportunity.objects.create(lead=self.lead, name="Hidden deal", is_deleted=True)
+        alpha_contact = Lead.objects.create(
+            school_name="Alpha school",
+            contact_name="Blake Alpha",
+            contact_email="blake@example.com",
+            audience=Lead.Audience.OTHER,
+        )
+        Opportunity.objects.create(lead=alpha_contact, name="Alpha partnership")
+        no_deal_contact = Lead.objects.create(
+            school_name="No deal",
+            contact_name="Casey Nodeal",
+            contact_email="casey@example.com",
+            audience=Lead.Audience.OTHER,
+        )
+        self.client.force_login(self.admin_user)
+
+        response = self.client.get(reverse("crm_contact_list"), {"sort": "deal"})
+
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "Zeta enrollment")
+        self.assertContains(response, "Alpha partnership")
+        self.assertNotContains(response, "Hidden deal")
+        self.assertEqual(
+            [contact.pk for contact in response.context["contacts"]],
+            [alpha_contact.pk, self.lead.pk, no_deal_contact.pk],
+        )
+
+        descending = self.client.get(reverse("crm_contact_list"), {"sort": "deal_desc"})
+        self.assertEqual(
+            [contact.pk for contact in descending.context["contacts"]],
+            [self.lead.pk, alpha_contact.pk, no_deal_contact.pk],
+        )
 
     def test_contact_index_filters_each_relationship_interest_separately(self):
         donor = Lead.objects.create(

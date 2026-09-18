@@ -31,7 +31,7 @@ class BlogPostAdmin(admin.ModelAdmin):
         "published_at",
         "updated_at",
     )
-    list_filter = ("status", "is_featured", "category", "published_at", "updated_at")
+    list_filter = ("status", "is_featured", "body_format", "category", "published_at", "updated_at")
     search_fields = ("title", "excerpt", "body", "category", "author__email")
     autocomplete_fields = ("author",)
     prepopulated_fields = {"slug": ("title",)}
@@ -47,6 +47,7 @@ class BlogPostAdmin(admin.ModelAdmin):
                     "title",
                     "slug",
                     "excerpt",
+                    "body_format",
                     "body",
                     "category",
                     "author",

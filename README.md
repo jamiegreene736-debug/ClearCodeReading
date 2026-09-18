@@ -79,6 +79,8 @@ Useful URLs:
 - AI crawler brief: `http://localhost:8000/llms.txt`
 - Family consultation: `http://localhost:8000/contact/`
 - Public blog: `http://localhost:8000/blog/`
+- Blog CMS (portal, Manage → Blog posts): `http://localhost:8000/portal/blog/`
+- Public blog: `http://localhost:8000/blog/`
 - Admin: `http://localhost:8000/admin/`
 - Optional browser survey: `http://localhost:8000/assessment/`
 - Swagger docs: `http://localhost:8000/api/docs/`
