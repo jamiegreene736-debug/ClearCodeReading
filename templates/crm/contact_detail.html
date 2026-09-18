@@ -99,12 +99,12 @@
             </form>
           </details>
         </dd></div>
-        <div class="property"><dt>Audience</dt><dd>
+        <div class="property"><dt>Pipeline category</dt><dd>
           <details class="inline-property" id="property-audience">
-            <summary aria-label="Edit audience"><span>{{ lead.get_audience_display }}</span><span class="edit-cue">Edit</span></summary>
+            <summary aria-label="Edit pipeline category"><span>{{ lead.get_audience_display }}</span><span class="edit-cue">Edit</span></summary>
             <form method="post" action="{% url 'crm_contact_update' lead.pk %}">{% csrf_token %}
               <input type="hidden" name="field" value="audience">
-              <div class="field"><label for="inline-audience">Audience</label><select id="inline-audience" name="audience">{% for value,label in audience_choices %}<option value="{{ value }}" {% if lead.audience == value %}selected{% endif %}>{{ label }}</option>{% endfor %}</select></div>
+              <div class="field"><label for="inline-audience">Pipeline category</label><select id="inline-audience" name="audience">{% for value,label in audience_choices %}<option value="{{ value }}" {% if lead.audience == value %}selected{% endif %}>{{ label }}</option>{% endfor %}</select></div>
               <div class="inline-actions"><button class="btn btn-primary btn-small" type="submit">Save</button><button class="btn btn-small" type="button" data-cancel-edit>Cancel</button></div>
             </form>
           </details>
@@ -198,7 +198,7 @@
         <h2 class="side-title">About this contact</h2>
         <form class="property-form" method="post" action="{% url 'crm_contact_update' lead.pk %}">{% csrf_token %}
           <div class="field"><label for="detail-status">Lead status</label><select id="detail-status" name="status">{% for value,label in status_choices %}<option value="{{ value }}" {% if lead.status == value %}selected{% endif %}>{{ label }}</option>{% endfor %}</select></div>
-          <div class="field"><label for="detail-audience">Audience</label><select id="detail-audience" name="audience">{% for value,label in audience_choices %}<option value="{{ value }}" {% if lead.audience == value %}selected{% endif %}>{{ label }}</option>{% endfor %}</select></div>
+          <div class="field"><label for="detail-audience">Pipeline category</label><select id="detail-audience" name="audience">{% for value,label in audience_choices %}<option value="{{ value }}" {% if lead.audience == value %}selected{% endif %}>{{ label }}</option>{% endfor %}</select></div>
           <div class="field"><label for="detail-owner">Contact owner</label><select id="detail-owner" name="assigned_to"><option value="">Unassigned</option>{% for owner in owners %}<option value="{{ owner.pk }}" {% if lead.assigned_to_id == owner.pk %}selected{% endif %}>{{ owner.get_full_name|default:owner.email }}</option>{% endfor %}</select></div>
           <div class="field"><label for="detail-company">Company</label><select id="detail-company" name="company"><option value="">No company</option>{% for company in companies %}<option value="{{ company.pk }}" {% if lead.company_id == company.pk %}selected{% endif %}>{{ company.name }}</option>{% endfor %}</select></div>
           <div class="field"><label for="detail-company-name">Or create company</label><input id="detail-company-name" name="company_name" placeholder="Company name"></div>

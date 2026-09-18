@@ -352,7 +352,7 @@ class HiringTests(TestCase):
             contact_name="Interested Teacher",
             contact_email="interested@example.com",
             school_name="Teacher",
-            audience="teacher",
+            audience="referral_partners",
         )
         url = reverse("crm_hiring_from_contact", args=[lead.pk])
         self.assertEqual(self.client.post(url).status_code, 302)

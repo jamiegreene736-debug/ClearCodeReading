@@ -121,7 +121,7 @@ class CrmTests(SimpleTestCase):
 
     def test_website_signup_defaults_family_inquiry_for_parent(self):
         self.assertEqual(
-            WebsiteSignupView._school_name_for_signup(Lead.Audience.PARENT, ""),
+            WebsiteSignupView._school_name_for_signup(Lead.PipelineCategory.FAMILY_ENROLLMENT, ""),
             "Family inquiry",
         )
 
@@ -438,7 +438,7 @@ class FormSubmissionIntakeTests(TestCase):
             {
                 "name": "Taylor Reader",
                 "email": " TAYLOR@example.com ",
-                "audience": Lead.Audience.PARENT,
+                "audience": Lead.PipelineCategory.FAMILY_ENROLLMENT,
                 "redirect_to": "/resources/",
             },
         )
@@ -469,7 +469,7 @@ class FormSubmissionIntakeTests(TestCase):
             {
                 "name": "Jordan Contact",
                 "email": "jordan@example.com",
-                "audience": Lead.Audience.PARENT,
+                "audience": Lead.PipelineCategory.FAMILY_ENROLLMENT,
                 "organization_name": "Website contact",
                 "notes": "Looking for tutoring options.",
                 "redirect_to": "/contact/",
@@ -487,7 +487,7 @@ class FormSubmissionIntakeTests(TestCase):
             {
                 "name": "Taylor Reader",
                 "email": "taylor@example.com",
-                "audience": Lead.Audience.PARENT,
+                "audience": Lead.PipelineCategory.FAMILY_ENROLLMENT,
                 "redirect_to": "/resources/",
             },
             follow=True,
@@ -505,7 +505,7 @@ class FormSubmissionIntakeTests(TestCase):
             {
                 "name": "Taylor Reader",
                 "email": "not-an-email",
-                "audience": Lead.Audience.PARENT,
+                "audience": Lead.PipelineCategory.FAMILY_ENROLLMENT,
                 "redirect_to": "/resources/",
             },
         )
@@ -526,7 +526,7 @@ class FormSubmissionIntakeTests(TestCase):
             "name": "Jordan Reader",
             "email": "JORDAN@example.com",
             "phone": "555-0101",
-            "audience": Lead.Audience.PARENT,
+            "audience": Lead.PipelineCategory.FAMILY_ENROLLMENT,
             "organization_name": "Family consultation",
             "estimated_students": "1",
             "child_age_grade": "Grade 2",
@@ -562,7 +562,7 @@ class FormSubmissionIntakeTests(TestCase):
             {
                 "name": "Morgan Parent",
                 "email": "morgan@example.com",
-                "audience": Lead.Audience.PARENT,
+                "audience": Lead.PipelineCategory.FAMILY_ENROLLMENT,
                 "organization_name": "Reading assessment follow-up",
                 "notes": "Estimated reading age: 7.",
             },
@@ -588,7 +588,7 @@ class FormSubmissionIntakeTests(TestCase):
             {
                 "name": "Partner Parent",
                 "email": "partner-parent@example.com",
-                "audience": Lead.Audience.PARENT,
+                "audience": Lead.PipelineCategory.FAMILY_ENROLLMENT,
                 "organization_name": "Reading assessment follow-up",
                 "partner_interest": "yes",
             },
@@ -613,7 +613,7 @@ class FormSubmissionIntakeTests(TestCase):
             {
                 "name": "Multi Interest Parent",
                 "email": "multi-interest@example.com",
-                "audience": Lead.Audience.PARENT,
+                "audience": Lead.PipelineCategory.FAMILY_ENROLLMENT,
                 "organization_name": "Reading assessment follow-up",
                 "relationship_interests": selected_interests,
             },
@@ -643,7 +643,7 @@ class FormSubmissionIntakeTests(TestCase):
             {
                 "name": "Morgan Parent",
                 "email": "morgan-structured@example.com",
-                "audience": Lead.Audience.PARENT,
+                "audience": Lead.PipelineCategory.FAMILY_ENROLLMENT,
                 "organization_name": "Reading assessment follow-up",
                 "notes": "Requested a specialist follow-up.",
                 "child_name": "Avery",
@@ -844,7 +844,7 @@ class EarlyInterestSurveyIntakeTests(TestCase):
 
         self.assertEqual(response.status_code, 302)
         lead = Lead.objects.get()
-        self.assertEqual(lead.audience, Lead.Audience.OTHER)
+        self.assertEqual(lead.audience, Lead.PipelineCategory.OTHER)
         self.assertFalse(lead.opportunities.exists())
         triage = IntakeTriage.objects.get(lead=lead)
         self.assertEqual(triage.source_signal, IntakeTriage.SourceSignal.PARTNER_INTEREST)
@@ -928,7 +928,7 @@ class CrmWorkspaceTests(TestCase):
             school_name="Family inquiry",
             contact_name="Alex Reader",
             contact_email="alex@example.com",
-            audience=Lead.Audience.PARENT,
+            audience=Lead.PipelineCategory.FAMILY_ENROLLMENT,
         )
         FormSubmission.objects.create(
             lead=self.lead,
@@ -1128,7 +1128,7 @@ class CrmWorkspaceTests(TestCase):
                 "contact_name": "Jordan Teacher",
                 "contact_email": " JORDAN@EXAMPLE.COM ",
                 "contact_phone": "555-0100",
-                "audience": Lead.Audience.TEACHER,
+                "audience": Lead.PipelineCategory.REFERRAL_PARTNERS,
                 "company_name": "Pine School",
                 "source": Lead.Source.REFERRAL,
                 "status": Lead.Status.NEW,
@@ -1157,7 +1157,7 @@ class CrmWorkspaceTests(TestCase):
             {
                 "contact_name": "Alex Duplicate",
                 "contact_email": "ALEX@example.com",
-                "audience": Lead.Audience.PARENT,
+                "audience": Lead.PipelineCategory.FAMILY_ENROLLMENT,
                 "source": Lead.Source.OTHER,
                 "status": Lead.Status.NEW,
             },
@@ -1172,7 +1172,7 @@ class CrmWorkspaceTests(TestCase):
             {
                 "name": "Taylor Reader",
                 "email": "taylor@example.com",
-                "audience": Lead.Audience.PARENT,
+                "audience": Lead.PipelineCategory.FAMILY_ENROLLMENT,
                 "redirect_to": "/resources/",
             },
         )
@@ -1416,13 +1416,13 @@ class CrmWorkspaceTests(TestCase):
             school_name="Second inquiry",
             contact_name="Bailey Reader",
             contact_email="bailey@example.com",
-            audience=Lead.Audience.PARENT,
+            audience=Lead.PipelineCategory.FAMILY_ENROLLMENT,
         )
         untouched = Lead.objects.create(
             school_name="Third inquiry",
             contact_name="Cameron Reader",
             contact_email="cameron@example.com",
-            audience=Lead.Audience.PARENT,
+            audience=Lead.PipelineCategory.FAMILY_ENROLLMENT,
         )
         self.client.force_login(self.admin_user)
 
@@ -1503,7 +1503,7 @@ class CrmWorkspaceTests(TestCase):
             school_name="Imported contact",
             contact_name="Recently imported",
             contact_email="imported@example.com",
-            audience=Lead.Audience.OTHER,
+            audience=Lead.PipelineCategory.OTHER,
         )
         self.client.force_login(self.admin_user)
 
@@ -1518,14 +1518,14 @@ class CrmWorkspaceTests(TestCase):
             school_name="Alpha school",
             contact_name="Blake Alpha",
             contact_email="blake@example.com",
-            audience=Lead.Audience.OTHER,
+            audience=Lead.PipelineCategory.OTHER,
         )
         Opportunity.objects.create(lead=alpha_contact, name="Alpha partnership")
         no_deal_contact = Lead.objects.create(
             school_name="No deal",
             contact_name="Casey Nodeal",
             contact_email="casey@example.com",
-            audience=Lead.Audience.OTHER,
+            audience=Lead.PipelineCategory.OTHER,
         )
         self.client.force_login(self.admin_user)
 
@@ -1551,7 +1551,7 @@ class CrmWorkspaceTests(TestCase):
             school_name="Donor inquiry",
             contact_name="Dana Donor",
             contact_email="donor@example.com",
-            audience=Lead.Audience.OTHER,
+            audience=Lead.PipelineCategory.OTHER,
             metadata={
                 "relationship_interests": [
                     Lead.RelationshipInterest.REFERRAL_PARTNER,
@@ -1563,7 +1563,7 @@ class CrmWorkspaceTests(TestCase):
             school_name="Advocate inquiry",
             contact_name="Avery Advocate",
             contact_email="advocate@example.com",
-            audience=Lead.Audience.OTHER,
+            audience=Lead.PipelineCategory.OTHER,
             metadata={"relationship_interests": [Lead.RelationshipInterest.ADVOCATE]},
         )
         self.client.force_login(self.admin_user)
@@ -1589,7 +1589,7 @@ class CrmWorkspaceTests(TestCase):
         self.lead.assigned_to = self.admin_user
         self.lead.save()
         url = reverse("crm_contact_update", args=[self.lead.pk])
-        for field, value in (("status", Lead.Status.CONTACTED), ("audience", Lead.Audience.PARENT), ("assigned_to", ""), ("company", "")):
+        for field, value in (("status", Lead.Status.CONTACTED), ("audience", Lead.PipelineCategory.FAMILY_ENROLLMENT), ("assigned_to", ""), ("company", "")):
             self.lead.refresh_from_db()
             before = {name: getattr(self.lead, name) for name in ("status", "audience", "assigned_to_id", "company_id")}
             response = self.client.post(url, {"field": field, field: value, "company_name": "Must not create"})
@@ -1629,7 +1629,7 @@ class CrmWorkspaceTests(TestCase):
             reverse("crm_contact_update", args=[self.lead.pk]),
             {
                 "status": Lead.Status.CONTACTED,
-                "audience": Lead.Audience.PARENT,
+                "audience": Lead.PipelineCategory.FAMILY_ENROLLMENT,
                 "assigned_to": self.admin_user.pk,
             },
         )

@@ -294,7 +294,7 @@ class Command(BaseCommand):
             defaults={
                 "school_name": center.name,
                 "contact_name": "Sample Family",
-                "audience": Lead.Audience.PARENT,
+                "audience": Lead.PipelineCategory.FAMILY_ENROLLMENT,
                 "organization_name": company.name,
                 "company": company,
                 "source": Lead.Source.REFERRAL,
