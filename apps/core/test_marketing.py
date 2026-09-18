@@ -397,10 +397,26 @@ class MarketingPageTests(SimpleTestCase):
         self.assertIn('name="redirect_to" value="/resources/"', content)
         self.assertIn('name="audience" value="parent"', content)
         self.assertIn("Unlock My Free Resources", content)
-        self.assertIn('data-testid="comprehension-packs"', content)
-        self.assertIn("/assets/resources/gk-2-comprehension-strategy-pack.pdf", content)
-        self.assertIn("Preview the strategy packs", content)
         self.assertNotIn("Three moves for a calmer reading week.", content)
+
+    def test_family_resources_gate_cannot_be_dismissed(self):
+        content = self._render("marketing_resources")
+
+        # The gate renders open so it is reachable without JavaScript, and it
+        # offers no way out: no close control, Escape cancelled, close reopens.
+        self.assertIn("<dialog\n    open", content)
+        self.assertNotIn("data-close-resource-gate", content)
+        self.assertNotIn("Close resource access form", content)
+        self.assertIn("dialog.addEventListener('cancel', (event) => event.preventDefault());", content)
+        self.assertIn("dialog.addEventListener('close', openDialog);", content)
+
+    def test_locked_family_resources_page_withholds_the_gated_downloads(self):
+        content = self._render("marketing_resources")
+
+        self.assertNotIn('data-testid="comprehension-packs"', content)
+        self.assertNotIn("comprehension-strategy-pack.pdf", content)
+        self.assertNotIn("Download PDF", content)
+        self.assertNotIn("#comprehension-packs", content)
 
     def test_contact_form_is_short_and_supports_audience_routing(self):
         content = self._render("marketing_contact")
@@ -870,6 +886,40 @@ class MarketingPageTests(SimpleTestCase):
         self.assertEqual(sitemap.status_code, 200)
         self.assertNotIn("https://clearcodereading.com/orlando/", sitemap.content.decode())
         self.assertIn("https://clearcodereading.com/faq/", sitemap.content.decode())
+
+
+class FamilyResourcePackDownloadTests(TestCase):
+    PACK_URL = "/assets/resources/gk-2-comprehension-strategy-pack.pdf"
+
+    def test_pack_download_redirects_to_the_gate_until_the_form_is_submitted(self):
+        response = self.client.get(self.PACK_URL)
+
+        self.assertRedirects(
+            response, reverse("marketing_resources"), fetch_redirect_response=False
+        )
+
+    def test_pack_download_is_served_after_the_gate_is_completed(self):
+        self.client.post(
+            reverse("crm_signup"),
+            {
+                "name": "Taylor Reader",
+                "email": "taylor@example.com",
+                "audience": Lead.Audience.PARENT,
+                "redirect_to": "/resources/",
+            },
+        )
+
+        response = self.client.get(self.PACK_URL)
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response["Content-Type"], "application/pdf")
+
+    def test_cover_images_stay_publicly_servable(self):
+        response = self.client.get(
+            "/assets/resources/gk-2-comprehension-strategy-pack-cover.webp"
+        )
+
+        self.assertEqual(response.status_code, 200)
 
 
 class ContactFormTests(TestCase):
