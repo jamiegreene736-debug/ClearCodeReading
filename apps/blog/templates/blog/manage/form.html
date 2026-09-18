@@ -1,0 +1,332 @@
+{% extends "portal/onboarding_base.html" %}
+
+{% block title %}{% if post %}Edit post{% else %}Write a new post{% endif %}{% endblock %}
+
+{% block extra_head %}
+<style>
+  .blog-cms input[type=checkbox], .blog-cms input[type=radio] { width: 1.1rem; height: 1.1rem; padding: 0; accent-color: #1A7A7A; }
+  .blog-cms input[type=file] { border: 0; padding: 0; }
+  .blog-cms .errorlist { list-style: none; padding: 0; margin: .35rem 0 0; font-size: .875rem; font-weight: 700; }
+  .article-editor { min-height: 26rem; outline: none; line-height: 1.75; font-size: 1.0625rem; }
+  .article-editor:empty::before { content: attr(data-placeholder); color: rgba(15,43,53,.4); }
+  .article-editor h2 { font-size: 1.75rem; font-weight: 900; line-height: 1.2; margin: 1.5rem 0 .75rem; }
+  .article-editor h3 { font-size: 1.35rem; font-weight: 900; line-height: 1.25; margin: 1.25rem 0 .5rem; }
+  .article-editor h4 { font-size: 1.1rem; font-weight: 900; margin: 1rem 0 .5rem; }
+  .article-editor p { margin: 0 0 1rem; }
+  .article-editor ul, .article-editor ol { margin: 0 0 1rem 1.5rem; padding: 0; }
+  .article-editor ul { list-style: disc; } .article-editor ol { list-style: decimal; }
+  .article-editor blockquote { margin: 1rem 0; padding: .5rem 1.25rem; border-left: 4px solid #F5A623; background: #F7F2EA; border-radius: .75rem; font-weight: 600; }
+  .article-editor a { color: #1A7A7A; text-decoration: underline; }
+  .article-editor img { max-width: 100%; border-radius: 1rem; margin: 1rem 0; }
+  .article-editor hr { border: 0; border-top: 2px solid rgba(15,43,53,.12); margin: 1.5rem 0; }
+  .editor-tool { display: inline-flex; align-items: center; justify-content: center; min-width: 2.25rem; height: 2.25rem; padding: 0 .6rem; border-radius: .75rem; font-size: .8rem; font-weight: 900; color: #0F2B35; background: #fff; box-shadow: 0 0 0 1px rgba(15,43,53,.12); cursor: pointer; }
+  .editor-tool:hover { background: #F7F2EA; }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="blog-cms" data-testid="blog-editor">
+  <p class="text-xs font-black uppercase tracking-[.18em] text-mediumTeal"><a href="{% url 'blog_manage:list' %}" class="focus-ring rounded hover:underline">Blog posts</a> <span aria-hidden="true">›</span> {% if post %}Edit{% else %}New post{% endif %}</p>
+  <div class="mt-2 flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
+    <div>
+      <h1 class="text-4xl font-black tracking-tight text-ink">{% if post %}{{ post.title }}{% else %}Write a new post{% endif %}</h1>
+      {% if post %}
+        <p class="mt-2 text-sm font-bold text-ink/55">
+          <span class="rounded-full px-3 py-1 text-xs font-black uppercase tracking-[.14em] {% if post.is_live %}bg-emerald-100 text-emerald-800{% elif post.is_scheduled %}bg-amber-100 text-amber-800{% else %}bg-linen text-ink/60{% endif %}">{{ post.state }}</span>
+          <span class="ml-2">Last saved {{ post.updated_at|date:"M j, Y, g:i A" }}</span>
+        </p>
+      {% else %}
+        <p class="mt-2 max-w-2xl text-base leading-7 text-ink/65">Write the article, add a cover, then publish it or schedule it. It appears on the public blog as a tile the moment it goes live.</p>
+      {% endif %}
+    </div>
+    {% if post %}
+      <div class="flex flex-wrap gap-2">
+        {% if post.is_live %}
+          <a href="{{ post.get_absolute_url }}" target="_blank" rel="noopener" class="focus-ring inline-flex items-center rounded-full bg-white px-4 py-2 text-sm font-black text-deepTeal ring-1 ring-deepTeal/20 hover:bg-linen">View live ↗</a>
+        {% else %}
+          <a href="{% url 'blog_manage:preview' post.pk %}" target="_blank" rel="noopener" class="focus-ring inline-flex items-center rounded-full bg-white px-4 py-2 text-sm font-black text-deepTeal ring-1 ring-deepTeal/20 hover:bg-linen">Preview ↗</a>
+        {% endif %}
+      </div>
+    {% endif %}
+  </div>
+
+  {% if form.non_field_errors %}
+    <div role="alert" class="mt-6 rounded-2xl bg-red-50 p-4 text-sm font-bold text-red-800 ring-1 ring-red-200">{{ form.non_field_errors }}</div>
+  {% endif %}
+
+  <form method="post" enctype="multipart/form-data" id="blog-post-form" class="mt-8 grid gap-8 lg:grid-cols-[minmax(0,1fr)_22rem]" novalidate>
+    {% csrf_token %}
+    <div class="grid gap-6">
+      <section class="rounded-[1.75rem] bg-white p-6 shadow-sm ring-1 ring-ink/10 sm:p-8">
+        <div class="grid gap-5">
+          <div>
+            <label for="{{ form.title.id_for_label }}" class="text-sm font-black text-ink">Title</label>
+            <div class="mt-2">{{ form.title }}</div>
+            {{ form.title.errors }}
+          </div>
+          <div class="grid gap-5 sm:grid-cols-2">
+            <div>
+              <label for="{{ form.slug.id_for_label }}" class="text-sm font-black text-ink">URL slug</label>
+              <div class="mt-2">{{ form.slug }}</div>
+              <p class="mt-1 text-xs text-ink/55">Leave blank to generate it from the title. Public address: /blog/<span data-slug-preview>{% if post %}{{ post.slug }}{% else %}your-title{% endif %}</span>/</p>
+              {{ form.slug.errors }}
+            </div>
+            <div>
+              <label for="{{ form.category.id_for_label }}" class="text-sm font-black text-ink">Category</label>
+              <div class="mt-2">{{ form.category }}</div>
+              <datalist id="blog-category-options">{% for category in categories %}<option value="{{ category }}">{% endfor %}</datalist>
+              <p class="mt-1 text-xs text-ink/55">Shown on the tile, for example “For families” or “Specialist notes”.</p>
+              {{ form.category.errors }}
+            </div>
+          </div>
+          <div>
+            <label for="{{ form.excerpt.id_for_label }}" class="text-sm font-black text-ink">Summary</label>
+            <div class="mt-2">{{ form.excerpt }}</div>
+            <p class="mt-1 text-xs text-ink/55">Appears on the blog tile and in search results. <span data-count-for="{{ form.excerpt.id_for_label }}" data-max="320"></span></p>
+            {{ form.excerpt.errors }}
+          </div>
+        </div>
+      </section>
+
+      <section class="rounded-[1.75rem] bg-white p-6 shadow-sm ring-1 ring-ink/10 sm:p-8">
+        <div class="flex flex-wrap items-center justify-between gap-3">
+          <h2 class="text-lg font-black text-ink">Article</h2>
+          <fieldset class="flex flex-wrap gap-2" data-body-format>
+            <legend class="sr-only">Editor mode</legend>
+            {% for radio in form.body_format %}
+              <label class="inline-flex cursor-pointer items-center gap-2 rounded-full bg-linen px-3 py-1.5 text-xs font-black text-ink/70 ring-1 ring-ink/10 has-[:checked]:bg-ink has-[:checked]:text-white">{{ radio.tag }} {{ radio.choice_label }}</label>
+            {% endfor %}
+          </fieldset>
+        </div>
+        {{ form.body_format.errors }}
+
+        <div class="mt-4 hidden" data-rich-editor>
+          <div class="flex flex-wrap gap-1.5 rounded-2xl bg-linen p-2" role="toolbar" aria-label="Formatting">
+            <button type="button" class="editor-tool" data-command="bold" title="Bold"><strong>B</strong></button>
+            <button type="button" class="editor-tool" data-command="italic" title="Italic"><em>I</em></button>
+            <button type="button" class="editor-tool" data-command="formatBlock" data-value="h2" title="Heading">H2</button>
+            <button type="button" class="editor-tool" data-command="formatBlock" data-value="h3" title="Subheading">H3</button>
+            <button type="button" class="editor-tool" data-command="formatBlock" data-value="p" title="Paragraph">¶</button>
+            <button type="button" class="editor-tool" data-command="insertUnorderedList" title="Bulleted list">• List</button>
+            <button type="button" class="editor-tool" data-command="insertOrderedList" title="Numbered list">1. List</button>
+            <button type="button" class="editor-tool" data-command="formatBlock" data-value="blockquote" title="Quote">“ Quote</button>
+            <button type="button" class="editor-tool" data-action="link" title="Add link">Link</button>
+            <button type="button" class="editor-tool" data-action="image" title="Insert image from a web address">Image</button>
+            <button type="button" class="editor-tool" data-command="insertHorizontalRule" title="Divider">—</button>
+            <button type="button" class="editor-tool" data-command="removeFormat" title="Clear formatting">Clear</button>
+          </div>
+          <div id="article-editor" class="article-editor mt-3 rounded-2xl border border-ink/15 bg-white px-5 py-4 text-ink" contenteditable="true" data-placeholder="Start writing. Use the toolbar for headings, lists, quotes and links." aria-label="Article body"></div>
+        </div>
+        <div class="mt-4" data-plain-editor>
+          {{ form.body }}
+          <p class="mt-1 text-xs text-ink/55">Plain text: blank lines become paragraphs. Switch to Rich text for headings, lists and links.</p>
+        </div>
+        {{ form.body.errors }}
+      </section>
+
+      <section class="rounded-[1.75rem] bg-white p-6 shadow-sm ring-1 ring-ink/10 sm:p-8">
+        <h2 class="text-lg font-black text-ink">Search &amp; sharing</h2>
+        <p class="mt-1 text-sm text-ink/60">Optional. The title and summary are used when these are blank.</p>
+        <div class="mt-4 grid gap-5">
+          <div>
+            <label for="{{ form.seo_title.id_for_label }}" class="text-sm font-black text-ink">Search title</label>
+            <div class="mt-2">{{ form.seo_title }}</div>
+            <p class="mt-1 text-xs text-ink/55"><span data-count-for="{{ form.seo_title.id_for_label }}" data-max="70"></span></p>
+            {{ form.seo_title.errors }}
+          </div>
+          <div>
+            <label for="{{ form.seo_description.id_for_label }}" class="text-sm font-black text-ink">Search description</label>
+            <div class="mt-2">{{ form.seo_description }}</div>
+            <p class="mt-1 text-xs text-ink/55"><span data-count-for="{{ form.seo_description.id_for_label }}" data-max="160"></span></p>
+            {{ form.seo_description.errors }}
+          </div>
+        </div>
+      </section>
+    </div>
+
+    <aside class="grid content-start gap-6">
+      <section class="rounded-[1.75rem] bg-ink p-6 text-white shadow-xl shadow-ink/20">
+        <h2 class="text-lg font-black">Publish</h2>
+        <fieldset class="mt-4 grid gap-2">
+          <legend class="sr-only">Status</legend>
+          {% for radio in form.status %}
+            <label class="flex cursor-pointer items-start gap-3 rounded-2xl bg-white/5 px-4 py-3 ring-1 ring-white/10 has-[:checked]:bg-white/15 has-[:checked]:ring-gold">
+              <span class="mt-1">{{ radio.tag }}</span>
+              <span>
+                <span class="block font-black">{{ radio.choice_label }}</span>
+                <span class="block text-xs text-white/65">{% if radio.data.value == 'draft' %}Private. Only editors can preview it.{% else %}Live on the blog now, or at the date below.{% endif %}</span>
+              </span>
+            </label>
+          {% endfor %}
+        </fieldset>
+        {{ form.status.errors }}
+        <div class="mt-4">
+          <label for="{{ form.published_at.id_for_label }}" class="text-sm font-black">Publish date</label>
+          <div class="mt-2 [&_input]:text-ink">{{ form.published_at }}</div>
+          <p class="mt-1 text-xs text-white/65">{{ form.published_at.help_text }}</p>
+          {{ form.published_at.errors }}
+        </div>
+        <label class="mt-4 flex cursor-pointer items-start gap-3 text-sm font-bold">
+          <span class="mt-0.5">{{ form.is_featured }}</span>
+          <span>Feature this post<span class="block text-xs font-medium text-white/65">Featured posts take the large tile at the top of the blog.</span></span>
+        </label>
+        {{ form.is_featured.errors }}
+        <div class="mt-6 grid gap-2">
+          <button type="submit" data-testid="save-post-button" class="focus-ring inline-flex w-full items-center justify-center rounded-full bg-gold px-5 py-3 font-black text-ink transition hover:-translate-y-0.5">Save post</button>
+          <a href="{% url 'blog_manage:list' %}" class="focus-ring inline-flex w-full items-center justify-center rounded-full px-5 py-3 text-sm font-black text-white/80 hover:text-white">Back to all posts</a>
+        </div>
+      </section>
+
+      <section class="rounded-[1.75rem] bg-white p-6 shadow-sm ring-1 ring-ink/10">
+        <h2 class="text-lg font-black text-ink">Cover image</h2>
+        <div class="mt-4 overflow-hidden rounded-2xl bg-linen ring-1 ring-ink/10" data-cover-preview>
+          {% if post and post.has_cover %}
+            <img src="{{ post.cover_url }}" alt="{{ post.cover_image_alt }}" class="aspect-[16/10] w-full object-cover">
+          {% else %}
+            <span class="dot-grid grid aspect-[16/10] w-full place-items-center bg-seafoam text-sm font-black text-deepTeal">No cover yet</span>
+          {% endif %}
+        </div>
+        <div class="mt-4">
+          <label for="{{ form.cover_upload.id_for_label }}" class="text-sm font-black text-ink">{% if post and post.has_cover %}Replace image{% else %}Upload image{% endif %}</label>
+          <div class="mt-2">{{ form.cover_upload }}</div>
+          <p class="mt-1 text-xs text-ink/55">{{ form.cover_upload.help_text }}</p>
+          {{ form.cover_upload.errors }}
+        </div>
+        <div class="mt-4">
+          <label for="{{ form.cover_image_alt.id_for_label }}" class="text-sm font-black text-ink">Image description</label>
+          <div class="mt-2">{{ form.cover_image_alt }}</div>
+          <p class="mt-1 text-xs text-ink/55">Read aloud by screen readers. Required when there is a cover.</p>
+          {{ form.cover_image_alt.errors }}
+        </div>
+        {% if post and post.has_cover %}
+          <label class="mt-4 flex cursor-pointer items-center gap-3 text-sm font-bold text-ink/70">{{ form.remove_cover }} Remove the current cover</label>
+        {% endif %}
+      </section>
+
+      {% if post %}
+        <section class="rounded-[1.75rem] bg-white p-6 shadow-sm ring-1 ring-ink/10">
+          <h2 class="text-lg font-black text-ink">More actions</h2>
+          <div class="mt-4 grid gap-2">
+            <button type="submit" form="duplicate-form" class="focus-ring inline-flex w-full items-center justify-center rounded-full bg-white px-4 py-2 text-sm font-black text-ink/70 ring-1 ring-ink/10 hover:bg-linen">Duplicate as a new draft</button>
+            <button type="submit" form="delete-form" class="focus-ring inline-flex w-full items-center justify-center rounded-full bg-transparent px-4 py-2 text-sm font-black text-red-700 hover:bg-red-50">Delete this post</button>
+          </div>
+        </section>
+      {% endif %}
+    </aside>
+  </form>
+
+  {% if post %}
+    <form id="duplicate-form" method="post" action="{% url 'blog_manage:duplicate' post.pk %}">{% csrf_token %}</form>
+    <form id="delete-form" method="post" action="{% url 'blog_manage:delete' post.pk %}" data-confirm="Delete “{{ post.title }}”? This cannot be undone.">{% csrf_token %}</form>
+  {% endif %}
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+(() => {
+  const form = document.getElementById('blog-post-form');
+  if (!form) return;
+  const textarea = form.querySelector('textarea[data-article-body]');
+  const editor = document.getElementById('article-editor');
+  const richWrap = form.querySelector('[data-rich-editor]');
+  const plainWrap = form.querySelector('[data-plain-editor]');
+  const formatInputs = [...form.querySelectorAll('input[name="body_format"]')];
+
+  const currentFormat = () => (formatInputs.find((input) => input.checked) || {}).value || 'plain';
+  const escapeHtml = (text) => text.replace(/[&<>]/g, (c) => ({'&': '&amp;', '<': '&lt;', '>': '&gt;'}[c]));
+  const plainToHtml = (text) => text.trim()
+    ? text.trim().split(/\n{2,}/).map((p) => `<p>${escapeHtml(p).replace(/\n/g, '<br>')}</p>`).join('')
+    : '';
+  const htmlToPlain = (html) => {
+    const div = document.createElement('div');
+    div.innerHTML = html;
+    div.querySelectorAll('p, h2, h3, h4, li, blockquote').forEach((el) => el.append('\n\n'));
+    div.querySelectorAll('br').forEach((el) => el.replaceWith('\n'));
+    return div.textContent.replace(/\n{3,}/g, '\n\n').trim();
+  };
+
+  let mode = null;
+  const applyMode = (next) => {
+    if (next === mode) return;
+    if (mode === 'html') textarea.value = editor.innerHTML;
+    if (next === 'html') {
+      const looksLikeHtml = /<\/?[a-z][^>]*>/i.test(textarea.value);
+      editor.innerHTML = looksLikeHtml ? textarea.value : plainToHtml(textarea.value);
+    } else if (mode === 'html') {
+      textarea.value = htmlToPlain(editor.innerHTML);
+    }
+    richWrap.classList.toggle('hidden', next !== 'html');
+    plainWrap.classList.toggle('hidden', next === 'html');
+    mode = next;
+  };
+  formatInputs.forEach((input) => input.addEventListener('change', () => applyMode(currentFormat())));
+  applyMode(currentFormat());
+
+  form.addEventListener('submit', () => {
+    if (mode === 'html') textarea.value = editor.innerHTML;
+  });
+
+  form.querySelectorAll('[data-command]').forEach((button) => {
+    button.addEventListener('mousedown', (event) => event.preventDefault());
+    button.addEventListener('click', () => {
+      editor.focus();
+      document.execCommand(button.dataset.command, false, button.dataset.value || null);
+    });
+  });
+  form.querySelectorAll('[data-action]').forEach((button) => {
+    button.addEventListener('mousedown', (event) => event.preventDefault());
+    button.addEventListener('click', () => {
+      editor.focus();
+      if (button.dataset.action === 'link') {
+        const url = window.prompt('Link address (https://…)');
+        if (url) document.execCommand('createLink', false, url.trim());
+      } else if (button.dataset.action === 'image') {
+        const url = window.prompt('Image address (https://…)');
+        if (!url) return;
+        const alt = window.prompt('Describe the image for screen readers') || '';
+        document.execCommand('insertHTML', false, `<img src="${url.trim().replace(/"/g, '')}" alt="${escapeHtml(alt).replace(/"/g, '')}" loading="lazy">`);
+      }
+    });
+  });
+  editor.addEventListener('paste', (event) => {
+    const text = event.clipboardData?.getData('text/plain');
+    if (!text) return;
+    event.preventDefault();
+    document.execCommand('insertText', false, text);
+  });
+
+  const title = form.querySelector('input[name="title"]');
+  const slug = form.querySelector('input[name="slug"]');
+  const slugPreview = form.querySelector('[data-slug-preview]');
+  const slugify = (value) => value.toLowerCase().normalize('NFKD').replace(/[^\w\s-]/g, '').trim().replace(/[\s_-]+/g, '-').slice(0, 200);
+  const updateSlug = () => { slugPreview.textContent = slug.value.trim() || slugify(title.value) || 'your-title'; };
+  title.addEventListener('input', updateSlug);
+  slug.addEventListener('input', updateSlug);
+  updateSlug();
+
+  form.querySelectorAll('[data-count-for]').forEach((counter) => {
+    const field = document.getElementById(counter.dataset.countFor);
+    if (!field) return;
+    const render = () => { counter.textContent = `${field.value.length} / ${counter.dataset.max} characters`; };
+    field.addEventListener('input', render);
+    render();
+  });
+
+  const upload = form.querySelector('input[name="cover_upload"]');
+  const preview = form.querySelector('[data-cover-preview]');
+  upload?.addEventListener('change', () => {
+    const file = upload.files?.[0];
+    if (!file || !file.type.startsWith('image/')) return;
+    const img = document.createElement('img');
+    img.className = 'aspect-[16/10] w-full object-cover';
+    img.alt = '';
+    img.src = URL.createObjectURL(file);
+    preview.replaceChildren(img);
+  });
+
+  const del = document.getElementById('delete-form');
+  del?.addEventListener('submit', (event) => { if (!window.confirm(del.dataset.confirm)) event.preventDefault(); });
+})();
+</script>
+{% endblock %}

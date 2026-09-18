@@ -11,40 +11,76 @@
       <p class="inline-flex rounded-full bg-white px-4 py-2 text-sm font-black uppercase tracking-[.14em] text-deepTeal shadow-sm ring-1 ring-deepTeal/15">ClearCode Reading blog</p>
       <h1 class="mt-6 max-w-4xl text-4xl font-black leading-[1.05] tracking-tight text-ink sm:text-6xl">Reading insights, made clear.</h1>
       <p class="mt-6 max-w-2xl text-lg leading-8 text-ink/75 sm:text-xl">Original guidance from ClearCode Reading specialists—published here to help families understand reading progress and take a thoughtful next step.</p>
+      {% if categories %}
+        <ul class="mt-8 flex flex-wrap gap-2" aria-label="Topics">
+          {% for category in categories %}
+            <li><span class="inline-flex rounded-full bg-white/70 px-4 py-2 text-sm font-black text-ink/70 ring-1 ring-deepTeal/10">{{ category }}</span></li>
+          {% endfor %}
+        </ul>
+      {% endif %}
     </div>
   </section>
 
   <section class="bg-white py-16 sm:py-20">
     <div class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
       {% if posts %}
-        <div class="grid gap-6 lg:grid-cols-2">
+        <div class="grid gap-6 lg:grid-cols-3" data-testid="blog-tiles">
           {% for post in posts %}
-            <article class="group flex h-full flex-col overflow-hidden rounded-[2rem] {% if forloop.first %}bg-ink text-white lg:col-span-2 lg:grid lg:grid-cols-[1.05fr_.95fr]{% else %}bg-linen text-ink{% endif %} shadow-xl shadow-deepTeal/10 ring-1 ring-deepTeal/10">
-              {% if post.cover_image %}
-                <a href="{{ post.get_absolute_url }}" class="focus-ring block overflow-hidden {% if forloop.first %}lg:min-h-[28rem]{% else %}aspect-[16/9]{% endif %}">
-                  <img src="{{ post.cover_image.url }}" alt="{{ post.cover_image_alt }}" class="h-full w-full object-cover transition duration-500 group-hover:scale-[1.03]" {% if not forloop.first %}loading="lazy"{% endif %}>
-                </a>
-              {% else %}
-                <a href="{{ post.get_absolute_url }}" class="focus-ring dot-grid grid min-h-64 place-items-center overflow-hidden {% if forloop.first %}bg-deepTeal lg:min-h-[28rem]{% else %}bg-seafoam{% endif %}" aria-label="Read {{ post.title }}">
-                  <span class="grid h-24 w-24 place-items-center rounded-[2rem] {% if forloop.first %}bg-gold text-ink{% else %}bg-white text-deepTeal{% endif %} text-3xl font-black shadow-xl">Cc</span>
-                </a>
-              {% endif %}
-              <div class="flex flex-1 flex-col p-7 sm:p-9">
-                <div class="flex flex-wrap items-center gap-3 text-xs font-black uppercase tracking-[.14em] {% if forloop.first %}text-gold{% else %}text-deepTeal{% endif %}">
-                  {% if post.category %}<span>{{ post.category }}</span><span aria-hidden="true">·</span>{% endif %}
-                  <time datetime="{{ post.published_at|date:'c' }}">{{ post.published_at|date:"M j, Y" }}</time>
-                  {% if post.is_featured %}<span class="rounded-full {% if forloop.first %}bg-white/10{% else %}bg-seafoam{% endif %} px-3 py-1">Featured</span>{% endif %}
+            {% if forloop.first and page_obj.number == 1 %}
+              <article class="group flex flex-col overflow-hidden rounded-[2rem] bg-ink text-white shadow-xl shadow-deepTeal/10 ring-1 ring-deepTeal/10 lg:col-span-3 lg:grid lg:grid-cols-[1.1fr_.9fr]" data-testid="blog-tile" data-featured="true">
+                {% if post.has_cover %}
+                  <a href="{{ post.get_absolute_url }}" class="focus-ring block overflow-hidden lg:min-h-[28rem]" aria-label="Read {{ post.title }}">
+                    <img src="{{ post.cover_url }}" alt="{{ post.cover_image_alt }}" class="h-full w-full object-cover transition duration-500 group-hover:scale-[1.03]" fetchpriority="high">
+                  </a>
+                {% else %}
+                  <a href="{{ post.get_absolute_url }}" class="focus-ring dot-grid grid min-h-64 place-items-center overflow-hidden bg-deepTeal lg:min-h-[28rem]" aria-label="Read {{ post.title }}">
+                    <span class="grid h-24 w-24 place-items-center rounded-[2rem] bg-gold text-3xl font-black text-ink shadow-xl">Cc</span>
+                  </a>
+                {% endif %}
+                <div class="flex flex-1 flex-col p-7 sm:p-10">
+                  <div class="flex flex-wrap items-center gap-3 text-xs font-black uppercase tracking-[.14em] text-gold">
+                    {% if post.is_featured %}<span class="rounded-full bg-white/10 px-3 py-1">Featured</span>{% else %}<span class="rounded-full bg-white/10 px-3 py-1">Latest</span>{% endif %}
+                    {% if post.category %}<span>{{ post.category }}</span><span aria-hidden="true">·</span>{% endif %}
+                    <time datetime="{{ post.published_at|date:'c' }}">{{ post.published_at|date:"M j, Y" }}</time>
+                  </div>
+                  <h2 class="mt-5 text-3xl font-black leading-tight sm:text-5xl">
+                    <a href="{{ post.get_absolute_url }}" class="focus-ring rounded-lg transition hover:text-gold">{{ post.title }}</a>
+                  </h2>
+                  <p class="mt-5 text-lg leading-8 text-white/75">{{ post.excerpt }}</p>
+                  <div class="mt-auto flex flex-wrap items-center justify-between gap-4 pt-8 text-sm font-bold text-white/60">
+                    <span>{{ post.display_author }} · {{ post.reading_time_minutes }} min read</span>
+                    <a href="{{ post.get_absolute_url }}" class="focus-ring shrink-0 rounded-full bg-gold px-5 py-3 font-black text-ink transition group-hover:-translate-y-0.5">Read article</a>
+                  </div>
                 </div>
-                <h2 class="mt-4 text-3xl font-black leading-tight {% if forloop.first %}sm:text-5xl{% endif %}">
-                  <a href="{{ post.get_absolute_url }}" class="focus-ring rounded-lg transition {% if forloop.first %}hover:text-gold{% else %}hover:text-deepTeal{% endif %}">{{ post.title }}</a>
-                </h2>
-                <p class="mt-4 text-lg leading-8 {% if forloop.first %}text-white/75{% else %}text-ink/70{% endif %}">{{ post.excerpt }}</p>
-                <div class="mt-auto flex items-center justify-between gap-4 pt-7 text-sm font-bold {% if forloop.first %}text-white/60{% else %}text-ink/55{% endif %}">
-                  <span>{{ post.display_author }}{% if post.reading_time_minutes %} · {{ post.reading_time_minutes }} min read{% endif %}</span>
-                  <a href="{{ post.get_absolute_url }}" class="focus-ring shrink-0 rounded-full {% if forloop.first %}bg-gold text-ink{% else %}bg-deepTeal text-white{% endif %} px-5 py-3 font-black transition group-hover:-translate-y-0.5">Read article</a>
+              </article>
+            {% else %}
+              <article class="group flex h-full flex-col overflow-hidden rounded-[2rem] bg-linen text-ink shadow-xl shadow-deepTeal/10 ring-1 ring-deepTeal/10 transition hover:-translate-y-1" data-testid="blog-tile">
+                {% if post.has_cover %}
+                  <a href="{{ post.get_absolute_url }}" class="focus-ring block aspect-[16/10] overflow-hidden" aria-label="Read {{ post.title }}">
+                    <img src="{{ post.cover_url }}" alt="{{ post.cover_image_alt }}" class="h-full w-full object-cover transition duration-500 group-hover:scale-[1.03]" loading="lazy">
+                  </a>
+                {% else %}
+                  <a href="{{ post.get_absolute_url }}" class="focus-ring dot-grid grid aspect-[16/10] place-items-center overflow-hidden bg-seafoam" aria-label="Read {{ post.title }}">
+                    <span class="grid h-16 w-16 place-items-center rounded-[1.4rem] bg-white text-2xl font-black text-deepTeal shadow-xl">Cc</span>
+                  </a>
+                {% endif %}
+                <div class="flex flex-1 flex-col p-6 sm:p-7">
+                  <div class="flex flex-wrap items-center gap-3 text-xs font-black uppercase tracking-[.14em] text-deepTeal">
+                    {% if post.category %}<span>{{ post.category }}</span><span aria-hidden="true">·</span>{% endif %}
+                    <time datetime="{{ post.published_at|date:'c' }}">{{ post.published_at|date:"M j, Y" }}</time>
+                    {% if post.is_featured %}<span class="rounded-full bg-seafoam px-3 py-1">Featured</span>{% endif %}
+                  </div>
+                  <h2 class="mt-4 text-2xl font-black leading-tight">
+                    <a href="{{ post.get_absolute_url }}" class="focus-ring rounded-lg transition hover:text-deepTeal">{{ post.title }}</a>
+                  </h2>
+                  <p class="mt-3 line-clamp-3 text-base leading-7 text-ink/70">{{ post.excerpt }}</p>
+                  <div class="mt-auto flex items-center justify-between gap-4 pt-6 text-sm font-bold text-ink/55">
+                    <span>{{ post.display_author }} · {{ post.reading_time_minutes }} min read</span>
+                    <a href="{{ post.get_absolute_url }}" class="focus-ring shrink-0 rounded-full bg-deepTeal px-4 py-2.5 text-sm font-black text-white transition group-hover:-translate-y-0.5" aria-label="Read {{ post.title }}">Read →</a>
+                  </div>
                 </div>
-              </div>
-            </article>
+              </article>
+            {% endif %}
           {% endfor %}
         </div>
 
@@ -65,8 +101,8 @@
           <h2 class="mt-6 text-3xl font-black">The first insight is on its way.</h2>
           <p class="mx-auto mt-4 max-w-xl text-lg leading-8 text-ink/70">We’re preparing practical resources for families and specialists. In the meantime, explore how ClearCode turns reading evidence into clear next steps.</p>
           <a href="/how-it-works/" class="focus-ring mt-7 inline-flex rounded-full bg-deepTeal px-6 py-3 font-black text-white">See how ClearCode works</a>
-          {% if request.user.is_staff %}
-            <a href="/admin/blog/blogpost/add/" class="focus-ring mt-3 inline-flex rounded-full bg-ink px-6 py-3 font-black text-white sm:ml-2">Write the first post</a>
+          {% if request.user.is_authenticated and request.user.can_manage_blog %}
+            <a href="{% url 'blog_manage:create' %}" class="focus-ring mt-3 inline-flex rounded-full bg-ink px-6 py-3 font-black text-white sm:ml-2">Write the first post</a>
           {% endif %}
         </div>
       {% endif %}
