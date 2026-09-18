@@ -46,6 +46,14 @@
               <li><a href="{% url 'portal_dashboard' %}#lesson-library" class="focus-ring block rounded-2xl px-3 py-3 font-black hover:bg-linen">Lesson library</a></li>
               <li><a href="{% url 'manage_users' %}#recent-invitations" class="focus-ring block rounded-2xl px-3 py-3 font-black hover:bg-linen">User invitations</a></li>
             </ul>
+            {% if request.user.can_manage_blog %}
+              <p class="mt-3 border-t border-ink/10 px-3 pb-2 pt-4 text-xs font-black uppercase tracking-[0.16em] text-mediumTeal">Website content</p>
+              <ul class="grid gap-1" data-testid="manage-blog-links">
+                <li><a data-testid="blog-manage-menu-link" href="{% url 'blog_manage:list' %}" class="focus-ring block rounded-2xl px-3 py-3 hover:bg-linen"><span class="block font-black">Blog posts</span><span class="mt-1 block text-xs text-ink/60">Write, edit, schedule and publish articles</span></a></li>
+                <li><a data-testid="blog-new-menu-link" href="{% url 'blog_manage:create' %}" class="focus-ring block rounded-2xl px-3 py-3 font-black hover:bg-linen">Write a new post</a></li>
+                <li><a href="{% url 'blog:list' %}" target="_blank" rel="noopener" class="focus-ring block rounded-2xl px-3 py-3 font-black hover:bg-linen">View the public blog ↗</a></li>
+              </ul>
+            {% endif %}
           </div>
         </li>
 
@@ -62,8 +70,10 @@
                 <li><a href="{% url 'crm_contact_list' %}" class="focus-ring block rounded-2xl px-3 py-3 font-black hover:bg-linen">Contacts &amp; pipeline</a></li>
               {% endif %}
               <li><a href="{% url 'portal_dashboard' %}#website-signups" class="focus-ring block rounded-2xl px-3 py-3 font-black hover:bg-linen">Website signups</a></li>
+              {% if request.user.can_manage_blog %}
+                <li><a href="{% url 'blog_manage:list' %}" class="focus-ring block rounded-2xl px-3 py-3 font-black hover:bg-linen">Blog posts</a></li>
+              {% endif %}
               {% if request.user.is_staff %}
-                <li><a href="/admin/blog/blogpost/" class="focus-ring block rounded-2xl px-3 py-3 font-black hover:bg-linen">Blog posts</a></li>
                 <li><a href="/admin/" class="focus-ring block rounded-2xl px-3 py-3 font-black hover:bg-linen">Django admin</a></li>
               {% endif %}
             </ul>
