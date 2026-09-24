@@ -3,7 +3,12 @@ from unittest.mock import patch
 from django.test import TestCase, override_settings
 from django.urls import reverse
 
-from apps.crm.models import FormSubmission, Lead
+from apps.crm.models import (
+    FormSubmission,
+    Lead,
+    NewsletterCampaign,
+    NewsletterSubscription,
+)
 from apps.crm.services import LeadIntake, record_form_submission
 from apps.crm.website_emails import receipt_context
 from apps.crm_email import automated
@@ -54,7 +59,6 @@ class AutomatedEmailTests(TestCase):
         for expected in (
             "website_consultation",
             "website_consultation_booked",
-            "website_survey",
             "website_career",
             "website_newsletter",
             "website_resources",
@@ -89,6 +93,9 @@ class AutomatedEmailTests(TestCase):
         self.assertContains(response, "Consultation request")
         self.assertContains(response, "Account invitation")
         self.assertContains(
+            response, reverse("crm_email_automated", args=["website_support"])
+        )
+        self.assertNotContains(
             response, reverse("crm_email_automated", args=["website_survey"])
         )
         self.client.force_login(self.staff)
@@ -96,7 +103,7 @@ class AutomatedEmailTests(TestCase):
         self.assertEqual(response.status_code, 200)
         self.assertNotContains(response, "Automated emails")
         for method in (self.client.get, self.client.post):
-            response = method(reverse("crm_email_automated", args=["website_survey"]))
+            response = method(reverse("crm_email_automated", args=["website_support"]))
             self.assertEqual(response.status_code, 403)
 
     def test_unknown_key_is_not_found(self) -> None:
@@ -173,7 +180,7 @@ class AutomatedEmailTests(TestCase):
         self.assertContains(response, "Unknown placeholder: {{secret}}")
         self.assertFalse(AutomatedEmail.objects.exists())
 
-    def test_team_notice_and_survey_follow_up_use_editable_copy(self) -> None:
+    def test_team_notice_uses_editable_copy(self) -> None:
         AutomatedEmail.objects.create(
             key="website_team",
             subject="[CRM] {{form}} from {{name}} <{{email}}> #{{reference}}",
@@ -190,36 +197,6 @@ class AutomatedEmailTests(TestCase):
         )
         self.assertEqual(context["next_step"], "Reply to parent@example.com.")
         self.assertTrue(str(context["action_url"]).startswith("https://example.com/"))
-        survey = record_form_submission(  # type: ignore[no-untyped-call]
-            intake=LeadIntake(
-                contact_email="s@example.com",
-                contact_name="Survey",
-                school_name="Family",
-                audience="parent",
-            ),
-            form_type="survey",
-            source_path="/survey/",
-            submitted_data={
-                "name": "Survey",
-                "email": "s@example.com",
-                "engagement_interests": ["priority_waitlist"],
-            },
-        )[1]
-        context = receipt_context(survey, team=False)
-        self.assertIn("priority enrollment waitlist", str(context["next_step"]))
-        AutomatedEmail.objects.create(
-            key="website_survey",
-            subject="Survey received",
-            heading="Thanks",
-            body="Got it.",
-            next_step="Before: {{interest_follow_up}} After.",
-            action_label="Go",
-            action_url="https://example.org/next",
-        )
-        context = receipt_context(survey, team=False)
-        self.assertTrue(str(context["next_step"]).startswith("Before: We’ve recorded"))
-        self.assertTrue(str(context["next_step"]).endswith("After."))
-        self.assertEqual(context["action_url"], "https://example.org/next")
 
     def test_first_stage_copy_uses_saved_wording(self) -> None:
         mailbox = Mailbox.objects.create(
@@ -503,3 +480,110 @@ class RichAutomatedEmailTests(TestCase):
         response = self.client.get(reverse("crm_email_settings"))
         self.assertContains(response, "Survey initial emails")
         self.assertContains(response, "Survey: all other pipelines")
+
+
+def html_part(message: object) -> str:
+    alternatives = getattr(message, "alternatives", [])
+    return str(alternatives[0][0]) if alternatives else ""
+
+
+@override_settings(
+    PUBLIC_APP_URL="https://example.com",
+    EMAIL_BACKEND="django.core.mail.backends.locmem.EmailBackend",
+    DEBUG=True,
+)
+class NewsletterCmsTests(TestCase):
+    def setUp(self) -> None:
+        self.admin = CustomUser.objects.create_user(
+            username="admin3",
+            email="admin3@clearcodereading.com",
+            password="test-password",
+            role=CustomUser.Role.SUPER_ADMIN,
+        )
+        self.client.force_login(self.admin)
+        NewsletterSubscription.objects.create(email="one@example.com", name="One")
+        NewsletterSubscription.objects.create(email="two@example.com", name="Two")
+
+    def test_settings_lists_newsletters_and_editor_saves_rich_body(self) -> None:
+        response = self.client.get(reverse("crm_newsletter_new"))
+        self.assertNotContains(response, "This field is required")
+        response = self.client.get(reverse("crm_email_settings"))
+        self.assertContains(response, "New newsletter")
+        self.assertContains(response, "Active subscribers: <strong>2</strong>")
+        response = self.client.post(
+            reverse("crm_newsletter_new"),
+            {
+                "action": "save",
+                "subject": "October reading tips",
+                "preview_text": "Three ideas",
+                "body_html": '<h2 style="color:#1a7a7a">Hello families</h2>'
+                "<p>Read <b>together</b>.</p><script>x()</script>",
+            },
+        )
+        campaign = NewsletterCampaign.objects.get()
+        self.assertRedirects(response, reverse("crm_newsletter", args=[campaign.pk]))
+        self.assertEqual(campaign.created_by, self.admin)
+        self.assertIn('<h2 style="color:#1a7a7a">', campaign.body_html)
+        self.assertNotIn("<script", campaign.body_html)
+        self.assertEqual(campaign.body, "Hello families\nRead together.")
+        response = self.client.get(reverse("crm_newsletter", args=[campaign.pk]))
+        self.assertContains(response, 'data-rich-editor="automated"')
+        self.assertContains(response, "Save &amp; review sending")
+
+    def test_review_send_test_then_send_to_subscribers_and_lock(self) -> None:
+        from django.core import mail
+
+        campaign = NewsletterCampaign.objects.create(
+            subject="Welcome",
+            body="plain",
+            body_html="<p>Rich <i>body</i></p>",
+            created_by=self.admin,
+        )
+        url = reverse("crm_newsletter_send", args=[campaign.pk])
+        response = self.client.get(url)
+        self.assertContains(response, "Send to all subscribers now")
+        self.assertContains(response, "<strong>2</strong> active subscriber")
+        response = self.client.post(url, {"action": "test"})
+        self.assertRedirects(response, url)
+        self.assertEqual(len(mail.outbox), 1)
+        self.assertEqual(mail.outbox[0].to, [self.admin.email])
+        self.assertEqual(mail.outbox[0].subject, "[TEST] Welcome")
+        test_html = html_part(mail.outbox[0])
+        self.assertIn("Rich <i>body</i>", test_html)
+        self.assertIn("test copy", test_html)
+        response = self.client.post(url, {"action": "send"})
+        self.assertRedirects(response, reverse("crm_newsletter", args=[campaign.pk]))
+        campaign.refresh_from_db()
+        self.assertEqual(campaign.status, NewsletterCampaign.Status.SENT)
+        self.assertEqual(campaign.delivered_count, 2)
+        self.assertEqual(len(mail.outbox), 3)
+        html = html_part(mail.outbox[-1])
+        self.assertIn("Rich <i>body</i>", html)
+        self.assertIn("/newsletter/unsubscribe/", html)
+        self.assertIn("Rich body", str(mail.outbox[-1].body))
+        self.assertTrue(AuditLog.objects.filter(action="crm.newsletter.sent").exists())
+        response = self.client.post(
+            reverse("crm_newsletter", args=[campaign.pk]),
+            {"action": "save", "subject": "Changed", "body_html": "<p>x</p>"},
+        )
+        self.assertEqual(response.status_code, 200)
+        campaign.refresh_from_db()
+        self.assertEqual(campaign.subject, "Welcome")
+        self.assertContains(response, "wording is locked")
+        response = self.client.post(
+            reverse("crm_newsletter", args=[campaign.pk]), {"action": "delete"}
+        )
+        self.assertEqual(response.status_code, 403)
+
+    def test_newsletter_pages_are_admin_only(self) -> None:
+        staff = CustomUser.objects.create_user(
+            username="staff3",
+            email="staff3@clearcodereading.com",
+            password="test-password",
+            role=CustomUser.Role.CRM_USER,
+        )
+        self.client.force_login(staff)
+        response = self.client.get(reverse("crm_email_settings"))
+        self.assertNotContains(response, "New newsletter")
+        for name in ("crm_newsletter_new",):
+            self.assertEqual(self.client.get(reverse(name)).status_code, 403)

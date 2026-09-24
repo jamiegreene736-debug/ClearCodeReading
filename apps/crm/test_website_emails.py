@@ -38,7 +38,7 @@ class WebsiteEmailTests(TestCase):
         self.config.start()
         self.addCleanup(self.config.stop)
 
-    def test_survey_post_queues_customer_confirmation_and_team_notice_once(self):
+    def test_survey_post_queues_team_notice_only_once(self):
         self.client.post(
             reverse("crm_survey_submit"),
             {
@@ -54,11 +54,14 @@ class WebsiteEmailTests(TestCase):
         enqueue_pending_receipts()
         enqueue_pending_receipts()
         receipt = WebsiteReceipt.objects.get()
-        self.assertEqual(receipt.customer_message.to, ["visitor@example.com"])
-        self.assertEqual(receipt.customer_message.status, Message.Status.QUEUED)
-        self.assertIn("survey", receipt.customer_message.subject)
-        self.assertIn("Donor", receipt.customer_message.body_text)
-        self.assertEqual(Message.objects.count(), 2)
+        # The website shows the survey confirmation; only the team is emailed.
+        self.assertIsNone(receipt.customer_message)
+        self.assertEqual(receipt.team_message.to, ["hello@clearcodereading.com"])
+        self.assertEqual(receipt.team_message.status, Message.Status.QUEUED)
+        self.assertIn("survey", receipt.team_message.subject)
+        self.assertIn("Donor", receipt.team_message.body_text)
+        self.assertEqual(Message.objects.count(), 1)
+        self.assertEqual(receipt.error, "")
 
     def submit(self, kind="website", **data):
         return record_form_submission(
@@ -75,6 +78,8 @@ class WebsiteEmailTests(TestCase):
 
     def test_each_form_has_two_independent_branded_messages(self):
         for kind in FormSubmission.FormType.values:
+            if kind == "survey":
+                continue
             with self.subTest(kind=kind):
                 submission = self.submit(kind)
                 enqueue_pending_receipts()
@@ -169,13 +174,14 @@ class WebsiteEmailTests(TestCase):
             {"label": "Support Topic", "value": "Technical problem"}, support["rows"]
         )
 
-    def test_survey_copy_follows_only_selected_interests(self):
+    def test_survey_team_notice_lists_interests(self):
         context = receipt_context(
-            self.submit("survey", engagement_interests=["opening_updates"]), team=False
+            self.submit("survey", engagement_interests=["opening_updates"]), team=True
         )
-        self.assertIn("updates", context["next_step"])
-        self.assertNotIn("appointment", context["next_step"])
-        self.assertNotIn("waitlist", context["next_step"])
+        self.assertIn("New early interest survey", str(context["subject"]))
+        self.assertTrue(
+            any(row["label"] == "Your interests" for row in context["rows"])
+        )
 
     def test_public_valid_signup_enqueues_but_invalid_does_not(self):
         for path in ("/contact/", "/resources/", "/support/"):

@@ -193,8 +193,10 @@ placeholders and multi-line subjects, records an `AuditLog` entry per save or
 restore, and "Restore default" deletes the override. Covered emails:
 
 - Website form confirmations to the visitor (`website_<kind>`: consultation,
-  consultation booking, assessment, survey, career, newsletter, resources,
-  support, website) and the shared team notice (`website_team`).
+  consultation booking, assessment, career, newsletter, resources, support,
+  website) and the shared team notice (`website_team`). Early interest survey
+  submissions send the team notice only: the website's own confirmation screen is
+  the visitor's confirmation (`TEAM_ONLY_KINDS` in `website_emails.py`).
 - Parent Reading Inventory emails: the suggested invitation wording (still
   editable per send), reminder, the three completion follow-ups, the owner
   review notice, and both consultation-booked messages.
@@ -218,6 +220,18 @@ recipients' mail clients can load them; URLs use `PUBLIC_APP_URL`. Saved HTML is
 sanitized by `clean_rich_html` (allow-listed tags and inline style properties, https
 images only). Senders take `copy.html()` for the HTML part and `copy.text()` for the
 plain-text part; default wording stays plain text until customized.
+
+## Newsletters from Email settings
+
+CRM > Email settings > **Newsletter** lists campaigns and composes new ones with the
+same rich editor (`crm_newsletter_new`, `crm_newsletter`, `crm_newsletter_send`,
+administrators only). Saving stores `NewsletterCampaign.body_html` plus a
+plain-text `body`; the HTML email renders `body_html` when set. The review screen
+shows the active-subscriber count, sends a `[TEST]` copy to the signed-in
+administrator (`send_newsletter_test`, no delivery recorded), and then sends to
+every active subscriber through the existing `send_newsletter_campaign`, which keeps
+its per-recipient deliveries, unsubscribe links, retry of failed deliveries and
+locking. Sent campaigns are read-only. The Django admin pages remain as a fallback.
 
 ## Public consultation booking page
 `/book/` (`consultation_booking`) is a public, no-index page listing the default consultation

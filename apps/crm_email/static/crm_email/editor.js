@@ -18,7 +18,7 @@
     for (const node of parsed.body.childNodes) fragment.append(copy(node));
     return fragment;
   }
-  for (const textarea of document.querySelectorAll('textarea[name="body_html"], textarea[name="signature"]')) {
+  for (const textarea of document.querySelectorAll('textarea[name="body_html"]:not([data-rich-editor]), textarea[name="signature"]')) {
     const editor = document.createElement('div');
     editor.className = 'rich-editor';
     editor.id = textarea.id + '_editor';

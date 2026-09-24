@@ -166,3 +166,38 @@ class SignatureForm(forms.Form):
 
     def clean_signature(self) -> str:
         return clean_html(self.cleaned_data["signature"])
+
+
+class NewsletterForm(forms.Form):
+    """Compose a newsletter campaign with the rich editor."""
+
+    subject = forms.CharField(max_length=255)
+    preview_text = forms.CharField(
+        max_length=255,
+        required=False,
+        label="Preview text",
+        help_text="Shown next to the subject in most inboxes.",
+    )
+    body_html = forms.CharField(
+        label="Newsletter",
+        max_length=400000,
+        widget=forms.Textarea(attrs={"rows": 16, "data-rich-editor": "automated"}),
+    )
+
+    def clean_subject(self) -> str:
+        value: str = self.cleaned_data["subject"]
+        if "\r" in value or "\n" in value:
+            raise ValidationError("Subject must be a single line.")
+        return value.strip()
+
+    def clean_preview_text(self) -> str:
+        value: str = self.cleaned_data["preview_text"]
+        if "\r" in value or "\n" in value:
+            raise ValidationError("Preview text must be a single line.")
+        return value.strip()
+
+    def clean_body_html(self) -> str:
+        value = clean_rich_html(self.cleaned_data["body_html"])
+        if not (plain_text(value).strip() or "<img" in value):
+            raise ValidationError("Write the newsletter before saving.")
+        return value

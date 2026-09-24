@@ -293,20 +293,6 @@ def _build_specs() -> tuple[AutomatedEmailSpec, ...]:
             "Our team will review what you shared and contact you about appropriate next steps. This check-in is not a diagnosis or a confirmed enrollment.",
         ),
         _website(
-            "survey",
-            "Early interest survey",
-            "A visitor submits the early interest survey",
-            "Thank you for helping shape what’s next.",
-            "We’ve received your early interest survey and the ways you’d like to connect with ClearCode Reading.",
-            "{{interest_follow_up}}",
-            extra_placeholders={
-                "interest_follow_up": "Sentences generated from the interests the visitor selected"
-            },
-            extra_sample={
-                "interest_follow_up": "We’ve recorded your priority enrollment waitlist interest; a place is not reserved yet."
-            },
-        ),
-        _website(
             "career",
             "Career interest",
             "A visitor submits the careers form with a résumé and cover letter",

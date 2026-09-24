@@ -27,11 +27,24 @@ from google.auth.transport.requests import Request as GoogleRequest
 from google.oauth2 import id_token
 from PIL import Image, UnidentifiedImageError
 
-from apps.crm.models import Lead
+from apps.crm.models import (
+    Lead,
+    NewsletterCampaign,
+    NewsletterDelivery,
+    NewsletterSubscription,
+)
+from apps.crm.newsletters import (
+    NewsletterSendError,
+    newsletter_delivery_configuration_errors,
+    send_newsletter_campaign,
+    send_newsletter_test,
+)
 from apps.crm_email import automated
+from apps.crm_email.automated import text_to_html
 from apps.crm_email.forms import (
     AutomatedEmailForm,
     ComposeForm,
+    NewsletterForm,
     SignatureForm,
     TemplateForm,
 )
@@ -53,6 +66,7 @@ from apps.crm_email.security import (
     configuration_errors,
     decrypt,
     mailbox_lock,
+    plain_text,
     require_configured,
     require_crm,
 )
@@ -119,6 +133,7 @@ def settings_view(request: EmailRequest) -> HttpResponse:
             "automated_groups": automated_groups()
             if request.user.can_manage_crm_users
             else [],
+            **(newsletter_context() if request.user.can_manage_crm_users else {}),
         },
     )
 
@@ -294,6 +309,178 @@ def automated_image(request: HttpRequest, image_id: uuid.UUID) -> HttpResponse:
     response["Cache-Control"] = "public, max-age=31536000, immutable"
     response["Content-Disposition"] = "inline"
     response["X-Content-Type-Options"] = "nosniff"
+    return response
+
+
+def newsletter_context() -> dict[str, Any]:
+    return {
+        "newsletters": NewsletterCampaign.objects.select_related("sent_by")[:25],
+        "newsletter_subscribers": NewsletterSubscription.objects.filter(
+            status=NewsletterSubscription.Status.ACTIVE
+        ).count(),
+    }
+
+
+def newsletter_editor_config(request: EmailRequest) -> dict[str, Any]:
+    return {
+        "placeholders": {},
+        "sample": {},
+        "uploadUrl": reverse("crm_email_automated_image_upload"),
+        "images": [
+            {
+                "url": image_url(request, image),
+                "name": image.name,
+                "width": image.width,
+                "height": image.height,
+            }
+            for image in AutomatedEmailImage.objects.all()[:40]
+        ],
+    }
+
+
+@crm_view
+@require_http_methods(["GET", "POST"])
+def newsletter_edit(
+    request: EmailRequest, campaign_id: int | None = None
+) -> HttpResponse:
+    """Compose a newsletter with the rich editor; drafts only are editable."""
+    if not request.user.can_manage_crm_users:
+        raise PermissionDenied
+    campaign = (
+        get_object_or_404(NewsletterCampaign, pk=campaign_id) if campaign_id else None
+    )
+    editable = campaign is None or campaign.status == NewsletterCampaign.Status.DRAFT
+    if request.method == "POST" and request.POST.get("action") == "delete":
+        if campaign is None or not editable:
+            raise PermissionDenied
+        campaign.delete()
+        messages.success(request, "Newsletter draft deleted.")
+        return redirect_settings("newsletters")
+    initial = (
+        {
+            "subject": campaign.subject,
+            "preview_text": campaign.preview_text,
+            "body_html": campaign.body_html or text_to_html(campaign.body),
+        }
+        if campaign
+        else {}
+    )
+    form = NewsletterForm(
+        request.POST if request.method == "POST" and editable else None,
+        initial=initial,
+    )
+    if request.method == "POST" and editable and form.is_valid():
+        with transaction.atomic():
+            campaign = campaign or NewsletterCampaign(created_by=request.user)
+            campaign.subject = form.cleaned_data["subject"]
+            campaign.preview_text = form.cleaned_data["preview_text"]
+            campaign.body_html = form.cleaned_data["body_html"]
+            campaign.body = plain_text(campaign.body_html).strip()
+            campaign.full_clean()
+            campaign.save()
+            AuditLog.objects.create(
+                actor=request.user,
+                action="crm.newsletter.saved",
+                entity_type="crm.NewsletterCampaign",
+                entity_id=str(campaign.pk),
+                after={"subject": campaign.subject},
+            )
+        messages.success(request, "Newsletter draft saved.")
+        if request.POST.get("action") == "send":
+            return redirect("crm_newsletter_send", campaign.pk)
+        return redirect("crm_newsletter", campaign.pk)
+    if not editable:
+        for field in form.fields.values():
+            field.disabled = True
+    shown_html = str(form["body_html"].value() or "")
+    response = render(
+        request,
+        "crm/newsletter_edit.html",
+        {
+            "form": form,
+            "campaign": campaign,
+            "editable": editable,
+            "preview_html": shown_html,
+            "editor_config": newsletter_editor_config(request),
+            "deliveries": campaign.deliveries.order_by("recipient_email")[:200]
+            if campaign
+            else [],
+            **newsletter_context(),
+        },
+    )
+    response["Cache-Control"] = "private, no-store"
+    return response
+
+
+@crm_view
+@require_http_methods(["GET", "POST"])
+def newsletter_send(request: EmailRequest, campaign_id: int) -> HttpResponse:
+    """Review recipients, send a test to yourself, or send to every active subscriber."""
+    if not request.user.can_manage_crm_users:
+        raise PermissionDenied
+    campaign = get_object_or_404(NewsletterCampaign, pk=campaign_id)
+    configuration = newsletter_delivery_configuration_errors()
+    if request.method == "POST":
+        action = request.POST.get("action")
+        if action == "test":
+            try:
+                send_newsletter_test(campaign, request.user.email)
+            except Exception as exc:  # noqa: BLE001 - backend-specific errors
+                messages.error(request, f"Test email failed: {type(exc).__name__}.")
+            else:
+                messages.success(request, f"Test email sent to {request.user.email}.")
+            return redirect("crm_newsletter_send", campaign.pk)
+        if action == "send":
+            if campaign.status == NewsletterCampaign.Status.SENDING:
+                messages.error(request, "This newsletter is already being sent.")
+                return redirect("crm_newsletter_send", campaign.pk)
+            try:
+                campaign = send_newsletter_campaign(campaign.pk, sent_by=request.user)
+            except NewsletterSendError as exc:
+                messages.error(request, str(exc))
+            else:
+                AuditLog.objects.create(
+                    actor=request.user,
+                    action="crm.newsletter.sent",
+                    entity_type="crm.NewsletterCampaign",
+                    entity_id=str(campaign.pk),
+                    after={
+                        "delivered": campaign.delivered_count,
+                        "failed": campaign.failed_count,
+                    },
+                )
+                if campaign.failed_count:
+                    messages.warning(
+                        request,
+                        f"Newsletter sent to {campaign.delivered_count} recipients; "
+                        f"{campaign.failed_count} deliveries can be retried.",
+                    )
+                else:
+                    messages.success(
+                        request,
+                        f"Newsletter sent to {campaign.delivered_count} recipients.",
+                    )
+            return redirect("crm_newsletter", campaign.pk)
+    response = render(
+        request,
+        "crm/newsletter_send.html",
+        {
+            "campaign": campaign,
+            "configuration_errors": configuration,
+            "retry_count": campaign.deliveries.filter(
+                status=NewsletterDelivery.Status.FAILED
+            ).count(),
+            "preview_html": campaign.body_html or text_to_html(campaign.body),
+            **newsletter_context(),
+        },
+    )
+    response["Cache-Control"] = "private, no-store"
+    return response
+
+
+def redirect_settings(anchor: str) -> HttpResponse:
+    response = redirect("crm_email_settings")
+    response["Location"] += "#" + anchor
     return response
 
 

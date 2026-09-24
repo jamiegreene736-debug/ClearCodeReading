@@ -34,6 +34,10 @@ def website_from_address() -> str:
 # Receipt kinds and their form labels. The wording of each receipt lives in the
 # automated-email registry (apps/crm_email/automated.py, keys "website_<kind>")
 # and can be edited from CRM email settings.
+# Form kinds that get a team notice only. The website already shows the visitor a
+# confirmation, so no email confirmation is sent to them.
+TEAM_ONLY_KINDS = frozenset({"survey"})
+
 LABELS = {
     "consultation": "Consultation request",
     "consultation_booked": "Consultation booking",
@@ -57,39 +61,6 @@ def receipt_kind(submission: FormSubmission) -> str:
     return submission.form_type if submission.form_type in LABELS else "website"
 
 
-def survey_follow_up(data: dict[str, object]) -> str:
-    interests = data.get("engagement_interests", [])
-    if not isinstance(interests, list):
-        interests = []
-    steps = []
-    if "priority_waitlist" in interests:
-        steps.append(
-            "We’ve recorded your priority enrollment waitlist interest; a place is not reserved yet."
-        )
-    if "consultation" in interests:
-        steps.append(
-            "Our team will contact you to arrange your requested free consultation; an appointment is not booked yet."
-        )
-    if "career_interest" in interests:
-        steps.append(
-            "We’ve noted your interest in working with ClearCode. You can submit your résumé and cover letter on our Careers page."
-        )
-    if any(
-        item in interests
-        for item in (
-            "community_partner",
-            "refer_family",
-            "professional_connection",
-            "referral_partner",
-            "donor",
-        )
-    ):
-        steps.append("We’ve noted your interest in connecting with our community team.")
-    if any(item in interests for item in ("opening_updates", "general_email")):
-        steps.append("We’ll keep you informed with relevant ClearCode Reading updates.")
-    return " ".join(steps) or "We’ll follow up based on the interests you selected."
-
-
 def receipt_context(submission: FormSubmission, *, team: bool) -> dict[str, object]:
     data = submission.submitted_data
     kind = receipt_kind(submission)
@@ -101,7 +72,6 @@ def receipt_context(submission: FormSubmission, *, team: bool) -> dict[str, obje
         "name": " ".join(str(data.get("name", "")).split()),
         "email": " ".join(str(data.get("email", "")).split()),
         "reference": str(submission.pk),
-        "interest_follow_up": survey_follow_up(data) if kind == "survey" else "",
     }
     base = settings.PUBLIC_APP_URL.rstrip("/")
     rows = []
@@ -168,7 +138,7 @@ def receipt_context(submission: FormSubmission, *, team: bool) -> dict[str, obje
             ]
         )
     unsubscribe = ""
-    if not team and kind in {"newsletter", "survey"}:
+    if not team and kind == "newsletter":
         subscription = NewsletterSubscription.objects.filter(
             email=data.get("email", "")
         ).first()
@@ -252,8 +222,11 @@ def enqueue_receipt(pk: int) -> None:
                 raise EmailError(
                     "The recruiting application was removed; confirmations will not be sent."
                 )
+            kind = receipt_kind(submission)
             for team, field in ((False, "customer_message"), (True, "team_message")):
                 if getattr(receipt, field + "_id"):
+                    continue
+                if not team and kind in TEAM_ONLY_KINDS:
                     continue
                 context = receipt_context(submission, team=team)
                 email = str(submission.submitted_data["email"]).strip().lower()
@@ -291,7 +264,11 @@ def enqueue_receipt(pk: int) -> None:
 def enqueue_pending_receipts() -> None:
     pending = (
         WebsiteReceipt.objects.filter(
-            Q(customer_message__isnull=True) | Q(team_message__isnull=True)
+            Q(team_message__isnull=True)
+            | (
+                Q(customer_message__isnull=True)
+                & ~Q(submission__form_type__in=TEAM_ONLY_KINDS)
+            )
         )
         .order_by("pk")
         .values_list("pk", flat=True)[:50]

@@ -24,6 +24,11 @@
 {% for item in group.emails %}<div class="row"><a href="{% url 'crm_email_automated' item.spec.key %}">{{ item.spec.name }}</a>{% if item.customized %} <span class="badge">Customized</span>{% else %} <span class="subtle">Default wording</span>{% endif %}<br><span class="subtle">Sent when: {{ item.spec.trigger }}. To: {{ item.spec.recipient }}.</span><br><span class="subtle">Subject: {{ item.subject }}</span></div>{% endfor %}
 {% endfor %}
 </section>
+<section class="card" id="newsletters"><h2>Newsletter</h2>
+<p class="subtle">Write newsletters with the rich editor, send yourself a test, then send to every active subscriber. Active subscribers: <strong>{{ newsletter_subscribers }}</strong>.</p>
+<p><a class="btn btn-primary" href="{% url 'crm_newsletter_new' %}">New newsletter</a></p>
+{% for item in newsletters %}<div class="row"><a href="{% url 'crm_newsletter' item.pk %}">{{ item.subject }}</a> <span class="badge">{{ item.get_status_display }}</span><br><span class="subtle">{% if item.sent_at %}Sent {{ item.sent_at|date:"M j, Y, g:i A T" }} · {{ item.delivered_count }} delivered{% if item.failed_count %} · {{ item.failed_count }} failed{% endif %}{% else %}Draft updated {{ item.updated_at|date:"M j, Y, g:i A T" }}{% endif %}</span>{% if item.status == 'draft' or item.status == 'partially_failed' %} · <a href="{% url 'crm_newsletter_send' item.pk %}">{% if item.status == 'draft' %}Review &amp; send{% else %}Retry failed{% endif %}</a>{% endif %}</div>{% empty %}<p>No newsletters yet.</p>{% endfor %}
+</section>
 <section class="card"><h2>Team email connections</h2>
 {% for item in team_mailboxes %}<div class="row"><strong>{{ item.user.email }}</strong> · {{ item.get_status_display }}<br><span class="subtle">Last sync: {{ item.last_sync_at|date:"M j, g:i A T"|default:"Not yet" }}</span>{% if item.last_error %}<p>{{ item.last_error }}</p>{% endif %}{% if item.status != 'disconnected' %}<form method="post" action="{% url 'crm_email_disconnect' item.pk %}">{% csrf_token %}<button class="btn btn-small">Disconnect {{ item.user.email }}</button></form>{% endif %}</div>{% endfor %}
 {% if setup_errors %}<details><summary>Administrator setup checklist</summary><p>Missing or invalid configuration:</p><ul>{% for item in setup_errors %}<li>{{ item }}</li>{% endfor %}</ul></details>{% endif %}
