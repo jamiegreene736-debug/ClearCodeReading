@@ -150,7 +150,7 @@ class AutomatedEmailForm(forms.Form):
             if (
                 name == "action_url"
                 and value
-                and not (value.startswith("/") or value.startswith("https://"))
+                and not value.startswith(("/", "https://"))
             ):
                 self.add_error(
                     name,

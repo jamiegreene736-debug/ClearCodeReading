@@ -3,8 +3,8 @@ import binascii
 import json
 import uuid
 from collections.abc import Callable
-from io import BytesIO
 from functools import wraps
+from io import BytesIO
 from typing import Any, cast
 from zoneinfo import ZoneInfo
 
