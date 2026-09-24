@@ -4,7 +4,7 @@
 {% block extra_style %}{{ block.super }}{% include "crm/_automated_editor_style.html" %}{% endblock %}
 {% block email_content %}
 <div class="automated-page">
-<p><a href="{% url 'crm_email_settings' %}#newsletters">← Email settings</a></p>
+<p><a href="{% url 'crm_newsletter_list' %}">← Newsletters</a></p>
 <p class="eyebrow">Newsletter</p><h1>{% if campaign %}{{ campaign.subject }}{% else %}New newsletter{% endif %}</h1>
 {% if campaign %}<p class="subtle">Status: <strong>{{ campaign.get_status_display }}</strong>{% if campaign.sent_at %} · Sent {{ campaign.sent_at|date:"M j, Y, g:i A T" }}{% if campaign.sent_by %} by {{ campaign.sent_by.email }}{% endif %} · {{ campaign.delivered_count }} delivered{% if campaign.failed_count %} · {{ campaign.failed_count }} failed{% endif %}{% endif %}</p>{% endif %}
 {% if not editable %}<p role="status"><strong>This newsletter has been sent, so its wording is locked.</strong> Start a new newsletter to send an updated version.</p>{% endif %}

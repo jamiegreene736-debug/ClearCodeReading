@@ -4,7 +4,7 @@
 {% block extra_style %}{{ block.super }}{% include "crm/_automated_editor_style.html" %}{% endblock %}
 {% block email_content %}
 <div class="automated-page">
-<p><a href="{% url 'crm_email_settings' %}#automated-emails">← Email settings</a></p>
+<p><a href="{% url 'crm_email_notifications' %}">← Notifications</a></p>
 <p class="eyebrow">Automated email · {{ spec.group }}</p><h1>{{ spec.name }}</h1>
 <p class="subtle">Sent when: {{ spec.trigger }}.<br>To: {{ spec.recipient }}.</p>
 {% if row %}<p class="subtle">Customized {{ row.updated_at|date:"M j, Y, g:i A T" }}{% if row.updated_by %} by {{ row.updated_by.email }}{% endif %}.</p>{% else %}<p class="subtle">Using the default wording.</p>{% endif %}

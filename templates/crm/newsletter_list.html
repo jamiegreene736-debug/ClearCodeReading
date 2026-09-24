@@ -1,0 +1,26 @@
+{% extends "crm/email_base.html" %}
+{% block title %}Newsletter · Email & notification settings{% endblock %}
+{% block email_content %}
+<div class="page-head"><div><p class="eyebrow">Your workspace</p><h1>Email &amp; notification settings</h1>
+<p class="subtle">Write newsletters with the rich editor, send yourself a test, then send to every active subscriber.</p></div>
+<div class="actions"><a class="btn btn-primary" href="{% url 'crm_newsletter_new' %}">New newsletter</a></div></div>
+{% include "crm/_email_settings_nav.html" %}
+<div class="stats">
+<div class="card stat"><div class="stat-label">Active subscribers</div><div class="stat-value">{{ newsletter_subscribers }}</div></div>
+<div class="card stat"><div class="stat-label">Drafts</div><div class="stat-value">{{ draft_count }}</div></div>
+<div class="card stat"><div class="stat-label">Sent newsletters</div><div class="stat-value">{{ sent_count }}</div></div>
+<div class="card stat"><div class="stat-label">Last sent</div><div class="stat-value" style="font-size:16px;line-height:1.4">{% if last_sent %}{{ last_sent.sent_at|date:"M j, Y" }}<br><span class="subtle" style="font-weight:500">{{ last_sent.subject|truncatechars:40 }}</span>{% else %}—{% endif %}</div></div>
+</div>
+<section class="card flush">
+<div class="section-head"><div><h2>Newsletters</h2><p class="subtle">Drafts can be edited until they are sent. Sending is irreversible and every email carries its own unsubscribe link.</p></div></div>
+<div class="table-wrap"><table><thead><tr><th>Newsletter</th><th>Status</th><th>Recipients</th><th>Updated</th><th></th></tr></thead><tbody>
+{% for item in campaigns %}<tr>
+<td><a class="row-title" href="{% url 'crm_newsletter' item.pk %}">{{ item.subject }}</a>{% if item.preview_text %}<span class="row-meta">{{ item.preview_text }}</span>{% endif %}</td>
+<td>{% if item.status == 'sent' %}<span class="pill pill-ok">Sent</span>{% elif item.status == 'sending' %}<span class="pill pill-warn">Sending</span>{% elif item.status == 'partially_failed' %}<span class="pill pill-bad">Partially failed</span>{% else %}<span class="pill pill-neutral">Draft</span>{% endif %}</td>
+<td>{% if item.sent_at %}{{ item.delivered_count }} delivered{% if item.failed_count %}<span class="row-meta" style="color:#8f2a2a">{{ item.failed_count }} failed</span>{% endif %}{% else %}<span class="subtle">—</span>{% endif %}</td>
+<td class="subtle">{% if item.sent_at %}Sent {{ item.sent_at|date:"M j, Y, g:i A T" }}{% if item.sent_by %}<span class="row-meta">by {{ item.sent_by.email }}</span>{% endif %}{% else %}{{ item.updated_at|date:"M j, Y, g:i A T" }}{% endif %}</td>
+<td><div class="actions" style="margin:0;gap:6px">{% if item.status == 'draft' %}<a class="btn btn-small" href="{% url 'crm_newsletter' item.pk %}">Edit</a><a class="btn btn-small btn-primary" href="{% url 'crm_newsletter_send' item.pk %}">Review &amp; send</a>{% elif item.status == 'partially_failed' %}<a class="btn btn-small btn-primary" href="{% url 'crm_newsletter_send' item.pk %}">Retry failed</a>{% else %}<a class="btn btn-small" href="{% url 'crm_newsletter' item.pk %}">View</a>{% endif %}</div></td>
+</tr>{% empty %}<tr><td colspan="5" class="empty">No newsletters yet. Start with <a href="{% url 'crm_newsletter_new' %}">New newsletter</a>.</td></tr>{% endfor %}
+</tbody></table></div>
+</section>
+{% endblock %}

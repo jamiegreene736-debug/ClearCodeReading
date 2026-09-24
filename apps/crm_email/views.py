@@ -20,6 +20,7 @@ from django.http import Http404, HttpRequest, HttpResponse, JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse
 from django.utils import timezone
+from django.utils.text import slugify
 from django.views.decorators.csrf import csrf_exempt
 from django.views.decorators.http import require_GET, require_http_methods, require_POST
 from google.auth.exceptions import GoogleAuthError
@@ -130,12 +131,17 @@ def settings_view(request: EmailRequest) -> HttpResponse:
             if request.user.can_manage_crm_users
             else [],
             "templates": EmailTemplate.objects.filter(owner=request.user),
-            "automated_groups": automated_groups()
-            if request.user.can_manage_crm_users
-            else [],
-            **(newsletter_context() if request.user.can_manage_crm_users else {}),
+            "active_tab": "mailbox",
+            **hub_context(request),
         },
     )
+
+
+def hub_context(request: EmailRequest) -> dict[str, Any]:
+    """Shared context for the Email & notifications tab bar."""
+    if not request.user.can_manage_crm_users:
+        return {}
+    return {"notification_count": len(automated.specs())}
 
 
 def automated_groups() -> list[dict[str, Any]]:
@@ -143,10 +149,68 @@ def automated_groups() -> list[dict[str, Any]]:
     return [
         {
             "name": group,
+            "slug": slugify(group),
             "emails": [copy for copy in copies if copy.spec.group == group],
         }
         for group in automated.groups()
     ]
+
+
+@crm_view
+@require_GET
+def notifications_view(request: EmailRequest) -> HttpResponse:
+    """Notifications tab: every automated email notification, grouped and editable."""
+    if not request.user.can_manage_crm_users:
+        raise PermissionDenied
+    groups = automated_groups()
+    copies = [copy for group in groups for copy in group["emails"]]
+    customized = sum(1 for copy in copies if copy.customized)
+    latest = (
+        AutomatedEmail.objects.select_related("updated_by")
+        .order_by("-updated_at")
+        .first()
+    )
+    return render(
+        request,
+        "crm/email_notifications.html",
+        {
+            "active_tab": "notifications",
+            "groups": groups,
+            "total": len(copies),
+            "customized": customized,
+            "default_count": len(copies) - customized,
+            "latest": latest,
+            **hub_context(request),
+        },
+    )
+
+
+@crm_view
+@require_GET
+def newsletter_list(request: EmailRequest) -> HttpResponse:
+    """Newsletter tab: campaigns, subscriber count and send history."""
+    if not request.user.can_manage_crm_users:
+        raise PermissionDenied
+    campaigns = NewsletterCampaign.objects.select_related("sent_by", "created_by")
+    return render(
+        request,
+        "crm/newsletter_list.html",
+        {
+            "active_tab": "newsletter",
+            "campaigns": campaigns[:50],
+            "sent_count": campaigns.filter(
+                status=NewsletterCampaign.Status.SENT
+            ).count(),
+            "draft_count": campaigns.filter(
+                status=NewsletterCampaign.Status.DRAFT
+            ).count(),
+            "last_sent": campaigns.filter(sent_at__isnull=False)
+            .order_by("-sent_at")
+            .first(),
+            **newsletter_context(),
+            **hub_context(request),
+        },
+    )
 
 
 @crm_view
@@ -169,7 +233,7 @@ def automated_email_view(request: EmailRequest, key: str) -> HttpResponse:
             entity_id=key,
         )
         messages.success(request, f"{spec.name}: default wording restored.")
-        return redirect("crm_email_settings")
+        return redirect("crm_email_notifications")
     form = AutomatedEmailForm(
         spec,
         request.POST or None,
@@ -195,7 +259,7 @@ def automated_email_view(request: EmailRequest, key: str) -> HttpResponse:
                 after=values,
             )
         messages.success(request, f"{spec.name}: wording saved.")
-        return redirect("crm_email_settings")
+        return redirect("crm_email_notifications")
     # The editor always submits HTML for rich fields, so preview them as HTML.
     shown = automated.AutomatedEmailCopy(
         spec, {name: str(form[name].value() or "") for name in spec.fields}, True
@@ -479,9 +543,9 @@ def newsletter_send(request: EmailRequest, campaign_id: int) -> HttpResponse:
 
 
 def redirect_settings(anchor: str) -> HttpResponse:
-    response = redirect("crm_email_settings")
-    response["Location"] += "#" + anchor
-    return response
+    return redirect(
+        "crm_newsletter_list" if anchor == "newsletters" else "crm_email_settings"
+    )
 
 
 @crm_view

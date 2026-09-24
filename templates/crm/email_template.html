@@ -1,4 +1,4 @@
 {% extends "crm/email_base.html" %}
 {% block title %}Email template{% endblock %}
-{% block email_content %}<p><a href="{% url 'crm_email_settings' %}">← Email settings</a></p><h1>{% if template %}Edit{% else %}New{% endif %} email template</h1>
+{% block email_content %}<p><a href="{% url 'crm_email_settings' %}">← Mailbox</a></p><h1>{% if template %}Edit{% else %}New{% endif %} email template</h1>
 <section class="card"><p class="subtle">Save a reusable message, then choose it when composing an email. Templates are private to you.</p><form method="post">{% csrf_token %}{{ form.as_p }}<div class="actions"><button class="btn btn-primary">Save template</button>{% if template %}<button class="btn" name="action" value="delete" formnovalidate>Delete template</button>{% endif %}</div></form></section>{% endblock %}
