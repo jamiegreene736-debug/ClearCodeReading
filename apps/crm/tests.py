@@ -1818,6 +1818,48 @@ class CrmWorkspaceTests(TestCase):
         self.assertEqual(response.status_code, 200)
         self.assertIn("Stewardship", labels)
         self.assertNotIn("Assessment", labels)
+        self.assertContains(response, "Pipeline board")
+        self.assertContains(response, "All deals")
+
+    def test_all_deals_view_lists_every_category(self):
+        Opportunity.objects.create(
+            lead=self.lead,
+            name="Family enrollment",
+            pipeline=Opportunity.Pipeline.FAMILY_ENROLLMENT,
+            stage=Opportunity.Stage.FAMILY_LEAD_NURTURE,
+            student_name="Avery Reader",
+            term_year="Fall 2027",
+            value=1200,
+        )
+        Opportunity.objects.create(
+            lead=self.lead,
+            name="Donor gift",
+            pipeline=Opportunity.Pipeline.FOUNDATION_DONORS,
+            stage=Opportunity.Stage.DONOR_IDENTIFIED,
+            campaign_year="Annual fund 2026",
+            value=5000,
+        )
+        self.client.force_login(self.admin_user)
+
+        response = self.client.get(reverse("crm_deal_list"), {"view": "all"})
+
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "All deals")
+        self.assertContains(response, "Avery Reader")
+        self.assertContains(response, "Annual fund 2026")
+        labels = [section["label"] for section in response.context["category_sections"]]
+        self.assertEqual(labels, [label for _value, label in Opportunity.Pipeline.choices])
+        self.assertContains(response, 'name="view" value="all"')
+
+        filtered = self.client.get(reverse("crm_deal_list"), {"view": "all", "q": "Avery"})
+        self.assertContains(filtered, "Avery Reader")
+        self.assertNotContains(filtered, "Annual fund 2026")
+
+        moved = self.client.post(
+            reverse("crm_deal_stage_update", args=[Opportunity.objects.get(student_name="Avery Reader").pk]),
+            {"stage": Opportunity.Stage.FAMILY_WAITLIST, "return_view": "all", "return_q": "Avery"},
+        )
+        self.assertRedirects(moved, f"{reverse('crm_deal_list')}?view=all&q=Avery")
 
     def test_deal_rejects_a_stage_from_another_pipeline(self):
         deal = Opportunity(

@@ -1,4 +1,6 @@
+from decimal import Decimal
 from pathlib import Path
+from urllib.parse import urlencode
 
 from django.conf import settings
 from django.contrib import messages
@@ -899,37 +901,202 @@ class CrmCompanyUpdateView(CrmAccessMixin, View):
         return redirect("crm_company_detail", pk=company.pk)
 
 
+WON_DEAL_STAGES = {
+    Opportunity.Stage.FAMILY_ENROLLED,
+    Opportunity.Stage.FAMILY_ACTIVE,
+    Opportunity.Stage.PARTNER_ACTIVE,
+    Opportunity.Stage.DONOR_COMMITTED,
+    Opportunity.Stage.DONOR_STEWARDSHIP,
+    Opportunity.Stage.GRANT_AWARDED,
+    Opportunity.Stage.EQUITY_CLOSED_WON,
+}
+LOST_DEAL_STAGES = {
+    Opportunity.Stage.FAMILY_LOST,
+    Opportunity.Stage.FAMILY_CHURNED,
+    Opportunity.Stage.PARTNER_DORMANT,
+    Opportunity.Stage.DONOR_DECLINED,
+    Opportunity.Stage.GRANT_DECLINED,
+    Opportunity.Stage.EQUITY_PASSED,
+}
+DEAL_LIST_SORTS = {
+    "value": "Highest value",
+    "close": "Closest close date",
+    "name": "Name",
+    "recent": "Recently updated",
+}
+
+
+def _active_deals():
+    return (
+        Opportunity.objects.filter(is_deleted=False)
+        .select_related("lead", "company", "owner")
+        .prefetch_related("related_deals")
+    )
+
+
+def _money(deals):
+    return sum((deal.value for deal in deals), Decimal("0"))
+
+
+def _weighted(deals):
+    return sum(
+        (deal.value * Decimal(deal.probability) / Decimal(100) for deal in deals),
+        Decimal("0"),
+    )
+
+
+def _stage_tone(stage):
+    if stage in WON_DEAL_STAGES:
+        return "won"
+    if stage in LOST_DEAL_STAGES:
+        return "lost"
+    return "open"
+
+
+def _stage_columns(pipeline, deals):
+    columns = []
+    for stage, label in Opportunity.stage_choices_for_pipeline(pipeline):
+        column_deals = [deal for deal in deals if deal.stage == stage]
+        columns.append(
+            {
+                "stage": stage,
+                "label": label,
+                "tone": _stage_tone(stage),
+                "deals": column_deals,
+                "value": _money(column_deals),
+            }
+        )
+    return columns
+
+
+def _deal_list_redirect(request, pipeline):
+    if request.POST.get("return_view") == "all":
+        params = {"view": "all"}
+        for key in ("q", "pipeline", "priority", "sort"):
+            value = (request.POST.get(f"return_{key}") or "").strip()
+            if value:
+                params[key] = value
+        return redirect(f"{reverse('crm_deal_list')}?{urlencode(params)}")
+    return redirect(f"{reverse('crm_deal_list')}?pipeline={pipeline}")
+
+
 class CrmDealListView(CrmAccessMixin, TemplateView):
     template_name = "crm/deal_list.html"
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
-        pipeline = self.request.GET.get("pipeline", Opportunity.Pipeline.FAMILY_ENROLLMENT)
-        if pipeline not in Opportunity.Pipeline.values:
+        requested_view = self.request.GET.get("view", "board")
+        view = requested_view if requested_view in {"board", "all"} else "board"
+        pipeline = self.request.GET.get("pipeline") or ""
+        if view == "board" and pipeline not in Opportunity.Pipeline.values:
             pipeline = Opportunity.Pipeline.FAMILY_ENROLLMENT
-        deals = list(
-            Opportunity.objects.filter(is_deleted=False, pipeline=pipeline)
-            .select_related("lead", "company", "owner")
-            .prefetch_related("related_deals")
-            .order_by("expected_close_date", "-created_at")
-        )
-        stage_columns = []
-        for stage, label in Opportunity.stage_choices_for_pipeline(pipeline):
-            stage_columns.append(
+        if view == "all" and pipeline not in Opportunity.Pipeline.values:
+            pipeline = ""
+
+        counts = {
+            row["pipeline"]: row
+            for row in Opportunity.objects.filter(is_deleted=False)
+            .values("pipeline")
+            .annotate(deal_count=Count("id"), total_value=Sum("value"))
+        }
+        pipeline_tabs = []
+        for value, label in Opportunity.Pipeline.choices:
+            row = counts.get(value, {})
+            pipeline_tabs.append(
                 {
-                    "stage": stage,
+                    "value": value,
                     "label": label,
-                    "deals": [deal for deal in deals if deal.stage == stage],
+                    "deal_count": row.get("deal_count", 0),
+                    "total_value": row.get("total_value") or 0,
                 }
             )
+
+        if view == "all":
+            query = (self.request.GET.get("q") or "").strip()
+            priority = self.request.GET.get("priority", "")
+            if priority not in Opportunity.Priority.values:
+                priority = ""
+            sort = self.request.GET.get("sort", "value")
+            if sort not in DEAL_LIST_SORTS:
+                sort = "value"
+            deals = _active_deals()
+            if pipeline:
+                deals = deals.filter(pipeline=pipeline)
+            if priority:
+                deals = deals.filter(priority=priority)
+            if query:
+                deals = deals.filter(
+                    Q(name__icontains=query)
+                    | Q(student_name__icontains=query)
+                    | Q(company__name__icontains=query)
+                    | Q(lead__contact_name__icontains=query)
+                    | Q(lead__organization_name__icontains=query)
+                    | Q(next_steps__icontains=query)
+                )
+            if sort == "close":
+                deals = deals.order_by(F("expected_close_date").asc(nulls_last=True), "name")
+            elif sort == "name":
+                deals = deals.order_by("name")
+            elif sort == "recent":
+                deals = deals.order_by("-updated_at")
+            else:
+                deals = deals.order_by("-value", "name")
+            deals = list(deals)
+            grouped = {value: [] for value, _label in Opportunity.Pipeline.choices}
+            for deal in deals:
+                grouped.setdefault(deal.pipeline, []).append(deal)
+            hide_empty = bool(query or priority)
+            category_sections = []
+            for tab in pipeline_tabs:
+                items = grouped.get(tab["value"], [])
+                if pipeline and tab["value"] != pipeline:
+                    continue
+                if hide_empty and not items:
+                    continue
+                category_sections.append(
+                    {
+                        **tab,
+                        "deals": items,
+                        "deal_count": len(items),
+                        "total_value": _money(items),
+                    }
+                )
+            context.update(
+                {
+                    "view": "all",
+                    "pipeline": pipeline,
+                    "pipeline_label": "All deals",
+                    "pipeline_choices": Opportunity.Pipeline.choices,
+                    "pipeline_tabs": pipeline_tabs,
+                    "priority_choices": Opportunity.Priority.choices,
+                    "sort_choices": DEAL_LIST_SORTS.items(),
+                    "category_sections": category_sections,
+                    "filters": {"q": query, "pipeline": pipeline, "priority": priority, "sort": sort},
+                    "deal_count": len(deals),
+                    "pipeline_value": _money(deals),
+                    "weighted_value": _weighted(deals),
+                    "naming_review_count": sum(1 for deal in deals if deal.needs_naming_review),
+                }
+            )
+            return context
+
+        deals = list(
+            _active_deals()
+            .filter(pipeline=pipeline)
+            .order_by("expected_close_date", "-created_at")
+        )
         context.update(
             {
+                "view": "board",
                 "pipeline": pipeline,
                 "pipeline_label": Opportunity.Pipeline(pipeline).label,
                 "pipeline_choices": Opportunity.Pipeline.choices,
-                "stage_columns": stage_columns,
+                "pipeline_tabs": pipeline_tabs,
+                "stage_columns": _stage_columns(pipeline, deals),
                 "deal_count": len(deals),
-                "pipeline_value": sum(deal.value for deal in deals),
+                "pipeline_value": _money(deals),
+                "weighted_value": _weighted(deals),
+                "naming_review_count": sum(1 for deal in deals if deal.needs_naming_review),
             }
         )
         return context
@@ -1073,7 +1240,7 @@ class CrmDealStageUpdateView(CrmAccessMixin, View):
         stage = request.POST.get("stage", "")
         if stage not in Opportunity.stage_values_for_pipeline(deal.pipeline):
             messages.error(request, "Choose a stage in this deal's pipeline.")
-            return redirect(f"{reverse('crm_deal_list')}?pipeline={deal.pipeline}")
+            return _deal_list_redirect(request, deal.pipeline)
         previous_stage = deal.stage
         deal.stage = stage
         deal.closed_at = timezone.now() if stage in TERMINAL_DEAL_STAGES else None
@@ -1088,7 +1255,7 @@ class CrmDealStageUpdateView(CrmAccessMixin, View):
             after={"stage": stage, "pipeline": deal.pipeline},
         )
         messages.success(request, "Deal stage updated.")
-        return redirect(f"{reverse('crm_deal_list')}?pipeline={deal.pipeline}")
+        return _deal_list_redirect(request, deal.pipeline)
 
 
 class CrmTriageListView(CrmAccessMixin, TemplateView):

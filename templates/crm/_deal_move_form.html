@@ -1,0 +1,19 @@
+<form class="deal-move" method="post" action="{% url 'crm_deal_stage_update' deal.pk %}">
+  {% csrf_token %}
+  {% if view == "all" %}
+    <input type="hidden" name="return_view" value="all">
+    <input type="hidden" name="return_q" value="{{ filters.q }}">
+    <input type="hidden" name="return_pipeline" value="{{ filters.pipeline }}">
+    <input type="hidden" name="return_priority" value="{{ filters.priority }}">
+    <input type="hidden" name="return_sort" value="{{ filters.sort }}">
+  {% endif %}
+  <label class="field-label" for="deal-stage-{{ form_suffix }}{{ deal.pk }}">Move deal</label>
+  <div class="deal-move-row">
+    <select id="deal-stage-{{ form_suffix }}{{ deal.pk }}" name="stage">
+      {% for stage, label in deal.stage_choices %}
+        <option value="{{ stage }}" {% if deal.stage == stage %}selected{% endif %}>{{ label }}</option>
+      {% endfor %}
+    </select>
+    <button class="btn btn-small" type="submit">Move</button>
+  </div>
+</form>

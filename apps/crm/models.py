@@ -347,6 +347,10 @@ class Opportunity(TimestampedModel, SoftDeleteModel):
     def stage_values_for_pipeline(cls, pipeline):
         return {value for value, _label in cls.stage_choices_for_pipeline(pipeline)}
 
+    @property
+    def stage_choices(self):
+        return self.stage_choices_for_pipeline(self.pipeline)
+
     @classmethod
     def initial_stage_for_pipeline(cls, pipeline: str) -> str:
         choices = cls.stage_choices_for_pipeline(pipeline)
