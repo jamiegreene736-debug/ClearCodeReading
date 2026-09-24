@@ -19,6 +19,7 @@
 </section>{% endfor %}
 <section class="card"><h2>Recent test deliveries</h2><p>Refresh this page after the email worker processes a test.</p>
 {% for delivery in deliveries %}<div class="row"><a href="{% url 'crm_deal_detail' delivery.deal.pk %}">{{ delivery.deal.name }}</a> · {% if delivery.message %}{{ delivery.message.get_status_display }}{% elif delivery.cancelled %}Cancelled{% elif delivery.error %}Needs attention{% else %}Waiting for email worker{% endif %}
+<p>Test created {{ delivery.created_at|date:"M j, Y, g:i A T" }}{% if delivery.message.updated_at and not delivery.message.sent_at %} · last update {{ delivery.message.updated_at|date:"M j, Y, g:i A T" }}{% endif %}</p>
 {% if delivery.error %}<p>{{ delivery.error }}</p>{% endif %}{% if delivery.message.last_error %}<p>{{ delivery.message.last_error }}</p>{% endif %}
 {% if delivery.message.sent_at %}<p>Accepted by Gmail {{ delivery.message.sent_at|date:"M j, Y, g:i A T" }}. Check {{ recipient }} to confirm receipt.</p>{% endif %}</div>{% empty %}<p>No first-stage test deliveries yet.</p>{% endfor %}</section>
 {% endblock %}

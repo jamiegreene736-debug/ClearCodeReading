@@ -293,6 +293,9 @@ class StageEmailTests(TestCase):
         self.assertRedirects(response, reverse("crm_first_stage_emails"))
         enqueue_stage_emails()
         self.assertEqual(Message.objects.get().to, [TEST_RECIPIENT])
+        response = self.client.get(reverse("crm_first_stage_emails"))
+        self.assertContains(response, "Test created ")
+        self.assertContains(response, "last update ")
 
     def test_insecure_scheduling_url_is_rejected(self) -> None:
         response = self.client.post(
