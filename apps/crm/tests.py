@@ -961,6 +961,29 @@ class CrmWorkspaceTests(TestCase):
         self.assertIn('data-deals=', markup)
         self.assertIn(f'value="{self.lead.pk}" selected', markup)
         self.assertNotIn("Deleted opportunity", markup)
+
+    def test_sidebar_groups_links_and_marks_the_current_page(self):
+        self.client.force_login(self.admin_user)
+
+        response = self.client.get(reverse("crm_email_settings"))
+
+        self.assertEqual(response.status_code, 200)
+        html = response.content.decode()
+        self.assertIn("CRM workspace", html)
+        self.assertIn('aria-label="CRM"', html)
+        self.assertIn(">Workspace<", html)
+        self.assertIn(">Settings<", html)
+        self.assertIn("cc-monogram-gold-teal.png", html)
+        email_link = re.search(
+            r'<a class="nav-link is-current"[^>]*>[\s\S]*?Email &amp; notifications</a>',
+            html,
+        )
+        self.assertIsNotNone(email_link)
+        self.assertIn('aria-current="page"', email_link.group())
+        self.assertIn("Back to portal", html)
+        self.assertIn("Add user &amp; invitations", html)
+        self.assertNotIn("desktop-nav", html)
+        self.assertNotIn("brand-mark", html)
         self.assertNotIn(deleted_contact.contact_name, markup)
 
     def test_contact_dropdown_empty_state_edit_and_bound_selection(self):

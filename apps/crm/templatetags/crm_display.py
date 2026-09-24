@@ -120,3 +120,13 @@ def crm_survey_sections(submitted_data: object) -> list[dict[str, object]]:
     if additional_answers:
         sections.append({"title": "Additional responses", "answers": additional_answers})
     return sections
+
+
+@register.simple_tag(takes_context=True)
+def nav_state(context, *names):
+    """Return active-link flags for the CRM sidebar."""
+    request = context.get("request")
+    match = getattr(request, "resolver_match", None)
+    url_name = getattr(match, "url_name", "") or ""
+    current = url_name in names
+    return {"class": "is-current" if current else "", "current": current}
