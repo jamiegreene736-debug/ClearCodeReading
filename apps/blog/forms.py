@@ -7,7 +7,14 @@ from typing import Any
 from django import forms
 from django.utils import timezone
 
-from apps.blog.models import BlogPost
+from apps.blog.models import (
+    ALLOWED_INLINE_IMAGE_TYPES,
+    MAX_INLINE_IMAGE_BYTES,
+    BlogPost,
+    InlineImageImportError,
+    import_inline_data_images,
+    unsupported_inline_image_sources,
+)
 
 MAX_COVER_BYTES = 8 * 1024 * 1024
 ALLOWED_COVER_TYPES = {"image/jpeg", "image/png", "image/webp", "image/gif"}
@@ -65,7 +72,8 @@ class BlogPostForm(forms.ModelForm):
             "status": forms.RadioSelect,
         }
 
-    def __init__(self, *args: Any, **kwargs: Any) -> None:
+    def __init__(self, *args: Any, user=None, **kwargs: Any) -> None:
+        self.user = user
         super().__init__(*args, **kwargs)
         for name, field in self.fields.items():
             widget = field.widget
@@ -88,6 +96,27 @@ class BlogPostForm(forms.ModelForm):
         )
         self.fields["seo_title"].widget.attrs.setdefault("maxlength", "70")
         self.fields["seo_description"].widget.attrs.setdefault("maxlength", "160")
+
+    def clean_body(self):
+        body = self.cleaned_data.get("body") or ""
+        if (self.data.get("body_format") or self.instance.body_format) != BlogPost.BodyFormat.HTML:
+            return body
+        try:
+            body, _ = import_inline_data_images(
+                body,
+                post=self.instance if self.instance.pk else None,
+                uploaded_by=self.instance.author or self.user,
+            )
+        except InlineImageImportError as exc:
+            raise forms.ValidationError(str(exc)) from exc
+        unsupported = unsupported_inline_image_sources(body)
+        if unsupported:
+            count = len(unsupported)
+            raise forms.ValidationError(
+                f"{count} image{'s' if count != 1 else ''} in the article could not be imported "
+                "and would not display. Remove them, then add each one with Upload image."
+            )
+        return body
 
     def clean_cover_upload(self):
         upload = self.cleaned_data.get("cover_upload")
@@ -124,3 +153,25 @@ class BlogPostForm(forms.ModelForm):
         if commit:
             post.save()
         return post
+
+
+class BlogImageUploadForm(forms.Form):
+    """Validates an inline article image sent by the editor."""
+
+    image = forms.ImageField()
+    post = forms.IntegerField(required=False, min_value=1)
+
+    def clean_image(self):
+        upload = self.cleaned_data["image"]
+        if upload.size > MAX_INLINE_IMAGE_BYTES:
+            raise forms.ValidationError("Choose an image smaller than 8 MB.")
+        content_type = (getattr(upload, "content_type", "") or "").lower()
+        if content_type == "image/jpg":
+            content_type = "image/jpeg"
+        image_format = (getattr(getattr(upload, "image", None), "format", "") or "").lower()
+        by_format = {"jpeg": "image/jpeg", "png": "image/png", "webp": "image/webp", "gif": "image/gif"}.get(image_format)
+        content_type = by_format or content_type
+        if content_type not in ALLOWED_INLINE_IMAGE_TYPES:
+            raise forms.ValidationError("Upload a JPEG, PNG, WebP or GIF image.")
+        self.cleaned_data["content_type"] = content_type
+        return upload

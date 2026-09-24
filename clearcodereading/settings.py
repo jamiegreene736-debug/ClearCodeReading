@@ -186,6 +186,10 @@ USE_TZ = True
 
 STATIC_URL = os.getenv("STATIC_URL", "/static/")
 STATIC_ROOT = BASE_DIR / "staticfiles"
+# Blog editors paste articles with inline images; a form body can exceed
+# Django's 2.5 MB default before the server converts them into stored uploads.
+DATA_UPLOAD_MAX_MEMORY_SIZE = int(os.getenv("DATA_UPLOAD_MAX_MEMORY_SIZE", str(40 * 1024 * 1024)))
+
 MEDIA_URL = os.getenv("MEDIA_URL", "/media/")
 MEDIA_ROOT = BASE_DIR / "media"
 

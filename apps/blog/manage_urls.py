@@ -7,6 +7,7 @@ app_name = "blog_manage"
 urlpatterns = [
     path("", manage_views.post_list, name="list"),
     path("new/", manage_views.post_create, name="create"),
+    path("images/", manage_views.image_upload, name="image_upload"),
     path("<int:pk>/", manage_views.post_edit, name="edit"),
     path("<int:pk>/preview/", manage_views.post_preview, name="preview"),
     path("<int:pk>/publish/", manage_views.post_publish, name="publish"),

@@ -490,3 +490,139 @@ class BlogCmsWorkflowTests(TestCase):
         self.assertNotIn("javascript:", rendered)
         self.assertNotIn("<iframe", rendered)
         self.assertEqual(post.reading_time_minutes, 1)
+
+
+def _png_bytes() -> bytes:
+    import io
+
+    from PIL import Image
+
+    buffer = io.BytesIO()
+    Image.new("RGB", (2, 2), (200, 30, 30)).save(buffer, format="PNG")
+    return buffer.getvalue()
+
+
+PNG_1PX = _png_bytes()
+
+
+class BlogInlineImageTests(TestCase):
+    """Images pasted from Google Docs / Word must be stored, never silently dropped."""
+
+    @classmethod
+    def setUpTestData(cls):
+        cls.editor = CustomUser.objects.create_user(
+            username="cms-images",
+            email="cms-images@example.com",
+            first_name="Bethany",
+            last_name="Fleming",
+            is_staff=True,
+        )
+
+    def setUp(self):
+        self.client.force_login(self.editor)
+
+    def _data_uri(self):
+        import base64
+
+        return "data:image/png;base64," + base64.b64encode(PNG_1PX).decode()
+
+    def _form_data(self, body):
+        return {
+            "title": "Pasted from Google Docs",
+            "slug": "",
+            "category": "",
+            "excerpt": "An article with pictures.",
+            "body_format": BlogPost.BodyFormat.HTML,
+            "body": body,
+            "cover_image_alt": "",
+            "status": BlogPost.Status.PUBLISHED,
+            "published_at": "",
+            "seo_title": "",
+            "seo_description": "",
+        }
+
+    def test_pasted_base64_images_are_stored_and_served(self):
+        from apps.blog.models import BlogImage
+
+        body = f'<p>Before</p><img src="{self._data_uri()}" width="624" height="329"><p>After</p>'
+        response = self.client.post(reverse("blog_manage:create"), self._form_data(body))
+        self.assertEqual(response.status_code, 302, response.content[:500])
+
+        post = BlogPost.objects.get()
+        image = BlogImage.objects.get()
+        self.assertEqual(bytes(image.data), PNG_1PX)
+        self.assertEqual(image.content_type, "image/png")
+        self.assertEqual(image.uploaded_by, self.editor)
+        self.assertNotIn("data:", post.body)
+        self.assertIn(f'src="{image.url}"', post.body)
+        self.assertIn('width="624"', post.body)
+
+        article = self.client.get(post.get_absolute_url())
+        self.assertContains(article, f'src="{image.url}"')
+
+        self.client.logout()
+        served = self.client.get(image.url)
+        self.assertEqual(served.status_code, 200)
+        self.assertEqual(served["Content-Type"], "image/png")
+        self.assertEqual(served.content, PNG_1PX)
+
+    def test_model_save_imports_base64_images_on_every_path(self):
+        from apps.blog.models import BlogImage
+
+        post = BlogPost.objects.create(
+            title="Saved from the admin",
+            excerpt="x",
+            body_format=BlogPost.BodyFormat.HTML,
+            body=f'<img src="{self._data_uri()}" alt="chart">',
+            author=self.editor,
+        )
+        image = BlogImage.objects.get()
+        self.assertIn(f'<img src="{image.url}" alt="chart">', post.body)
+
+    def test_unreadable_image_sources_are_refused_instead_of_dropped(self):
+        body = '<p>Text</p><img src="file:///C:/Users/b/clip_image001.png" width="624"><img width="311" height="436">'
+        response = self.client.post(reverse("blog_manage:create"), self._form_data(body))
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "2 images in the article could not be imported")
+        self.assertFalse(BlogPost.objects.exists())
+
+    def test_oversized_pasted_image_is_refused(self):
+        import base64
+
+        big = "data:image/png;base64," + base64.b64encode(b"x" * (8 * 1024 * 1024 + 1)).decode()
+        response = self.client.post(reverse("blog_manage:create"), self._form_data(f'<img src="{big}">'))
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "larger than 8 MB")
+
+    def test_upload_endpoint_stores_image_and_returns_url(self):
+        from django.core.files.uploadedfile import SimpleUploadedFile
+
+        from apps.blog.models import BlogImage
+
+        upload = SimpleUploadedFile("diagram.png", PNG_1PX, content_type="image/png")
+        response = self.client.post(reverse("blog_manage:image_upload"), {"image": upload})
+        self.assertEqual(response.status_code, 201, response.content)
+        payload = response.json()
+        image = BlogImage.objects.get()
+        self.assertEqual(payload["url"], image.url)
+        self.assertEqual(image.original_name, "diagram.png")
+        self.assertEqual(self.client.get(payload["url"]).content, PNG_1PX)
+
+    def test_upload_endpoint_rejects_non_images_and_outsiders(self):
+        from django.core.files.uploadedfile import SimpleUploadedFile
+
+        bad = SimpleUploadedFile("notes.txt", b"hello", content_type="text/plain")
+        response = self.client.post(reverse("blog_manage:image_upload"), {"image": bad})
+        self.assertEqual(response.status_code, 400)
+        self.assertIn("error", response.json())
+
+        self.client.logout()
+        parent = CustomUser.objects.create_user(username="parent-x", email="parent-x@example.com")
+        self.client.force_login(parent)
+        upload = SimpleUploadedFile("diagram.png", PNG_1PX, content_type="image/png")
+        self.assertEqual(self.client.post(reverse("blog_manage:image_upload"), {"image": upload}).status_code, 403)
+
+    def test_unknown_image_key_is_404(self):
+        import uuid
+
+        self.assertEqual(self.client.get(reverse("blog:image", kwargs={"key": uuid.uuid4()})).status_code, 404)
