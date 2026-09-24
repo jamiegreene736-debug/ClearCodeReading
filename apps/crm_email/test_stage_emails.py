@@ -140,6 +140,16 @@ class StageEmailTests(TestCase):
         self.assertEqual(Message.objects.count(), 1)
         self.assertEqual(StageEmailDelivery.objects.get().error, "")
 
+    def test_blank_scheduling_link_falls_back_to_the_public_booking_page(self) -> None:
+        self.pilot.scheduling_link = ""
+        self.pilot.save()
+        with override_settings(PUBLIC_APP_URL="https://clearcodereading.com"):
+            self.make_deal()
+            enqueue_stage_emails()
+        message = Message.objects.get()
+        self.assertIn("https://clearcodereading.com/book/", message.body_text)
+        self.assertEqual(StageEmailDelivery.objects.get().error, "")
+
     def test_missing_equity_signature_and_category_are_explicit(self) -> None:
         self.mailbox.signature = ""
         self.mailbox.save()

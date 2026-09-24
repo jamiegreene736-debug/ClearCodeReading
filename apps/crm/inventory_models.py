@@ -143,3 +143,32 @@ class InventoryBooking(models.Model):
     phone = models.CharField(max_length=32)
     timezone = models.CharField(max_length=64)
     created_at = models.DateTimeField(auto_now_add=True)
+
+
+class ConsultationBooking(models.Model):
+    """A consultation booked from the public calendar page, tied to a CRM contact."""
+
+    lead = models.ForeignKey(
+        "crm.Lead", on_delete=models.PROTECT, related_name="consultation_bookings"
+    )
+    submission = models.OneToOneField(
+        "crm.FormSubmission",
+        null=True,
+        blank=True,
+        on_delete=models.SET_NULL,
+        related_name="consultation_booking",
+    )
+    slot = models.OneToOneField(
+        ConsultationSlot, on_delete=models.PROTECT, related_name="consultation_booking"
+    )
+    phone = models.CharField(max_length=32)
+    timezone = models.CharField(max_length=64)
+    child_age_grade = models.CharField(max_length=120, blank=True)
+    notes = models.TextField(blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering: ClassVar = ["-created_at"]
+
+    def __str__(self) -> str:
+        return f"Consultation for {self.lead.contact_name} at {self.slot.starts_at:%Y-%m-%d %H:%M}"

@@ -55,6 +55,7 @@ from apps.users.portal_views import (
 )
 
 from apps.crm.calendar_views import CalendarSettingsView, GoogleCalendarConnectView, calendar_feed
+from apps.crm.consultation_booking import ConsultationBookingView
 from apps.crm.inventory_views import (
     InventoryListView, InventorySendView, InventoryDetailView, InventoryPublicView,
     InventorySlotsView, InventoryBookingView, InventoryPreviewView,
@@ -76,6 +77,7 @@ urlpatterns = [
     path("crm/assessments/<uuid:pk>/", InventoryDetailView.as_view(), name="inventory_detail"),
     path("reading-inventory/<str:token>/", InventoryPublicView.as_view(), name="inventory_public"),
     path("reading-inventory/<str:token>/book/", InventoryBookingView.as_view(), name="inventory_booking"),
+    path("book/", ConsultationBookingView.as_view(), name="consultation_booking"),
     path("", TemplateView.as_view(template_name="index.html"), name="marketing_home"),
     path("robots.txt", RobotsTxtView.as_view(), name="robots_txt"),
     path("sitemap.xml", SitemapXmlView.as_view(), name="sitemap_xml"),

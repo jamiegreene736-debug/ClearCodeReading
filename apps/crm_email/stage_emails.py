@@ -12,6 +12,7 @@ from django.core.exceptions import PermissionDenied
 from django.db import transaction
 from django.utils.html import escape, urlize
 
+from apps.crm.consultation_booking import consultation_booking_url
 from apps.crm.models import Opportunity
 from apps.crm_email.models import Mailbox, Message, StageEmailDelivery, StageEmailPilot
 from apps.crm_email.security import (
@@ -69,7 +70,7 @@ def render_copy(deal: Opportunity, pilot: StageEmailPilot) -> StageCopy:
     values = {
         "contact.firstname": name,
         "company.name": company,
-        "scheduling_link": pilot.scheduling_link,
+        "scheduling_link": pilot.scheduling_link or consultation_booking_url(),
         "Bethany’s email signature": pilot.bethany_signature,
         "investment_category": deal.investment_category,
         "foundation_name": pilot.foundation_name,

@@ -39,6 +39,7 @@ from apps.crm.inventory import (
 from apps.crm.inventory_feedback import delivery_feedback
 from apps.crm.inventory_forms import BookingForm, InvitationForm, SectionForm, SlotForm
 from apps.crm.inventory_models import (
+    ConsultationBooking,
     ConsultationSlot,
     InventoryBooking,
     InventoryChild,
@@ -448,7 +449,7 @@ class InventorySlotsView(CrmAccessMixin, View):
         if host:
             slots = slots.filter(host=host)
         slots = slots.select_related(
-            "host", "booking__invitation__child__parent"
+            "host", "booking__invitation__child__parent", "consultation_booking__lead"
         ).order_by("starts_at")[:100]
         return render(
             request,
@@ -484,7 +485,10 @@ class InventorySlotsView(CrmAccessMixin, View):
                 )
                 if slot.starts_at <= timezone.now():
                     messages.error(request, "This appointment time has passed.")
-                elif not InventoryBooking.objects.filter(slot=slot).exists():
+                elif (
+                    not InventoryBooking.objects.filter(slot=slot).exists()
+                    and not ConsultationBooking.objects.filter(slot=slot).exists()
+                ):
                     overlap = (
                         ConsultationSlot.objects.filter(
                             host_id=slot.host_id,
@@ -584,6 +588,7 @@ class InventoryBookingView(InventoryPublicView):
             active=True,
             starts_at__gt=timezone.now(),
             booking__isnull=True,
+            consultation_booking__isnull=True,
             host__is_active=True,
             host__is_deleted=False,
         ).select_related("host")
@@ -662,6 +667,7 @@ class InventoryBookingView(InventoryPublicView):
                     or slot.ends_at > timezone.now() + timedelta(days=MAX_DAYS)
                     or not available_slots([slot])
                     or InventoryBooking.objects.filter(slot=slot).exists()
+                    or ConsultationBooking.objects.filter(slot=slot).exists()
                 ):
                     form.add_error(
                         "slot",

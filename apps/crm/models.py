@@ -734,7 +734,8 @@ class CrmActivity(TimestampedModel):
 from apps.crm.hiring_models import HiringCandidate, HiringEvent  # noqa: E402,F401
 # Register the assessment workflow models alongside the existing CRM models.
 from apps.crm.inventory_models import (  # noqa: E402,F401
-    ConsultationSlot, InventoryBooking, InventoryChild, InventoryInvitation, InventoryMail,
+    ConsultationBooking, ConsultationSlot, InventoryBooking, InventoryChild, InventoryInvitation,
+    InventoryMail,
 )
 
 from apps.crm.calendar_models import CalendarAuthorization, CalendarDateOverride, HostCalendar, WeeklyCalendarBlock  # noqa: E402,F401
