@@ -6,6 +6,12 @@ from apps.crm_email.stage_views import first_stage
 urlpatterns = [
     path("email/first-stage/", first_stage, name="crm_first_stage_emails"),
     path("email/", views.settings_view, name="crm_email_settings"),
+    path(
+        "email/notifications/",
+        views.notifications_view,
+        name="crm_email_notifications",
+    ),
+    path("email/newsletters/", views.newsletter_list, name="crm_newsletter_list"),
     path("email/connect/", views.connect_view, name="crm_email_connect"),
     path("email/callback/", views.callback, name="crm_email_callback"),
     path("email/push/", views.push, name="crm_email_push"),

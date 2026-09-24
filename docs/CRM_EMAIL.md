@@ -143,7 +143,7 @@ with HTTP 204; no real mailbox or outbound email was involved in that check.
 
 ## First-stage prelaunch pilot
 
-CRM > Email settings > **First-stage email tests** (`/crm/email/first-stage/`) is
+CRM > Email & notifications > **Email tests** (`/crm/email/first-stage/`) is
 restricted to CRM administrators. The five individual September 2026 documents
 supplied by Jamie are the approved copy source; they supersede the combined v1
 copy. `first_stage_copy.json` preserves their first ENTRY subject and paragraphs.
@@ -181,9 +181,24 @@ review of website receipt overlap, consent, sender configuration and the final
 calendar/signatures. Never remove the internal-recipient guard just to test a
 customer address.
 
+## Email & notification settings hub
+
+The CRM sidebar entry is **Email & notifications** (`/crm/email/`). The page is a tabbed
+hub rendered by `templates/crm/_email_settings_nav.html`:
+
+- **Mailbox** (`crm_email_settings`, every CRM user): Google mailbox status and actions,
+  signature, personal templates, and for administrators the team connections table.
+- **Notifications** (`crm_email_notifications`, administrators): stat tiles and one
+  table of every email notification, grouped by category with filter chips; each row
+  links to its editor.
+- **Newsletter** (`crm_newsletter_list`, administrators): subscriber and campaign stats
+  and the campaigns table with status pills and per-row actions.
+- **Email tests** (`crm_first_stage_emails`, administrators): the first-stage pilot
+  settings, recent test deliveries table and per-pipeline template cards.
+
 ## Automated email wording
 
-CRM > Email settings > **Automated emails** lists every email the system sends on its
+CRM > Email & notifications > **Notifications** lists every email the system sends on its
 own and lets CRM administrators edit each one. The registry in
 `apps/crm_email/automated.py` describes each email once (key, trigger, recipient,
 default wording, allowed placeholders). Senders call `copy_for(key)` at send time,
@@ -223,7 +238,7 @@ plain-text part; default wording stays plain text until customized.
 
 ## Newsletters from Email settings
 
-CRM > Email settings > **Newsletter** lists campaigns and composes new ones with the
+CRM > Email & notifications > **Newsletter** lists campaigns and composes new ones with the
 same rich editor (`crm_newsletter_new`, `crm_newsletter`, `crm_newsletter_send`,
 administrators only). Saving stores `NewsletterCampaign.body_html` plus a
 plain-text `body`; the HTML email renders `body_html` when set. The review screen

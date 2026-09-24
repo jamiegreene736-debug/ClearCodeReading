@@ -1,0 +1,9 @@
+{% comment %}Tab navigation for the Email & notifications hub. Set `active_tab` in the view context.{% endcomment %}
+<nav class="tabs" aria-label="Email and notification settings">
+<a class="tab {% if active_tab == 'mailbox' %}active{% endif %}" href="{% url 'crm_email_settings' %}"{% if active_tab == 'mailbox' %} aria-current="page"{% endif %}>Mailbox</a>
+{% if request.user.can_manage_crm_users %}
+<a class="tab {% if active_tab == 'notifications' %}active{% endif %}" href="{% url 'crm_email_notifications' %}"{% if active_tab == 'notifications' %} aria-current="page"{% endif %}>Notifications{% if notification_count %} <span class="count">{{ notification_count }}</span>{% endif %}</a>
+<a class="tab {% if active_tab == 'newsletter' %}active{% endif %}" href="{% url 'crm_newsletter_list' %}"{% if active_tab == 'newsletter' %} aria-current="page"{% endif %}>Newsletter</a>
+<a class="tab {% if active_tab == 'tests' %}active{% endif %}" href="{% url 'crm_first_stage_emails' %}"{% if active_tab == 'tests' %} aria-current="page"{% endif %}>Email tests</a>
+{% endif %}
+</nav>

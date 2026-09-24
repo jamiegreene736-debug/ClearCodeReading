@@ -87,9 +87,14 @@ class AutomatedEmailTests(TestCase):
                         self.assertIn(token, spec.placeholders)
                     self.assertIn(name, automated.FIELD_LABELS)
 
-    def test_settings_page_lists_automated_emails_for_administrators_only(self) -> None:
+    def test_notifications_tab_lists_automated_emails_for_administrators_only(
+        self,
+    ) -> None:
         response = self.client.get(reverse("crm_email_settings"))
-        self.assertContains(response, "Automated emails")
+        self.assertContains(response, "Email &amp; notification settings")
+        self.assertContains(response, reverse("crm_email_notifications"))
+        response = self.client.get(reverse("crm_email_notifications"))
+        self.assertContains(response, "Email notifications")
         self.assertContains(response, "Consultation request")
         self.assertContains(response, "Account invitation")
         self.assertContains(
@@ -101,7 +106,10 @@ class AutomatedEmailTests(TestCase):
         self.client.force_login(self.staff)
         response = self.client.get(reverse("crm_email_settings"))
         self.assertEqual(response.status_code, 200)
-        self.assertNotContains(response, "Automated emails")
+        self.assertNotContains(response, reverse("crm_email_notifications"))
+        self.assertEqual(
+            self.client.get(reverse("crm_email_notifications")).status_code, 403
+        )
         for method in (self.client.get, self.client.post):
             response = method(reverse("crm_email_automated", args=["website_support"]))
             self.assertEqual(response.status_code, 403)
@@ -135,7 +143,7 @@ class AutomatedEmailTests(TestCase):
                 "action_url": "/how-it-works/",
             },
         )
-        self.assertRedirects(response, reverse("crm_email_settings"))
+        self.assertRedirects(response, reverse("crm_email_notifications"))
         row = AutomatedEmail.objects.get(key="website_consultation")
         self.assertEqual(row.updated_by, self.admin)
         self.assertTrue(
@@ -149,10 +157,10 @@ class AutomatedEmailTests(TestCase):
         self.assertIn("Reference ", str(context["introduction"]))
         self.assertEqual(context["next_step"], "")
         self.assertEqual(context["action_label"], "")
-        response = self.client.get(reverse("crm_email_settings"))
+        response = self.client.get(reverse("crm_email_notifications"))
         self.assertContains(response, "Customized")
         response = self.client.post(url, {"action": "restore"})
-        self.assertRedirects(response, reverse("crm_email_settings"))
+        self.assertRedirects(response, reverse("crm_email_notifications"))
         self.assertFalse(
             AutomatedEmail.objects.filter(key="website_consultation").exists()
         )
@@ -290,7 +298,7 @@ class RichAutomatedEmailTests(TestCase):
                 "action_url": "/how-it-works/",
             },
         )
-        self.assertRedirects(response, reverse("crm_email_settings"))
+        self.assertRedirects(response, reverse("crm_email_notifications"))
         row = AutomatedEmail.objects.get(key="website_consultation")
         self.assertIn('style="color:#c53b3b"', row.body)
         self.assertNotIn("position", row.body)
@@ -477,7 +485,7 @@ class RichAutomatedEmailTests(TestCase):
         )
         self.assertIn("https://example.com/book", sent[0].body_text)
         self.assertNotIn("<p>", sent[0].body_text)
-        response = self.client.get(reverse("crm_email_settings"))
+        response = self.client.get(reverse("crm_email_notifications"))
         self.assertContains(response, "Survey initial emails")
         self.assertContains(response, "Survey: all other pipelines")
 
@@ -507,9 +515,10 @@ class NewsletterCmsTests(TestCase):
     def test_settings_lists_newsletters_and_editor_saves_rich_body(self) -> None:
         response = self.client.get(reverse("crm_newsletter_new"))
         self.assertNotContains(response, "This field is required")
-        response = self.client.get(reverse("crm_email_settings"))
+        response = self.client.get(reverse("crm_newsletter_list"))
         self.assertContains(response, "New newsletter")
-        self.assertContains(response, "Active subscribers: <strong>2</strong>")
+        self.assertContains(response, "Active subscribers")
+        self.assertContains(response, '<div class="stat-value">2</div>')
         response = self.client.post(
             reverse("crm_newsletter_new"),
             {
@@ -585,5 +594,5 @@ class NewsletterCmsTests(TestCase):
         self.client.force_login(staff)
         response = self.client.get(reverse("crm_email_settings"))
         self.assertNotContains(response, "New newsletter")
-        for name in ("crm_newsletter_new",):
+        for name in ("crm_newsletter_new", "crm_newsletter_list"):
             self.assertEqual(self.client.get(reverse(name)).status_code, 403)

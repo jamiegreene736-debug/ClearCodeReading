@@ -18,7 +18,7 @@ from apps.crm_email.models import Mailbox, Message, StageEmailDelivery, StageEma
 from apps.crm_email.security import EmailError, EmailRequest, require_configured
 from apps.crm_email.services import active_mailbox
 from apps.crm_email.stage_emails import TEST_RECIPIENT, render_copy, sending_mailbox
-from apps.crm_email.views import crm_view
+from apps.crm_email.views import crm_view, hub_context
 from apps.users.models import AuditLog
 
 if TYPE_CHECKING:
@@ -216,6 +216,8 @@ def first_stage(request: EmailRequest) -> HttpResponse:
         request,
         "crm/first_stage_emails.html",
         {
+            "active_tab": "tests",
+            **hub_context(request),
             "form": form,
             "pilot": pilot,
             "mailbox": mailbox,

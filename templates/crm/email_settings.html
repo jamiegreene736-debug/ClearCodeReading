@@ -1,36 +1,44 @@
 {% extends "crm/email_base.html" %}
-{% block title %}Email settings{% endblock %}
+{% block title %}Email & notification settings{% endblock %}
 {% block email_content %}
-<p class="eyebrow">Your workspace</p><h1>Email settings</h1>
-<p class="subtle">Connect your ClearCodeReading Google Workspace mailbox to send and receive email on contact records.</p>
-{% if request.user.can_manage_crm_users %}<p><a class="btn btn-primary" href="{% url 'crm_first_stage_emails' %}">First-stage email tests</a></p>{% endif %}
-<section class="card"><h2>Your Google mailbox</h2>
-<p><strong>{{ mailbox.email|default:request.user.email }}</strong> <span class="badge">{{ mailbox.get_status_display }}</span></p>
-{% if mailbox.last_error %}<p role="alert">{{ mailbox.last_error }}</p>{% endif %}
+<div class="page-head"><div><p class="eyebrow">Your workspace</p><h1>Email &amp; notification settings</h1>
+<p class="subtle">Your connected mailbox, signature and personal templates. Administrators also manage automated notifications, newsletters and email tests from the tabs below.</p></div></div>
+{% include "crm/_email_settings_nav.html" %}
+<div class="split">
+<section class="card flush">
+<div class="section-head"><div><h2>Your Google mailbox</h2><p class="subtle">Sends and receives email on contact records.</p></div>
+{% if mailbox.status == 'connected' %}<span class="pill pill-ok">Connected</span>{% elif mailbox.status == 'reconnect' %}<span class="pill pill-warn">Reconnect required</span>{% else %}<span class="pill pill-neutral">Disconnected</span>{% endif %}</div>
+<div class="card-body">
+<dl class="kv"><dt>Address</dt><dd><strong>{{ mailbox.email|default:request.user.email }}</strong></dd>
+<dt>Last synchronized</dt><dd>{{ mailbox.last_sync_at|date:"M j, Y, g:i A T"|default:"Not yet" }}</dd>
+<dt>Background worker</dt><dd>{% if worker_healthy %}<span class="pill pill-ok">Ready</span>{% else %}<span class="pill pill-warn">Not reporting ready</span>{% endif %}</dd></dl>
+{% if mailbox.last_error %}<p class="notice" role="alert">{{ mailbox.last_error }}</p>{% endif %}
 {% if configured %}
-<p>Google will request permission to send and read your mailbox. The CRM imports only conversations started here and existing threads you select. Linked conversations are shared with authorized CRM team members. Unrelated email stays private.</p>
+<p class="subtle" style="margin-top:16px">Google will request permission to send and read your mailbox. The CRM imports only conversations started here and existing threads you select. Linked conversations are shared with authorized CRM team members; unrelated email stays private.</p>
 <div class="actions"><form method="post" action="{% url 'crm_email_connect' %}">{% csrf_token %}<button class="btn btn-primary">{% if mailbox.status == 'connected' %}Reconnect Google{% else %}Connect Google{% endif %}</button></form>
 {% if mailbox.status == 'connected' %}<form method="post" action="{% url 'crm_email_sync' %}">{% csrf_token %}<button class="btn">Sync now</button></form>{% endif %}
 {% if mailbox.status != 'disconnected' %}<form method="post" action="{% url 'crm_email_disconnect' mailbox.pk %}">{% csrf_token %}<button class="btn">Disconnect mailbox</button></form>{% endif %}</div>
-{% else %}<p class="badge badge-warn">Google setup required</p><p>Your administrator needs to finish the organization's Google connection before mailboxes can connect. You can prepare signatures, templates and drafts now.</p>{% endif %}
-<p class="subtle">Last synchronized: {{ mailbox.last_sync_at|date:"M j, Y, g:i A T"|default:"Not yet" }}<br>Background worker: {% if worker_healthy %}Ready{% else %}Not reporting ready{% endif %}</p>
-<p class="subtle">Disconnect stops future sending and syncing. Existing CRM conversation history remains on its contact records.</p>
+<p class="subtle">Disconnecting stops future sending and syncing. Existing CRM conversation history stays on its contact records.</p>
+{% else %}<p class="notice" style="margin-top:16px"><strong>Google setup required.</strong> Your administrator needs to finish the organization's Google connection before mailboxes can connect. You can prepare your signature, templates and drafts now.</p>{% endif %}
+</div></section>
+<div>
+<section class="card flush"><div class="section-head"><div><h2>Your signature</h2><p class="subtle">Added automatically when you start a new draft.</p></div></div>
+<div class="card-body"><form method="post">{% csrf_token %}{{ form.as_p }}<button class="btn btn-primary">Save signature</button></form></div></section>
+<section class="card flush"><div class="section-head"><div><h2>Your templates</h2><p class="subtle">Reusable messages visible only to you.</p></div><a class="btn btn-small" href="{% url 'crm_email_template_new' %}">New template</a></div>
+{% if templates %}<div class="table-wrap"><table><thead><tr><th>Template</th><th>Updated</th></tr></thead><tbody>
+{% for item in templates %}<tr><td><a class="row-title" href="{% url 'crm_email_template' item.pk %}">{{ item.name }}</a><span class="row-meta">{{ item.subject }}</span></td><td class="subtle">{{ item.updated_at|date:"M j, Y" }}</td></tr>{% endfor %}
+</tbody></table></div>{% else %}<p class="empty">No templates yet.</p>{% endif %}</section>
+</div></div>
+{% if request.user.can_manage_crm_users %}
+<section class="card flush"><div class="section-head"><div><h2>Team email connections</h2><p class="subtle">Every CRM user's mailbox status. Disconnecting keeps their CRM history.</p></div></div>
+<div class="table-wrap"><table><thead><tr><th>Team member</th><th>Status</th><th>Last sync</th><th></th></tr></thead><tbody>
+{% for item in team_mailboxes %}<tr><td><strong>{{ item.user.email }}</strong>{% if item.last_error %}<span class="row-meta">{{ item.last_error }}</span>{% endif %}</td>
+<td>{% if item.status == 'connected' %}<span class="pill pill-ok">Connected</span>{% elif item.status == 'reconnect' %}<span class="pill pill-warn">Reconnect required</span>{% else %}<span class="pill pill-neutral">Disconnected</span>{% endif %}</td>
+<td class="subtle">{{ item.last_sync_at|date:"M j, g:i A T"|default:"Not yet" }}</td>
+<td>{% if item.status != 'disconnected' %}<form method="post" action="{% url 'crm_email_disconnect' item.pk %}">{% csrf_token %}<button class="btn btn-small">Disconnect</button></form>{% endif %}</td></tr>
+{% empty %}<tr><td colspan="4" class="empty">No team mailboxes yet.</td></tr>{% endfor %}
+</tbody></table></div>
+{% if setup_errors %}<div class="card-body"><details><summary>Administrator setup checklist</summary><p>Missing or invalid configuration:</p><ul>{% for item in setup_errors %}<li>{{ item }}</li>{% endfor %}</ul></details></div>{% endif %}
 </section>
-<div class="grid"><section class="card"><h2>Your signature</h2><p class="subtle">Added automatically when you start a new draft.</p><form method="post">{% csrf_token %}{{ form.as_p }}<button class="btn btn-primary">Save signature</button></form></section>
-<section class="card"><h2>Your templates</h2><p class="subtle">Reusable messages visible only to you.</p><a class="btn" href="{% url 'crm_email_template_new' %}">New template</a>{% for item in templates %}<div class="row"><a href="{% url 'crm_email_template' item.pk %}">{{ item.name }}</a></div>{% empty %}<p>No templates yet.</p>{% endfor %}</section></div>
-{% if request.user.can_manage_crm_users %}<section class="card" id="automated-emails"><h2>Automated emails</h2>
-<p class="subtle">Every email the system sends on its own. Edit the wording here; changes apply to the next send and are shared by the whole team. Placeholders in double braces are filled in when each email is sent.</p>
-{% for group in automated_groups %}<h3>{{ group.name }}</h3>
-{% for item in group.emails %}<div class="row"><a href="{% url 'crm_email_automated' item.spec.key %}">{{ item.spec.name }}</a>{% if item.customized %} <span class="badge">Customized</span>{% else %} <span class="subtle">Default wording</span>{% endif %}<br><span class="subtle">Sent when: {{ item.spec.trigger }}. To: {{ item.spec.recipient }}.</span><br><span class="subtle">Subject: {{ item.subject }}</span></div>{% endfor %}
-{% endfor %}
-</section>
-<section class="card" id="newsletters"><h2>Newsletter</h2>
-<p class="subtle">Write newsletters with the rich editor, send yourself a test, then send to every active subscriber. Active subscribers: <strong>{{ newsletter_subscribers }}</strong>.</p>
-<p><a class="btn btn-primary" href="{% url 'crm_newsletter_new' %}">New newsletter</a></p>
-{% for item in newsletters %}<div class="row"><a href="{% url 'crm_newsletter' item.pk %}">{{ item.subject }}</a> <span class="badge">{{ item.get_status_display }}</span><br><span class="subtle">{% if item.sent_at %}Sent {{ item.sent_at|date:"M j, Y, g:i A T" }} · {{ item.delivered_count }} delivered{% if item.failed_count %} · {{ item.failed_count }} failed{% endif %}{% else %}Draft updated {{ item.updated_at|date:"M j, Y, g:i A T" }}{% endif %}</span>{% if item.status == 'draft' or item.status == 'partially_failed' %} · <a href="{% url 'crm_newsletter_send' item.pk %}">{% if item.status == 'draft' %}Review &amp; send{% else %}Retry failed{% endif %}</a>{% endif %}</div>{% empty %}<p>No newsletters yet.</p>{% endfor %}
-</section>
-<section class="card"><h2>Team email connections</h2>
-{% for item in team_mailboxes %}<div class="row"><strong>{{ item.user.email }}</strong> · {{ item.get_status_display }}<br><span class="subtle">Last sync: {{ item.last_sync_at|date:"M j, g:i A T"|default:"Not yet" }}</span>{% if item.last_error %}<p>{{ item.last_error }}</p>{% endif %}{% if item.status != 'disconnected' %}<form method="post" action="{% url 'crm_email_disconnect' item.pk %}">{% csrf_token %}<button class="btn btn-small">Disconnect {{ item.user.email }}</button></form>{% endif %}</div>{% endfor %}
-{% if setup_errors %}<details><summary>Administrator setup checklist</summary><p>Missing or invalid configuration:</p><ul>{% for item in setup_errors %}<li>{{ item }}</li>{% endfor %}</ul></details>{% endif %}
-</section>{% endif %}
+{% endif %}
 {% endblock %}

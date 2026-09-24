@@ -1,0 +1,41 @@
+{% extends "crm/email_base.html" %}
+{% block title %}Notifications · Email & notification settings{% endblock %}
+{% block email_content %}
+<div class="page-head"><div><p class="eyebrow">Your workspace</p><h1>Email &amp; notification settings</h1>
+<p class="subtle">Everything the system sends on its own. Edit the wording of any notification; changes apply to the next send and are shared by the whole team.</p></div></div>
+{% include "crm/_email_settings_nav.html" %}
+<div class="stats">
+<div class="card stat"><div class="stat-label">Email notifications</div><div class="stat-value">{{ total }}</div></div>
+<div class="card stat"><div class="stat-label">Customized wording</div><div class="stat-value">{{ customized }}</div></div>
+<div class="card stat"><div class="stat-label">Using default</div><div class="stat-value">{{ default_count }}</div></div>
+<div class="card stat"><div class="stat-label">Last edited</div><div class="stat-value" style="font-size:16px;line-height:1.4">{% if latest %}{{ latest.updated_at|date:"M j, g:i A" }}<br><span class="subtle" style="font-weight:500">{{ latest.updated_by.email|default:"—" }}</span>{% else %}—{% endif %}</div></div>
+</div>
+<section class="card flush" id="email-notifications">
+<div class="section-head"><div><h2>Email notifications</h2><p class="subtle">Each row is one email the system sends. Choose a notification to edit its subject, wording, button and images, or restore the default.</p></div></div>
+<div class="chips" role="group" aria-label="Filter by category">
+<button type="button" class="chip" data-filter="all" aria-pressed="true">All ({{ total }})</button>
+{% for group in groups %}<button type="button" class="chip" data-filter="{{ group.slug }}" aria-pressed="false">{{ group.name }} ({{ group.emails|length }})</button>{% endfor %}
+</div>
+<div class="table-wrap"><table id="notification-table"><thead><tr><th>Notification</th><th>Sent when</th><th>To</th><th>Wording</th><th></th></tr></thead><tbody>
+{% for group in groups %}<tr class="group-row" data-group="{{ group.slug }}"><td colspan="5">{{ group.name }}</td></tr>
+{% for item in group.emails %}<tr data-group="{{ group.slug }}">
+<td><a class="row-title" href="{% url 'crm_email_automated' item.spec.key %}">{{ item.spec.name }}</a><span class="row-meta">Subject: {{ item.subject }}</span></td>
+<td class="subtle">{{ item.spec.trigger }}</td>
+<td class="subtle">{{ item.spec.recipient }}</td>
+<td>{% if item.customized %}<span class="pill pill-info">Customized</span>{% else %}<span class="pill pill-neutral">Default</span>{% endif %}</td>
+<td><a class="btn btn-small" href="{% url 'crm_email_automated' item.spec.key %}">Edit</a></td>
+</tr>{% endfor %}{% endfor %}
+</tbody></table></div>
+</section>
+<script>
+(() => {
+  const chips = document.querySelectorAll('.chip[data-filter]');
+  const rows = document.querySelectorAll('#notification-table tbody tr');
+  for (const chip of chips) chip.addEventListener('click', () => {
+    const wanted = chip.dataset.filter;
+    for (const other of chips) other.setAttribute('aria-pressed', other === chip ? 'true' : 'false');
+    for (const row of rows) row.hidden = wanted !== 'all' && row.dataset.group !== wanted;
+  });
+})();
+</script>
+{% endblock %}
