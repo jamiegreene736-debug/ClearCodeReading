@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from datetime import date, datetime, timedelta
 from decimal import Decimal
+from unittest.mock import patch
 
 from django.contrib import admin as django_admin
 from django.core.exceptions import PermissionDenied, ValidationError
@@ -159,7 +160,16 @@ class WorkforceWorkflowTests(TestCase):
         cls.worker = WorkerProfile.objects.create(user=cls.worker_user)
         cls.other_worker = WorkerProfile.objects.create(user=cls.other_worker_user)
 
+    # The fixture dates below (contract signed 2026-08-28, Florida new-hire
+    # report due 2026-09-17) are fixed, so pin "today" inside that window.
+    # Otherwise the Florida reporting task becomes overdue once the calendar
+    # passes the deadline and payment readiness starts failing.
+    TODAY = date(2026, 9, 10)
+
     def setUp(self):
+        today_patch = patch("django.utils.timezone.localdate", return_value=self.TODAY)
+        today_patch.start()
+        self.addCleanup(today_patch.stop)
         self.engagement = Engagement.objects.create(
             payer=self.payer,
             worker=self.worker,
