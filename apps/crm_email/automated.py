@@ -253,13 +253,14 @@ def _survey_family() -> AutomatedEmailSpec:
     base = _stage("family_enrollment")
     return AutomatedEmailSpec(
         key="survey_family_enrollment",
-        group="Survey initial emails",
-        name="Survey: Families & Enrollment",
+        group="Pipeline introduction emails",
+        name="Families & Enrollment introduction",
         trigger=(
-            "A family completes the early interest survey and enters the Families & "
-            "Enrollment pipeline (currently delivered only to the internal test inbox)"
+            "Bethany’s introduction to a family whose survey answers put them in the "
+            "Families & Enrollment pipeline. Not a confirmation; currently delivered "
+            "only to the internal test inbox"
         ),
-        recipient="The survey respondent",
+        recipient="The family (contact on the new deal)",
         defaults=base.defaults,
         placeholders=base.placeholders,
         sample=base.sample,
@@ -461,15 +462,16 @@ def _build_specs() -> tuple[AutomatedEmailSpec, ...]:
         _survey_family(),
         AutomatedEmailSpec(
             key="survey_general",
-            group="Survey initial emails",
-            name="Survey: all other pipelines",
+            group="Pipeline introduction emails",
+            name="All other pipelines introduction",
             trigger=(
-                "The early interest survey routes a contact to any pipeline other than "
-                "Families & Enrollment (referral partners, donors, investors and so on); "
-                "one email is sent even when several pipelines are selected. "
-                "Draft wording until the approved copy is posted"
+                "Bethany’s introduction to a contact whose survey answers put them in "
+                "any other pipeline (referral partners, donors, investors and so on); "
+                "one email even when several pipelines apply. Not a confirmation; "
+                "currently delivered only to the internal test inbox. Draft wording "
+                "until the approved copy is posted"
             ),
-            recipient="The survey respondent (currently delivered only to the internal test inbox)",
+            recipient="The contact on the new deal",
             defaults={
                 "subject": "Thanks for connecting with ClearCode Reading Center",
                 "body": (

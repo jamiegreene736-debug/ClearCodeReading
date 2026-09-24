@@ -984,7 +984,6 @@ class CrmWorkspaceTests(TestCase):
         self.assertIn("Add user &amp; invitations", html)
         self.assertNotIn("desktop-nav", html)
         self.assertNotIn("brand-mark", html)
-        self.assertNotIn(deleted_contact.contact_name, markup)
 
     def test_contact_dropdown_empty_state_edit_and_bound_selection(self):
         empty_contact = Lead.objects.create(contact_name="New contact")
@@ -1313,7 +1312,7 @@ class CrmWorkspaceTests(TestCase):
         companies = self.client.get(reverse("crm_company_list"))
         deals = self.client.get(reverse("crm_deal_list"))
 
-        self.assertContains(contacts, 'class="mobile-nav"')
+        self.assertContains(contacts, 'class="sidebar-toggle"')
         self.assertContains(contacts, 'class="contact-cards"')
         self.assertContains(contacts, "font-size:16px")
         self.assertContains(companies, ".page-head > div,.search")

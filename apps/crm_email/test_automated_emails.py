@@ -486,8 +486,8 @@ class RichAutomatedEmailTests(TestCase):
         self.assertIn("https://example.com/book", sent[0].body_text)
         self.assertNotIn("<p>", sent[0].body_text)
         response = self.client.get(reverse("crm_email_notifications"))
-        self.assertContains(response, "Survey initial emails")
-        self.assertContains(response, "Survey: all other pipelines")
+        self.assertContains(response, "Pipeline introduction emails")
+        self.assertContains(response, "All other pipelines introduction")
 
 
 def html_part(message: object) -> str:
