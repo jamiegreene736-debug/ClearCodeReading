@@ -1,0 +1,23 @@
+<article class="card deal-card">
+  <div class="deal-card-top">
+    <h3><a class="deal-title" href="{% url 'crm_deal_detail' deal.pk %}">{{ deal.name }}</a></h3>
+    <span class="deal-amount">${{ deal.value|floatformat:0 }}</span>
+  </div>
+  <p class="subtle deal-who">
+    {% if deal.company %}<a href="{% url 'crm_company_detail' deal.company.pk %}">{{ deal.company.name }}</a>
+    {% elif deal.lead %}<a href="{% url 'crm_contact_detail' deal.lead.pk %}">{{ deal.lead.contact_name }}</a>
+    {% else %}Legacy school deal{% endif %}
+    {% if deal.owner %} · {{ deal.owner.get_full_name|default:deal.owner.email }}{% endif %}
+  </p>
+  <div class="deal-chips">
+    <span class="badge">{{ deal.deal_label }}</span>
+    {% if view == "all" %}<span class="badge badge-neutral">{{ deal.get_stage_display }}</span>{% endif %}
+    {% if deal.priority %}<span class="badge badge-{{ deal.priority }}">{{ deal.get_priority_display }}</span>{% endif %}
+    {% if deal.needs_naming_review %}<span class="badge badge-warn">Naming review</span>{% endif %}
+    {% if deal.related_deals.count %}<span class="badge badge-neutral">{{ deal.related_deals.count }} linked</span>{% endif %}
+  </div>
+  <p class="subtle deal-when">{% if deal.expected_close_date %}Closes {{ deal.expected_close_date|date:"M j, Y" }}{% else %}No close date{% endif %}{% if deal.probability %} · {{ deal.probability }}% likely{% endif %}</p>
+  {% if deal.next_steps %}<p class="deal-next">{{ deal.next_steps|truncatewords:16 }}</p>{% endif %}
+  {% include "crm/_deal_move_form.html" %}
+  <p class="deal-links"><a href="{% url 'crm_deal_detail' deal.pk %}">Open deal</a><a class="quiet" href="{% url 'crm_deal_remove' deal.pk %}">Remove from pipeline</a></p>
+</article>

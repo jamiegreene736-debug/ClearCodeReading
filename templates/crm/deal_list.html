@@ -1,35 +1,190 @@
 {% extends "crm/base.html" %}
-{% block title %}Deals{% endblock %}
+{% block title %}{% if view == "all" %}All deals{% else %}{{ pipeline_label }}{% endif %}{% endblock %}
 {% block extra_style %}
-  .pipeline-tabs { display:flex; gap:8px; overflow:auto; margin:22px 0; padding-bottom:4px; }
+  .page-head { display:flex; align-items:flex-end; justify-content:space-between; gap:18px; }
+  .page-actions { display:flex; flex-wrap:wrap; gap:8px; }
+  .view-tabs, .pipeline-tabs, .stage-jumps, .category-nav, .board, .table-wrap, .category-section { max-width:100%; min-width:0; }
+  .view-tabs { display:flex; gap:18px; margin-top:22px; border-bottom:1px solid var(--line); overflow:auto; }
+  .view-tab { display:inline-flex; align-items:center; min-height:44px; padding:10px 2px; color:var(--muted); border-bottom:3px solid transparent; font-weight:700; text-decoration:none; }
+  .view-tab.active { color:var(--teal); border-color:var(--teal); }
+  .pipeline-tabs { display:flex; gap:8px; overflow:auto; margin:18px 0; padding-bottom:4px; }
   .pipeline-tab { white-space:nowrap; }
   .pipeline-tab.active { color:white; border-color:var(--teal); background:var(--teal); }
-  .board { display:grid; grid-auto-flow:column; grid-auto-columns:minmax(250px,1fr); gap:14px; overflow:auto; padding-bottom:16px; }
-  .stage { min-height:300px; padding:13px; background:#edf2f5; border:1px solid var(--line); border-radius:7px; }
-  .stage-head { display:flex; justify-content:space-between; gap:8px; margin-bottom:12px; }
-  .deal-card { padding:14px; margin-bottom:10px; }
-  .deal-card h3 { margin-bottom:5px; color:var(--navy); }
-  .deal-card form { margin-top:12px; }
+  .pipeline-count { margin-left:6px; padding:1px 7px; border-radius:999px; background:rgba(33,51,67,.08); font-size:11px; }
+  .pipeline-tab.active .pipeline-count { background:rgba(255,255,255,.22); }
+  .board { display:grid; grid-auto-flow:column; grid-auto-columns:minmax(272px,1fr); gap:14px; overflow:auto; padding-bottom:16px; min-width:0; }
+  .stage { min-height:280px; min-width:0; padding:0 0 12px; background:#f3f7f8; border:1px solid var(--line); border-top:4px solid #8aa0b0; border-radius:12px; }
+  .stage-open { border-top-color:var(--teal); }
+  .stage-won { border-top-color:#1f8a4c; background:#f4fbf6; }
+  .stage-lost { border-top-color:#c53b3b; background:#fdf7f7; }
+  .stage-head { display:flex; align-items:flex-start; justify-content:space-between; gap:8px; padding:12px 12px 8px; position:sticky; top:0; background:inherit; border-radius:8px 8px 0 0; }
+  .stage-head strong { display:block; color:var(--navy); }
+  .stage-value { color:var(--muted); font-size:12px; font-weight:600; }
+  .stage-body { display:grid; gap:10px; padding:0 10px; }
+  .deal-card { padding:14px; margin:0; }
+  .deal-card h3 { margin:0; font-size:15px; line-height:1.35; }
+  .deal-card-top { display:flex; align-items:flex-start; justify-content:space-between; gap:10px; }
+  .deal-title { color:var(--navy); font-weight:800; text-decoration:none; overflow-wrap:anywhere; }
+  .deal-title:hover { color:var(--teal); }
+  .deal-amount { color:var(--navy); font-weight:800; white-space:nowrap; }
+  .deal-who { margin:6px 0 8px; }
+  .deal-who a { color:var(--teal); font-weight:600; text-decoration:none; }
+  .deal-chips { display:flex; flex-wrap:wrap; gap:6px; margin-bottom:8px; }
+  .deal-when,.deal-next { margin:0 0 8px; font-size:12px; }
+  .deal-next { padding:8px 10px; border-radius:8px; background:#f4f8f9; color:var(--ink); }
+  .badge-high { color:#7b1f1f; background:#fde8e8; }
+  .badge-medium { color:#754f00; background:#fff0ce; }
+  .badge-low { color:#24564e; background:#e5f5f3; }
+  .deal-move { margin-top:4px; }
+  .deal-move-row { display:grid; grid-template-columns:minmax(0,1fr) auto; gap:8px; }
+  .deal-links { display:flex; gap:14px; margin:10px 0 0; font-size:12px; font-weight:700; }
+  .deal-links a { color:var(--teal); text-decoration:none; }
+  .deal-links .quiet { color:var(--muted); font-weight:600; }
+  .stage-jumps { display:none; }
   .mobile-pipeline-picker { display:none; }
+  .filters { display:grid; grid-template-columns:minmax(180px,1.4fr) repeat(3,minmax(130px,1fr)) auto; gap:10px; padding:16px; }
+  .category-nav { display:flex; gap:8px; overflow:auto; margin:16px 0; padding-bottom:4px; }
+  .category-section { margin-top:16px; overflow:hidden; }
+  .category-head { display:flex; align-items:flex-end; justify-content:space-between; gap:12px; padding:16px 16px 0; }
+  .category-family_enrollment { border-top:4px solid var(--teal); }
+  .category-referral_partners { border-top:4px solid var(--navy); }
+  .category-foundation_donors { border-top:4px solid var(--orange); }
+  .category-foundation_grants { border-top:4px solid #6b4c9a; }
+  .category-equity_investment { border-top:4px solid #2f6f9f; }
+  .table-wrap { overflow:auto; }
+  table { width:100%; border-collapse:collapse; }
+  th { padding:11px 14px; color:var(--muted); background:#f5f8fa; border-bottom:1px solid var(--line); font-size:11px; letter-spacing:.04em; text-align:left; text-transform:uppercase; white-space:nowrap; }
+  td { padding:14px; border-bottom:1px solid #e7edf1; vertical-align:top; }
+  .deal-cards { display:none; }
+  .empty-stage { margin:0; padding:8px 4px 4px; }
+  @media (max-width:900px) { .filters { grid-template-columns:1fr 1fr; } }
   @media (max-width:760px) {
+    .page-head { align-items:stretch; flex-direction:column; }
+    .page-actions,.page-actions .btn { width:100%; }
+    .view-tabs { gap:14px; overflow:auto; }
+    .view-tab { white-space:nowrap; }
     .pipeline-tabs { display:none; }
-    .mobile-pipeline-picker { display:grid; grid-template-columns:minmax(0,1fr) auto; gap:8px; margin:20px 0; }
+    .mobile-pipeline-picker { display:grid; grid-template-columns:minmax(0,1fr) auto; gap:8px; margin:16px 0; }
     .mobile-pipeline-picker label { grid-column:1/-1; }
+    .stage-jumps { display:flex; gap:8px; overflow:auto; position:sticky; top:0; z-index:5; margin:0 0 12px; padding:8px 0; background:var(--bg); }
+    .stage-jump { display:inline-flex; align-items:center; gap:6px; min-height:44px; padding:8px 12px; border:1px solid var(--line); border-radius:999px; background:white; color:var(--navy); font-weight:700; text-decoration:none; white-space:nowrap; }
     .board { display:grid; grid-auto-flow:row; grid-auto-columns:auto; overflow:visible; }
-    .stage { min-height:0; }
-    .deal-card form { display:grid; gap:8px; }
+    .stage { min-height:0; scroll-margin-top:64px; }
+    .deal-move-row { grid-template-columns:1fr; }
     .deal-card .btn { width:100%; }
+    .filters { grid-template-columns:1fr; }
+    .category-head { align-items:flex-start; flex-direction:column; }
+    .table-wrap { display:none; }
+    .deal-cards { display:grid; gap:12px; padding:12px; }
   }
 {% endblock %}
 {% block content %}
-  <p class="eyebrow">Deal management</p><h1>{{ pipeline_label }}</h1><p class="subtle">{{ deal_count }} deal{{ deal_count|pluralize }} · ${{ pipeline_value|floatformat:2 }} total value</p><p><a class="btn btn-primary" href="{% url 'crm_deal_new' %}?pipeline={{ pipeline }}">Create {{ pipeline_label }} deal</a></p>
-  <nav class="pipeline-tabs" aria-label="Deal pipelines">{% for value,label in pipeline_choices %}<a class="btn pipeline-tab {% if pipeline == value %}active{% endif %}" href="?pipeline={{ value }}">{{ label }}</a>{% endfor %}</nav>
-  <form class="mobile-pipeline-picker" method="get">
-    <label class="field-label" for="mobile-pipeline">Choose pipeline</label>
-    <select id="mobile-pipeline" name="pipeline">{% for value,label in pipeline_choices %}<option value="{{ value }}" {% if pipeline == value %}selected{% endif %}>{{ label }}</option>{% endfor %}</select>
-    <button class="btn btn-primary" type="submit">View</button>
-  </form>
-  <div class="board">
-    {% for column in stage_columns %}<section class="stage"><div class="stage-head"><strong>{{ column.label }}</strong><span class="badge badge-neutral">{{ column.deals|length }}</span></div>{% for deal in column.deals %}<article class="card deal-card"><h3><a href="{% url 'crm_deal_detail' deal.pk %}">{{ deal.name }}</a></h3><p class="subtle">{{ deal.deal_label }}{% if deal.priority %} · {{ deal.get_priority_display }} priority{% endif %}{% if deal.needs_naming_review %} · <strong>Naming review required</strong>{% endif %}<br>{% if deal.company %}<a href="{% url 'crm_company_detail' deal.company.pk %}">{{ deal.company.name }}</a>{% elif deal.lead %}<a href="{% url 'crm_contact_detail' deal.lead.pk %}">{{ deal.lead.contact_name }}</a>{% else %}Legacy school deal{% endif %}</p><p><strong>${{ deal.value|floatformat:2 }}</strong>{% if deal.expected_close_date %} · {{ deal.expected_close_date|date:"M j, Y" }}{% endif %}</p>{% if deal.related_deals.count %}<p class="subtle">Linked to {{ deal.related_deals.count }} other deal{{ deal.related_deals.count|pluralize }}</p>{% endif %}<form method="post" action="{% url 'crm_deal_stage_update' deal.pk %}">{% csrf_token %}<label class="field-label" for="deal-stage-{{ deal.pk }}">Move deal</label><select id="deal-stage-{{ deal.pk }}" name="stage">{% for target in stage_columns %}<option value="{{ target.stage }}" {% if deal.stage == target.stage %}selected{% endif %}>{{ target.label }}</option>{% endfor %}</select><button class="btn btn-small" type="submit">Update stage</button></form><p><a href="{% url 'crm_deal_detail' deal.pk %}">Edit details</a></p><p><a href="{% url 'crm_deal_remove' deal.pk %}">Remove from pipeline</a></p></article>{% empty %}<p class="subtle">No deals</p>{% endfor %}</section>{% endfor %}
+  <div class="page-head">
+    <div>
+      <p class="eyebrow">Deal management</p>
+      <h1>{% if view == "all" %}All deals{% else %}{{ pipeline_label }}{% endif %}</h1>
+      <p class="subtle">{% if view == "all" %}Every pipeline category on one page. Open a category board when you want to move work stage by stage.{% else %}Scan this pipeline by stage. Cards show who the deal is with, what it is worth, and the next step.{% endif %}</p>
+    </div>
+    <div class="page-actions">
+      <a class="btn btn-primary" href="{% url 'crm_deal_new' %}{% if view == 'board' %}?pipeline={{ pipeline }}{% endif %}">Create {% if view == "board" %}{{ pipeline_label|lower }} {% endif %}deal</a>
+    </div>
   </div>
+
+  <nav class="view-tabs" aria-label="Deal views">
+    <a class="view-tab {% if view == 'board' %}active{% endif %}" href="{% url 'crm_deal_list' %}?pipeline={{ pipeline|default:'family_enrollment' }}" {% if view == 'board' %}aria-current="page"{% endif %}>Pipeline board</a>
+    <a class="view-tab {% if view == 'all' %}active{% endif %}" href="{% url 'crm_deal_list' %}?view=all" {% if view == 'all' %}aria-current="page"{% endif %}>All deals</a>
+  </nav>
+
+  <section class="stats" aria-label="Deal summary">
+    <div class="card stat"><div class="stat-label">{% if view == "all" %}Deals shown{% else %}Deals in pipeline{% endif %}</div><div class="stat-value">{{ deal_count }}</div></div>
+    <div class="card stat"><div class="stat-label">Total value</div><div class="stat-value">${{ pipeline_value|floatformat:0 }}</div></div>
+    <div class="card stat"><div class="stat-label">Weighted value</div><div class="stat-value">${{ weighted_value|floatformat:0 }}</div></div>
+    <div class="card stat"><div class="stat-label">Naming review</div><div class="stat-value">{{ naming_review_count }}</div></div>
+  </section>
+
+  {% if view == "board" %}
+    <nav class="pipeline-tabs" aria-label="Deal pipelines">
+      {% for tab in pipeline_tabs %}
+        <a class="btn pipeline-tab {% if pipeline == tab.value %}active{% endif %}" href="?pipeline={{ tab.value }}">{{ tab.label }}<span class="pipeline-count">{{ tab.deal_count }}</span></a>
+      {% endfor %}
+    </nav>
+    <form class="mobile-pipeline-picker" method="get">
+      <label class="field-label" for="mobile-pipeline">Choose pipeline</label>
+      <select id="mobile-pipeline" name="pipeline" onchange="this.form.requestSubmit()">{% for tab in pipeline_tabs %}<option value="{{ tab.value }}" {% if pipeline == tab.value %}selected{% endif %}>{{ tab.label }} ({{ tab.deal_count }})</option>{% endfor %}</select>
+      <button class="btn btn-primary" type="submit">View</button>
+    </form>
+    <nav class="stage-jumps" aria-label="Jump to stage">
+      {% for column in stage_columns %}<a class="stage-jump" href="#stage-{{ column.stage }}">{{ column.label }} <span class="badge badge-neutral">{{ column.deals|length }}</span></a>{% endfor %}
+    </nav>
+    <div class="board">
+      {% for column in stage_columns %}
+        <section class="stage stage-{{ column.tone }}" id="stage-{{ column.stage }}">
+          <div class="stage-head">
+            <div><strong>{{ column.label }}</strong><div class="stage-value">${{ column.value|floatformat:0 }}</div></div>
+            <span class="badge badge-neutral">{{ column.deals|length }}</span>
+          </div>
+          <div class="stage-body">
+            {% for deal in column.deals %}
+              {% include "crm/_deal_card.html" %}
+            {% empty %}
+              <p class="subtle empty-stage">No deals</p>
+            {% endfor %}
+          </div>
+        </section>
+      {% endfor %}
+    </div>
+  {% else %}
+    <section class="card" aria-label="Filter all deals">
+      <form class="filters" method="get">
+        <input type="hidden" name="view" value="all">
+        <div class="field"><label for="deal-search">Search deals</label><input id="deal-search" name="q" type="search" value="{{ filters.q }}" placeholder="Name, contact, company, or next step"></div>
+        <div class="field"><label for="deal-category">Category</label><select id="deal-category" name="pipeline"><option value="">All categories</option>{% for value,label in pipeline_choices %}<option value="{{ value }}" {% if filters.pipeline == value %}selected{% endif %}>{{ label }}</option>{% endfor %}</select></div>
+        <div class="field"><label for="deal-priority">Priority</label><select id="deal-priority" name="priority"><option value="">Any priority</option>{% for value,label in priority_choices %}<option value="{{ value }}" {% if filters.priority == value %}selected{% endif %}>{{ label }}</option>{% endfor %}</select></div>
+        <div class="field"><label for="deal-sort">Sort</label><select id="deal-sort" name="sort">{% for value,label in sort_choices %}<option value="{{ value }}" {% if filters.sort == value %}selected{% endif %}>{{ label }}</option>{% endfor %}</select></div>
+        <div class="field"><span class="field-label">&nbsp;</span><button class="btn btn-primary" type="submit">Apply</button></div>
+      </form>
+    </section>
+    <nav class="category-nav" aria-label="Deal categories">
+      {% for section in category_sections %}<a class="btn pipeline-tab" href="#category-{{ section.value }}">{{ section.label }}<span class="pipeline-count">{{ section.deal_count }}</span></a>{% endfor %}
+    </nav>
+    {% for section in category_sections %}
+      <section class="card category-section category-{{ section.value }}" id="category-{{ section.value }}">
+        <div class="category-head">
+          <div>
+            <h2>{{ section.label }}</h2>
+            <p class="subtle">{{ section.deal_count }} deal{{ section.deal_count|pluralize }} · ${{ section.total_value|floatformat:0 }}</p>
+          </div>
+          <a class="btn btn-small" href="{% url 'crm_deal_list' %}?pipeline={{ section.value }}">Open board</a>
+        </div>
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>Deal</th><th>Stage</th><th>With</th><th>Value</th><th>Close</th><th>Move</th></tr></thead>
+            <tbody>
+              {% for deal in section.deals %}
+                <tr>
+                  <td><a class="deal-title" href="{% url 'crm_deal_detail' deal.pk %}">{{ deal.name }}</a>{% if deal.needs_naming_review %}<div><span class="badge badge-warn">Naming review</span></div>{% endif %}{% if deal.priority %}<div><span class="badge badge-{{ deal.priority }}">{{ deal.get_priority_display }}</span></div>{% endif %}</td>
+                  <td>{{ deal.get_stage_display }}</td>
+                  <td>{% if deal.company %}<a href="{% url 'crm_company_detail' deal.company.pk %}">{{ deal.company.name }}</a>{% elif deal.lead %}<a href="{% url 'crm_contact_detail' deal.lead.pk %}">{{ deal.lead.contact_name }}</a>{% else %}Legacy school deal{% endif %}</td>
+                  <td>${{ deal.value|floatformat:2 }}</td>
+                  <td>{% if deal.expected_close_date %}{{ deal.expected_close_date|date:"M j, Y" }}{% else %}<span class="subtle">—</span>{% endif %}</td>
+                  <td>{% include "crm/_deal_move_form.html" with form_suffix="table-" %}</td>
+                </tr>
+              {% empty %}
+                <tr><td class="empty" colspan="6">No deals in {{ section.label }}.</td></tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+        <div class="deal-cards">
+          {% for deal in section.deals %}
+            {% include "crm/_deal_card.html" %}
+          {% empty %}
+            <p class="empty">No deals in {{ section.label }}.</p>
+          {% endfor %}
+        </div>
+      </section>
+    {% empty %}
+      <div class="card empty"><strong>No deals match these filters.</strong><br>Clear the search or choose another category.</div>
+    {% endfor %}
+  {% endif %}
 {% endblock %}

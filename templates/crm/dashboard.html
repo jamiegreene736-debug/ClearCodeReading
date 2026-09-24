@@ -6,6 +6,7 @@
   .section-card { padding:20px; }
   .section-head { display:flex; align-items:center; justify-content:space-between; gap:12px; margin-bottom:14px; }
   .section-head h2 { margin:0; }
+  .section-links { display:flex; flex-wrap:wrap; gap:12px; }
   .action-list { display:grid; gap:10px; }
   .action-row { display:flex; align-items:center; justify-content:space-between; gap:14px; padding:13px; border:1px solid #e2e9ee; border-radius:6px; text-decoration:none; }
   .action-row:hover { border-color:#8ca5b7; background:#fbfdfe; }
@@ -75,7 +76,7 @@
   </div>
 
   <section style="margin-top:18px">
-    <div class="section-head"><h2>Opportunity pipelines</h2><a href="{% url 'crm_deal_list' %}">Open pipeline board</a></div>
+    <div class="section-head"><h2>Opportunity pipelines</h2><span class="section-links"><a href="{% url 'crm_deal_list' %}?view=all">All deals</a><a href="{% url 'crm_deal_list' %}">Open pipeline board</a></span></div>
     <div class="pipeline-grid">
       {% for pipeline in pipeline_summaries %}<a class="card pipeline-card" href="{% url 'crm_deal_list' %}?pipeline={{ pipeline.value }}"><h3>{{ pipeline.label }}</h3><div class="pipeline-value">{{ pipeline.deal_count }} deal{{ pipeline.deal_count|pluralize }}</div><div class="action-meta">${{ pipeline.total_value|floatformat:2 }} total value</div></a>{% endfor %}
     </div>
