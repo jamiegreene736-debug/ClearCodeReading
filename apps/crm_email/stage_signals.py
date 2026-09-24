@@ -57,5 +57,37 @@ def capture_entry(
     )
     if pilot:
         StageEmailDelivery.objects.get_or_create(
-            deal=deal, defaults={"pilot": pilot, "pipeline": deal.pipeline}
+            deal=deal,
+            defaults={
+                "pilot": pilot,
+                "pipeline": deal.pipeline,
+                "template_key": getattr(instance, "_email_template_key", ""),
+            },
         )
+
+
+def route_survey_deliveries(deals: list[Opportunity]) -> None:
+    """Point survey-created first-stage emails at the survey wording.
+
+    Families get the survey Families & Enrollment email. Every other pipeline
+    shares one general survey email, so only the first such deal keeps its
+    delivery and the rest are cancelled before anything is queued.
+    """
+    general_sent = False
+    for deal in deals:
+        delivery = StageEmailDelivery.objects.filter(
+            deal=deal, message__isnull=True, cancelled=False
+        ).first()
+        if delivery is None:
+            continue
+        if deal.pipeline == Opportunity.Pipeline.FAMILY_ENROLLMENT:
+            delivery.template_key = "survey_family_enrollment"
+            delivery.save(update_fields=["template_key"])
+        elif general_sent:
+            delivery.cancelled = True
+            delivery.error = "Covered by the single survey email for other pipelines."
+            delivery.save(update_fields=["cancelled", "error"])
+        else:
+            delivery.template_key = "survey_general"
+            delivery.save(update_fields=["template_key"])
+            general_sent = True

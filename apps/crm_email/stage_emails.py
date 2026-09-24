@@ -1,19 +1,15 @@
 """First-stage approved copy and an internal test pilot using the durable Gmail outbox."""
 
-import json
 import re
 from dataclasses import dataclass
-from functools import lru_cache
-from pathlib import Path
-from typing import cast
 
 from django.conf import settings
 from django.core.exceptions import PermissionDenied
 from django.db import transaction
-from django.utils.html import escape, urlize
 
 from apps.crm.consultation_booking import consultation_booking_url
 from apps.crm.models import Opportunity
+from apps.crm_email.automated import TOKEN, copy_for, first_stage_source, html_value
 from apps.crm_email.models import Mailbox, Message, StageEmailDelivery, StageEmailPilot
 from apps.crm_email.security import (
     EmailError,
@@ -30,16 +26,10 @@ TEST_RECIPIENT = "info@clearcodereading.com"
 class StageCopy:
     subject: str
     body: str
+    body_html: str
     missing: tuple[str, ...]
     source: str
-
-
-@lru_cache(maxsize=1)
-def approved_copy() -> dict[str, dict[str, object]]:
-    return cast(
-        dict[str, dict[str, object]],
-        json.loads(Path(__file__).with_name("first_stage_copy.json").read_text()),
-    )
+    key: str = ""
 
 
 def sending_mailbox(pipeline: str, pilot: StageEmailPilot) -> Mailbox:
@@ -48,8 +38,17 @@ def sending_mailbox(pipeline: str, pilot: StageEmailPilot) -> Mailbox:
     return pilot.mailbox
 
 
-def render_copy(deal: Opportunity, pilot: StageEmailPilot) -> StageCopy:
-    source = approved_copy()[deal.pipeline]
+def template_key(deal: Opportunity, delivery: StageEmailDelivery | None = None) -> str:
+    """Registry key for a deal's first-stage email; survey entries use their own copy."""
+    if delivery is not None and delivery.template_key:
+        return delivery.template_key
+    return "stage_" + deal.pipeline
+
+
+def render_copy(deal: Opportunity, pilot: StageEmailPilot, key: str = "") -> StageCopy:
+    # Approved wording, or the administrator's edit from CRM email settings.
+    key = key or template_key(deal)
+    copy = copy_for(key)
     contact = deal.lead
     name = (
         contact.contact_name.strip().split()[0]
@@ -86,25 +85,33 @@ def render_copy(deal: Opportunity, pilot: StageEmailPilot) -> StageCopy:
         "foundation_name": "Foundation sender name",
         "gmail_signature": "Equity sender signature",
     }
-    body = "\n\n".join(cast(list[str], source["paragraphs"]))
-    body = body.replace("[Name]", "{{foundation_name}}")
-    body = body.replace("Signature block from Gmail", "{{gmail_signature}}")
     missing: list[str] = []
 
-    def substitute(match: re.Match[str]) -> str:
-        key = match.group(1)
-        value = values.get(key, "").strip()
+    def resolve(token: str) -> str:
+        value = values.get(token, "").strip()
         if not value or "{{" in value or "}}" in value or "[Name]" in value:
-            label = labels.get(key, key)
+            label = labels.get(token, token)
             if label not in missing:
                 missing.append(label)
             return f"[Missing: {label}]"
         return value
 
-    body = re.sub(r"{{([^{}]+)}}", substitute, body)
-    return StageCopy(
-        str(source["subject"]), body, tuple(missing), str(source["source"])
-    )
+    def substitute(match: re.Match[str]) -> str:
+        return resolve(match.group(1).strip())
+
+    def substitute_html(match: re.Match[str]) -> str:
+        return html_value(resolve(match.group(1).strip()))
+
+    body = TOKEN.sub(substitute, copy.text("body"))
+    body_html = TOKEN.sub(substitute_html, copy.html("body"))
+    subject = TOKEN.sub(substitute, copy["subject"])
+    if copy.customized:
+        source = "Edited in CRM email settings"
+    elif key.startswith("survey_"):
+        source = "Survey default wording"
+    else:
+        source = str(first_stage_source()[deal.pipeline]["source"])
+    return StageCopy(subject, body, body_html, tuple(missing), source, key)
 
 
 def pilot_allowed(delivery: StageEmailDelivery) -> bool:
@@ -175,7 +182,9 @@ def enqueue_delivery(pk: int) -> None:
                 return
             pilot = delivery.pilot
             mailbox = active_mailbox(sending_mailbox(delivery.pipeline, pilot).user)
-            copy = render_copy(delivery.deal, pilot)
+            copy = render_copy(
+                delivery.deal, pilot, template_key(delivery.deal, delivery)
+            )
             if copy.missing:
                 raise EmailError("Complete before sending: " + ", ".join(copy.missing))
             message = Message.objects.create(
@@ -185,10 +194,7 @@ def enqueue_delivery(pk: int) -> None:
                 to=[TEST_RECIPIENT],
                 subject="[TEST] " + copy.subject,
                 body_text=copy.body,
-                body_html="".join(
-                    "<p>" + str(urlize(escape(p))).replace("\n", "<br>") + "</p>"
-                    for p in copy.body.split("\n\n")
-                ),
+                body_html=copy.body_html,
                 status=Message.Status.QUEUED,
             )
             message.rfc_message_id = f"<crm-{message.pk}@{settings.CRM_EMAIL_DOMAIN}>"

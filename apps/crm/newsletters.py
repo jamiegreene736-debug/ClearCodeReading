@@ -38,7 +38,7 @@ class NewsletterEmailDeliveryNotConfigured(NewsletterSendError):
     pass
 
 
-def newsletter_delivery_configuration_errors():
+def newsletter_delivery_configuration_errors() -> tuple[str, ...]:
     if settings.DEBUG:
         return ()
 
@@ -76,10 +76,19 @@ def _unsubscribe_url(subscription: NewsletterSubscription) -> str:
     return urljoin(f"{settings.PUBLIC_APP_URL.rstrip('/')}/", path.lstrip("/"))
 
 
+def campaign_text(campaign: NewsletterCampaign) -> str:
+    """Plain-text body: the stored text, or the rich body flattened."""
+    if campaign.body_html:
+        from apps.crm_email.security import plain_text
+
+        return plain_text(campaign.body_html).strip()
+    return campaign.body.strip()
+
+
 def _delivery_message(campaign, delivery, connection):
     unsubscribe_url = _unsubscribe_url(delivery.subscription)
     text_body = (
-        f"{campaign.body.strip()}\n\n"
+        f"{campaign_text(campaign)}\n\n"
         "---\n"
         "You are receiving this because you subscribed to ClearCode Reading updates.\n"
         f"Unsubscribe: {unsubscribe_url}"
@@ -104,6 +113,27 @@ def _delivery_message(campaign, delivery, connection):
     )
     message.attach_alternative(html_body, "text/html")
     return message
+
+
+def send_newsletter_test(campaign: NewsletterCampaign, recipient_email: str) -> int:
+    """Send one copy of the campaign to a team member; no delivery is recorded."""
+    text_body = (
+        f"[TEST] {campaign_text(campaign)}\n\n"
+        "---\nThis is a test copy sent from CRM email settings. "
+        "Subscribers see an unsubscribe link here."
+    )
+    html_body = render_to_string(
+        "crm/newsletter_email.html",
+        {"campaign": campaign, "unsubscribe_url": "#", "test_copy": True},
+    )
+    message = EmailMultiAlternatives(
+        subject=f"[TEST] {campaign.subject}",
+        body=text_body,
+        from_email=settings.DEFAULT_FROM_EMAIL,
+        to=[recipient_email],
+    )
+    message.attach_alternative(html_body, "text/html")
+    return message.send(fail_silently=False)
 
 
 def _claim_campaign(campaign_id, sent_by):
@@ -178,7 +208,7 @@ def _finalize_campaign(campaign_id):
     )
 
 
-def send_newsletter_campaign(campaign_id, *, sent_by=None):
+def send_newsletter_campaign(campaign_id: int, *, sent_by: object = None) -> NewsletterCampaign:
     configuration_errors = newsletter_delivery_configuration_errors()
     if configuration_errors:
         raise NewsletterEmailDeliveryNotConfigured(" ".join(configuration_errors))

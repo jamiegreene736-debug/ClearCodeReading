@@ -159,6 +159,50 @@ class EmailTemplate(models.Model):
         ordering: ClassVar = ["name"]
 
 
+class AutomatedEmail(models.Model):
+    """Administrator override of one automated email's wording (see automated.py)."""
+
+    key = models.CharField(max_length=60, unique=True)
+    subject = models.CharField(max_length=998, blank=True)
+    heading = models.CharField(max_length=255, blank=True)
+    body = models.TextField(blank=True)
+    next_step = models.TextField(blank=True)
+    action_label = models.CharField(max_length=120, blank=True)
+    action_url = models.CharField(max_length=1000, blank=True)
+    updated_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, blank=True
+    )
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering: ClassVar = ["key"]
+
+    def __str__(self) -> str:
+        return self.key
+
+
+class AutomatedEmailImage(models.Model):
+    """Image uploaded from the automated-email editor and served at a public, unguessable URL."""
+
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    name = models.CharField(max_length=255)
+    content_type = models.CharField(max_length=40)
+    size = models.PositiveIntegerField()
+    width = models.PositiveIntegerField(default=0)
+    height = models.PositiveIntegerField(default=0)
+    data = models.BinaryField()
+    uploaded_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, blank=True
+    )
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering: ClassVar = ["-created_at"]
+
+    def __str__(self) -> str:
+        return self.name
+
+
 class WorkerHeartbeat(models.Model):
     name = models.CharField(max_length=30, primary_key=True, default="email")
     last_seen_at = models.DateTimeField()
@@ -191,6 +235,8 @@ class StageEmailDelivery(models.Model):
     deal = models.OneToOneField("crm.Opportunity", on_delete=models.CASCADE)
     pilot = models.ForeignKey(StageEmailPilot, on_delete=models.PROTECT)
     pipeline = models.CharField(max_length=32)
+    # Automated-email registry key; blank means the pipeline's own first-stage email.
+    template_key = models.CharField(max_length=60, blank=True)
     message = models.OneToOneField(
         Message,
         null=True,

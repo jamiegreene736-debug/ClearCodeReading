@@ -117,7 +117,10 @@ class FormSubmissionAdmin(admin.ModelAdmin):
         receipt = WebsiteReceipt.objects.select_related("customer_message", "team_message").filter(submission=obj).first()
         if not receipt:
             return "No automatic confirmation (historical submission)"
-        customer = receipt.customer_message.get_status_display() if receipt.customer_message else "Waiting for sender"
+        if obj.form_type == FormSubmission.FormType.SURVEY:
+            customer = "Not sent (website confirmation only)"
+        else:
+            customer = receipt.customer_message.get_status_display() if receipt.customer_message else "Waiting for sender"
         team = receipt.team_message.get_status_display() if receipt.team_message else "Waiting for sender"
         return f"Customer: {customer}. Team: {team}. {receipt.error}"
 
@@ -269,7 +272,7 @@ class NewsletterCampaignAdmin(admin.ModelAdmin):
     def get_readonly_fields(self, request, obj=None):
         readonly_fields = list(super().get_readonly_fields(request, obj))
         if obj and obj.status != NewsletterCampaign.Status.DRAFT:
-            readonly_fields.extend(["subject", "preview_text", "body"])
+            readonly_fields.extend(["subject", "preview_text", "body", "body_html"])
         return readonly_fields
 
     @admin.display(description="Send")

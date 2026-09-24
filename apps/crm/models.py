@@ -516,6 +516,10 @@ class NewsletterCampaign(TimestampedModel):
     subject = models.CharField(max_length=255)
     preview_text = models.CharField(max_length=255, blank=True)
     body = models.TextField(help_text="Plain text; paragraph breaks are preserved in the HTML email.")
+    body_html = models.TextField(
+        blank=True,
+        help_text="Rich version of the body from the CRM newsletter editor; used for the HTML email when set.",
+    )
     status = models.CharField(max_length=24, choices=Status.choices, default=Status.DRAFT, db_index=True)
     created_by = models.ForeignKey(
         settings.AUTH_USER_MODEL,

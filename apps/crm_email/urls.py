@@ -15,6 +15,32 @@ urlpatterns = [
         views.disconnect_view,
         name="crm_email_disconnect",
     ),
+    path(
+        "email/automated/images/upload/",
+        views.automated_image_upload,
+        name="crm_email_automated_image_upload",
+    ),
+    path(
+        "email/images/<uuid:image_id>/",
+        views.automated_image,
+        name="crm_email_automated_image",
+    ),
+    path(
+        "email/automated/<slug:key>/",
+        views.automated_email_view,
+        name="crm_email_automated",
+    ),
+    path("email/newsletters/new/", views.newsletter_edit, name="crm_newsletter_new"),
+    path(
+        "email/newsletters/<int:campaign_id>/",
+        views.newsletter_edit,
+        name="crm_newsletter",
+    ),
+    path(
+        "email/newsletters/<int:campaign_id>/send/",
+        views.newsletter_send,
+        name="crm_newsletter_send",
+    ),
     path("email/templates/new/", views.template_view, name="crm_email_template_new"),
     path(
         "email/templates/<int:template_id>/",

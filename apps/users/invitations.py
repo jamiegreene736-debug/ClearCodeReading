@@ -16,6 +16,7 @@ from django.utils import timezone
 from django.utils.encoding import force_bytes
 from django.utils.http import urlsafe_base64_encode
 
+from apps.crm_email.automated import copy_for, fill, fill_html
 from apps.crm_email.google import Gmail, ProviderError
 from apps.crm_email.security import EmailError, mailbox_lock, require_configured
 from apps.crm_email.services import active_mailbox
@@ -105,20 +106,24 @@ def _send(invitation: UserInvitation, actor: CustomUser) -> None:
         if user.role == CustomUser.Role.CRM_USER
         else user.get_role_display()
     )
-    subject = "Your ClearCode Reading account is ready"
-    body = (
-        f"Hello {user.first_name or user.email},\n\n"
-        f"Your ClearCode Reading account has been created.\n"
-        f"Email / login: {user.email}\nAccount type: {role}\n\n"
-        f"Choose your password and finish setting up your account:\n{base}{path}\n\n"
-        f"This private link expires in {settings.PASSWORD_RESET_TIMEOUT // 3600} hours and can be used once. "
-        "If it expires, ask your administrator to resend your invitation.\n\n"
-        f"After setup, log in here: {base}{reverse('login')}\n"
-    )
-    if user.role == CustomUser.Role.CRM_USER:
-        body += (
+    # Wording is editable from CRM email settings (key "account_invitation").
+    copy = copy_for("account_invitation")
+    values = {
+        "first_name": " ".join((user.first_name or user.email).split()),
+        "email": user.email,
+        "role": role,
+        "setup_link": base + path,
+        "expires_hours": str(settings.PASSWORD_RESET_TIMEOUT // 3600),
+        "login_link": base + reverse("login"),
+        "crm_note": (
             "\nOn your first login, we will help you connect your work Gmail account.\n"
-        )
+            if user.role == CustomUser.Role.CRM_USER
+            else ""
+        ),
+    }
+    subject = fill(copy["subject"], values)
+    body = fill(copy.text("body"), values)
+    body_html = fill_html(copy.html("body"), values)
     if settings.CRM_EMAIL_ENABLED or not getattr(
         settings, "USER_INVITATIONS_ALLOW_TEST_EMAIL", False
     ):
@@ -132,6 +137,7 @@ def _send(invitation: UserInvitation, actor: CustomUser) -> None:
             f"<user-invitation-{invitation.pk}-{secrets.token_hex(8)}@{settings.CRM_EMAIL_DOMAIN}>"
         )
         message.set_content(body)
+        message.add_alternative(body_html, subtype="html")
         # Do not create a CRM Message: it would expose the setup link to colleagues.
         with mailbox_lock(mailbox.pk):
             result = Gmail(mailbox).request(
@@ -158,6 +164,7 @@ def _send(invitation: UserInvitation, actor: CustomUser) -> None:
                 settings.DEFAULT_FROM_EMAIL,
                 [user.email],
                 fail_silently=False,
+                html_message=body_html,
             )
             != 1
         ):

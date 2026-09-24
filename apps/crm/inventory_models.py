@@ -92,6 +92,8 @@ class InventoryMail(models.Model):
     recipient = models.EmailField()
     subject = models.CharField(max_length=200)
     body = models.TextField()
+    # Optional rich version of ``body`` from the automated-email editor.
+    body_html = models.TextField(blank=True)
     action_url = models.URLField(max_length=1000, blank=True)
     action_label = models.CharField(max_length=80, blank=True)
     calendar = models.TextField(blank=True)

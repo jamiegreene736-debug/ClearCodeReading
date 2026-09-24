@@ -4,6 +4,7 @@ import json
 import uuid
 from collections.abc import Callable
 from functools import wraps
+from io import BytesIO
 from typing import Any, cast
 from zoneinfo import ZoneInfo
 
@@ -14,21 +15,44 @@ from django.core import signing
 from django.core.exceptions import PermissionDenied, ValidationError
 from django.core.paginator import Paginator
 from django.core.validators import validate_email
-from django.db import connection
-from django.http import HttpResponse
+from django.db import connection, transaction
+from django.http import Http404, HttpRequest, HttpResponse, JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
+from django.urls import reverse
 from django.utils import timezone
 from django.views.decorators.csrf import csrf_exempt
 from django.views.decorators.http import require_GET, require_http_methods, require_POST
 from google.auth.exceptions import GoogleAuthError
 from google.auth.transport.requests import Request as GoogleRequest
 from google.oauth2 import id_token
+from PIL import Image, UnidentifiedImageError
 
-from apps.crm.models import Lead
-from apps.crm_email.forms import ComposeForm, SignatureForm, TemplateForm
+from apps.crm.models import (
+    Lead,
+    NewsletterCampaign,
+    NewsletterDelivery,
+    NewsletterSubscription,
+)
+from apps.crm.newsletters import (
+    NewsletterSendError,
+    newsletter_delivery_configuration_errors,
+    send_newsletter_campaign,
+    send_newsletter_test,
+)
+from apps.crm_email import automated
+from apps.crm_email.automated import text_to_html
+from apps.crm_email.forms import (
+    AutomatedEmailForm,
+    ComposeForm,
+    NewsletterForm,
+    SignatureForm,
+    TemplateForm,
+)
 from apps.crm_email.google import Gmail, authorization_url, connect
 from apps.crm_email.models import (
     Attachment,
+    AutomatedEmail,
+    AutomatedEmailImage,
     Conversation,
     EmailTemplate,
     Mailbox,
@@ -42,6 +66,7 @@ from apps.crm_email.security import (
     configuration_errors,
     decrypt,
     mailbox_lock,
+    plain_text,
     require_configured,
     require_crm,
 )
@@ -105,8 +130,358 @@ def settings_view(request: EmailRequest) -> HttpResponse:
             if request.user.can_manage_crm_users
             else [],
             "templates": EmailTemplate.objects.filter(owner=request.user),
+            "automated_groups": automated_groups()
+            if request.user.can_manage_crm_users
+            else [],
+            **(newsletter_context() if request.user.can_manage_crm_users else {}),
         },
     )
+
+
+def automated_groups() -> list[dict[str, Any]]:
+    copies = automated.all_copies()
+    return [
+        {
+            "name": group,
+            "emails": [copy for copy in copies if copy.spec.group == group],
+        }
+        for group in automated.groups()
+    ]
+
+
+@crm_view
+@require_http_methods(["GET", "POST"])
+def automated_email_view(request: EmailRequest, key: str) -> HttpResponse:
+    """Administrators edit the wording of one automated email, or restore its default."""
+    if not request.user.can_manage_crm_users:
+        raise PermissionDenied
+    try:
+        spec = automated.spec_for(key)
+    except LookupError as exc:
+        raise Http404 from exc
+    current = automated.copy_for(key)
+    if request.method == "POST" and request.POST.get("action") == "restore":
+        AutomatedEmail.objects.filter(key=key).delete()
+        AuditLog.objects.create(
+            actor=request.user,
+            action="crm.automated_email.restored",
+            entity_type="crm_email.AutomatedEmail",
+            entity_id=key,
+        )
+        messages.success(request, f"{spec.name}: default wording restored.")
+        return redirect("crm_email_settings")
+    form = AutomatedEmailForm(
+        spec,
+        request.POST or None,
+        initial={
+            name: current.html(name) if name in automated.RICH_FIELDS else current[name]
+            for name in spec.fields
+        },
+    )
+    if request.method == "POST" and form.is_valid():
+        values = {name: form.cleaned_data[name] for name in spec.fields}
+        with transaction.atomic():
+            row, _ = AutomatedEmail.objects.select_for_update().get_or_create(key=key)
+            for name, value in values.items():
+                setattr(row, name, value)
+            row.updated_by = request.user
+            row.save()
+            AuditLog.objects.create(
+                actor=request.user,
+                action="crm.automated_email.saved",
+                entity_type="crm_email.AutomatedEmail",
+                entity_id=key,
+                before=dict(current.values),
+                after=values,
+            )
+        messages.success(request, f"{spec.name}: wording saved.")
+        return redirect("crm_email_settings")
+    # The editor always submits HTML for rich fields, so preview them as HTML.
+    shown = automated.AutomatedEmailCopy(
+        spec, {name: str(form[name].value() or "") for name in spec.fields}, True
+    )
+    response = render(
+        request,
+        "crm/automated_email.html",
+        {
+            "form": form,
+            "spec": spec,
+            "copy": current,
+            "preview": automated.preview(shown),
+            "placeholders": spec.placeholders.items(),
+            "editor_config": {
+                "placeholders": dict(spec.placeholders),
+                "sample": dict(spec.sample),
+                "uploadUrl": reverse("crm_email_automated_image_upload"),
+                "images": [
+                    {
+                        "url": image_url(request, image),
+                        "name": image.name,
+                        "width": image.width,
+                        "height": image.height,
+                    }
+                    for image in AutomatedEmailImage.objects.all()[:40]
+                ],
+            },
+            "row": AutomatedEmail.objects.filter(key=key)
+            .select_related("updated_by")
+            .first(),
+        },
+    )
+    response["Cache-Control"] = "private, no-store"
+    return response
+
+
+IMAGE_TYPES = {
+    "PNG": "image/png",
+    "JPEG": "image/jpeg",
+    "GIF": "image/gif",
+    "WEBP": "image/webp",
+}
+IMAGE_MAX_BYTES = 3 * 1024 * 1024
+
+
+def image_url(request: EmailRequest, image: AutomatedEmailImage) -> str:
+    """Public address recipients' mail clients fetch; prefers the configured site URL."""
+    path = reverse("crm_email_automated_image", args=[image.pk])
+    public = settings.PUBLIC_APP_URL.rstrip("/")
+    if public.startswith("https://"):
+        return public + path
+    return request.build_absolute_uri(path)
+
+
+@crm_view
+@require_POST
+def automated_image_upload(request: EmailRequest) -> HttpResponse:
+    """Store an editor image and return the public URL to embed in the email."""
+    if not request.user.can_manage_crm_users:
+        raise PermissionDenied
+    upload = request.FILES.get("image")
+    if upload is None:
+        return JsonResponse({"error": "Choose an image file."}, status=400)
+    if (upload.size or 0) > IMAGE_MAX_BYTES:
+        return JsonResponse({"error": "Images must be 3 MB or smaller."}, status=400)
+    data = upload.read()
+    try:
+        with Image.open(BytesIO(data)) as parsed:
+            parsed.verify()
+        with Image.open(BytesIO(data)) as parsed:
+            kind, width, height = parsed.format or "", parsed.width, parsed.height
+    except (UnidentifiedImageError, OSError, ValueError):
+        return JsonResponse(
+            {"error": "Use a PNG, JPEG, GIF or WebP image."}, status=400
+        )
+    if kind not in IMAGE_TYPES:
+        return JsonResponse(
+            {"error": "Use a PNG, JPEG, GIF or WebP image."}, status=400
+        )
+    image = AutomatedEmailImage.objects.create(
+        name=str(upload.name or "image")[:255],
+        content_type=IMAGE_TYPES[kind],
+        size=len(data),
+        width=width,
+        height=height,
+        data=data,
+        uploaded_by=request.user,
+    )
+    AuditLog.objects.create(
+        actor=request.user,
+        action="crm.automated_email.image_uploaded",
+        entity_type="crm_email.AutomatedEmailImage",
+        entity_id=str(image.pk),
+        after={"name": image.name, "size": image.size},
+    )
+    return JsonResponse(
+        {
+            "url": image_url(request, image),
+            "name": image.name,
+            "width": width,
+            "height": height,
+        }
+    )
+
+
+@require_GET
+def automated_image(request: HttpRequest, image_id: uuid.UUID) -> HttpResponse:
+    """Serve an uploaded email image. Public: recipients' mail clients are not signed in."""
+    image = get_object_or_404(AutomatedEmailImage, pk=image_id)
+    response = HttpResponse(bytes(image.data), content_type=image.content_type)
+    response["Cache-Control"] = "public, max-age=31536000, immutable"
+    response["Content-Disposition"] = "inline"
+    response["X-Content-Type-Options"] = "nosniff"
+    return response
+
+
+def newsletter_context() -> dict[str, Any]:
+    return {
+        "newsletters": NewsletterCampaign.objects.select_related("sent_by")[:25],
+        "newsletter_subscribers": NewsletterSubscription.objects.filter(
+            status=NewsletterSubscription.Status.ACTIVE
+        ).count(),
+    }
+
+
+def newsletter_editor_config(request: EmailRequest) -> dict[str, Any]:
+    return {
+        "placeholders": {},
+        "sample": {},
+        "uploadUrl": reverse("crm_email_automated_image_upload"),
+        "images": [
+            {
+                "url": image_url(request, image),
+                "name": image.name,
+                "width": image.width,
+                "height": image.height,
+            }
+            for image in AutomatedEmailImage.objects.all()[:40]
+        ],
+    }
+
+
+@crm_view
+@require_http_methods(["GET", "POST"])
+def newsletter_edit(
+    request: EmailRequest, campaign_id: int | None = None
+) -> HttpResponse:
+    """Compose a newsletter with the rich editor; drafts only are editable."""
+    if not request.user.can_manage_crm_users:
+        raise PermissionDenied
+    campaign = (
+        get_object_or_404(NewsletterCampaign, pk=campaign_id) if campaign_id else None
+    )
+    editable = campaign is None or campaign.status == NewsletterCampaign.Status.DRAFT
+    if request.method == "POST" and request.POST.get("action") == "delete":
+        if campaign is None or not editable:
+            raise PermissionDenied
+        campaign.delete()
+        messages.success(request, "Newsletter draft deleted.")
+        return redirect_settings("newsletters")
+    initial = (
+        {
+            "subject": campaign.subject,
+            "preview_text": campaign.preview_text,
+            "body_html": campaign.body_html or text_to_html(campaign.body),
+        }
+        if campaign
+        else {}
+    )
+    form = NewsletterForm(
+        request.POST if request.method == "POST" and editable else None,
+        initial=initial,
+    )
+    if request.method == "POST" and editable and form.is_valid():
+        with transaction.atomic():
+            campaign = campaign or NewsletterCampaign(created_by=request.user)
+            campaign.subject = form.cleaned_data["subject"]
+            campaign.preview_text = form.cleaned_data["preview_text"]
+            campaign.body_html = form.cleaned_data["body_html"]
+            campaign.body = plain_text(campaign.body_html).strip()
+            campaign.full_clean()
+            campaign.save()
+            AuditLog.objects.create(
+                actor=request.user,
+                action="crm.newsletter.saved",
+                entity_type="crm.NewsletterCampaign",
+                entity_id=str(campaign.pk),
+                after={"subject": campaign.subject},
+            )
+        messages.success(request, "Newsletter draft saved.")
+        if request.POST.get("action") == "send":
+            return redirect("crm_newsletter_send", campaign.pk)
+        return redirect("crm_newsletter", campaign.pk)
+    if not editable:
+        for field in form.fields.values():
+            field.disabled = True
+    shown_html = str(form["body_html"].value() or "")
+    response = render(
+        request,
+        "crm/newsletter_edit.html",
+        {
+            "form": form,
+            "campaign": campaign,
+            "editable": editable,
+            "preview_html": shown_html,
+            "editor_config": newsletter_editor_config(request),
+            "deliveries": campaign.deliveries.order_by("recipient_email")[:200]
+            if campaign
+            else [],
+            **newsletter_context(),
+        },
+    )
+    response["Cache-Control"] = "private, no-store"
+    return response
+
+
+@crm_view
+@require_http_methods(["GET", "POST"])
+def newsletter_send(request: EmailRequest, campaign_id: int) -> HttpResponse:
+    """Review recipients, send a test to yourself, or send to every active subscriber."""
+    if not request.user.can_manage_crm_users:
+        raise PermissionDenied
+    campaign = get_object_or_404(NewsletterCampaign, pk=campaign_id)
+    configuration = newsletter_delivery_configuration_errors()
+    if request.method == "POST":
+        action = request.POST.get("action")
+        if action == "test":
+            try:
+                send_newsletter_test(campaign, request.user.email)
+            except Exception as exc:  # noqa: BLE001 - backend-specific errors
+                messages.error(request, f"Test email failed: {type(exc).__name__}.")
+            else:
+                messages.success(request, f"Test email sent to {request.user.email}.")
+            return redirect("crm_newsletter_send", campaign.pk)
+        if action == "send":
+            if campaign.status == NewsletterCampaign.Status.SENDING:
+                messages.error(request, "This newsletter is already being sent.")
+                return redirect("crm_newsletter_send", campaign.pk)
+            try:
+                campaign = send_newsletter_campaign(campaign.pk, sent_by=request.user)
+            except NewsletterSendError as exc:
+                messages.error(request, str(exc))
+            else:
+                AuditLog.objects.create(
+                    actor=request.user,
+                    action="crm.newsletter.sent",
+                    entity_type="crm.NewsletterCampaign",
+                    entity_id=str(campaign.pk),
+                    after={
+                        "delivered": campaign.delivered_count,
+                        "failed": campaign.failed_count,
+                    },
+                )
+                if campaign.failed_count:
+                    messages.warning(
+                        request,
+                        f"Newsletter sent to {campaign.delivered_count} recipients; "
+                        f"{campaign.failed_count} deliveries can be retried.",
+                    )
+                else:
+                    messages.success(
+                        request,
+                        f"Newsletter sent to {campaign.delivered_count} recipients.",
+                    )
+            return redirect("crm_newsletter", campaign.pk)
+    response = render(
+        request,
+        "crm/newsletter_send.html",
+        {
+            "campaign": campaign,
+            "configuration_errors": configuration,
+            "retry_count": campaign.deliveries.filter(
+                status=NewsletterDelivery.Status.FAILED
+            ).count(),
+            "preview_html": campaign.body_html or text_to_html(campaign.body),
+            **newsletter_context(),
+        },
+    )
+    response["Cache-Control"] = "private, no-store"
+    return response
+
+
+def redirect_settings(anchor: str) -> HttpResponse:
+    response = redirect("crm_email_settings")
+    response["Location"] += "#" + anchor
+    return response
 
 
 @crm_view

@@ -14,6 +14,9 @@ from apps.users.models import Profile
 
 
 class EasternTimeTests(SimpleTestCase):
+    # Team receipts read editable wording from the database (no writes happen).
+    databases = {"default"}
+
     def test_application_worker_and_new_profiles_default_to_eastern(self):
         self.assertEqual(settings.TIME_ZONE, "America/New_York")
         self.assertEqual(settings.CELERY_TIMEZONE, settings.TIME_ZONE)

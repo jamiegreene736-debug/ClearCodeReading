@@ -15,13 +15,13 @@
           <tr>
             <td style="padding:32px;font-size:17px;line-height:1.65;">
               <h1 style="margin:0 0 24px;font-size:28px;line-height:1.2;">{{ campaign.subject }}</h1>
-              {{ campaign.body|linebreaks }}
+              {% if campaign.body_html %}{{ campaign.body_html|safe }}{% else %}{{ campaign.body|linebreaks }}{% endif %}
             </td>
           </tr>
           <tr>
             <td style="background:#A8CFC4;padding:20px 32px;font-size:13px;line-height:1.5;">
-              You received this message because you subscribed to ClearCode Reading updates.
-              <a href="{{ unsubscribe_url }}" style="color:#0F2B35;font-weight:bold;">Unsubscribe</a>.
+              {% if test_copy %}This is a test copy sent from CRM email settings. Subscribers see an unsubscribe link here.{% else %}You received this message because you subscribed to ClearCode Reading updates.
+              <a href="{{ unsubscribe_url }}" style="color:#0F2B35;font-weight:bold;">Unsubscribe</a>.{% endif %}
             </td>
           </tr>
         </table>

@@ -1,0 +1,34 @@
+{% extends "crm/email_base.html" %}
+{% load static %}
+{% block title %}{{ spec.name }} · Automated email{% endblock %}
+{% block extra_style %}{{ block.super }}{% include "crm/_automated_editor_style.html" %}{% endblock %}
+{% block email_content %}
+<div class="automated-page">
+<p><a href="{% url 'crm_email_settings' %}#automated-emails">← Email settings</a></p>
+<p class="eyebrow">Automated email · {{ spec.group }}</p><h1>{{ spec.name }}</h1>
+<p class="subtle">Sent when: {{ spec.trigger }}.<br>To: {{ spec.recipient }}.</p>
+{% if row %}<p class="subtle">Customized {{ row.updated_at|date:"M j, Y, g:i A T" }}{% if row.updated_by %} by {{ row.updated_by.email }}{% endif %}.</p>{% else %}<p class="subtle">Using the default wording.</p>{% endif %}
+<div class="grid">
+<section class="card"><h2>Wording</h2>
+<p class="subtle">Format text, set colors and fonts, add images and links. Insert placeholders from the toolbar; they are filled in when each email is sent.</p>
+<form method="post" data-automated-form novalidate>{% csrf_token %}{{ form.non_field_errors }}
+{% for field in form %}<div class="field{% if field.errors %} has-error{% endif %}">{{ field.label_tag }}{{ field }}{{ field.errors }}</div>{% endfor %}
+<div class="actions"><button class="btn btn-primary" name="action" value="save">Save wording</button>{% if copy.customized %}<button class="btn" name="action" value="restore" formnovalidate onclick="return confirm('Restore the default wording for this email?')">Restore default</button>{% endif %}</div>
+</form>
+{% if placeholders %}<h3>Placeholders</h3><p class="subtle">Type these exactly, including the double braces, or pick them from the toolbar. Anything else in braces is rejected.</p>
+<ul class="placeholder-list">{% for token, description in placeholders %}<li><code>{% templatetag openvariable %}{{ token }}{% templatetag closevariable %}</code> {{ description }}</li>{% endfor %}</ul>{% endif %}
+</section>
+<section class="card sticky-preview"><h2>Live preview</h2><p class="preview-note">Updates as you type. Example values fill the placeholders; unknown placeholders are highlighted. The final email adds the ClearCode header, any submission details and the footer.</p>
+<div class="preview-frame"><div class="preview-mail" id="automated-preview">
+<p class="preview-subject"><strong>Subject:</strong> <span data-preview-field="subject">{{ preview.subject }}</span></p>
+{% if "heading" in spec.fields %}<h2 class="preview-heading" data-preview-field="heading">{{ preview.heading }}</h2>{% endif %}
+<div data-preview-field="body" data-preview-rich="1">{{ preview.body|safe }}</div>
+{% if "next_step" in spec.fields %}<div data-preview-wrap><h3 class="preview-next">What happens next</h3><div data-preview-field="next_step" data-preview-rich="1">{{ preview.next_step|safe }}</div></div>{% endif %}
+{% if "action_label" in spec.fields %}<p data-preview-wrap style="margin:24px 0"><span class="preview-button" data-preview-field="action_label">{{ preview.action_label }}</span>{% if "action_url" in spec.fields %} <span class="preview-note" data-preview-wrap>→ <span data-preview-field="action_url">{{ preview.action_url }}</span></span>{% endif %}</p>{% endif %}
+</div></div>
+</section>
+</div>
+</div>
+{{ editor_config|json_script:"automated-editor-config" }}
+<script src="{% static 'crm_email/automated_editor.js' %}" defer></script>
+{% endblock %}

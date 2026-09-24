@@ -11,7 +11,7 @@
 <p>Equity tests use the signature above, or the chosen sender’s saved CRM signature. Gmail signatures are not automatically included by the sending API.</p>
 </section>
 {% for preview in previews %}<section class="card"><h2>{{ preview.label }}</h2>
-<p class="subtle">First-stage entry only · {{ preview.copy.source }}</p>
+<p class="subtle">First-stage entry only · {{ preview.copy.source }} · <a href="{% url 'crm_email_automated' 'stage_'|add:preview.pipeline %}">Edit wording</a></p>
 <p><strong>Subject:</strong> {{ preview.copy.subject }}</p>
 <div class="mail-body">{{ preview.copy.body|linebreaks }}</div>
 {% if preview.copy.missing %}<p role="status"><strong>Complete before testing:</strong> {{ preview.copy.missing|join:", " }}</p>{% else %}<p>Ready for a test.</p>{% endif %}

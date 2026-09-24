@@ -1,0 +1,34 @@
+{% extends "crm/email_base.html" %}
+{% load static %}
+{% block title %}{% if campaign %}{{ campaign.subject }}{% else %}New newsletter{% endif %} · Newsletter{% endblock %}
+{% block extra_style %}{{ block.super }}{% include "crm/_automated_editor_style.html" %}{% endblock %}
+{% block email_content %}
+<div class="automated-page">
+<p><a href="{% url 'crm_email_settings' %}#newsletters">← Email settings</a></p>
+<p class="eyebrow">Newsletter</p><h1>{% if campaign %}{{ campaign.subject }}{% else %}New newsletter{% endif %}</h1>
+{% if campaign %}<p class="subtle">Status: <strong>{{ campaign.get_status_display }}</strong>{% if campaign.sent_at %} · Sent {{ campaign.sent_at|date:"M j, Y, g:i A T" }}{% if campaign.sent_by %} by {{ campaign.sent_by.email }}{% endif %} · {{ campaign.delivered_count }} delivered{% if campaign.failed_count %} · {{ campaign.failed_count }} failed{% endif %}{% endif %}</p>{% endif %}
+{% if not editable %}<p role="status"><strong>This newsletter has been sent, so its wording is locked.</strong> Start a new newsletter to send an updated version.</p>{% endif %}
+<div class="grid">
+<section class="card"><h2>Content</h2>
+<p class="subtle">Style text, add images and links. Saving keeps a draft; nothing is sent until you review and confirm on the next screen.</p>
+<form method="post" data-automated-form novalidate>{% csrf_token %}{{ form.non_field_errors }}
+{% for field in form %}<div class="field{% if field.errors %} has-error{% endif %}">{{ field.label_tag }}{{ field }}{% if field.help_text %}<p class="subtle">{{ field.help_text }}</p>{% endif %}{{ field.errors }}</div>{% endfor %}
+{% if editable %}<div class="actions"><button class="btn btn-primary" name="action" value="save">Save draft</button><button class="btn" name="action" value="send">Save &amp; review sending</button>{% if campaign %}<button class="btn" name="action" value="delete" formnovalidate onclick="return confirm('Delete this draft?')">Delete draft</button>{% endif %}</div>{% endif %}
+</form>
+</section>
+<section class="card sticky-preview"><h2>Live preview</h2><p class="preview-note">The sent email adds the ClearCode header and an unsubscribe footer.</p>
+<div class="preview-frame"><div class="preview-mail" id="automated-preview">
+<p class="preview-subject"><strong>Subject:</strong> <span data-preview-field="subject">{{ form.subject.value|default:"" }}</span><br><span data-preview-wrap><strong>Preview text:</strong> <span data-preview-field="preview_text">{{ form.preview_text.value|default:"" }}</span></span></p>
+<h2 class="preview-heading" data-preview-field="subject">{{ form.subject.value|default:"" }}</h2>
+<div data-preview-field="body_html" data-preview-rich="1">{{ preview_html|safe }}</div>
+</div></div>
+{% if campaign and campaign.status != 'draft' %}<p>{% if campaign.status == 'partially_failed' %}<a class="btn" href="{% url 'crm_newsletter_send' campaign.pk %}">Retry failed deliveries</a>{% endif %}</p>{% endif %}
+</section>
+</div>
+{% if deliveries %}<section class="card"><h2>Deliveries</h2>
+{% for delivery in deliveries %}<div class="row">{{ delivery.recipient_email }} · {{ delivery.get_status_display }}{% if delivery.sent_at %} · {{ delivery.sent_at|date:"M j, g:i A T" }}{% endif %}{% if delivery.last_error %}<br><span class="subtle">{{ delivery.last_error }}</span>{% endif %}</div>{% endfor %}
+</section>{% endif %}
+</div>
+{{ editor_config|json_script:"automated-editor-config" }}
+<script src="{% static 'crm_email/automated_editor.js' %}" defer></script>
+{% endblock %}
