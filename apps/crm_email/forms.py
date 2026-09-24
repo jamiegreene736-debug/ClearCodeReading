@@ -9,10 +9,11 @@ from django.utils import timezone
 from apps.crm_email.automated import (
     FIELD_LABELS,
     OPTIONAL_FIELDS,
+    RICH_FIELDS,
     AutomatedEmailSpec,
     tokens,
 )
-from apps.crm_email.security import clean_html, plain_text
+from apps.crm_email.security import clean_html, clean_rich_html, plain_text
 
 
 class RecipientsField(forms.Field):
@@ -98,13 +99,18 @@ class AutomatedEmailForm(forms.Form):
         super().__init__(*args, **kwargs)
         self.spec = spec
         for name in spec.fields:
-            multiline = name in {"body", "next_step"}
+            rich = name in RICH_FIELDS
             self.fields[name] = forms.CharField(
                 label=FIELD_LABELS[name],
                 required=name not in OPTIONAL_FIELDS,
-                max_length=20000 if multiline else 998,
-                widget=forms.Textarea(attrs={"rows": 12 if name == "body" else 4})
-                if multiline
+                max_length=200000 if rich else 998,
+                widget=forms.Textarea(
+                    attrs={
+                        "rows": 12 if name == "body" else 4,
+                        "data-rich-editor": "automated",
+                    }
+                )
+                if rich
                 else forms.TextInput(),
             )
 
@@ -114,14 +120,25 @@ class AutomatedEmailForm(forms.Form):
             value = cleaned.get(name)
             if value is None:
                 continue
-            if (
-                name != "body"
-                and name != "next_step"
-                and ("\r" in value or "\n" in value)
-            ):
+            if name in RICH_FIELDS:
+                value = clean_rich_html(value)
+                cleaned[name] = value
+                if name not in OPTIONAL_FIELDS and not (
+                    plain_text(value).strip() or "<img" in value
+                ):
+                    self.add_error(name, "Enter a message.")
+                    continue
+                if name in OPTIONAL_FIELDS and not (
+                    plain_text(value).strip() or "<img" in value
+                ):
+                    cleaned[name] = ""
+                    continue
+            elif "\r" in value or "\n" in value:
                 self.add_error(name, "Use a single line.")
             unknown = [
-                token for token in tokens(value) if token not in self.spec.placeholders
+                token
+                for token in tokens(plain_text(value) if name in RICH_FIELDS else value)
+                if token not in self.spec.placeholders
             ]
             if unknown:
                 self.add_error(

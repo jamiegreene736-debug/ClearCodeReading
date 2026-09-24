@@ -39,7 +39,7 @@ from apps.crm.inventory import (
 from apps.crm.inventory_feedback import delivery_feedback
 from apps.crm.inventory_forms import BookingForm, InvitationForm, SectionForm, SlotForm
 from apps.crm_email.automated import copy_for as automated_copy
-from apps.crm_email.automated import fill
+from apps.crm_email.automated import fill, fill_html
 from apps.crm.inventory_models import (
     ConsultationBooking,
     ConsultationSlot,
@@ -91,7 +91,7 @@ class InventorySendView(CrmAccessMixin, View):
             initial={
                 "recipient": parent.contact_email,
                 "subject": fill(copy["subject"], values),
-                "message": fill(copy["body"], values),
+                "message": fill(copy.text("body"), values),
             },
         )
         nonce = signing.dumps(
@@ -293,9 +293,12 @@ class InventoryDetailView(CrmAccessMixin, View):
                         "reminder-" + timezone.now().strftime("%Y%m%d"),
                         invitation.recipient,
                         fill(copy["subject"], values),
-                        fill(copy["body"], values),
+                        fill(copy.text("body"), values),
                         invitation_url(invitation),
                         fill(copy["action_label"], values),
+                        body_html=fill_html(copy.html("body"), values)
+                        if copy.is_html("body")
+                        else "",
                     )
                     log_activity(invitation, "Reminder requested", request.user)
                 else:
@@ -699,20 +702,26 @@ class InventoryBookingView(InventoryPublicView):
                         "booking-parent",
                         invitation.recipient,
                         fill(parent_copy["subject"], values),
-                        fill(parent_copy["body"], values),
+                        fill(parent_copy.text("body"), values),
                         calendar=calendar,
+                        body_html=fill_html(parent_copy.html("body"), values)
+                        if parent_copy.is_html("body")
+                        else "",
                     )
                     queue_mail(
                         invitation,
                         "booking-host",
                         slot.host.email,
                         fill(host_copy["subject"], values),
-                        fill(host_copy["body"], values),
+                        fill(host_copy.text("body"), values),
                         request.build_absolute_uri(
                             reverse("inventory_detail", args=[invitation.pk])
                         ),
                         fill(host_copy["action_label"], values),
                         calendar,
+                        body_html=fill_html(host_copy.html("body"), values)
+                        if host_copy.is_html("body")
+                        else "",
                     )
                     log_activity(invitation, "Consultation booked")
             if not form.errors:

@@ -6,7 +6,13 @@
             margin:32px auto;
             padding:32px;
             background:white;
-            border-top:5px solid #1a7a7a">{% include "crm/_email_brand.html" %}<h1 style="font-size:24px">{{ email.subject }}</h1>{% if email.action_url %}{{ email.body|before_action|linebreaks }}<p style="margin:28px 0"><a href="{{ email.action_url }}"
+            border-top:5px solid #1a7a7a">{% include "crm/_email_brand.html" %}<h1 style="font-size:24px">{{ email.subject }}</h1>{% if email.body_html %}<div>{{ email.body_html|safe }}</div>{% if email.action_url %}<p style="margin:28px 0"><a href="{{ email.action_url }}"
+   style="display:inline-block;
+          background:#1a7a7a;
+          color:white;
+          padding:14px 22px;
+          text-decoration:none;
+          border-radius:6px">{{ email.action_label }}</a></p>{% endif %}{% elif email.action_url %}{{ email.body|before_action|linebreaks }}<p style="margin:28px 0"><a href="{{ email.action_url }}"
    style="display:inline-block;
           background:#1a7a7a;
           color:white;

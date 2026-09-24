@@ -16,7 +16,7 @@ from django.utils import timezone
 from django.utils.encoding import force_bytes
 from django.utils.http import urlsafe_base64_encode
 
-from apps.crm_email.automated import copy_for, fill
+from apps.crm_email.automated import copy_for, fill, fill_html
 from apps.crm_email.google import Gmail, ProviderError
 from apps.crm_email.security import EmailError, mailbox_lock, require_configured
 from apps.crm_email.services import active_mailbox
@@ -122,7 +122,8 @@ def _send(invitation: UserInvitation, actor: CustomUser) -> None:
         ),
     }
     subject = fill(copy["subject"], values)
-    body = fill(copy["body"], values)
+    body = fill(copy.text("body"), values)
+    body_html = fill_html(copy.html("body"), values)
     if settings.CRM_EMAIL_ENABLED or not getattr(
         settings, "USER_INVITATIONS_ALLOW_TEST_EMAIL", False
     ):
@@ -136,6 +137,7 @@ def _send(invitation: UserInvitation, actor: CustomUser) -> None:
             f"<user-invitation-{invitation.pk}-{secrets.token_hex(8)}@{settings.CRM_EMAIL_DOMAIN}>"
         )
         message.set_content(body)
+        message.add_alternative(body_html, subtype="html")
         # Do not create a CRM Message: it would expose the setup link to colleagues.
         with mailbox_lock(mailbox.pk):
             result = Gmail(mailbox).request(
@@ -162,6 +164,7 @@ def _send(invitation: UserInvitation, actor: CustomUser) -> None:
                 settings.DEFAULT_FROM_EMAIL,
                 [user.email],
                 fail_silently=False,
+                html_message=body_html,
             )
             != 1
         ):

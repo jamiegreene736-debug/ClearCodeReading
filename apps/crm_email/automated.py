@@ -14,7 +14,10 @@ from functools import lru_cache
 from pathlib import Path
 from typing import cast
 
+from django.utils.html import escape
+
 from apps.crm_email.models import AutomatedEmail
+from apps.crm_email.security import plain_text
 
 FIELD_LABELS: Mapping[str, str] = {
     "subject": "Subject",
@@ -25,6 +28,8 @@ FIELD_LABELS: Mapping[str, str] = {
     "action_url": "Button link",
 }
 OPTIONAL_FIELDS = frozenset({"next_step", "action_label", "action_url"})
+# Fields edited with the rich (HTML) editor; every other field is one line of text.
+RICH_FIELDS = frozenset({"body", "next_step"})
 TOKEN = re.compile(r"{{\s*([^{}]+?)\s*}}")
 
 
@@ -46,6 +51,13 @@ class AutomatedEmailSpec:
 
 @dataclass(frozen=True)
 class AutomatedEmailCopy:
+    """Wording for one automated email.
+
+    ``values`` holds what is stored or the default: rich fields are HTML when the
+    email has been customized and plain text otherwise. Senders use ``html`` and
+    ``text`` so both email parts stay in step whichever form the wording is in.
+    """
+
     spec: AutomatedEmailSpec
     values: Mapping[str, str]
     customized: bool
@@ -56,6 +68,17 @@ class AutomatedEmailCopy:
     def get(self, name: str, default: str = "") -> str:
         return self.values.get(name, default)
 
+    def is_html(self, name: str) -> bool:
+        return self.customized and name in RICH_FIELDS
+
+    def html(self, name: str) -> str:
+        value = self.values.get(name, "")
+        return value if self.is_html(name) else text_to_html(value)
+
+    def text(self, name: str) -> str:
+        value = self.values.get(name, "")
+        return plain_text(value).strip() if self.is_html(name) else value
+
 
 def tokens(text: str) -> list[str]:
     return [match.group(1).strip() for match in TOKEN.finditer(text)]
@@ -64,6 +87,37 @@ def tokens(text: str) -> list[str]:
 def fill(text: str, values: Mapping[str, str]) -> str:
     """Replace ``{{token}}`` placeholders; unknown tokens render as blank."""
     return TOKEN.sub(lambda match: values.get(match.group(1).strip(), ""), text)
+
+
+def html_value(value: str) -> str:
+    """Escape a substituted value for HTML, keeping line breaks and linking bare URLs."""
+    lines = []
+    for line in value.split("\n"):
+        stripped = line.strip()
+        if re.fullmatch(r"https://\S+", stripped):
+            lines.append(f'<a href="{escape(stripped)}">{escape(stripped)}</a>')
+        else:
+            lines.append(escape(line))
+    return "<br>".join(lines)
+
+
+def fill_html(html: str, values: Mapping[str, str]) -> str:
+    """Replace placeholders inside HTML; values are escaped, never interpreted."""
+    return TOKEN.sub(
+        lambda match: html_value(values.get(match.group(1).strip(), "")), html
+    )
+
+
+def text_to_html(text: str) -> str:
+    """Render default plain-text wording as simple paragraphs."""
+    paragraphs = [
+        part.strip() for part in re.split(r"\n\s*\n", text.replace("\r\n", "\n"))
+    ]
+    return "".join(
+        "<p>" + "<br>".join(escape(line) for line in part.split("\n")) + "</p>"
+        for part in paragraphs
+        if part
+    )
 
 
 WEBSITE_TEAM_EMAIL = "hello@clearcodereading.com"
@@ -192,6 +246,23 @@ def _stage(pipeline: str) -> AutomatedEmailSpec:
         defaults={"subject": str(source["subject"]), "body": body},
         placeholders={k: v for k, v in _STAGE_PLACEHOLDERS.items() if k in used},
         sample={k: v for k, v in _STAGE_SAMPLE.items() if k in used},
+    )
+
+
+def _survey_family() -> AutomatedEmailSpec:
+    base = _stage("family_enrollment")
+    return AutomatedEmailSpec(
+        key="survey_family_enrollment",
+        group="Survey initial emails",
+        name="Survey: Families & Enrollment",
+        trigger=(
+            "A family completes the early interest survey and enters the Families & "
+            "Enrollment pipeline (currently delivered only to the internal test inbox)"
+        ),
+        recipient="The survey respondent",
+        defaults=base.defaults,
+        placeholders=base.placeholders,
+        sample=base.sample,
     )
 
 
@@ -401,6 +472,53 @@ def _build_specs() -> tuple[AutomatedEmailSpec, ...]:
             {"appointment": "Tuesday, March 03 at 10:00 AM EST"},
         ),
         *(_stage(pipeline) for pipeline in _STAGE_NAMES),
+        _survey_family(),
+        AutomatedEmailSpec(
+            key="survey_general",
+            group="Survey initial emails",
+            name="Survey: all other pipelines",
+            trigger=(
+                "The early interest survey routes a contact to any pipeline other than "
+                "Families & Enrollment (referral partners, donors, investors and so on); "
+                "one email is sent even when several pipelines are selected. "
+                "Draft wording until the approved copy is posted"
+            ),
+            recipient="The survey respondent (currently delivered only to the internal test inbox)",
+            defaults={
+                "subject": "Thanks for connecting with ClearCode Reading Center",
+                "body": (
+                    "Hi {{contact.firstname}},\n\n"
+                    "Thank you for completing our early interest survey and for telling us how "
+                    "you’d like to connect with ClearCode Reading Center.\n\n"
+                    "I’m Bethany Fleming, Founder & CEO of ClearCode Reading Center. We’re a "
+                    "structured literacy intervention center opening in the Orlando area in 2027, "
+                    "built for K–8 students who haven’t yet reached grade-level reading proficiency. "
+                    "Whether you’re interested in referring families, supporting our foundation, "
+                    "investing, or partnering with us in another way, I’d love to talk.\n\n"
+                    "Grab a time on my calendar that works for you: {{scheduling_link}}\n\n"
+                    "Warmly,\n"
+                    "{{Bethany’s email signature}}"
+                ),
+            },
+            placeholders={
+                key: _STAGE_PLACEHOLDERS[key]
+                for key in (
+                    "contact.firstname",
+                    "company.name",
+                    "scheduling_link",
+                    "Bethany’s email signature",
+                )
+            },
+            sample={
+                key: _STAGE_SAMPLE[key]
+                for key in (
+                    "contact.firstname",
+                    "company.name",
+                    "scheduling_link",
+                    "Bethany’s email signature",
+                )
+            },
+        ),
         AutomatedEmailSpec(
             key="account_invitation",
             group="Team accounts",
@@ -483,4 +601,10 @@ def all_copies(keys: Iterable[str] | None = None) -> list[AutomatedEmailCopy]:
 
 
 def preview(copy: AutomatedEmailCopy) -> dict[str, str]:
-    return {name: fill(copy[name], copy.spec.sample) for name in copy.spec.fields}
+    """Sample-filled wording: HTML for rich fields, text for the rest."""
+    return {
+        name: fill_html(copy.html(name), copy.spec.sample)
+        if name in RICH_FIELDS
+        else fill(copy[name], copy.spec.sample)
+        for name in copy.spec.fields
+    }

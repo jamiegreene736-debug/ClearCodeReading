@@ -14,7 +14,7 @@ from apps.core.models import RecruitingInterest
 from apps.crm.models import FormSubmission, NewsletterSubscription, WebsiteReceipt
 from apps.crm.newsletters import _unsubscribe_url
 from apps.crm.templatetags.crm_display import crm_field_label, crm_field_value
-from apps.crm_email.automated import WEBSITE_TEAM_EMAIL, copy_for, fill
+from apps.crm_email.automated import WEBSITE_TEAM_EMAIL, copy_for, fill, fill_html
 from apps.crm_email.models import Mailbox, Message
 from apps.crm_email.security import EmailError, mailbox_lock, require_configured
 from apps.crm_email.services import active_mailbox
@@ -192,8 +192,10 @@ def receipt_context(submission: FormSubmission, *, team: bool) -> dict[str, obje
     return {
         "subject": fill(copy["subject"], values),
         "heading": fill(copy["heading"], values),
-        "introduction": fill(copy["body"], values),
-        "next_step": fill(copy.get("next_step"), values),
+        "introduction": fill(copy.text("body"), values),
+        "introduction_html": fill_html(copy.html("body"), values),
+        "next_step": fill(copy.text("next_step"), values),
+        "next_step_html": fill_html(copy.html("next_step"), values),
         "rows": rows,
         "action_label": fill(copy.get("action_label"), values),
         "action_url": action_url,

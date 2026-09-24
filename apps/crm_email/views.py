@@ -3,6 +3,7 @@ import binascii
 import json
 import uuid
 from collections.abc import Callable
+from io import BytesIO
 from functools import wraps
 from typing import Any, cast
 from zoneinfo import ZoneInfo
@@ -15,14 +16,16 @@ from django.core.exceptions import PermissionDenied, ValidationError
 from django.core.paginator import Paginator
 from django.core.validators import validate_email
 from django.db import connection, transaction
-from django.http import Http404, HttpResponse
+from django.http import Http404, HttpRequest, HttpResponse, JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
+from django.urls import reverse
 from django.utils import timezone
 from django.views.decorators.csrf import csrf_exempt
 from django.views.decorators.http import require_GET, require_http_methods, require_POST
 from google.auth.exceptions import GoogleAuthError
 from google.auth.transport.requests import Request as GoogleRequest
 from google.oauth2 import id_token
+from PIL import Image, UnidentifiedImageError
 
 from apps.crm.models import Lead
 from apps.crm_email import automated
@@ -36,6 +39,7 @@ from apps.crm_email.google import Gmail, authorization_url, connect
 from apps.crm_email.models import (
     Attachment,
     AutomatedEmail,
+    AutomatedEmailImage,
     Conversation,
     EmailTemplate,
     Mailbox,
@@ -151,7 +155,14 @@ def automated_email_view(request: EmailRequest, key: str) -> HttpResponse:
         )
         messages.success(request, f"{spec.name}: default wording restored.")
         return redirect("crm_email_settings")
-    form = AutomatedEmailForm(spec, request.POST or None, initial=dict(current.values))
+    form = AutomatedEmailForm(
+        spec,
+        request.POST or None,
+        initial={
+            name: current.html(name) if name in automated.RICH_FIELDS else current[name]
+            for name in spec.fields
+        },
+    )
     if request.method == "POST" and form.is_valid():
         values = {name: form.cleaned_data[name] for name in spec.fields}
         with transaction.atomic():
@@ -170,10 +181,9 @@ def automated_email_view(request: EmailRequest, key: str) -> HttpResponse:
             )
         messages.success(request, f"{spec.name}: wording saved.")
         return redirect("crm_email_settings")
+    # The editor always submits HTML for rich fields, so preview them as HTML.
     shown = automated.AutomatedEmailCopy(
-        spec,
-        {name: str(form[name].value() or "") for name in spec.fields},
-        current.customized,
+        spec, {name: str(form[name].value() or "") for name in spec.fields}, True
     )
     response = render(
         request,
@@ -184,12 +194,106 @@ def automated_email_view(request: EmailRequest, key: str) -> HttpResponse:
             "copy": current,
             "preview": automated.preview(shown),
             "placeholders": spec.placeholders.items(),
+            "editor_config": {
+                "placeholders": dict(spec.placeholders),
+                "sample": dict(spec.sample),
+                "uploadUrl": reverse("crm_email_automated_image_upload"),
+                "images": [
+                    {
+                        "url": image_url(request, image),
+                        "name": image.name,
+                        "width": image.width,
+                        "height": image.height,
+                    }
+                    for image in AutomatedEmailImage.objects.all()[:40]
+                ],
+            },
             "row": AutomatedEmail.objects.filter(key=key)
             .select_related("updated_by")
             .first(),
         },
     )
     response["Cache-Control"] = "private, no-store"
+    return response
+
+
+IMAGE_TYPES = {
+    "PNG": "image/png",
+    "JPEG": "image/jpeg",
+    "GIF": "image/gif",
+    "WEBP": "image/webp",
+}
+IMAGE_MAX_BYTES = 3 * 1024 * 1024
+
+
+def image_url(request: EmailRequest, image: AutomatedEmailImage) -> str:
+    """Public address recipients' mail clients fetch; prefers the configured site URL."""
+    path = reverse("crm_email_automated_image", args=[image.pk])
+    public = settings.PUBLIC_APP_URL.rstrip("/")
+    if public.startswith("https://"):
+        return public + path
+    return request.build_absolute_uri(path)
+
+
+@crm_view
+@require_POST
+def automated_image_upload(request: EmailRequest) -> HttpResponse:
+    """Store an editor image and return the public URL to embed in the email."""
+    if not request.user.can_manage_crm_users:
+        raise PermissionDenied
+    upload = request.FILES.get("image")
+    if upload is None:
+        return JsonResponse({"error": "Choose an image file."}, status=400)
+    if (upload.size or 0) > IMAGE_MAX_BYTES:
+        return JsonResponse({"error": "Images must be 3 MB or smaller."}, status=400)
+    data = upload.read()
+    try:
+        with Image.open(BytesIO(data)) as parsed:
+            parsed.verify()
+        with Image.open(BytesIO(data)) as parsed:
+            kind, width, height = parsed.format or "", parsed.width, parsed.height
+    except (UnidentifiedImageError, OSError, ValueError):
+        return JsonResponse(
+            {"error": "Use a PNG, JPEG, GIF or WebP image."}, status=400
+        )
+    if kind not in IMAGE_TYPES:
+        return JsonResponse(
+            {"error": "Use a PNG, JPEG, GIF or WebP image."}, status=400
+        )
+    image = AutomatedEmailImage.objects.create(
+        name=str(upload.name or "image")[:255],
+        content_type=IMAGE_TYPES[kind],
+        size=len(data),
+        width=width,
+        height=height,
+        data=data,
+        uploaded_by=request.user,
+    )
+    AuditLog.objects.create(
+        actor=request.user,
+        action="crm.automated_email.image_uploaded",
+        entity_type="crm_email.AutomatedEmailImage",
+        entity_id=str(image.pk),
+        after={"name": image.name, "size": image.size},
+    )
+    return JsonResponse(
+        {
+            "url": image_url(request, image),
+            "name": image.name,
+            "width": width,
+            "height": height,
+        }
+    )
+
+
+@require_GET
+def automated_image(request: HttpRequest, image_id: uuid.UUID) -> HttpResponse:
+    """Serve an uploaded email image. Public: recipients' mail clients are not signed in."""
+    image = get_object_or_404(AutomatedEmailImage, pk=image_id)
+    response = HttpResponse(bytes(image.data), content_type=image.content_type)
+    response["Cache-Control"] = "public, max-age=31536000, immutable"
+    response["Content-Disposition"] = "inline"
+    response["X-Content-Type-Options"] = "nosniff"
     return response
 
 

@@ -21,7 +21,7 @@ from apps.crm.inventory_models import InventoryInvitation, InventoryMail
 from apps.crm.models import CrmActivity
 from apps.crm.newsletters import newsletter_delivery_configuration_errors
 from apps.crm_email.automated import copy_for as automated_copy
-from apps.crm_email.automated import fill
+from apps.crm_email.automated import fill, fill_html
 from apps.users.models import AuditLog
 
 logger = logging.getLogger(__name__)
@@ -143,6 +143,7 @@ def queue_mail(
     url: str = "",
     label: str = "",
     calendar: str = "",
+    body_html: str = "",
 ) -> InventoryMail:
     mail, _ = InventoryMail.objects.get_or_create(
         invitation=invitation,
@@ -151,6 +152,7 @@ def queue_mail(
             "recipient": recipient,
             "subject": subject,
             "body": body,
+            "body_html": body_html,
             "action_url": url,
             "action_label": label,
             "calendar": calendar,
@@ -289,9 +291,10 @@ def complete_inventory(invitation: InventoryInvitation, result: dict[str, Any]) 
         f"follow-up-r{invitation.revision}" if previous_task_id else "follow-up",
         invitation.recipient,
         fill(copy["subject"], values),
-        fill(copy["body"], values),
+        fill(copy.text("body"), values),
         url,
         fill(copy.get("action_label"), values) if url else "",
+        body_html=fill_html(copy.html("body"), values) if copy.is_html("body") else "",
     )
     if parent.assigned_to and parent.assigned_to.is_active:
         copy = automated_copy("inventory_owner_review")
@@ -300,10 +303,13 @@ def complete_inventory(invitation: InventoryInvitation, result: dict[str, Any]) 
             f"owner-r{invitation.revision}" if previous_task_id else "owner",
             parent.assigned_to.email,
             fill(copy["subject"], values),
-            fill(copy["body"], values),
+            fill(copy.text("body"), values),
             settings.PUBLIC_APP_URL.rstrip("/")
             + reverse("inventory_detail", args=[invitation.pk]),
             fill(copy["action_label"], values),
+            body_html=fill_html(copy.html("body"), values)
+            if copy.is_html("body")
+            else "",
         )
 
 

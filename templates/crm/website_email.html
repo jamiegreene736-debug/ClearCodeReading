@@ -9,10 +9,10 @@
 <tr><td style="padding:28px 24px;">
 <p style="margin:0 0 12px;color:#1A7A7A;font-size:12px;font-weight:bold;letter-spacing:2px;">SUBMISSION CONFIRMED</p>
 <h1 style="margin:0 0 20px;font-size:28px;line-height:1.25;color:#0F2B35;">{{ heading }}</h1>
-<p style="font-size:16px;line-height:1.7;">{{ introduction|linebreaksbr }}</p>
+<div style="font-size:16px;line-height:1.7;">{{ introduction_html|safe }}</div>
 {% if rows %}<table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="table-layout:fixed;background:#F7F2EA;margin:24px 0;">{% for row in rows %}<tr><td style="padding:12px 16px;border-bottom:1px solid #E8D5B0;overflow-wrap:anywhere;word-break:break-word;"><p style="margin:0 0 4px;font-size:12px;color:#38616B;font-weight:bold;">{{ row.label }}</p><p style="margin:0;font-size:15px;line-height:1.6;">{{ row.value }}</p></td></tr>{% endfor %}</table>{% endif %}
 {% if next_step %}<h2 style="font-size:18px;margin:24px 0 8px;">What happens next</h2>
-<p style="font-size:16px;line-height:1.7;">{{ next_step|linebreaksbr }}</p>{% endif %}
+<div style="font-size:16px;line-height:1.7;">{{ next_step_html|safe }}</div>{% endif %}
 {% if action_label %}<p style="margin:28px 0;"><a href="{{ action_url }}" style="display:inline-block;background:#1A7A7A;color:#ffffff;text-decoration:none;font-size:16px;font-weight:bold;padding:16px 22px;border-radius:8px;">{{ action_label }}</a></p>{% endif %}
 <p style="font-size:14px;line-height:1.7;">Questions? Contact <a href="mailto:{{ team_email }}" style="color:#1A7A7A;overflow-wrap:anywhere;">{{ team_email }}</a>.</p>
 <p style="font-size:15px;line-height:1.7;">The ClearCode Reading team<br><span style="color:#38616B;">A clear next step. Growing reading confidence.</span></p>

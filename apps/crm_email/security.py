@@ -1,4 +1,5 @@
 import hashlib
+import re
 from collections.abc import Iterator
 from contextlib import contextmanager
 
@@ -114,15 +115,90 @@ def clean_html(value: str) -> str:
     )
 
 
+RICH_STYLE_PROPERTIES = {
+    "color",
+    "background-color",
+    "font-size",
+    "font-family",
+    "font-weight",
+    "font-style",
+    "text-decoration",
+    "text-align",
+    "line-height",
+    "margin",
+    "margin-top",
+    "margin-bottom",
+    "padding",
+    "border-radius",
+    "width",
+    "max-width",
+    "height",
+    "display",
+}
+
+
+def clean_rich_html(value: str) -> str:
+    """Sanitize administrator-authored email HTML: safe inline styles and hosted images."""
+    return nh3.clean(
+        value,
+        tags={
+            "p",
+            "div",
+            "br",
+            "hr",
+            "span",
+            "strong",
+            "b",
+            "em",
+            "i",
+            "u",
+            "s",
+            "strike",
+            "sub",
+            "sup",
+            "h1",
+            "h2",
+            "h3",
+            "h4",
+            "ul",
+            "ol",
+            "li",
+            "blockquote",
+            "a",
+            "img",
+            "table",
+            "thead",
+            "tbody",
+            "tr",
+            "th",
+            "td",
+        },
+        attributes={
+            "a": {"href", "title", "style"},
+            "img": {"src", "alt", "width", "height", "style"},
+            "table": {"style", "width", "cellpadding", "cellspacing", "role"},
+            "td": {"style", "align", "valign", "width", "colspan"},
+            "th": {"style", "align", "valign", "width", "colspan"},
+            "tr": {"style"},
+            "*": {"style"},
+        },
+        filter_style_properties=RICH_STYLE_PROPERTIES,
+        url_schemes={"https", "http", "mailto"},
+        url_relative="deny",
+        clean_content_tags={"script", "style", "iframe", "object", "svg", "math"},
+    )
+
+
+_BLOCK_END = re.compile(
+    r"</(?:p|div|h[1-6]|li|tr|blockquote|table)\s*>|<br\s*/?>|<hr\s*/?>", re.IGNORECASE
+)
+
+
 def plain_text(value: str) -> str:
     import html
 
     return html.unescape(
-        strip_tags(
-            value.replace("<br>", "\n")
-            .replace("</p>", "</p>\n")
-            .replace("</div>", "</div>\n")
-        )
+        strip_tags(_BLOCK_END.sub(lambda match: match.group(0) + "\n", value))
     )
 
 

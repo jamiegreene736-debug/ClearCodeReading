@@ -200,7 +200,24 @@ restore, and "Restore default" deletes the override. Covered emails:
   review notice, and both consultation-booked messages.
 - The five first-stage pipeline emails (`stage_<pipeline>`); the defaults still
   come from `first_stage_copy.json` and the pilot page links to each editor.
+- Survey initial emails: `survey_family_enrollment` (same default copy as the
+  Families & Enrollment first-stage email) and `survey_general`, one email shared by
+  every other pipeline the survey routes to. `route_survey_deliveries` in
+  `stage_signals.py` re-points the survey's first-stage deliveries at these keys and
+  cancels all but one non-family delivery, so a respondent who picks donor and
+  referral interests gets a single general email. The general copy is a draft until
+  the approved wording is supplied.
 - The account invitation sent when a team member or portal user is created.
+
+The message and "what happens next" fields use a rich editor
+(`static/crm_email/automated_editor.js`): text styles, fonts, sizes, colors,
+highlights, alignment, lists, links, buttons, dividers, images and an HTML view, with a
+live sample preview. Images upload to `AutomatedEmailImage` (PNG/JPEG/GIF/WebP, 3 MB,
+verified with Pillow) and are served publicly at `/crm/email/images/<uuid>/` so
+recipients' mail clients can load them; URLs use `PUBLIC_APP_URL`. Saved HTML is
+sanitized by `clean_rich_html` (allow-listed tags and inline style properties, https
+images only). Senders take `copy.html()` for the HTML part and `copy.text()` for the
+plain-text part; default wording stays plain text until customized.
 
 ## Public consultation booking page
 `/book/` (`consultation_booking`) is a public, no-index page listing the default consultation

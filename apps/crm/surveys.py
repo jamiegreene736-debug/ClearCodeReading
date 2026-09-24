@@ -22,6 +22,7 @@ from apps.crm.services import (
     resolve_triage_item,
     record_form_submission,
 )
+from apps.crm_email.stage_signals import route_survey_deliveries
 
 
 SURVEY_SITUATIONS = {
@@ -354,8 +355,10 @@ def record_early_interest_survey(*, answers: EarlyInterestSurveyAnswers, source:
         submitted_data=submission_data,
     )
 
+    survey_deals = []
     if answers.audience == Lead.PipelineCategory.FAMILY_ENROLLMENT:
         deal, _created = ensure_family_enrollment_deal(lead=lead)
+        survey_deals.append(deal)
         deal.grade_band = _grade_band_for_situation(answers.respondent_situation)
         deal.in_catchment_zip = answers.home_zip
         if (
@@ -390,15 +393,19 @@ def record_early_interest_survey(*, answers: EarlyInterestSurveyAnswers, source:
         if "donor" in answers.engagement_interests:
             pipelines.append(Opportunity.Pipeline.FOUNDATION_DONORS)
         if pipelines:
-            resolve_triage_item(
+            triage = resolve_triage_item(
                 triage=triage, pipelines=pipelines, actor=None,
                 notes="Automatically routed from explicit survey interests.",
             )
+            survey_deals.extend(triage.created_deals.all())
             # Broader partnership and career requests still need human follow-up.
             if set(answers.engagement_interests) & {"community_partner", "career_interest"}:
                 triage.status = triage.Status.PENDING
                 triage.resolved_at = None
                 triage.save(update_fields=["status", "resolved_at", "updated_at"])
+
+    # Survey-created first-stage emails use the survey wording from Email settings.
+    route_survey_deliveries(survey_deals)
 
     if "opening_updates" in answers.engagement_interests:
         existing_name = (
