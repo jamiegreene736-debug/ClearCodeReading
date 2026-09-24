@@ -15,6 +15,11 @@ urlpatterns = [
         views.disconnect_view,
         name="crm_email_disconnect",
     ),
+    path(
+        "email/automated/<slug:key>/",
+        views.automated_email_view,
+        name="crm_email_automated",
+    ),
     path("email/templates/new/", views.template_view, name="crm_email_template_new"),
     path(
         "email/templates/<int:template_id>/",

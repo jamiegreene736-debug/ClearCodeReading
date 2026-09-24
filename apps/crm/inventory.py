@@ -20,6 +20,8 @@ from apps.crm.inventory_email import plain_text
 from apps.crm.inventory_models import InventoryInvitation, InventoryMail
 from apps.crm.models import CrmActivity
 from apps.crm.newsletters import newsletter_delivery_configuration_errors
+from apps.crm_email.automated import copy_for as automated_copy
+from apps.crm_email.automated import fill
 from apps.users.models import AuditLog
 
 logger = logging.getLogger(__name__)
@@ -270,37 +272,38 @@ def complete_inventory(invitation: InventoryInvitation, result: dict[str, Any]) 
     log_activity(invitation, "Completed")
     outcome = result["outcome"]
     if outcome == "support":
-        body = "Thank you for completing the Parent Reading Inventory. Your responses suggest that a conversation about reading support may be helpful. You can choose a consultation time using the link below."
-        url, label = invitation_url(invitation) + "book/", "Schedule a consultation"
+        copy, url = (
+            automated_copy("inventory_follow_up_support"),
+            invitation_url(invitation) + "book/",
+        )
     elif outcome == "resources":
-        body = "Thank you for completing the Parent Reading Inventory. Explore our reading resources for ideas to support continued practice. Our team will review your responses and can help you choose next steps."
-        url, label = (
+        copy, url = (
+            automated_copy("inventory_follow_up_resources"),
             settings.PUBLIC_APP_URL.rstrip("/") + "/resources/",
-            "Explore reading resources",
         )
     else:
-        body = "Thank you for completing the Parent Reading Inventory. Our team will review your responses and contact you about the next step."
-        url, label = "", ""
-    body += "\n\nThis parent inventory is a starting point for a conversation, not a diagnosis or a placement decision."
+        copy, url = automated_copy("inventory_follow_up_other"), ""
+    values = {"child_name": invitation.child.name}
     queue_mail(
         invitation,
         f"follow-up-r{invitation.revision}" if previous_task_id else "follow-up",
         invitation.recipient,
-        "Your Parent Reading Inventory: next steps",
-        body,
+        fill(copy["subject"], values),
+        fill(copy["body"], values),
         url,
-        label,
+        fill(copy.get("action_label"), values) if url else "",
     )
     if parent.assigned_to and parent.assigned_to.is_active:
+        copy = automated_copy("inventory_owner_review")
         queue_mail(
             invitation,
             f"owner-r{invitation.revision}" if previous_task_id else "owner",
             parent.assigned_to.email,
-            "A reading inventory is ready for review",
-            "An assigned contact has completed the Parent Reading Inventory.",
+            fill(copy["subject"], values),
+            fill(copy["body"], values),
             settings.PUBLIC_APP_URL.rstrip("/")
             + reverse("inventory_detail", args=[invitation.pk]),
-            "Review assessment",
+            fill(copy["action_label"], values),
         )
 
 

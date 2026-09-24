@@ -159,6 +159,28 @@ class EmailTemplate(models.Model):
         ordering: ClassVar = ["name"]
 
 
+class AutomatedEmail(models.Model):
+    """Administrator override of one automated email's wording (see automated.py)."""
+
+    key = models.CharField(max_length=60, unique=True)
+    subject = models.CharField(max_length=998, blank=True)
+    heading = models.CharField(max_length=255, blank=True)
+    body = models.TextField(blank=True)
+    next_step = models.TextField(blank=True)
+    action_label = models.CharField(max_length=120, blank=True)
+    action_url = models.CharField(max_length=1000, blank=True)
+    updated_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, blank=True
+    )
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering: ClassVar = ["key"]
+
+    def __str__(self) -> str:
+        return self.key
+
+
 class WorkerHeartbeat(models.Model):
     name = models.CharField(max_length=30, primary_key=True, default="email")
     last_seen_at = models.DateTimeField()

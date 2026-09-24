@@ -1,11 +1,7 @@
 """First-stage approved copy and an internal test pilot using the durable Gmail outbox."""
 
-import json
 import re
 from dataclasses import dataclass
-from functools import lru_cache
-from pathlib import Path
-from typing import cast
 
 from django.conf import settings
 from django.core.exceptions import PermissionDenied
@@ -14,6 +10,7 @@ from django.utils.html import escape, urlize
 
 from apps.crm.consultation_booking import consultation_booking_url
 from apps.crm.models import Opportunity
+from apps.crm_email.automated import copy_for, first_stage_source
 from apps.crm_email.models import Mailbox, Message, StageEmailDelivery, StageEmailPilot
 from apps.crm_email.security import (
     EmailError,
@@ -34,14 +31,6 @@ class StageCopy:
     source: str
 
 
-@lru_cache(maxsize=1)
-def approved_copy() -> dict[str, dict[str, object]]:
-    return cast(
-        dict[str, dict[str, object]],
-        json.loads(Path(__file__).with_name("first_stage_copy.json").read_text()),
-    )
-
-
 def sending_mailbox(pipeline: str, pilot: StageEmailPilot) -> Mailbox:
     if pipeline == Opportunity.Pipeline.EQUITY_INVESTMENT and pilot.equity_mailbox:
         return pilot.equity_mailbox
@@ -49,7 +38,8 @@ def sending_mailbox(pipeline: str, pilot: StageEmailPilot) -> Mailbox:
 
 
 def render_copy(deal: Opportunity, pilot: StageEmailPilot) -> StageCopy:
-    source = approved_copy()[deal.pipeline]
+    # Approved wording, or the administrator's edit from CRM email settings.
+    copy = copy_for("stage_" + deal.pipeline)
     contact = deal.lead
     name = (
         contact.contact_name.strip().split()[0]
@@ -86,9 +76,7 @@ def render_copy(deal: Opportunity, pilot: StageEmailPilot) -> StageCopy:
         "foundation_name": "Foundation sender name",
         "gmail_signature": "Equity sender signature",
     }
-    body = "\n\n".join(cast(list[str], source["paragraphs"]))
-    body = body.replace("[Name]", "{{foundation_name}}")
-    body = body.replace("Signature block from Gmail", "{{gmail_signature}}")
+    body = copy["body"]
     missing: list[str] = []
 
     def substitute(match: re.Match[str]) -> str:
@@ -102,9 +90,13 @@ def render_copy(deal: Opportunity, pilot: StageEmailPilot) -> StageCopy:
         return value
 
     body = re.sub(r"{{([^{}]+)}}", substitute, body)
-    return StageCopy(
-        str(source["subject"]), body, tuple(missing), str(source["source"])
+    subject = re.sub(r"{{([^{}]+)}}", substitute, copy["subject"])
+    source = (
+        "Edited in CRM email settings"
+        if copy.customized
+        else str(first_stage_source()[deal.pipeline]["source"])
     )
+    return StageCopy(subject, body, tuple(missing), source)
 
 
 def pilot_allowed(delivery: StageEmailDelivery) -> bool:

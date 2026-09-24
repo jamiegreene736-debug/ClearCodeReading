@@ -1,6 +1,5 @@
 """Branded website receipts delivered by the existing, reconciled Gmail outbox."""
 
-from dataclasses import dataclass
 from urllib.parse import urlparse
 
 from django.conf import settings
@@ -15,11 +14,12 @@ from apps.core.models import RecruitingInterest
 from apps.crm.models import FormSubmission, NewsletterSubscription, WebsiteReceipt
 from apps.crm.newsletters import _unsubscribe_url
 from apps.crm.templatetags.crm_display import crm_field_label, crm_field_value
+from apps.crm_email.automated import WEBSITE_TEAM_EMAIL, copy_for, fill
 from apps.crm_email.models import Mailbox, Message
 from apps.crm_email.security import EmailError, mailbox_lock, require_configured
 from apps.crm_email.services import active_mailbox
 
-TEAM_EMAIL = "hello@clearcodereading.com"
+TEAM_EMAIL = WEBSITE_TEAM_EMAIL
 
 
 def website_from_address() -> str:
@@ -31,79 +31,19 @@ def website_from_address() -> str:
     return address
 
 
-@dataclass(frozen=True)
-class ReceiptCopy:
-    label: str
-    heading: str
-    introduction: str
-    next_step: str
-    action_label: str = "Explore ClearCode Reading"
-    action_path: str = "/how-it-works/"
-
-
-COPY = {
-    "consultation": ReceiptCopy(
-        "Consultation request",
-        "Let’s find a clear next step.",
-        "Thank you for requesting a consultation with ClearCode Reading.",
-        "Our team will review your request and contact you to arrange a conversation about your family’s reading goals. Your appointment is not booked yet.",
-    ),
-    "consultation_booked": ReceiptCopy(
-        "Consultation booking",
-        "Your consultation is booked.",
-        "Thank you for booking a phone consultation with ClearCode Reading.",
-        "We will call the phone number you provided at the time shown below. If you need to change the time, reply to this email or contact our team.",
-    ),
-    "assessment": ReceiptCopy(
-        "Assessment follow-up",
-        "Your reading follow-up is with us.",
-        "Thank you for sharing your reading check-in with ClearCode Reading.",
-        "Our team will review what you shared and contact you about appropriate next steps. This check-in is not a diagnosis or a confirmed enrollment.",
-    ),
-    "survey": ReceiptCopy(
-        "Early interest survey",
-        "Thank you for helping shape what’s next.",
-        "We’ve received your early interest survey and the ways you’d like to connect with ClearCode Reading.",
-        "We’ll use your selected interests to guide relevant follow-up. Waitlist interest does not reserve a place, and a consultation request does not book an appointment.",
-    ),
-    "career": ReceiptCopy(
-        "Career interest",
-        "Thank you for your interest in our team.",
-        "We’ve received your career interest form, résumé, and cover letter.",
-        "Our recruiting team will review your application and contact you if there is a suitable next step. No interview or position is confirmed by this receipt.",
-        "Explore careers",
-        "/careers/",
-    ),
-    "newsletter": ReceiptCopy(
-        "Newsletter signup",
-        "You’re on the list.",
-        "Welcome to the ClearCode Reading newsletter. Your signup is confirmed.",
-        "Look out for reading resources and news from ClearCode Reading. You can unsubscribe using the link below.",
-        "Read our latest articles",
-        "/blog/",
-    ),
-    "resources": ReceiptCopy(
-        "Family resources signup",
-        "Your next reading step starts here.",
-        "Thank you for signing up for ClearCode Reading’s free family resources.",
-        "Your resources are available in the browser where you signed up. If you return on another device, simply complete the short access form again.",
-        "Explore family resources",
-        "/resources/",
-    ),
-    "support": ReceiptCopy(
-        "Support request",
-        "We’ve received your support request.",
-        "Thank you for contacting ClearCode Reading support.",
-        "Our team will review the topic and details you submitted and reply about next steps. This email confirms receipt; it does not mean the issue is resolved.",
-        "Visit support",
-        "/support/",
-    ),
-    "website": ReceiptCopy(
-        "Website inquiry",
-        "Thank you for reaching out.",
-        "Your message has reached the ClearCode Reading team.",
-        "We’ll review your inquiry and follow up using the contact details you provided.",
-    ),
+# Receipt kinds and their form labels. The wording of each receipt lives in the
+# automated-email registry (apps/crm_email/automated.py, keys "website_<kind>")
+# and can be edited from CRM email settings.
+LABELS = {
+    "consultation": "Consultation request",
+    "consultation_booked": "Consultation booking",
+    "assessment": "Assessment follow-up",
+    "survey": "Early interest survey",
+    "career": "Career interest",
+    "newsletter": "Newsletter signup",
+    "resources": "Family resources signup",
+    "support": "Support request",
+    "website": "Website inquiry",
 }
 
 
@@ -114,13 +54,55 @@ def receipt_kind(submission: FormSubmission) -> str:
         return "support"
     if submission.submitted_data.get("resource_access") == "family_resources":
         return "resources"
-    return submission.form_type if submission.form_type in COPY else "website"
+    return submission.form_type if submission.form_type in LABELS else "website"
+
+
+def survey_follow_up(data: dict[str, object]) -> str:
+    interests = data.get("engagement_interests", [])
+    if not isinstance(interests, list):
+        interests = []
+    steps = []
+    if "priority_waitlist" in interests:
+        steps.append(
+            "We’ve recorded your priority enrollment waitlist interest; a place is not reserved yet."
+        )
+    if "consultation" in interests:
+        steps.append(
+            "Our team will contact you to arrange your requested free consultation; an appointment is not booked yet."
+        )
+    if "career_interest" in interests:
+        steps.append(
+            "We’ve noted your interest in working with ClearCode. You can submit your résumé and cover letter on our Careers page."
+        )
+    if any(
+        item in interests
+        for item in (
+            "community_partner",
+            "refer_family",
+            "professional_connection",
+            "referral_partner",
+            "donor",
+        )
+    ):
+        steps.append("We’ve noted your interest in connecting with our community team.")
+    if any(item in interests for item in ("opening_updates", "general_email")):
+        steps.append("We’ll keep you informed with relevant ClearCode Reading updates.")
+    return " ".join(steps) or "We’ll follow up based on the interests you selected."
 
 
 def receipt_context(submission: FormSubmission, *, team: bool) -> dict[str, object]:
     data = submission.submitted_data
     kind = receipt_kind(submission)
-    copy = COPY[kind]
+    label = LABELS[kind]
+    copy = copy_for("website_team" if team else "website_" + kind)
+    # Visitor-typed values are collapsed to one line so they are safe in subjects.
+    values = {
+        "form": label.lower(),
+        "name": " ".join(str(data.get("name", "")).split()),
+        "email": " ".join(str(data.get("email", "")).split()),
+        "reference": str(submission.pk),
+        "interest_follow_up": survey_follow_up(data) if kind == "survey" else "",
+    }
     base = settings.PUBLIC_APP_URL.rstrip("/")
     rows = []
     # A receipt summarizes the request without re-emailing children's results or documents.
@@ -185,42 +167,6 @@ def receipt_context(submission: FormSubmission, *, team: bool) -> dict[str, obje
                 {"label": "Reference", "value": str(submission.pk)},
             ]
         )
-    next_step = copy.next_step
-    if kind == "survey":
-        interests = data.get("engagement_interests", [])
-        steps = []
-        if "priority_waitlist" in interests:
-            steps.append(
-                "We’ve recorded your priority enrollment waitlist interest; a place is not reserved yet."
-            )
-        if "consultation" in interests:
-            steps.append(
-                "Our team will contact you to arrange your requested free consultation; an appointment is not booked yet."
-            )
-        if "career_interest" in interests:
-            steps.append(
-                "We’ve noted your interest in working with ClearCode. You can submit your résumé and cover letter on our Careers page."
-            )
-        if any(
-            item in interests
-            for item in (
-                "community_partner",
-                "refer_family",
-                "professional_connection",
-                "referral_partner",
-                "donor",
-            )
-        ):
-            steps.append(
-                "We’ve noted your interest in connecting with our community team."
-            )
-        if any(item in interests for item in ("opening_updates", "general_email")):
-            steps.append(
-                "We’ll keep you informed with relevant ClearCode Reading updates."
-            )
-        next_step = (
-            " ".join(steps) or "We’ll follow up based on the interests you selected."
-        )
     unsubscribe = ""
     if not team and kind in {"newsletter", "survey"}:
         subscription = NewsletterSubscription.objects.filter(
@@ -228,38 +174,32 @@ def receipt_context(submission: FormSubmission, *, team: bool) -> dict[str, obje
         ).first()
         if subscription:
             unsubscribe = _unsubscribe_url(subscription)
-    return {
-        "subject": f"New {copy.label.lower()} · #{submission.pk} | ClearCode Reading"
-        if team
-        else f"{copy.label} received | ClearCode Reading",
-        "heading": f"New {copy.label.lower()}" if team else copy.heading,
-        "introduction": "A website visitor has submitted the form below. Review the full submission in the CRM before following up."
-        if team
-        else copy.introduction,
-        "next_step": "Reply to this email to contact the person who submitted the form. Full responses and any sensitive details remain in the secured record."
-        if team
-        else next_step,
-        "rows": rows,
-        "action_label": "Review submission" if team else copy.action_label,
-        "action_url": base
-        + (
-            (
-                reverse(
-                    "admin:core_recruitinginterest_change",
-                    args=[data["application_id"]],
-                )
-                if kind == "career" and data.get("application_id")
-                else reverse(
-                    "crm_contact_detail",
-                    args=[submission.lead.pk if submission.lead else None],
-                )
+    if team:
+        action_url = base + (
+            reverse(
+                "admin:core_recruitinginterest_change",
+                args=[data["application_id"]],
             )
-            if team
-            else copy.action_path
-        ),
+            if kind == "career" and data.get("application_id")
+            else reverse(
+                "crm_contact_detail",
+                args=[submission.lead.pk if submission.lead else None],
+            )
+        )
+    else:
+        path = fill(copy.get("action_url"), values)
+        action_url = path if path.startswith("https://") else base + path
+    return {
+        "subject": fill(copy["subject"], values),
+        "heading": fill(copy["heading"], values),
+        "introduction": fill(copy["body"], values),
+        "next_step": fill(copy.get("next_step"), values),
+        "rows": rows,
+        "action_label": fill(copy.get("action_label"), values),
+        "action_url": action_url,
         "unsubscribe_url": unsubscribe,
         "team_email": TEAM_EMAIL,
-        "preheader": copy.label + " — received by ClearCode Reading",
+        "preheader": label + " — received by ClearCode Reading",
         "reference": submission.pk,
     }
 

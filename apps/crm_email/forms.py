@@ -6,6 +6,12 @@ from django.core.exceptions import ValidationError
 from django.core.validators import validate_email
 from django.utils import timezone
 
+from apps.crm_email.automated import (
+    FIELD_LABELS,
+    OPTIONAL_FIELDS,
+    AutomatedEmailSpec,
+    tokens,
+)
 from apps.crm_email.security import clean_html, plain_text
 
 
@@ -83,6 +89,57 @@ class TemplateForm(forms.Form):
 
     def clean_body_html(self) -> str:
         return clean_html(self.cleaned_data["body_html"])
+
+
+class AutomatedEmailForm(forms.Form):
+    """Edits the wording of one automated email; fields follow its registry spec."""
+
+    def __init__(self, spec: AutomatedEmailSpec, *args: Any, **kwargs: Any) -> None:
+        super().__init__(*args, **kwargs)
+        self.spec = spec
+        for name in spec.fields:
+            multiline = name in {"body", "next_step"}
+            self.fields[name] = forms.CharField(
+                label=FIELD_LABELS[name],
+                required=name not in OPTIONAL_FIELDS,
+                max_length=20000 if multiline else 998,
+                widget=forms.Textarea(attrs={"rows": 12 if name == "body" else 4})
+                if multiline
+                else forms.TextInput(),
+            )
+
+    def clean(self) -> dict[str, Any]:
+        cleaned = super().clean() or {}
+        for name in self.spec.fields:
+            value = cleaned.get(name)
+            if value is None:
+                continue
+            if (
+                name != "body"
+                and name != "next_step"
+                and ("\r" in value or "\n" in value)
+            ):
+                self.add_error(name, "Use a single line.")
+            unknown = [
+                token for token in tokens(value) if token not in self.spec.placeholders
+            ]
+            if unknown:
+                self.add_error(
+                    name,
+                    "Unknown placeholder: "
+                    + ", ".join("{{" + token + "}}" for token in dict.fromkeys(unknown))
+                    + ". Use only the placeholders listed on this page.",
+                )
+            if (
+                name == "action_url"
+                and value
+                and not (value.startswith("/") or value.startswith("https://"))
+            ):
+                self.add_error(
+                    name,
+                    "Enter a path on this site (starting with /) or an HTTPS link.",
+                )
+        return cleaned
 
 
 class SignatureForm(forms.Form):

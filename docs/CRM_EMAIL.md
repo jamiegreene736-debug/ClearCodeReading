@@ -181,6 +181,27 @@ review of website receipt overlap, consent, sender configuration and the final
 calendar/signatures. Never remove the internal-recipient guard just to test a
 customer address.
 
+## Automated email wording
+
+CRM > Email settings > **Automated emails** lists every email the system sends on its
+own and lets CRM administrators edit each one. The registry in
+`apps/crm_email/automated.py` describes each email once (key, trigger, recipient,
+default wording, allowed placeholders). Senders call `copy_for(key)` at send time,
+which returns the administrator's saved override (`AutomatedEmail` row) or the
+default; `fill()` substitutes `{{placeholder}}` tokens. The editor rejects unknown
+placeholders and multi-line subjects, records an `AuditLog` entry per save or
+restore, and "Restore default" deletes the override. Covered emails:
+
+- Website form confirmations to the visitor (`website_<kind>`: consultation,
+  consultation booking, assessment, survey, career, newsletter, resources,
+  support, website) and the shared team notice (`website_team`).
+- Parent Reading Inventory emails: the suggested invitation wording (still
+  editable per send), reminder, the three completion follow-ups, the owner
+  review notice, and both consultation-booked messages.
+- The five first-stage pipeline emails (`stage_<pipeline>`); the defaults still
+  come from `first_stage_copy.json` and the pilot page links to each editor.
+- The account invitation sent when a team member or portal user is created.
+
 ## Public consultation booking page
 `/book/` (`consultation_booking`) is a public, no-index page listing the default consultation
 host's confirmed, unbooked slots (the same `default_consultation_host()` and `available_slots()`

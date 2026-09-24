@@ -1,0 +1,27 @@
+{% extends "crm/email_base.html" %}
+{% block title %}{{ spec.name }} · Automated email{% endblock %}
+{% block email_content %}
+<p><a href="{% url 'crm_email_settings' %}#automated-emails">← Email settings</a></p>
+<p class="eyebrow">Automated email · {{ spec.group }}</p><h1>{{ spec.name }}</h1>
+<p class="subtle">Sent when: {{ spec.trigger }}.<br>To: {{ spec.recipient }}.</p>
+{% if row %}<p class="subtle">Customized {{ row.updated_at|date:"M j, Y, g:i A T" }}{% if row.updated_by %} by {{ row.updated_by.email }}{% endif %}.</p>{% else %}<p class="subtle">Using the default wording.</p>{% endif %}
+<div class="grid">
+<section class="card"><h2>Wording</h2>
+<form method="post">{% csrf_token %}{{ form.non_field_errors }}
+{% for field in form %}<div class="field{% if field.errors %} has-error{% endif %}">{{ field.label_tag }}{{ field }}{{ field.errors }}</div>{% endfor %}
+<div class="actions"><button class="btn btn-primary" name="action" value="save">Save wording</button>{% if copy.customized %}<button class="btn" name="action" value="restore" formnovalidate onclick="return confirm('Restore the default wording for this email?')">Restore default</button>{% endif %}</div>
+</form>
+{% if placeholders %}<h3>Placeholders</h3><p class="subtle">Type these exactly, including the double braces. Anything else in braces is rejected.</p>
+<ul>{% for token, description in placeholders %}<li><code>{% templatetag openvariable %}{{ token }}{% templatetag closevariable %}</code> — {{ description }}</li>{% endfor %}</ul>{% endif %}
+</section>
+<section class="card"><h2>Preview</h2><p class="subtle">Example values fill the placeholders. The preview shows the wording in the form when this page was loaded.</p>
+<div class="mail-body">
+<p><strong>Subject:</strong> {{ preview.subject }}</p>
+{% if preview.heading %}<h3>{{ preview.heading }}</h3>{% endif %}
+{{ preview.body|linebreaks }}
+{% if preview.next_step %}<h4>What happens next</h4>{{ preview.next_step|linebreaks }}{% endif %}
+{% if preview.action_label %}<p><span class="btn btn-primary" aria-hidden="true">{{ preview.action_label }}</span>{% if preview.action_url %} <span class="subtle">→ {{ preview.action_url }}</span>{% endif %}</p>{% endif %}
+</div>
+</section>
+</div>
+{% endblock %}

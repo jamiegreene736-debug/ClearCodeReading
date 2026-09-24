@@ -38,6 +38,8 @@ from apps.crm.inventory import (
 )
 from apps.crm.inventory_feedback import delivery_feedback
 from apps.crm.inventory_forms import BookingForm, InvitationForm, SectionForm, SlotForm
+from apps.crm_email.automated import copy_for as automated_copy
+from apps.crm_email.automated import fill
 from apps.crm.inventory_models import (
     ConsultationBooking,
     ConsultationSlot,
@@ -82,11 +84,14 @@ class InventoryListView(CrmAccessMixin, View):
 class InventorySendView(CrmAccessMixin, View):
     def get(self, request, pk):
         parent = get_object_or_404(Lead, pk=pk, is_deleted=False)
+        copy = automated_copy("inventory_invitation")
+        values = {"parent_name": parent.contact_name}
         form = InvitationForm(
             parent=parent,
             initial={
                 "recipient": parent.contact_email,
-                "message": f"Hi {parent.contact_name},\n\nPlease complete our Parent Reading Inventory to help us understand your child’s reading. You can save your answers and return using the same link.\n\nThank you,\nThe ClearCode Reading team",
+                "subject": fill(copy["subject"], values),
+                "message": fill(copy["body"], values),
             },
         )
         nonce = signing.dumps(
@@ -148,7 +153,7 @@ class InventorySendView(CrmAccessMixin, View):
                         data["subject"],
                         data["message"],
                         invitation_url(invitation),
-                        "Complete assessment",
+                        automated_copy("inventory_invitation")["action_label"],
                     )
                     log_activity(invitation, "Invitation created", request.user)
             deliver_pending(invitation)
@@ -281,14 +286,16 @@ class InventoryDetailView(CrmAccessMixin, View):
                     created_at__gt=timezone.now() - timedelta(days=1),
                 ).exists()
                 if not recent:
+                    copy = automated_copy("inventory_reminder")
+                    values = {"child_name": invitation.child.name}
                     queue_mail(
                         invitation,
                         "reminder-" + timezone.now().strftime("%Y%m%d"),
                         invitation.recipient,
-                        "Reminder: your Parent Reading Inventory",
-                        "You can complete or continue your Parent Reading Inventory using the link below.",
+                        fill(copy["subject"], values),
+                        fill(copy["body"], values),
                         invitation_url(invitation),
-                        "Continue assessment",
+                        fill(copy["action_label"], values),
                     )
                     log_activity(invitation, "Reminder requested", request.user)
                 else:
@@ -684,24 +691,27 @@ class InventoryBookingView(InventoryPublicView):
                         ZoneInfo(booking.timezone)
                     ).strftime("%A, %B %d at %I:%M %p %Z")
                     calendar = calendar_text(booking)
+                    values = {"appointment": appointment}
+                    parent_copy = automated_copy("inventory_booking_parent")
+                    host_copy = automated_copy("inventory_booking_host")
                     queue_mail(
                         invitation,
                         "booking-parent",
                         invitation.recipient,
-                        "Your ClearCode consultation is booked",
-                        f"Your phone consultation is booked for {appointment}. We will call the phone number you provided. A calendar invitation is attached.",
+                        fill(parent_copy["subject"], values),
+                        fill(parent_copy["body"], values),
                         calendar=calendar,
                     )
                     queue_mail(
                         invitation,
                         "booking-host",
                         slot.host.email,
-                        "A ClearCode consultation is booked",
-                        f"A parent has booked a consultation for {appointment}. Open the assessment for contact details.",
+                        fill(host_copy["subject"], values),
+                        fill(host_copy["body"], values),
                         request.build_absolute_uri(
                             reverse("inventory_detail", args=[invitation.pk])
                         ),
-                        "View booking",
+                        fill(host_copy["action_label"], values),
                         calendar,
                     )
                     log_activity(invitation, "Consultation booked")

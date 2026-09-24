@@ -14,8 +14,8 @@ from django.core import signing
 from django.core.exceptions import PermissionDenied, ValidationError
 from django.core.paginator import Paginator
 from django.core.validators import validate_email
-from django.db import connection
-from django.http import HttpResponse
+from django.db import connection, transaction
+from django.http import Http404, HttpResponse
 from django.shortcuts import get_object_or_404, redirect, render
 from django.utils import timezone
 from django.views.decorators.csrf import csrf_exempt
@@ -25,10 +25,17 @@ from google.auth.transport.requests import Request as GoogleRequest
 from google.oauth2 import id_token
 
 from apps.crm.models import Lead
-from apps.crm_email.forms import ComposeForm, SignatureForm, TemplateForm
+from apps.crm_email import automated
+from apps.crm_email.forms import (
+    AutomatedEmailForm,
+    ComposeForm,
+    SignatureForm,
+    TemplateForm,
+)
 from apps.crm_email.google import Gmail, authorization_url, connect
 from apps.crm_email.models import (
     Attachment,
+    AutomatedEmail,
     Conversation,
     EmailTemplate,
     Mailbox,
@@ -105,8 +112,85 @@ def settings_view(request: EmailRequest) -> HttpResponse:
             if request.user.can_manage_crm_users
             else [],
             "templates": EmailTemplate.objects.filter(owner=request.user),
+            "automated_groups": automated_groups()
+            if request.user.can_manage_crm_users
+            else [],
         },
     )
+
+
+def automated_groups() -> list[dict[str, Any]]:
+    copies = automated.all_copies()
+    return [
+        {
+            "name": group,
+            "emails": [copy for copy in copies if copy.spec.group == group],
+        }
+        for group in automated.groups()
+    ]
+
+
+@crm_view
+@require_http_methods(["GET", "POST"])
+def automated_email_view(request: EmailRequest, key: str) -> HttpResponse:
+    """Administrators edit the wording of one automated email, or restore its default."""
+    if not request.user.can_manage_crm_users:
+        raise PermissionDenied
+    try:
+        spec = automated.spec_for(key)
+    except LookupError as exc:
+        raise Http404 from exc
+    current = automated.copy_for(key)
+    if request.method == "POST" and request.POST.get("action") == "restore":
+        AutomatedEmail.objects.filter(key=key).delete()
+        AuditLog.objects.create(
+            actor=request.user,
+            action="crm.automated_email.restored",
+            entity_type="crm_email.AutomatedEmail",
+            entity_id=key,
+        )
+        messages.success(request, f"{spec.name}: default wording restored.")
+        return redirect("crm_email_settings")
+    form = AutomatedEmailForm(spec, request.POST or None, initial=dict(current.values))
+    if request.method == "POST" and form.is_valid():
+        values = {name: form.cleaned_data[name] for name in spec.fields}
+        with transaction.atomic():
+            row, _ = AutomatedEmail.objects.select_for_update().get_or_create(key=key)
+            for name, value in values.items():
+                setattr(row, name, value)
+            row.updated_by = request.user
+            row.save()
+            AuditLog.objects.create(
+                actor=request.user,
+                action="crm.automated_email.saved",
+                entity_type="crm_email.AutomatedEmail",
+                entity_id=key,
+                before=dict(current.values),
+                after=values,
+            )
+        messages.success(request, f"{spec.name}: wording saved.")
+        return redirect("crm_email_settings")
+    shown = automated.AutomatedEmailCopy(
+        spec,
+        {name: str(form[name].value() or "") for name in spec.fields},
+        current.customized,
+    )
+    response = render(
+        request,
+        "crm/automated_email.html",
+        {
+            "form": form,
+            "spec": spec,
+            "copy": current,
+            "preview": automated.preview(shown),
+            "placeholders": spec.placeholders.items(),
+            "row": AutomatedEmail.objects.filter(key=key)
+            .select_related("updated_by")
+            .first(),
+        },
+    )
+    response["Cache-Control"] = "private, no-store"
+    return response
 
 
 @crm_view
