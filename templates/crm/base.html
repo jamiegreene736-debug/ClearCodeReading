@@ -1,3 +1,4 @@
+{% load crm_display %}
 <!doctype html>
 <html lang="en">
 <head>
@@ -17,13 +18,28 @@
     button { cursor:pointer; }
     .skip { position:fixed; left:16px; top:-60px; z-index:100; padding:10px 16px; color:white; background:var(--navy); border-radius:6px; }
     .skip:focus { top:12px; }
-    .shell { min-height:100vh; display:grid; grid-template-columns:220px minmax(0,1fr); }
-    .sidebar { position:sticky; top:0; height:100vh; padding:22px 14px; color:white; background:var(--navy); }
-    .brand { display:flex; align-items:center; gap:10px; padding:0 8px 24px; text-decoration:none; font:800 19px "Plus Jakarta Sans",sans-serif; letter-spacing:-.02em; }
-    .brand-mark { width:32px; height:32px; display:grid; place-items:center; color:var(--navy); background:var(--orange); border-radius:7px; }
-    .nav-label { margin:16px 10px 8px; color:#9fb4c5; font-size:11px; font-weight:700; letter-spacing:.1em; text-transform:uppercase; }
-    .nav-link { display:flex; min-height:44px; align-items:center; gap:10px; margin:3px 0; padding:10px 12px; border-radius:5px; color:#eaf0f4; text-decoration:none; font-weight:600; }
-    .nav-link:hover,.nav-link.active { color:white; background:#3d5264; }
+    .shell { min-height:100vh; display:grid; grid-template-columns:272px minmax(0,1fr); }
+    .sidebar { position:sticky; top:0; z-index:20; height:100vh; display:flex; flex-direction:column; background:#fff; border-right:1px solid #e3ebf0; color:var(--ink); }
+    .sidebar-brand { display:flex; align-items:center; gap:12px; margin:16px 16px 8px; padding:4px 4px 14px; border-bottom:3px solid var(--orange); text-decoration:none; }
+    .sidebar-brand img { width:42px; height:42px; border-radius:12px; box-shadow:0 6px 16px rgba(33,51,67,.14); }
+    .sidebar-brand-name { display:block; color:var(--navy); font:800 17px/1.1 "Plus Jakarta Sans",sans-serif; letter-spacing:-.04em; }
+    .sidebar-brand-name .clear { color:var(--teal); }
+    .sidebar-brand-sub { display:block; margin-top:3px; color:var(--muted); font-size:12px; font-weight:600; }
+    .sidebar-toggle { display:none; }
+    .sidebar-panel { display:flex; flex:1; min-height:0; flex-direction:column; }
+    .sidebar-nav { flex:1; overflow:auto; padding:14px 12px 8px; }
+    .nav-section + .nav-section { margin-top:18px; }
+    .nav-label { margin:0 10px 6px; color:#8aa0b0; font-size:11px; font-weight:700; letter-spacing:.08em; text-transform:uppercase; }
+    .nav-link { display:flex; min-height:40px; align-items:center; gap:10px; margin:2px 0; padding:6px 8px; border-radius:10px; color:#3d5364; text-decoration:none; font-weight:600; }
+    .nav-ico { width:28px; height:28px; flex:0 0 28px; display:grid; place-items:center; border-radius:8px; color:#547084; background:#f2f6f8; }
+    .nav-ico svg { width:16px; height:16px; }
+    .nav-link:hover { background:#f4f8f9; color:var(--navy); }
+    .nav-link:hover .nav-ico { color:var(--teal); background:var(--teal-soft); }
+    .nav-link.is-current { background:var(--teal-soft); color:#0f5c5c; font-weight:700; }
+    .nav-link.is-current .nav-ico { color:#fff; background:var(--teal); }
+    .nav-link:focus-visible { outline:3px solid rgba(26,122,122,.35); outline-offset:2px; }
+    .sidebar-foot { margin-top:auto; padding:10px 12px 14px; border-top:1px solid #e6eef2; }
+    .sidebar-foot .nav-link { color:#5c6f7f; }
     .main { min-width:0; }
     .topbar { min-height:72px; display:flex; align-items:center; justify-content:space-between; gap:20px; padding:10px 28px; border-bottom:1px solid var(--line); background:white; }
     .topbar small { color:var(--muted); }
@@ -70,19 +86,18 @@
     .survey-chip-list { display:flex; flex-wrap:wrap; gap:7px; margin:0; padding:0; list-style:none; }
     .survey-chip { padding:6px 9px; color:#24564e; border:1px solid #b8ddd7; border-radius:5px; background:var(--teal-soft); font-size:12px; font-weight:700; line-height:1.4; }
     @media (max-width:1000px) { .stats { grid-template-columns:repeat(2,minmax(0,1fr)); } }
-    .mobile-nav { display:none; }
     @media (max-width:760px) {
       body { font-size:15px; }
       .shell { display:block; }
-      .sidebar { position:static; width:100%; height:auto; padding:10px 12px; }
-      .brand { min-height:44px; padding:0 4px; }
-      .desktop-nav { display:none; }
-      .mobile-nav { display:block; margin-top:8px; }
-      .mobile-nav summary { min-height:44px; display:flex; cursor:pointer; list-style:none; align-items:center; justify-content:space-between; padding:8px 12px; color:white; border:1px solid rgba(255,255,255,.22); border-radius:6px; font-weight:700; }
-      .mobile-nav summary::-webkit-details-marker { display:none; }
-      .mobile-nav summary::after { content:'+'; font-size:20px; }
-      .mobile-nav[open] summary::after { content:'−'; }
-      .mobile-nav .nav-group { display:grid; margin-top:8px; }
+      .sidebar { position:sticky; top:0; width:100%; height:auto; box-shadow:0 8px 24px rgba(33,51,67,.06); }
+      .sidebar-brand { margin:10px 12px 0; padding-bottom:10px; }
+      .sidebar-toggle { display:inline-flex; align-items:center; justify-content:space-between; gap:8px; width:calc(100% - 24px); min-height:44px; margin:8px 12px 10px; padding:8px 12px; color:var(--navy); background:#f4f8f9; border:1px solid #d5e2ea; border-radius:10px; font-weight:700; }
+      .sidebar-toggle svg { width:16px; height:16px; transition:transform .15s ease; }
+      .sidebar.is-open .sidebar-toggle svg { transform:rotate(180deg); }
+      .sidebar-panel { display:none; max-height:min(70vh, 560px); overflow:auto; }
+      .sidebar.is-open .sidebar-panel { display:block; }
+      .sidebar-nav { overflow:visible; }
+      .nav-link { min-height:44px; }
       .topbar { height:auto; min-height:64px; align-items:center; flex-wrap:wrap; padding:10px 14px; }
       .topbar small { display:none; }
       .top-actions { width:100%; gap:8px; }
@@ -108,47 +123,78 @@
 <body>
   <a class="skip" href="#main-content">Skip to content</a>
   <div class="shell">
-    <aside class="sidebar">
-      <a class="brand" href="{% url 'crm_dashboard' %}"><span class="brand-mark">CC</span><span>ClearCode CRM</span></a>
-      <div class="desktop-nav">
-        <p class="nav-label">CRM</p>
-        <a class="nav-link" href="{% url 'crm_calendar_settings' %}">My calendar</a>
-        <a class="nav-link {% if request.resolver_match.url_name == 'crm_email_settings' or request.resolver_match.url_name == 'crm_email_notifications' or request.resolver_match.url_name == 'crm_newsletter_list' or request.resolver_match.url_name == 'crm_first_stage_emails' %}active{% endif %}" href="{% url 'crm_email_settings' %}">✉ Email &amp; notifications</a>
-        <nav class="nav-group" aria-label="CRM navigation">
-          <a class="nav-link {% if request.resolver_match.url_name == 'crm_dashboard' %}active{% endif %}" href="{% url 'crm_dashboard' %}"><span aria-hidden="true">⌂</span> Overview</a>
-          <a class="nav-link {% if request.resolver_match.url_name == 'crm_contact_list' or request.resolver_match.url_name == 'crm_contact_create' or request.resolver_match.url_name == 'crm_contact_detail' %}active{% endif %}" href="{% url 'crm_contact_list' %}"><span aria-hidden="true">◎</span> Contacts</a>
-          <a class="nav-link {% if request.resolver_match.url_name == 'crm_company_list' or request.resolver_match.url_name == 'crm_company_create' or request.resolver_match.url_name == 'crm_company_detail' or request.resolver_match.url_name == 'crm_company_update' %}active{% endif %}" href="{% url 'crm_company_list' %}"><span aria-hidden="true">▣</span> Companies</a>
-          <a class="nav-link {% if request.resolver_match.url_name == 'crm_deal_list' or request.resolver_match.url_name == 'crm_deal_new' or request.resolver_match.url_name == 'crm_deal_create' or request.resolver_match.url_name == 'crm_deal_detail' %}active{% endif %}" href="{% url 'crm_deal_list' %}"><span aria-hidden="true">◇</span> Deals</a>
-          <a class="nav-link {% if request.resolver_match.url_name == 'crm_triage_list' %}active{% endif %}" href="{% url 'crm_triage_list' %}"><span aria-hidden="true">⌁</span> Intake triage</a>
-          {% if request.user.has_hiring_access %}<a class="nav-link {% if request.resolver_match.url_name == 'crm_hiring' %}active{% endif %}" href="{% url 'crm_hiring' %}">Teacher hiring</a>{% endif %}
-          <a class="nav-link" href="{% url 'inventory_list' %}">Assessments</a>
-          <a class="nav-link {% if request.resolver_match.url_name == 'crm_team' %}active{% endif %}" href="{% url 'crm_team' %}"><span aria-hidden="true">♙</span> Team</a>
-        {% if request.user.can_manage_crm_users %}<a class="nav-link" href="{% url 'manage_users' %}">Add user &amp; invitations</a>{% endif %}
+    <aside class="sidebar" data-crm-sidebar>
+      <a class="sidebar-brand" href="{% url 'crm_dashboard' %}">
+        <img src="/assets/logo/cc-monogram-gold-teal.png" alt="" width="42" height="42">
+        <span>
+          <span class="sidebar-brand-name"><span class="clear">Clear</span>Code</span>
+          <span class="sidebar-brand-sub">CRM workspace</span>
+        </span>
+      </a>
+      <button class="sidebar-toggle" type="button" aria-expanded="false" aria-controls="crm-sidebar-nav">
+        <span>Workspace menu</span>
+        <svg aria-hidden="true" viewBox="0 0 12 8" fill="none" stroke="currentColor" stroke-width="2"><path d="m1 1.5 5 5 5-5"/></svg>
+      </button>
+      <div class="sidebar-panel" id="crm-sidebar-nav">
+        <nav class="sidebar-nav" aria-label="CRM">
+          <div class="nav-section">
+            <p class="nav-label">Workspace</p>
+            {% nav_state 'crm_dashboard' as overview %}
+            <a class="nav-link {{ overview.class }}" {% if overview.current %}aria-current="page"{% endif %} href="{% url 'crm_dashboard' %}">{% include "crm/_nav_icon.html" with icon="home" %}Overview</a>
+            {% nav_state 'crm_contact_list' 'crm_contact_create' 'crm_contact_detail' 'crm_contact_update' 'crm_contact_delete' 'crm_contact_bulk_assign' 'crm_note_create' 'crm_task_create' 'crm_task_complete' 'crm_contact_email' 'crm_email_compose' 'crm_email_import' 'crm_email_thread' 'crm_email_cancel' 'crm_email_download' 'crm_email_attachment_remove' as contacts %}
+            <a class="nav-link {{ contacts.class }}" {% if contacts.current %}aria-current="page"{% endif %} href="{% url 'crm_contact_list' %}">{% include "crm/_nav_icon.html" with icon="contacts" %}Contacts</a>
+            {% nav_state 'crm_company_list' 'crm_company_create' 'crm_company_detail' 'crm_company_update' as companies %}
+            <a class="nav-link {{ companies.class }}" {% if companies.current %}aria-current="page"{% endif %} href="{% url 'crm_company_list' %}">{% include "crm/_nav_icon.html" with icon="companies" %}Companies</a>
+            {% nav_state 'crm_deal_list' 'crm_deal_new' 'crm_deal_create' 'crm_deal_detail' 'crm_deal_remove' 'crm_deal_stage_update' 'crm_enrollment_person_edit' as deals %}
+            <a class="nav-link {{ deals.class }}" {% if deals.current %}aria-current="page"{% endif %} href="{% url 'crm_deal_list' %}">{% include "crm/_nav_icon.html" with icon="deals" %}Deals</a>
+            {% nav_state 'crm_triage_list' 'crm_triage_resolve' as triage %}
+            <a class="nav-link {{ triage.class }}" {% if triage.current %}aria-current="page"{% endif %} href="{% url 'crm_triage_list' %}">{% include "crm/_nav_icon.html" with icon="triage" %}Intake triage</a>
+            {% if request.user.has_hiring_access %}
+              {% nav_state 'crm_hiring' 'crm_hiring_update' 'crm_hiring_assign' 'crm_hiring_document' 'crm_hiring_from_contact' as hiring %}
+              <a class="nav-link {{ hiring.class }}" {% if hiring.current %}aria-current="page"{% endif %} href="{% url 'crm_hiring' %}">{% include "crm/_nav_icon.html" with icon="hiring" %}Teacher hiring</a>
+            {% endif %}
+            {% nav_state 'inventory_list' 'inventory_preview' 'inventory_slots' 'inventory_send' 'inventory_detail' as assessments %}
+            <a class="nav-link {{ assessments.class }}" {% if assessments.current %}aria-current="page"{% endif %} href="{% url 'inventory_list' %}">{% include "crm/_nav_icon.html" with icon="assessments" %}Assessments</a>
+            {% nav_state 'crm_team' 'crm_hiring_access' as team %}
+            <a class="nav-link {{ team.class }}" {% if team.current %}aria-current="page"{% endif %} href="{% url 'crm_team' %}">{% include "crm/_nav_icon.html" with icon="team" %}Team</a>
+          </div>
+          <div class="nav-section">
+            <p class="nav-label">Settings</p>
+            {% nav_state 'crm_calendar_settings' 'crm_google_calendar_connect' as calendar %}
+            <a class="nav-link {{ calendar.class }}" {% if calendar.current %}aria-current="page"{% endif %} href="{% url 'crm_calendar_settings' %}">{% include "crm/_nav_icon.html" with icon="calendar" %}My calendar</a>
+            {% nav_state 'crm_email_settings' 'crm_email_notifications' 'crm_newsletter_list' 'crm_newsletter_new' 'crm_newsletter' 'crm_newsletter_send' 'crm_email_connect' 'crm_email_sync' 'crm_email_disconnect' 'crm_email_template' 'crm_email_template_new' 'crm_email_automated' 'crm_email_automated_image_upload' 'crm_first_stage_emails' as email %}
+            <a class="nav-link {{ email.class }}" {% if email.current %}aria-current="page"{% endif %} href="{% url 'crm_email_settings' %}">{% include "crm/_nav_icon.html" with icon="email" %}Email &amp; notifications</a>
+            {% if request.user.can_manage_crm_users %}
+              <a class="nav-link" href="{% url 'manage_users' %}">{% include "crm/_nav_icon.html" with icon="users" %}Add user &amp; invitations</a>
+            {% endif %}
+          </div>
         </nav>
-        <p class="nav-label">ClearCode</p>
-        <nav class="nav-group" aria-label="ClearCode navigation">
-          {% if request.user.role != 'crm_user' %}<a class="nav-link" href="{% url 'portal_dashboard' %}"><span aria-hidden="true">▦</span> Back to portal</a>{% endif %}
-          {% if request.user.is_staff or request.user.is_superuser %}<a class="nav-link" href="/admin/"><span aria-hidden="true">⚙</span> Admin</a>{% endif %}
-        </nav>
+        <div class="sidebar-foot">
+          <nav aria-label="ClearCode">
+            {% if request.user.role != 'crm_user' %}
+              <a class="nav-link" href="{% url 'portal_dashboard' %}">{% include "crm/_nav_icon.html" with icon="portal" %}Back to portal</a>
+            {% endif %}
+            {% if request.user.is_staff or request.user.is_superuser %}
+              <a class="nav-link" href="/admin/">{% include "crm/_nav_icon.html" with icon="admin" %}Admin</a>
+            {% endif %}
+          </nav>
+        </div>
       </div>
-      <details class="mobile-nav">
-        <summary>Workspace menu</summary>
-        <nav class="nav-group" aria-label="Mobile CRM navigation">
-<a class="nav-link" href="{% url 'crm_calendar_settings' %}">My calendar</a>
-        <a class="nav-link" href="{% url 'crm_email_settings' %}">Email &amp; notifications</a>
-          <a class="nav-link {% if request.resolver_match.url_name == 'crm_dashboard' %}active{% endif %}" href="{% url 'crm_dashboard' %}">Overview</a>
-          <a class="nav-link {% if request.resolver_match.url_name == 'crm_contact_list' or request.resolver_match.url_name == 'crm_contact_create' or request.resolver_match.url_name == 'crm_contact_detail' %}active{% endif %}" href="{% url 'crm_contact_list' %}">Contacts</a>
-          <a class="nav-link {% if request.resolver_match.url_name == 'crm_company_list' or request.resolver_match.url_name == 'crm_company_create' or request.resolver_match.url_name == 'crm_company_detail' or request.resolver_match.url_name == 'crm_company_update' %}active{% endif %}" href="{% url 'crm_company_list' %}">Companies</a>
-          <a class="nav-link {% if request.resolver_match.url_name == 'crm_deal_list' or request.resolver_match.url_name == 'crm_deal_new' or request.resolver_match.url_name == 'crm_deal_create' or request.resolver_match.url_name == 'crm_deal_detail' %}active{% endif %}" href="{% url 'crm_deal_list' %}">Deals</a>
-          <a class="nav-link {% if request.resolver_match.url_name == 'crm_triage_list' %}active{% endif %}" href="{% url 'crm_triage_list' %}">Intake triage</a>
-          {% if request.user.has_hiring_access %}<a class="nav-link {% if request.resolver_match.url_name == 'crm_hiring' %}active{% endif %}" href="{% url 'crm_hiring' %}">Teacher hiring</a>{% endif %}
-          <a class="nav-link" href="{% url 'inventory_list' %}">Assessments</a>
-          <a class="nav-link {% if request.resolver_match.url_name == 'crm_team' %}active{% endif %}" href="{% url 'crm_team' %}">Team</a>
-        {% if request.user.can_manage_crm_users %}<a class="nav-link" href="{% url 'manage_users' %}">Add user &amp; invitations</a>{% endif %}
-          {% if request.user.role != 'crm_user' %}<a class="nav-link" href="{% url 'portal_dashboard' %}">Back to portal</a>{% endif %}
-          {% if request.user.is_staff or request.user.is_superuser %}<a class="nav-link" href="/admin/">Admin</a>{% endif %}
-        </nav>
-      </details>
+      <script>
+        (() => {
+          const sidebar = document.currentScript.closest("[data-crm-sidebar]");
+          const toggle = sidebar?.querySelector(".sidebar-toggle");
+          if (!sidebar || !toggle) return;
+          const setOpen = (open) => {
+            sidebar.classList.toggle("is-open", open);
+            toggle.setAttribute("aria-expanded", String(open));
+          };
+          toggle.addEventListener("click", () => setOpen(toggle.getAttribute("aria-expanded") !== "true"));
+          sidebar.querySelectorAll("a").forEach((link) => link.addEventListener("click", () => {
+            if (window.matchMedia("(max-width: 760px)").matches) setOpen(false);
+          }));
+        })();
+      </script>
     </aside>
     <div class="main">
       <header class="topbar">
