@@ -1,0 +1,24 @@
+{% extends "crm/email_base.html" %}
+{% block title %}First-stage email tests{% endblock %}
+{% block email_content %}
+<p><a href="{% url 'crm_email_settings' %}">← Email settings</a></p>
+<p class="eyebrow">Prelaunch testing</p><h1>First-stage emails</h1>
+<p>Approved entry emails for the five deal pipelines. Test messages go only to <strong>{{ recipient }}</strong>, with a [TEST] subject. Customer delivery and all exit and later-stage emails are disabled.</p>
+<section class="card"><h2>Test setup</h2>
+<p>Primary test sending mailbox: <strong>{{ mailbox.email|default:request.user.email }}</strong> · {{ mailbox.get_status_display }}. Signatures are shown in the previews below.</p>
+<p>When enabled, a deal entering its first stage sends once if its contact email is {{ recipient }}. Moving it out of the first stage or pausing testing cancels an unsent message. Enabling testing does not email existing deals.</p>
+<form method="post">{% csrf_token %}<input type="hidden" name="action" value="save">{{ form.as_p }}<button class="btn btn-primary">Save test settings</button></form>
+<p>Equity tests use the signature above, or the chosen sender’s saved CRM signature. Gmail signatures are not automatically included by the sending API.</p>
+</section>
+{% for preview in previews %}<section class="card"><h2>{{ preview.label }}</h2>
+<p class="subtle">First-stage entry only · {{ preview.copy.source }}</p>
+<p><strong>Subject:</strong> {{ preview.copy.subject }}</p>
+<div class="mail-body">{{ preview.copy.body|linebreaks }}</div>
+{% if preview.copy.missing %}<p role="status"><strong>Complete before testing:</strong> {{ preview.copy.missing|join:", " }}</p>{% else %}<p>Ready for a test.</p>{% endif %}
+<form method="post">{% csrf_token %}<input type="hidden" name="action" value="test"><input type="hidden" name="pipeline" value="{{ preview.pipeline }}"><input type="hidden" name="token" value="{{ preview.token }}"><button class="btn" {% if not pilot.enabled or preview.copy.missing %}disabled{% endif %}>Create test deal and email {{ recipient }}</button></form>
+</section>{% endfor %}
+<section class="card"><h2>Recent test deliveries</h2><p>Refresh this page after the email worker processes a test.</p>
+{% for delivery in deliveries %}<div class="row"><a href="{% url 'crm_deal_detail' delivery.deal.pk %}">{{ delivery.deal.name }}</a> · {% if delivery.message %}{{ delivery.message.get_status_display }}{% elif delivery.cancelled %}Cancelled{% elif delivery.error %}Needs attention{% else %}Waiting for email worker{% endif %}
+{% if delivery.error %}<p>{{ delivery.error }}</p>{% endif %}{% if delivery.message.last_error %}<p>{{ delivery.message.last_error }}</p>{% endif %}
+{% if delivery.message.sent_at %}<p>Accepted by Gmail {{ delivery.message.sent_at|date:"M j, Y, g:i A T" }}. Check {{ recipient }} to confirm receipt.</p>{% endif %}</div>{% empty %}<p>No first-stage test deliveries yet.</p>{% endfor %}</section>
+{% endblock %}

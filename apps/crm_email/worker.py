@@ -126,6 +126,13 @@ def send(client: Gmail, message: Message) -> None:
         message.last_error = "Sender no longer matches an active connected Gmail account. Reconnect your Gmail and create a new message."
         message.save()
         return
+    from apps.crm_email.stage_emails import stage_send_allowed
+
+    if not stage_send_allowed(message):
+        message.status = Message.Status.CANCELLED
+        message.last_error = "First-stage test is paused or no longer matches its allowed recipient and stage."
+        message.save()
+        return
     from apps.crm.inventory_models import InventoryMail
 
     delivery = (
@@ -218,6 +225,9 @@ def run_pass() -> int:
         from apps.crm.website_emails import enqueue_pending_receipts
 
         enqueue_pending_receipts()
+        from apps.crm_email.stage_emails import enqueue_stage_emails
+
+        enqueue_stage_emails()
         # Recover invitations committed just before a web request was interrupted.
         from apps.crm.inventory_mail import enqueue_google
         from apps.crm.inventory_models import InventoryMail

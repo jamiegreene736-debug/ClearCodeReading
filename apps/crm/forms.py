@@ -126,6 +126,7 @@ class DealForm(forms.ModelForm):
             "program_name",
             "cycle_year",
             "investment_round",
+            "investment_category",
             "funding_type",
             "esa_program",
             "grade_band",

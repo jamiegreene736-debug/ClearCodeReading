@@ -30,6 +30,9 @@ class Mailbox(models.Model):
     last_error = models.CharField(max_length=255, blank=True)
     updated_at = models.DateTimeField(auto_now=True)
 
+    def __str__(self) -> str:
+        return self.email or self.user.email
+
 
 class Authorization(models.Model):
     state_hash = models.CharField(max_length=64, primary_key=True)
@@ -159,3 +162,42 @@ class EmailTemplate(models.Model):
 class WorkerHeartbeat(models.Model):
     name = models.CharField(max_length=30, primary_key=True, default="email")
     last_seen_at = models.DateTimeField()
+
+
+class StageEmailPilot(models.Model):
+    """Prelaunch automation is restricted to the approved internal test address."""
+
+    mailbox = models.OneToOneField(Mailbox, on_delete=models.CASCADE)
+    equity_mailbox = models.ForeignKey(
+        Mailbox,
+        null=True,
+        blank=True,
+        on_delete=models.PROTECT,
+        related_name="equity_pilots",
+    )
+    equity_signature = models.TextField(blank=True)
+    enabled = models.BooleanField(default=False)
+    scheduling_link = models.URLField(blank=True, max_length=1000)
+    bethany_signature = models.TextField(
+        default="Bethany Fleming\nFounder & CEO, ClearCode Reading Center\nbethany@clearcodereading.com"
+    )
+    foundation_name = models.CharField(default="Bethany Fleming", max_length=150)
+    sample_company = models.CharField(default="Example Organization", max_length=255)
+    sample_investment_category = models.CharField(blank=True, max_length=255)
+    updated_at = models.DateTimeField(auto_now=True)
+
+
+class StageEmailDelivery(models.Model):
+    deal = models.OneToOneField("crm.Opportunity", on_delete=models.CASCADE)
+    pilot = models.ForeignKey(StageEmailPilot, on_delete=models.PROTECT)
+    pipeline = models.CharField(max_length=32)
+    message = models.OneToOneField(
+        Message,
+        null=True,
+        blank=True,
+        on_delete=models.PROTECT,
+        related_name="stage_delivery",
+    )
+    error = models.CharField(max_length=255, blank=True)
+    cancelled = models.BooleanField(default=False)
+    created_at = models.DateTimeField(auto_now_add=True)
