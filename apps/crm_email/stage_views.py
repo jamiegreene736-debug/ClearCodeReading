@@ -46,7 +46,7 @@ class PilotForm(PilotFormBase):
             "equity_mailbox": "Equity sending mailbox",
             "equity_signature": "Equity sender signature",
             "enabled": "Enable first-stage tests to info@clearcodereading.com",
-            "scheduling_link": "Bethany’s scheduling link",
+            "scheduling_link": "Bethany’s scheduling link (blank = this site’s /book/ page)",
             "bethany_signature": "Bethany’s signature",
             "foundation_name": "Foundation sender name",
             "sample_company": "Company name for test examples",

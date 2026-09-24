@@ -180,3 +180,15 @@ Launch requires a separately authorized extension to the recipient policy and
 review of website receipt overlap, consent, sender configuration and the final
 calendar/signatures. Never remove the internal-recipient guard just to test a
 customer address.
+
+## Public consultation booking page
+`/book/` (`consultation_booking`) is a public, no-index page listing the default consultation
+host's confirmed, unbooked slots (the same `default_consultation_host()` and `available_slots()`
+checks as the reading-inventory booking). A booking creates or updates the CRM contact, records a
+consultation form submission flagged `consultation_booked` so the website receipt sends a
+"Your consultation is booked" confirmation to the family and a team notice, stores a
+`ConsultationBooking`, and moves the family enrollment deal to Consultation Scheduled. Public
+and inventory bookings both take a slot out of availability, the CRM availability page and
+the host's .ics feed. A honeypot field and a per-address cache rate limit protect the form.
+When the first-stage pilot's scheduling link is blank, the Families email uses
+`PUBLIC_APP_URL` + `/book/` (HTTPS only), so no link needs to be pasted after a domain change.

@@ -36,7 +36,7 @@ from apps.crm.calendars import (
     fetch_calendar,
     normalize_url,
 )
-from apps.crm.inventory_models import InventoryBooking
+from apps.crm.inventory_models import ConsultationBooking, InventoryBooking
 from apps.crm.views import CrmAccessMixin
 from apps.users.models import CustomUser
 
@@ -290,6 +290,22 @@ def calendar_feed(request: CalendarRequest, token: uuid.UUID) -> HttpResponse:
         event.add(
             "description",
             "Phone consultation. Sign in to ClearCode CRM for contact details.",
+        )
+        event.add("status", "CONFIRMED")
+        calendar.add_component(event)
+    for public_booking in ConsultationBooking.objects.filter(
+        slot__host_id=profile.host_id,
+        slot__ends_at__gte=timezone.now() - timedelta(days=30),
+    ).select_related("slot"):
+        event = Event()
+        event.add("uid", f"consultation-booking-{public_booking.pk}@clearcodereading.com")
+        event.add("dtstamp", public_booking.created_at)
+        event.add("dtstart", public_booking.slot.starts_at)
+        event.add("dtend", public_booking.slot.ends_at)
+        event.add("summary", "ClearCode reading consultation")
+        event.add(
+            "description",
+            "Phone consultation booked online. Sign in to ClearCode CRM for contact details.",
         )
         event.add("status", "CONFIRMED")
         calendar.add_component(event)

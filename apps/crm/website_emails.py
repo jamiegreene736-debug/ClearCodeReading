@@ -48,6 +48,12 @@ COPY = {
         "Thank you for requesting a consultation with ClearCode Reading.",
         "Our team will review your request and contact you to arrange a conversation about your family’s reading goals. Your appointment is not booked yet.",
     ),
+    "consultation_booked": ReceiptCopy(
+        "Consultation booking",
+        "Your consultation is booked.",
+        "Thank you for booking a phone consultation with ClearCode Reading.",
+        "We will call the phone number you provided at the time shown below. If you need to change the time, reply to this email or contact our team.",
+    ),
     "assessment": ReceiptCopy(
         "Assessment follow-up",
         "Your reading follow-up is with us.",
@@ -102,6 +108,8 @@ COPY = {
 
 
 def receipt_kind(submission: FormSubmission) -> str:
+    if submission.submitted_data.get("consultation_booked"):
+        return "consultation_booked"
     if submission.source_path == "/support/":
         return "support"
     if submission.submitted_data.get("resource_access") == "family_resources":
@@ -156,7 +164,13 @@ def receipt_context(submission: FormSubmission, *, team: bool) -> dict[str, obje
         rows.append({"label": label, "value": display})
     if kind == "career":
         rows.append({"label": "Documents received", "value": "Résumé and cover letter"})
-    if team and kind in {"consultation", "website"} and data.get("notes"):
+    if kind == "consultation_booked":
+        rows.append({"label": "Consultation time", "value": str(data.get("consultation_time", ""))})
+        if data.get("consultation_host"):
+            rows.append({"label": "With", "value": str(data["consultation_host"])})
+        if data.get("child_age_grade"):
+            rows.append({"label": "Child’s age or grade", "value": str(data["child_age_grade"])})
+    if team and kind in {"consultation", "consultation_booked", "website"} and data.get("notes"):
         rows.append({"label": "Message", "value": str(data["notes"])})
     if team:
         rows.extend(
