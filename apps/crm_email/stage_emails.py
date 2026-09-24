@@ -108,7 +108,7 @@ def render_copy(deal: Opportunity, pilot: StageEmailPilot, key: str = "") -> Sta
     if copy.customized:
         source = "Edited in CRM email settings"
     elif key.startswith("survey_"):
-        source = "Survey default wording"
+        source = "Pipeline introduction default wording"
     else:
         source = str(first_stage_source()[deal.pipeline]["source"])
     return StageCopy(subject, body, body_html, tuple(missing), source, key)

@@ -217,7 +217,7 @@ restore, and "Restore default" deletes the override. Covered emails:
   review notice, and both consultation-booked messages.
 - The five first-stage pipeline emails (`stage_<pipeline>`); the defaults still
   come from `first_stage_copy.json` and the pilot page links to each editor.
-- Survey initial emails: `survey_family_enrollment` (same default copy as the
+- Pipeline introduction emails: `survey_family_enrollment` (same default copy as the
   Families & Enrollment first-stage email) and `survey_general`, one email shared by
   every other pipeline the survey routes to. `route_survey_deliveries` in
   `stage_signals.py` re-points the survey's first-stage deliveries at these keys and
