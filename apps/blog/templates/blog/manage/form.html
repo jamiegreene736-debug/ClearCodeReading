@@ -418,9 +418,12 @@
         img.setAttribute('src', await uploadImage(blob, img.getAttribute('alt') || ''));
       } catch (error) {
         lost += 1;
+        const holder = img.closest('p, figure');
         img.remove();
+        if (holder && holder !== editor && !holder.textContent.trim() && !holder.querySelector('img')) holder.remove();
       }
     }
+    if (lost) editor.querySelectorAll('p, figure').forEach((el) => { if (!el.textContent.trim() && !el.querySelector('img, br, hr')) el.remove(); });
     showNotice(lost ? `${lost} pasted image${lost === 1 ? ' was' : 's were'} not readable from the clipboard and ${lost === 1 ? 'was' : 'were'} removed. Add ${lost === 1 ? 'it' : 'them'} with Upload image.` : '');
   };
 
