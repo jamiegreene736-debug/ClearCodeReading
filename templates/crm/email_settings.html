@@ -3,6 +3,7 @@
 {% block email_content %}
 <p class="eyebrow">Your workspace</p><h1>Email settings</h1>
 <p class="subtle">Connect your ClearCodeReading Google Workspace mailbox to send and receive email on contact records.</p>
+{% if request.user.can_manage_crm_users %}<p><a class="btn btn-primary" href="{% url 'crm_first_stage_emails' %}">First-stage email tests</a></p>{% endif %}
 <section class="card"><h2>Your Google mailbox</h2>
 <p><strong>{{ mailbox.email|default:request.user.email }}</strong> <span class="badge">{{ mailbox.get_status_display }}</span></p>
 {% if mailbox.last_error %}<p role="alert">{{ mailbox.last_error }}</p>{% endif %}

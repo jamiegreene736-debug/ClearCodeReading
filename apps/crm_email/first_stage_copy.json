@@ -1,0 +1,61 @@
+{
+  "family_enrollment": {
+    "source": "ClearCode CRM Emails — 1. Families & Enrollment.docx",
+    "subject": "Thanks for reaching out to ClearCode Reading Center",
+    "paragraphs": [
+      "Hi {{contact.firstname}},",
+      "Thank you for telling us about your child. I know reaching out can feel like a big step, and I'm glad you did.",
+      "I'm Bethany Fleming, Founder & CEO of ClearCode Reading Center. We're a structured literacy intervention center opening in the Orlando area in 2027, built for K–8 students who haven't yet reached grade-level reading proficiency. I started ClearCode because I believe every child can learn to read with the right method — and the earlier we start, the better.",
+      "I'd love to set up a short call to talk through your family's needs and answer any questions. To make this easy, grab a time on my calendar that works for you: {{scheduling_link}}",
+      "In the meantime, feel free to explore our website to learn more about our approach.",
+      "I'm glad you found us.",
+      "Warmly,",
+      "{{Bethany’s email signature}}"
+    ]
+  },
+  "referral_partners": {
+    "source": "ClearCode CRM Emails — 2. Referral Partners.docx",
+    "subject": "Introducing ClearCode Reading Center",
+    "paragraphs": [
+      "Hi {{contact.firstname}},",
+      "I'm Bethany Fleming, Founder & CEO of ClearCode Reading Center. We're a structured literacy intervention center opening in the Orlando area in 2027, working with K–8 students who are struggling to read.",
+      "Our approach is built on a simple belief: every child can learn to read with the right method, and the earlier we intervene, the more we prevent years of struggle and lost confidence. We combine evidence-based structured literacy instruction with a model designed to scale, so more families can access this kind of support, not just the ones who happen to find the right tutor.",
+      "I think {{company.name}} and ClearCode could be a strong referral fit — your work with families likely surfaces exactly the kids we're built to help.",
+      "Would you be open to a short call so we can share more? In the meantime, check out our website to learn more about our approach.",
+      "Looking forward to connecting.",
+      "Warmly,",
+      "{{Bethany’s email signature}}"
+    ]
+  },
+  "foundation_donors": {
+    "source": "ClearCode CRM Emails — 3. Foundation Donors.docx",
+    "subject": "An invitation to learn about ClearCode Reading Center",
+    "paragraphs": [
+      "Hi {{contact.firstname}},",
+      "Thank you so much for your interest in ClearCode Foundation! We are the nonprofit arm of ClearCode Reading Center, a structured literacy intervention center opening in Central Florida in 2027 whose mission is to make sure every K–8th grade student that hasn't yet reached grade-level reading proficiency has a path to becoming a confident reader, regardless of a family's ability to pay.",
+      "I'd love to connect with you. May I call you sometime this week?",
+      "Warmly,",
+      "[Name], ClearCode Foundation"
+    ]
+  },
+  "foundation_grants": {
+    "source": "ClearCode CRM Emails — 4. Foundation Grants & PRIs.docx",
+    "subject": "Introduction request: ClearCode Foundation",
+    "paragraphs": [
+      "Hi {{contact.firstname}},",
+      "I'm reaching out on behalf of the ClearCode Foundation, a non-profit that funds scholarships for literacy interventions for qualifying families and other community focused literacy initiatives. I understand {{company.name}} has supported work in this space, and I'd welcome the chance to introduce our program.",
+      "Would you be open to a short call, or could you point me to the right person on your team?",
+      "Warmly,",
+      "[Name], ClearCode Foundation"
+    ]
+  },
+  "equity_investment": {
+    "source": "ClearCode CRM Emails — 5. Equity & Investment.docx",
+    "subject": "Introduction request: ClearCode, Inc.",
+    "paragraphs": [
+      "Hi {{contact.firstname}},",
+      "I'm raising ClearCode's seed round and understand {{company.name}} invests in {{investment_category}}. I'd welcome an introduction to your team, or I'm happy to share more directly if that's easier.",
+      "Signature block from Gmail"
+    ]
+  }
+}

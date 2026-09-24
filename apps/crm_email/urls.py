@@ -1,8 +1,10 @@
 from django.urls import path
 
 from apps.crm_email import views
+from apps.crm_email.stage_views import first_stage
 
 urlpatterns = [
+    path("email/first-stage/", first_stage, name="crm_first_stage_emails"),
     path("email/", views.settings_view, name="crm_email_settings"),
     path("email/connect/", views.connect_view, name="crm_email_connect"),
     path("email/callback/", views.callback, name="crm_email_callback"),

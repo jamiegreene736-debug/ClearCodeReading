@@ -1,8 +1,9 @@
 import re
+from typing import Any
 
 from django.conf import settings
 from django.core.exceptions import ValidationError
-from django.db import models
+from django.db import models, transaction
 from django.utils import timezone
 
 
@@ -279,6 +280,7 @@ class Opportunity(TimestampedModel, SoftDeleteModel):
     campaign_year = models.CharField(max_length=128, blank=True)
     program_name = models.CharField(max_length=255, blank=True)
     cycle_year = models.PositiveSmallIntegerField(null=True, blank=True)
+    investment_category = models.CharField(max_length=255, blank=True)
     investment_round = models.CharField(max_length=128, blank=True)
     funding_type = models.CharField(max_length=16, choices=FundingType.choices, blank=True)
     esa_program = models.CharField(max_length=16, choices=EsaProgram.choices, blank=True)
@@ -329,14 +331,16 @@ class Opportunity(TimestampedModel, SoftDeleteModel):
     def __str__(self):
         return f"{self.name} ({self.get_pipeline_display()})"
 
-    def save(self, *args, **kwargs):
+    def save(self, *args: Any, **kwargs: Any) -> None:
         generated_name = self.convention_name
         if generated_name:
             self.name = generated_name
-        super().save(*args, **kwargs)
+        # The deal and its durable first-stage event must commit together.
+        with transaction.atomic():
+            super().save(*args, **kwargs)
 
     @classmethod
-    def stage_choices_for_pipeline(cls, pipeline):
+    def stage_choices_for_pipeline(cls, pipeline: str) -> tuple[tuple[str, str], ...]:
         return PIPELINE_STAGE_CHOICES.get(pipeline, ())
 
     @classmethod
@@ -344,7 +348,7 @@ class Opportunity(TimestampedModel, SoftDeleteModel):
         return {value for value, _label in cls.stage_choices_for_pipeline(pipeline)}
 
     @classmethod
-    def initial_stage_for_pipeline(cls, pipeline):
+    def initial_stage_for_pipeline(cls, pipeline: str) -> str:
         choices = cls.stage_choices_for_pipeline(pipeline)
         return choices[0][0] if choices else cls.Stage.FAMILY_LEAD_NURTURE
 

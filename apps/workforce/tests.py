@@ -191,6 +191,10 @@ class WorkforceWorkflowTests(TestCase):
         )
 
     def _make_ready(self):
+        # These fixtures model the September 2026 payment period, before its reporting deadline.
+        clock = patch("apps.workforce.services.timezone.localdate", return_value=date(2026, 9, 2))
+        clock.start()
+        self.addCleanup(clock.stop)
         self._classify_contractor()
         ProviderOnboarding.objects.create(
             engagement=self.engagement,

@@ -140,3 +140,43 @@ managed sharing policy permits the ClearCodeReading organization and the single 
 service identity. It replaces the legacy domain policy only for this project. The temporary
 organization policy administrator grant was removed. A synthetic Google push was accepted
 with HTTP 204; no real mailbox or outbound email was involved in that check.
+
+## First-stage prelaunch pilot
+
+CRM > Email settings > **First-stage email tests** (`/crm/email/first-stage/`) is
+restricted to CRM administrators. The five individual September 2026 documents
+supplied by Jamie are the approved copy source; they supersede the combined v1
+copy. `first_stage_copy.json` preserves their first ENTRY subject and paragraphs.
+No EXIT or later-stage automation is installed. Existing website receipts remain
+separate intake acknowledgments.
+
+The pilot is disabled by default. Administrators choose the connected primary
+and equity sending mailboxes, complete signatures and Bethany's HTTPS scheduling
+link, and enable testing. Every pilot message has a `[TEST]` subject and can only
+be sent to Jamie's designated inbox, `info@clearcodereading.com`. There is no
+customer-delivery mode. Missing names, company, investment category, calendar
+link, or signature block the affected template rather than sending placeholders.
+The equity signature can be supplied in pilot settings or taken from that sender's
+saved CRM signature; Gmail API sending does not automatically insert a Gmail UI
+signature. Mailbox credentials and normal user-owned drafts remain private.
+
+The example buttons create clearly named test deals and contacts and exercise the
+same entry signal as ordinary UI/API deal creation. A signed request token and a
+locked pilot row make repeated submission of one example request idempotent.
+Only new first-stage entries while testing is enabled are captured; enabling the
+pilot does not backfill existing deals. A durable one-per-deal record prevents
+resends on edits or re-entry. Bulk queryset updates deliberately do not generate
+entry events; use the CRM UI/API to exercise the workflow.
+
+The existing Gmail worker renders and queues captured events. It rechecks the
+recipient, sender, deleted contact/deal, stage, and pilot status immediately before
+sending. Pausing the pilot or leaving the first stage prevents unsent delivery.
+Gmail uncertainty/reconciliation and provider retry handling remain in the shared
+outbox. The test page shows queued, failed, cancelled, uncertain and Gmail-accepted
+states separately; only inbox inspection establishes receipt. No historical deal
+or customer is emailed by deployment.
+
+Launch requires a separately authorized extension to the recipient policy and
+review of website receipt overlap, consent, sender configuration and the final
+calendar/signatures. Never remove the internal-recipient guard just to test a
+customer address.
