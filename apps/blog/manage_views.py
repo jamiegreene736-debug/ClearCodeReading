@@ -5,7 +5,7 @@ from __future__ import annotations
 from django.contrib import messages
 from django.core.paginator import Paginator
 from django.db.models import Q
-from django.http import Http404, HttpResponse
+from django.http import Http404, HttpResponse, JsonResponse
 from django.http.response import HttpResponseBase
 from django.shortcuts import get_object_or_404, redirect, render
 from django.utils import timezone
@@ -13,7 +13,8 @@ from django.views.decorators.http import require_http_methods, require_POST
 
 from apps.blog.access import EditorRequest, blog_editor_required
 from apps.blog.forms import BlogPostForm
-from apps.blog.models import BlogPost
+from apps.blog.forms import BlogImageUploadForm
+from apps.blog.models import BlogImage, BlogPost
 from apps.blog.substack import SUBSTACK_PUBLICATION_URL
 
 TABS = (
@@ -80,7 +81,7 @@ def post_list(request: EditorRequest) -> HttpResponseBase:
 @require_http_methods(["GET", "POST"])
 def post_create(request: EditorRequest) -> HttpResponseBase:
     if request.method == "POST":
-        form = BlogPostForm(request.POST, request.FILES)
+        form = BlogPostForm(request.POST, request.FILES, user=request.user)
         if form.is_valid():
             post = form.save(commit=False)
             post.author = request.user
@@ -101,7 +102,7 @@ def post_create(request: EditorRequest) -> HttpResponseBase:
 def post_edit(request: EditorRequest, pk: int) -> HttpResponseBase:
     post = get_object_or_404(BlogPost.objects.select_related("author"), pk=pk)
     if request.method == "POST":
-        form = BlogPostForm(request.POST, request.FILES, instance=post)
+        form = BlogPostForm(request.POST, request.FILES, instance=post, user=request.user)
         if form.is_valid():
             post = form.save()
             _feedback(request, post, created=False)
@@ -233,4 +234,35 @@ def serve_cover(request, slug: str) -> HttpResponse:
         raise Http404("Cover unavailable")
     response = HttpResponse(bytes(post.cover_data), content_type=post.cover_content_type or "image/jpeg")
     response["Cache-Control"] = "public, max-age=3600" if post.is_live else "private, no-store"
+    return response
+
+
+@blog_editor_required
+@require_POST
+def image_upload(request: EditorRequest) -> HttpResponseBase:
+    """Store an article image and return its URL for the rich-text editor."""
+    form = BlogImageUploadForm(request.POST, request.FILES)
+    if not form.is_valid():
+        errors = form.errors.get("image") or form.non_field_errors() or ["Choose an image to upload."]
+        return JsonResponse({"error": str(errors[0])}, status=400)
+    upload = form.cleaned_data["image"]
+    post = None
+    post_pk = form.cleaned_data.get("post")
+    if post_pk:
+        post = BlogPost.objects.filter(pk=post_pk).first()
+    image = BlogImage.create_from_bytes(
+        upload.read(),
+        form.cleaned_data["content_type"],
+        post=post,
+        uploaded_by=request.user,
+        original_name=getattr(upload, "name", "") or "",
+    )
+    return JsonResponse({"url": image.url, "key": str(image.key), "size": image.size}, status=201)
+
+
+def serve_image(request, key) -> HttpResponse:
+    """Public bytes for an article image."""
+    image = get_object_or_404(BlogImage.objects.only("data", "content_type"), key=key)
+    response = HttpResponse(bytes(image.data), content_type=image.content_type or "image/jpeg")
+    response["Cache-Control"] = "public, max-age=31536000, immutable"
     return response

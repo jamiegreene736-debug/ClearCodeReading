@@ -1,4 +1,8 @@
+import base64
+import binascii
 import math
+import re
+import uuid
 
 import nh3
 from django.conf import settings
@@ -24,6 +28,17 @@ ALLOWED_BODY_ATTRIBUTES = {
 }
 ALLOWED_URL_SCHEMES = {"http", "https", "mailto", "tel"}
 
+# Inline article images. Anything larger is rejected at upload and on save.
+MAX_INLINE_IMAGE_BYTES = 8 * 1024 * 1024
+ALLOWED_INLINE_IMAGE_TYPES = {"image/jpeg", "image/png", "image/webp", "image/gif"}
+
+_DATA_IMAGE_SRC = re.compile(
+    r"""(<img\b[^>]*?\bsrc\s*=\s*)(["'])data:(image/[a-z0-9.+-]+);base64,([^"']*)\2""",
+    re.IGNORECASE,
+)
+_IMG_SRC = re.compile(r"""<img\b[^>]*?\bsrc\s*=\s*["']([^"']*)["']""", re.IGNORECASE)
+_IMG_TAG = re.compile(r"<img\b[^>]*>", re.IGNORECASE)
+
 
 def clean_article_html(value: str) -> str:
     """Return ``value`` with anything outside the article whitelist removed."""
@@ -34,6 +49,108 @@ def clean_article_html(value: str) -> str:
         url_schemes=ALLOWED_URL_SCHEMES,
         link_rel="noopener noreferrer",
     )
+
+
+class BlogImage(TimeStampedModel):
+    """An image pasted or uploaded into an article body.
+
+    Bytes live in the database (like post covers) so they survive redeploys on
+    hosts without persistent disk. The public URL uses an unguessable key so
+    images attached to drafts are not enumerable.
+    """
+
+    key = models.UUIDField(default=uuid.uuid4, unique=True, editable=False)
+    post = models.ForeignKey(
+        "blog.BlogPost",
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="images",
+    )
+    uploaded_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="blog_images",
+    )
+    data = models.BinaryField(editable=False)
+    content_type = models.CharField(max_length=80)
+    original_name = models.CharField(max_length=200, blank=True)
+    size = models.PositiveIntegerField(default=0)
+
+    class Meta:
+        ordering = ["-created_at"]
+
+    def __str__(self):
+        return self.original_name or str(self.key)
+
+    def get_absolute_url(self):
+        return reverse("blog:image", kwargs={"key": self.key})
+
+    @property
+    def url(self) -> str:
+        return self.get_absolute_url()
+
+    @classmethod
+    def create_from_bytes(cls, data: bytes, content_type: str, *, post=None, uploaded_by=None, original_name: str = "") -> "BlogImage":
+        return cls.objects.create(
+            data=data,
+            content_type=content_type,
+            post=post,
+            uploaded_by=uploaded_by,
+            original_name=original_name[:200],
+            size=len(data),
+        )
+
+
+class InlineImageImportError(ValueError):
+    """Raised when a pasted image could not be stored."""
+
+
+def import_inline_data_images(html: str, *, post=None, uploaded_by=None) -> tuple[str, int]:
+    """Replace ``data:image/...;base64`` sources with stored :class:`BlogImage` URLs.
+
+    Editors who paste from Google Docs, Word or email bring images along as
+    inline base64 data. The sanitiser would otherwise silently drop those
+    sources. Returns the rewritten HTML and the number of images imported.
+    """
+    imported = 0
+
+    def _store(match: re.Match) -> str:
+        nonlocal imported
+        content_type = match.group(3).lower()
+        if content_type == "image/jpg":
+            content_type = "image/jpeg"
+        if content_type not in ALLOWED_INLINE_IMAGE_TYPES:
+            raise InlineImageImportError(f"{content_type} images are not supported.")
+        try:
+            data = base64.b64decode(match.group(4), validate=False)
+        except (binascii.Error, ValueError) as exc:
+            raise InlineImageImportError("A pasted image was corrupted.") from exc
+        if not data:
+            raise InlineImageImportError("A pasted image was empty.")
+        if len(data) > MAX_INLINE_IMAGE_BYTES:
+            raise InlineImageImportError("A pasted image is larger than 8 MB.")
+        image = BlogImage.create_from_bytes(data, content_type, post=post, uploaded_by=uploaded_by)
+        imported += 1
+        return f'{match.group(1)}"{image.url}"'
+
+    return _DATA_IMAGE_SRC.sub(_store, html or ""), imported
+
+
+def unsupported_inline_image_sources(html: str) -> list[str]:
+    """Return image sources the sanitiser will drop (``file:``, ``blob:``, missing…)."""
+    bad: list[str] = []
+    for tag in _IMG_TAG.findall(html or ""):
+        src_match = _IMG_SRC.search(tag)
+        src = (src_match.group(1) if src_match else "").strip()
+        scheme = src.split(":", 1)[0].lower() if ":" in src else ""
+        if not src:
+            bad.append("(no source)")
+        elif scheme and scheme not in {"http", "https"}:
+            bad.append(src[:60])
+    return bad
 
 
 class BlogPostQuerySet(models.QuerySet):
@@ -151,6 +268,9 @@ class BlogPost(TimeStampedModel):
         if not self.slug:
             self.slug = self._available_slug()
         if self.body_format == self.BodyFormat.HTML:
+            # Safety net for every save path (admin, shell, form): store pasted
+            # base64 images before the sanitiser can throw their sources away.
+            self.body, _ = import_inline_data_images(self.body, post=self if self.pk else None, uploaded_by=self.author)
             self.body = clean_article_html(self.body)
         if self.status == self.Status.PUBLISHED and self.published_at is None:
             self.published_at = timezone.now()
