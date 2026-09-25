@@ -5,9 +5,9 @@
     <div class="rm-toolbar">
         <div>
             <p class="rm-eyebrow">
-                <a href="{% url 'resources:manager' %}">← Resources</a> / {{ resource.draft.get_kind_display }}</p>
-            <h1 class="rm-title">Make it ready to share.</h1>
-            <p class="rm-subtitle">Add the details. Preview the result. Publish when it feels right.</p>
+                <a href="{% url 'resources:manager' %}">← Free resources</a> / {{ resource.draft.get_kind_display }}</p>
+            <h1 class="rm-title">{{ resource.draft.title }}</h1>
+            <p class="rm-subtitle">These details become the card on the free resources page. Visitors see them only after you publish.</p>
         </div>
         <span class="rm-badge">{{ resource.state }}</span>
     </div>
@@ -111,10 +111,31 @@
             </details>
         </div>
         <aside>
+            <section class="rm-panel" id="page-preview">
+                <p class="rm-eyebrow">On the free resources page</p>
+                <article class="rm-card rm-preview-card">
+                    <div class="rm-card-cover">
+                        <span>ClearCode Reading</span>
+                        <span id="preview-kind">{{ resource.draft.get_kind_display }}</span>
+                    </div>
+                    <div class="rm-card-body">
+                        <span class="rm-eyebrow" id="preview-audience">{{ resource.draft.get_audience_display }}</span>
+                        <h3 id="preview-card-title">{{ resource.draft.title }}</h3>
+                        <p id="preview-card-description">{{ resource.draft.description|default:"A short description helps families decide to open this." }}</p>
+                        <span class="rm-card-link">Open resource →</span>
+                    </div>
+                </article>
+                <ul class="rm-checklist" id="publish-checklist">
+                    <li data-ready="title">A clear title</li>
+                    <li data-ready="description">A short description</li>
+                    <li data-ready="topic">A topic families can filter by</li>
+                    <li data-ready="content">The file, link, or guide itself</li>
+                </ul>
+            </section>
             <section class="rm-panel">
                 <p class="rm-eyebrow">3 · Preview &amp; publish</p>
                 <h2>Ready when you are.</h2>
-                <p class="rm-muted">Check the card and full page before sharing.</p>
+                <p class="rm-muted">Publishing adds this card to the free resources page. Check it first.</p>
                 <div class="rm-actions">
                     <a class="rm-button secondary"
                        id="preview-button"
@@ -129,6 +150,9 @@
                         {% if publisher %}
                             {% if not resource.archived %}
                                 <button class="rm-button" name="action" value="publish">Publish now</button>
+                                {% if resource.live_id or resource.scheduled_id %}
+                                    <button class="rm-button secondary" name="action" value="unpublish">Remove from free resources page</button>
+                                {% endif %}
                             {% endif %}
                         {% else %}
                             <button class="rm-button" name="action" value="submit">Submit for review</button>

@@ -15,14 +15,18 @@
             <a class="rm-brand" href="{% url 'resources:manager' %}">
                 <span class="rm-mark" aria-hidden="true">C<span>C</span>
                 </span>
-                <span>ClearCode Reading<small>Resource Manager</small>
+                <span>ClearCode Reading<small>Free resources</small>
                 </span>
             </a>
-            <nav aria-label="Resource navigation">
-                <a href="{% url 'resources:manager' %}">Resources</a>
-                <a href="{% url 'resources:media' %}">Files</a>
-                <a href="/dashboard/">Dashboard</a>
-                <a href="/resources/" target="_blank" rel="noopener">View website ↗</a>
+            <nav aria-label="Free resources">
+                <a href="{% url 'resources:manager' %}"
+                   {% if request.resolver_match.url_name == "manager" or request.resolver_match.url_name == "add" or request.resolver_match.url_name == "edit" %}aria-current="page"{% endif %}>Library</a>
+                <a href="{% url 'resources:media' %}"
+                   {% if request.resolver_match.url_name == "media" %}aria-current="page"{% endif %}>Files</a>
+                {% if request.user.is_staff or request.user.is_superuser or request.user.role == "super_admin" or request.user.role == "school_admin" %}
+                    <a href="/dashboard/">Portal</a>
+                {% endif %}
+                <a href="/resources/" target="_blank" rel="noopener">View free resources page ↗</a>
             </nav>
         </header>
         <main id="main" class="rm-main">

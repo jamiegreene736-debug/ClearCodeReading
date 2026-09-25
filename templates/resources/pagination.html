@@ -1,11 +1,11 @@
 {% if page.has_other_pages %}
     <nav class="rm-pager" aria-label="Pagination">
         {% if page.has_previous %}
-            <a href="?page={{ page.previous_page_number }}&amp;q={{ query|urlencode }}&amp;tab={{ tab|default:'all' }}">← Previous</a>
+            <a href="?page={{ page.previous_page_number }}{% if list_query %}&amp;{{ list_query }}{% else %}&amp;q={{ query|urlencode }}{% endif %}">← Previous</a>
         {% endif %}
         <span>Page {{ page.number }} of {{ page.paginator.num_pages }}</span>
         {% if page.has_next %}
-            <a href="?page={{ page.next_page_number }}&amp;q={{ query|urlencode }}&amp;tab={{ tab|default:'all' }}">Next →</a>
+            <a href="?page={{ page.next_page_number }}{% if list_query %}&amp;{{ list_query }}{% else %}&amp;q={{ query|urlencode }}{% endif %}">Next →</a>
         {% endif %}
     </nav>
 {% endif %}

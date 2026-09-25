@@ -3,45 +3,29 @@
 {% block title %}Add resource{% endblock %}
 {% block content %}
     <p class="rm-eyebrow">
-        <a href="{% url 'resources:manager' %}">← Resources</a>
+        <a href="{% url 'resources:manager' %}">← Free resources</a>
     </p>
-    <h1 class="rm-title">What would you like to share?</h1>
-    <p class="rm-subtitle"
-       style="margin-bottom:30px">Start with what you have. Everything is saved as a draft for you to review.</p>
+    <h1 class="rm-title">Add to the free resources page</h1>
+    <p class="rm-subtitle">Start with what you already have. It is saved as a private draft. Families see it only after you publish.</p>
+    <ol class="rm-steps" aria-label="How publishing works">
+        <li aria-current="step"><span>1</span> Choose a format</li>
+        <li><span>2</span> Add the card families see</li>
+        <li><span>3</span> Publish to the page</li>
+    </ol>
     {% for error in errors %}
         <p class="rm-notice rm-error" role="alert">{{ error }}</p>
     {% endfor %}
     <div class="rm-grid">
-        <section class="rm-choice">
-            <span class="rm-choice-icon" aria-hidden="true">↑</span>
-            <h2>Upload a file</h2>
-            <p>Worksheets, guides, printables, and presentations. Add one file or a batch.</p>
-            <a href="#upload-panel" class="rm-button">Choose files</a>
-        </section>
-        <form method="post" class="rm-choice">
-            {% csrf_token %}
-            <input type="hidden" name="kind" value="link">
-            <span class="rm-choice-icon" aria-hidden="true">↗</span>
-            <h2>Paste a link</h2>
-            <p>Share a website or turn a YouTube or Vimeo link into a video resource.</p>
-            <button class="rm-button secondary">Add a link</button>
-        </form>
-        <form method="post" class="rm-choice">
-            {% csrf_token %}
-            <input type="hidden" name="kind" value="article">
-            <span class="rm-choice-icon" aria-hidden="true">✎</span>
-            <h2>Write a resource</h2>
-            <p>Write or paste your guide. Clear typography and spacing are built in.</p>
-            <button class="rm-button secondary">Start writing</button>
-        </form>
-    </div>
-    <section class="rm-panel" id="upload-panel" style="margin-top:24px">
-        <h2>Add your files</h2>
-        <p class="rm-muted">Each file becomes its own draft. Up to 10 files, 10 MB each, 50 MB total.</p>
-        <form method="post" enctype="multipart/form-data" id="bulk-form">
+        <form method="post"
+              enctype="multipart/form-data"
+              id="bulk-form"
+              class="rm-choice">
             {% csrf_token %}
             <input type="hidden" name="kind" value="file">
             <input type="hidden" name="token" value="{{ token }}">
+            <span class="rm-choice-icon" aria-hidden="true">↑</span>
+            <h2>Upload a file</h2>
+            <p>Worksheets, printables, and presentations. Each file becomes its own draft.</p>
             <div class="rm-drop" id="drop-zone">
                 <label for="files">Drop files here or choose from your device</label>
                 <input id="files"
@@ -50,32 +34,64 @@
                        multiple
                        required
                        accept=".pdf,.docx,.pptx,.txt,.jpg,.jpeg,.png,.webp">
-                <small>PDF · DOCX · PPTX · TXT · JPEG · PNG · WebP</small>
+                <small>PDF · DOCX · PPTX · TXT · JPEG · PNG · WebP · up to 10 files, 10 MB each</small>
                 <p id="file-summary" role="status"></p>
             </div>
-            <div class="rm-two" style="margin-top:20px">
-                <div class="rm-field">
-                    <label for="topic">Topic for these drafts (optional)</label>
-                    <select id="topic" name="topic">
-                        <option value="">Choose later</option>
-                        {% for topic in topics %}
-                            <option value="{{ topic.pk }}">{{ topic.name }}</option>
-                        {% endfor %}
-                    </select>
-                </div>
-                <div class="rm-field">
-                    <label for="audience">Who are they for?</label>
-                    <select id="audience" name="audience">
-                        <option value="families">Families</option>
-                        <option value="educators">Educators</option>
-                        <option value="both">Families and educators</option>
-                    </select>
-                </div>
+            <div class="rm-field">
+                <label for="topic">Topic for these drafts</label>
+                <select id="topic" name="topic">
+                    <option value="">Choose later</option>
+                    {% for topic in topics %}
+                        <option value="{{ topic.pk }}">{{ topic.name }}</option>
+                    {% endfor %}
+                </select>
             </div>
-            <button class="rm-button" id="upload-button">Upload and review</button>
+            <div class="rm-field">
+                <label for="audience">Who are they for?</label>
+                <select id="audience" name="audience">
+                    <option value="families">Families</option>
+                    <option value="educators">Educators</option>
+                    <option value="both">Families and educators</option>
+                </select>
+            </div>
+            <button class="rm-button" id="upload-button">Create drafts</button>
             <span id="upload-state" class="rm-save-state" role="status"></span>
         </form>
-    </section>
+        <form method="post" class="rm-choice">
+            {% csrf_token %}
+            <input type="hidden" name="kind" value="link">
+            <span class="rm-choice-icon" aria-hidden="true">↗</span>
+            <h2>Paste a link</h2>
+            <p>Share a webpage, or turn a YouTube or Vimeo link into a video on the page.</p>
+            <div class="rm-field">
+                <label for="link-url">HTTPS link</label>
+                <input id="link-url"
+                       name="url"
+                       type="url"
+                       inputmode="url"
+                       required
+                       maxlength="2000"
+                       placeholder="https://">
+            </div>
+            <div class="rm-field">
+                <label for="link-title">Title <span class="rm-subtle">(optional)</span></label>
+                <input id="link-title" name="title" maxlength="200" placeholder="What should families call this?">
+            </div>
+            <button class="rm-button secondary">Continue with this link</button>
+        </form>
+        <form method="post" class="rm-choice">
+            {% csrf_token %}
+            <input type="hidden" name="kind" value="article">
+            <span class="rm-choice-icon" aria-hidden="true">✎</span>
+            <h2>Write a guide</h2>
+            <p>Write or paste a guide. Paragraphs and spacing are handled for you.</p>
+            <div class="rm-field">
+                <label for="article-title">Working title <span class="rm-subtle">(optional)</span></label>
+                <input id="article-title" name="title" maxlength="200" placeholder="Untitled resource">
+            </div>
+            <button class="rm-button secondary">Start writing</button>
+        </form>
+    </div>
 {% endblock %}
 {% block scripts %}
     <script src="{% static 'resources/upload.js' %}" defer></script>

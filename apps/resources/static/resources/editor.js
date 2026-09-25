@@ -101,8 +101,46 @@
     clearTimeout(timer);
     timer = setTimeout(save, 1100);
   }
-  form.addEventListener("input", edited);
-  form.addEventListener("change", edited);
+  const previewTitle = document.querySelector("#preview-card-title");
+  const previewDescription = document.querySelector("#preview-card-description");
+  const previewAudience = document.querySelector("#preview-audience");
+  const checklist = document.querySelector("#publish-checklist");
+  function syncPreview() {
+    if (!previewTitle) return;
+    const title = form.elements.title?.value.trim();
+    const description = form.elements.description?.value.trim();
+    const audience = form.elements.audience;
+    const topic = form.elements.topic;
+    previewTitle.textContent = title || "Untitled resource";
+    previewDescription.textContent =
+      description || "A short description helps families decide to open this.";
+    if (audience?.selectedOptions?.[0])
+      previewAudience.textContent = audience.selectedOptions[0].text;
+    const kind = form.elements.kind?.value;
+    const hasContent =
+      (kind === "file" &&
+        (form.elements.upload?.files?.length || form.elements.asset?.value)) ||
+      (kind === "link" && form.elements.url?.value.trim()) ||
+      (kind === "article" && form.elements.body?.value.trim());
+    const ready = {
+      title: Boolean(title && title !== "Untitled resource"),
+      description: Boolean(description),
+      topic: Boolean(topic?.value),
+      content: Boolean(hasContent),
+    };
+    checklist?.querySelectorAll("[data-ready]").forEach((item) => {
+      item.classList.toggle("is-ready", ready[item.dataset.ready]);
+    });
+  }
+  form.addEventListener("input", () => {
+    edited();
+    syncPreview();
+  });
+  form.addEventListener("change", () => {
+    edited();
+    syncPreview();
+  });
+  syncPreview();
   form.addEventListener("submit", async (event) => {
     event.preventDefault();
     clearTimeout(timer);
