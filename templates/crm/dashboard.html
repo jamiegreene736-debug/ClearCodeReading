@@ -34,6 +34,7 @@
     <a class="card stat" href="{% url 'crm_contact_list' %}?owner=unassigned" style="text-decoration:none"><div class="stat-label">Unassigned</div><div class="stat-value">{{ unassigned_contacts }}</div></a>
     <div class="card stat"><div class="stat-label">Overdue tasks</div><div class="stat-value">{{ overdue_tasks }}</div></div>
     <a class="card stat" href="{% url 'crm_triage_list' %}" style="text-decoration:none"><div class="stat-label">People waiting</div><div class="stat-value">{{ pending_triage }}</div></a>
+    <a class="card stat" href="{% url 'inventory_list' %}" style="text-decoration:none"><div class="stat-label">People to finish</div><div class="stat-value">{{ assessments_waiting }}</div></a>
     <div class="card stat"><div class="stat-label">Submissions · 30 days</div><div class="stat-value">{{ recent_submissions }}</div></div>
   </section>
 
@@ -54,6 +55,7 @@
         <li><strong>Assign the next action.</strong><br><span class="subtle">Set an owner, add a note, and create a follow-up task.</span></li>
         <li><strong>Route inquiries that are not deals yet.</strong><br><span class="subtle">Needs routing holds unclear partner, community, and career signals.</span></li>
         <li><strong>Work the pipeline.</strong><br><span class="subtle">Create or move a deal only when the enrollment, partner, donor, grant, or investment path is known.</span></li>
+        <li><strong>Watch open assessments.</strong><br><span class="subtle">Send a reading inventory from the contact. Assessments shows how many people still need to finish.</span></li>
       </ol>
     </aside>
 
@@ -65,6 +67,15 @@
         {% empty %}<div class="empty">No contacts yet.</div>{% endfor %}
       </div>
     </section>
+
+    <aside class="card section-card">
+      <div class="section-head"><h2>Waiting to finish an assessment</h2><a href="{% url 'inventory_list' %}">Open queue</a></div>
+      <div class="action-list">
+        {% for person in assessment_waiting %}
+          <a class="action-row" href="{% url 'inventory_detail' person.invitation.pk %}"><span><strong>{{ person.lead.contact_name }}</strong><br><span class="action-meta">{{ person.child_label }}{% if person.open_count > 1 %} · {{ person.open_count }} assessments{% endif %}</span></span><span class="badge badge-warn">{{ person.waiting_label }}</span></a>
+        {% empty %}<div class="empty"><strong>0 people waiting to finish.</strong><br>Open a contact and send an assessment when a family is ready.</div>{% endfor %}
+      </div>
+    </aside>
 
     <aside class="card section-card">
       <div class="section-head"><h2>Needs routing</h2><a href="{% url 'crm_triage_list' %}">Open queue</a></div>

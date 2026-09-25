@@ -46,6 +46,7 @@ from apps.crm.models import (
     pipeline_category_for,
 )
 from apps.crm.newsletters import resolve_unsubscribe_token
+from apps.crm.assessment_queue import pending_completion_people_count, waiting_preview
 from apps.crm.routing import pending_routing_people_count, pending_routing_queryset, routing_queue
 from apps.crm.serializers import CompanySerializer, LeadSerializer, OpportunitySerializer
 from apps.crm.services import (
@@ -700,6 +701,8 @@ class CrmDashboardView(CrmAccessMixin, TemplateView):
                     due_at__lt=now,
                 ).count(),
                 "pending_triage": pending_routing_people_count(),
+                "assessments_waiting": pending_completion_people_count(),
+                "assessment_waiting": waiting_preview(),
                 "recent_submissions": FormSubmission.objects.filter(
                     created_at__gte=now - timezone.timedelta(days=30)
                 ).count(),

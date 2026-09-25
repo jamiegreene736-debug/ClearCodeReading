@@ -3,6 +3,7 @@ import json
 from django import template
 
 from apps.crm.models import Lead
+from apps.crm.assessment_queue import pending_completion_people_count
 from apps.crm.routing import pending_routing_people_count
 from apps.crm.surveys import SURVEY_FIELD_LABELS, SURVEY_VALUE_LABELS
 
@@ -127,6 +128,12 @@ def crm_survey_sections(submitted_data: object) -> list[dict[str, object]]:
 def pending_routing_count():
     """Distinct people who still need a pipeline decision."""
     return pending_routing_people_count()
+
+
+@register.simple_tag
+def pending_assessment_count():
+    """Distinct people who still need to finish an open reading inventory."""
+    return pending_completion_people_count()
 
 
 @register.simple_tag(takes_context=True)

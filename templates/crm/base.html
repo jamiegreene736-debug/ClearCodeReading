@@ -156,7 +156,7 @@
               <a class="nav-link {{ nav_hiring.class }}" {% if nav_hiring.current %}aria-current="page"{% endif %} href="{% url 'crm_hiring' %}">{% include "crm/_nav_icon.html" with icon="hiring" %}Teacher hiring</a>
             {% endif %}
             {% nav_state 'inventory_list' 'inventory_preview' 'inventory_slots' 'inventory_send' 'inventory_detail' as nav_assessments %}
-            <a class="nav-link {{ nav_assessments.class }}" {% if nav_assessments.current %}aria-current="page"{% endif %} href="{% url 'inventory_list' %}">{% include "crm/_nav_icon.html" with icon="assessments" %}Assessments</a>
+            <a class="nav-link {{ nav_assessments.class }}" {% if nav_assessments.current %}aria-current="page"{% endif %} href="{% url 'inventory_list' %}">{% include "crm/_nav_icon.html" with icon="assessments" %}<span>Assessments</span>{% pending_assessment_count as assessment_waiting_count %}<span class="nav-count" aria-label="{{ assessment_waiting_count }} {% if assessment_waiting_count == 1 %}person{% else %}people{% endif %} waiting to finish an assessment">{{ assessment_waiting_count }}</span></a>
             {% nav_state 'crm_team' 'crm_hiring_access' as nav_team %}
             <a class="nav-link {{ nav_team.class }}" {% if nav_team.current %}aria-current="page"{% endif %} href="{% url 'crm_team' %}">{% include "crm/_nav_icon.html" with icon="team" %}Team</a>
           </div>
