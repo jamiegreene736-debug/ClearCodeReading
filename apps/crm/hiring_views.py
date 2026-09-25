@@ -8,7 +8,7 @@ from django.contrib import messages
 from django.core.exceptions import PermissionDenied
 from django.core.paginator import Paginator
 from django.db import transaction
-from django.db.models import Case, IntegerField, Q, QuerySet, Value, When
+from django.db.models import Case, Count, IntegerField, Q, QuerySet, Value, When
 from django.http import (
     FileResponse,
     Http404,
@@ -27,8 +27,11 @@ from apps.crm.hiring import (
     ACTIVE_STAGES,
     CHECKLISTS,
     DEFAULT_ACTIONS,
+    STAGE_PROMPTS,
+    attention_filter,
     business_due_date,
     hiring_owner_queryset,
+    hiring_queue_counts,
 )
 from apps.crm.hiring_forms import HiringOwnerForm, HiringUpdateForm
 from apps.crm.hiring_models import HiringCandidate, HiringEvent
@@ -90,14 +93,11 @@ def render_workspace(
     attention = request.GET.get("attention") == "1"
     stage = request.GET.get("stage", "active")
     query = request.GET.get("q", "").strip()[:255]
+    waiting_offer = request.GET.get("waiting") == "offer"
     candidates = candidate_queryset()
     eligible = hiring_owner_queryset()
-    attention_query = (
-        Q(due_date__lt=timezone.localdate())
-        | Q(due_date__isnull=True)
-        | ~Q(application__owner_id__in=eligible.values("pk"))
-        | ~Q(blocker="")
-    )
+    attention_query = attention_filter(eligible)
+    queue_counts = hiring_queue_counts()
     if owner == "mine":
         candidates = candidates.filter(application__owner_id=request.user.pk)
     elif owner == "unassigned":
@@ -106,6 +106,10 @@ def render_workspace(
         candidates = candidates.filter(application__owner_id=int(owner))
     else:
         owner = "all"
+    view_stage_counts = {
+        row["stage"]: row["total"]
+        for row in candidates.values("stage").annotate(total=Count("pk"))
+    }
     if stage in HiringCandidate.Stage.values:
         candidates = candidates.filter(stage=stage)
     elif stage != "all":
@@ -117,6 +121,11 @@ def render_workspace(
         candidates = candidates.exclude(
             stage__in=["ready", "not_selected", "withdrawn"]
         ).filter(attention_query)
+    if waiting_offer:
+        candidates = candidates.filter(
+            stage=HiringCandidate.Stage.OFFER,
+            offer_response=HiringCandidate.OfferResponse.PENDING,
+        )
     if query:
         candidates = candidates.filter(
             Q(application__name__icontains=query)
@@ -143,6 +152,7 @@ def render_workspace(
         "stage": stage,
         "q": query,
         "attention": "1" if attention else "",
+        "waiting": "offer" if waiting_offer else "",
     }
     for item in page:
         item.selection_url = (
@@ -172,6 +182,7 @@ def render_workspace(
         "owner_filter": owner,
         "stage_filter": stage,
         "attention": attention,
+        "waiting_offer": waiting_offer,
         "query": query,
         "action_defaults": DEFAULT_ACTIONS,
         "suggested_due_date": business_due_date().isoformat(),
@@ -181,15 +192,26 @@ def render_workspace(
             (dict(HiringCandidate.Stage.choices)[s], items)
             for s, items in CHECKLISTS.items()
         ],
+        "current_checklist": CHECKLISTS.get(candidate.stage, []) if candidate else [],
+        "stage_prompt": STAGE_PROMPTS.get(candidate.stage, "") if candidate else "",
+        "queue_counts": queue_counts,
+        "view_stage_counts": view_stage_counts,
+        "pipeline": [
+            {
+                "value": value,
+                "label": label,
+                "count": view_stage_counts.get(value, 0),
+                "current": stage == value,
+            }
+            for value, label in HiringCandidate.Stage.choices
+            if value in ACTIVE_STAGES or value == "hold"
+        ],
         "events": candidate.events.select_related("actor")[:20] if candidate else [],
         "can_edit": bool(
             candidate and candidate.application.owner_id == request.user.pk
         ),
         "filter_query": urlencode(filters),
-        "unassigned_count": candidate_queryset()
-        .exclude(stage__in=["ready", "not_selected", "withdrawn"])
-        .exclude(application__owner_id__in=eligible.values("pk"))
-        .count(),
+        "unassigned_count": queue_counts["needs_owner"],
     }
     return render(request, "crm/hiring.html", context, status=status)
 

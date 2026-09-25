@@ -31,7 +31,8 @@ from rest_framework.response import Response
 
 from apps.core.forms import RecruitingInterestForm
 from apps.core.models import RecruitingInterest
-from apps.crm.hiring import select_intake_owner
+from apps.crm.hiring import hiring_queue_counts, select_intake_owner
+from apps.crm.hiring_models import HiringCandidate
 from apps.crm.contact_lifecycle import set_contact_deleted
 from apps.crm.access import crm_owner_queryset
 from apps.crm.forms import CompanyForm, ContactForm, CrmTeamMemberForm, DealForm, EnrollmentPersonForm
@@ -717,6 +718,17 @@ class CrmDashboardView(CrmAccessMixin, TemplateView):
                 "pipeline_summaries": pipeline_summaries,
             }
         )
+        if self.request.user.has_hiring_access:
+            context["hiring_counts"] = hiring_queue_counts()
+            context["pending_intake"] = list(
+                HiringCandidate.objects.filter(
+                    application__career_path="teacher",
+                    stage=HiringCandidate.Stage.APPLICATION,
+                )
+                .select_related("application", "application__owner")
+                .defer("application__resume_data", "application__cover_letter_data")
+                .order_by("due_date", "created_at", "pk")[:5]
+            )
         return context
 
 
