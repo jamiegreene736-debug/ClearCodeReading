@@ -568,6 +568,65 @@ class EmailTests(TestCase):
             404,
         )
 
+    def test_contact_card_offers_own_templates_and_prefills_draft(self) -> None:
+        self.mailbox.signature = "<p>Owner signature</p>"
+        self.mailbox.save(update_fields=["signature"])
+        self.lead.contact_name = "Jordan Rivera"
+        self.lead.organization_name = "Rivera Elementary"
+        self.lead.save()
+        template = EmailTemplate.objects.create(
+            owner=self.owner,
+            name="Welcome",
+            subject="Welcome, {{contact.firstname}}",
+            body_html=(
+                "<p>Hi {{ contact.firstname }} from {{company.name}}.</p>"
+                "<p>Reach me at {{sender.name}}. {{unknown}}</p>"
+            ),
+        )
+        foreign = EmailTemplate.objects.create(
+            owner=self.other, name="Not yours", subject="Private", body_html="<p>x</p>"
+        )
+        compose_url = reverse("crm_email_compose", args=[self.lead.pk])
+        for route in ["crm_contact_detail", "crm_contact_email"]:
+            response = self.client.get(reverse(route, args=[self.lead.pk]))
+            self.assertContains(response, f"{compose_url}?template={template.pk}")
+            self.assertContains(response, "Welcome")
+            self.assertNotContains(response, f"?template={foreign.pk}")
+            self.assertNotContains(response, "Not yours")
+        response = self.client.get(f"{compose_url}?template={template.pk}")
+        initial = response.context["form"].initial
+        self.assertEqual(initial["to"], self.lead.contact_email)
+        self.assertEqual(initial["subject"], "Welcome, Jordan")
+        self.assertEqual(
+            initial["body_html"],
+            "<p>Hi Jordan from Rivera Elementary.</p>"
+            "<p>Reach me at owner@clearcodereading.com. </p>"
+            "<p>Owner signature</p>",
+        )
+        self.assertEqual(
+            self.client.get(f"{compose_url}?template={foreign.pk}").status_code, 404
+        )
+        self.assertEqual(
+            self.client.get(reverse("crm_email_template_new")).status_code, 200
+        )
+
+    def test_template_placeholders_never_inject_html(self) -> None:
+        self.lead.contact_name = "<img src=x onerror=alert(1)> Rivera"
+        self.lead.save()
+        template = EmailTemplate.objects.create(
+            owner=self.owner,
+            name="Escape",
+            subject="Hi {{contact.name}}",
+            body_html="<p>{{contact.name}}</p>",
+        )
+        response = self.client.get(
+            reverse("crm_email_compose", args=[self.lead.pk])
+            + f"?template={template.pk}"
+        )
+        body = response.context["form"].initial["body_html"]
+        self.assertNotIn("<img", body)
+        self.assertIn("&lt;img", body)
+
     @patch("apps.crm_email.views.Gmail")
     def test_historical_import_requires_explicit_signed_selection(
         self, provider: MagicMock

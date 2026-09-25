@@ -20,6 +20,14 @@
   .identity a:not(.btn):hover { text-decoration:underline; }
   .origin-badges { margin:8px 0 0; display:flex; flex-wrap:wrap; gap:6px; }
   .quick-actions { display:grid; grid-template-columns:1fr 1fr; gap:8px; margin:16px 0; }
+  .template-picker { margin:0 0 16px; border:1px solid var(--line); border-radius:8px; padding:4px 10px; }
+  .template-picker summary { cursor:pointer; display:flex; align-items:center; justify-content:space-between; gap:8px; min-height:44px; font-weight:700; }
+  .template-picker summary:hover, .template-picker summary:focus-visible { background:#e5f4f2; outline:2px solid var(--teal); border-radius:4px; }
+  .template-picker .subtle { margin:4px 0 8px; }
+  .template-list { list-style:none; margin:0; padding:0; display:grid; gap:6px; }
+  .template-link { display:flex; flex-direction:column; align-items:flex-start; width:100%; text-align:left; white-space:normal; }
+  .template-subject { color:var(--muted); font-size:12px; font-weight:400; overflow-wrap:anywhere; }
+  .template-manage { margin:10px 0 6px; font-size:12px; }
   .properties { border-top:1px solid var(--line); padding-top:15px; }
   .property { margin:0 0 13px; }
   .property dt { color:var(--muted); font-size:11px; font-weight:700; text-transform:uppercase; }
@@ -117,6 +125,20 @@
         <a class="btn btn-primary btn-small" href="{% url 'crm_contact_email' lead.pk %}">Email</a>
         <a class="btn btn-small" href="#activity">Log note</a>
       </div>
+      <details class="template-picker" id="template-emails" data-testid="template-emails">
+        <summary><span>Send a template email</span><span class="edit-cue">{{ email_templates|length }} template{{ email_templates|length|pluralize }}</span></summary>
+        {% if email_templates %}
+          <p class="subtle">Opens a new draft to {{ lead.contact_email }} with the template filled in for {{ lead.contact_name }}. Review it, then send.</p>
+          <ul class="template-list">
+            {% for item in email_templates %}
+              <li><a class="btn btn-small template-link" href="{% url 'crm_email_compose' lead.pk %}?template={{ item.pk }}" data-testid="template-email-link"><strong>{{ item.name }}</strong><span class="template-subject">{{ item.subject }}</span></a></li>
+            {% endfor %}
+          </ul>
+        {% else %}
+          <p class="subtle">You have no email templates yet. Save one once and reuse it from any contact.</p>
+        {% endif %}
+        <p class="template-manage"><a href="{% url 'crm_email_template_new' %}">New template</a> · <a href="{% url 'crm_email_settings' %}">Manage templates</a></p>
+      </details>
       <p class="subtle">Properties live here only. Click one to edit.</p>
       <dl class="properties">
         <div class="property"><dt>Lead status</dt><dd>
