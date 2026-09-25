@@ -224,7 +224,7 @@ class AutomatedEmailTests(TestCase):
         edited = render_copy(sample_deal("family_enrollment", pilot), pilot)
         self.assertEqual(edited.subject, "Hello Test")
         self.assertIn("Book here: https://example.com/book", edited.body)
-        self.assertIn("bethany@clearcodereading.com", edited.body)
+        self.assertIn("c: (256) 762-8094", edited.body)
         self.assertEqual(edited.missing, ())
         self.assertEqual(edited.source, "Edited in CRM email settings")
         response = self.client.get(reverse("crm_first_stage_emails"))

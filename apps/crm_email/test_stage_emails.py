@@ -166,7 +166,19 @@ class StageEmailTests(TestCase):
         self.assertIn("4. Foundation Grants", copy.source)
         family = render_copy(sample_deal("family_enrollment", self.pilot), self.pilot)
         self.assertIn("K–8 students", family.body)
-        self.assertIn("bethany@clearcodereading.com", family.body)
+        self.assertIn(
+            "Bethany Fleming, M.Ed.\nFounder & CEO\nc: (256) 762-8094", family.body
+        )
+        self.assertIn("Website: https://clearcodereading.com", family.body)
+        self.assertIn("Blog: https://clearcodereading.com/blog/", family.body)
+        self.assertIn(
+            'Website: <a href="https://clearcodereading.com">https://clearcodereading.com</a>',
+            family.body_html,
+        )
+        self.assertIn(
+            'Blog: <a href="https://clearcodereading.com/blog/">https://clearcodereading.com/blog/</a>',
+            family.body_html,
+        )
 
     def test_queued_recipient_changes_are_blocked(self) -> None:
         self.make_deal()
