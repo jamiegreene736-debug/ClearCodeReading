@@ -7,14 +7,14 @@
         {% if attention_count %}
           {{ attention_count }} item{{ attention_count|pluralize }} need a decision. Assign readers, clear placements, and watch capacity from here.
         {% else %}
-          Nothing is waiting on you. Readers, placements, and new signups are clear.
+          Nothing is waiting on you. Readers, placements, and assessments are clear.
         {% endif %}
       </p>
     </div>
     <a class="focus-ring inline-flex min-h-11 items-center justify-center rounded-full bg-deepTeal px-5 py-3 text-sm font-black text-white shadow-lg shadow-deepTeal/20" href="{% url 'manage_users' %}">Add a user</a>
   </header>
 
-  <section aria-label="Program status" class="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+  <section aria-label="Program status" class="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
     <a class="focus-ring rounded-3xl bg-white p-5 shadow-lg ring-1 ring-deepTeal/10 transition hover:-translate-y-0.5" href="{% url 'portal_teacher_assignments' %}">
       <p class="text-sm font-black text-deepTeal">Unassigned readers</p>
       <p class="mt-2 text-4xl font-black">{{ unassigned_count }}</p>
@@ -24,11 +24,6 @@
       <p class="text-sm font-black text-mediumTeal">Placements to confirm</p>
       <p class="mt-2 text-4xl font-black">{{ placement_pending_count }}</p>
       <p class="mt-1 text-xs font-bold text-ink/50">Recommendations stay advisory until you decide</p>
-    </a>
-    <a class="focus-ring rounded-3xl bg-white p-5 shadow-lg ring-1 ring-deepTeal/10 transition hover:-translate-y-0.5" href="#website-signups">
-      <p class="text-sm font-black text-ink/65">New signups</p>
-      <p class="mt-2 text-4xl font-black">{{ new_lead_count }}</p>
-      <p class="mt-1 text-xs font-bold text-ink/50">{{ lead_count }} website signup{{ lead_count|pluralize }} total</p>
     </a>
     <a class="focus-ring rounded-3xl {% if pending_review_count %}bg-sand{% else %}bg-white ring-1 ring-deepTeal/10{% endif %} p-5 shadow-lg transition hover:-translate-y-0.5" href="#assessment-review">
       <p class="text-sm font-black text-ink/65">Assessments to review</p>
@@ -203,19 +198,6 @@
         <p class="mt-2 max-w-2xl text-sm leading-6 text-ink/65">Create lessons and choose which teachers can use them on the lesson library page. {{ shared_lesson_count }} teacher share{{ shared_lesson_count|pluralize }} so far.</p>
       </div>
       <a class="focus-ring inline-flex min-h-11 shrink-0 items-center justify-center rounded-full bg-mediumTeal px-5 py-3 text-sm font-black text-white" href="{% url 'portal_lesson_library' %}">Open lesson library</a>
-    </div>
-  </section>
-
-  <section id="website-signups" class="scroll-mt-36 rounded-[2rem] bg-white p-6 shadow-xl ring-1 ring-ink/10">
-    <div class="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
-      <div>
-        <p class="text-sm font-black uppercase tracking-[0.18em] text-deepTeal">Signups</p>
-        <h2 class="mt-2 text-3xl font-black">{{ new_lead_count }} new of {{ lead_count }}</h2>
-        <p class="mt-2 text-sm leading-6 text-ink/65">Website signups are worked in the CRM, so this workspace only shows the count.</p>
-      </div>
-      {% if request.user.is_staff or request.user.is_superuser or request.user.role == 'super_admin' %}
-        <a class="focus-ring inline-flex min-h-11 items-center justify-center rounded-full bg-ink px-5 py-3 text-sm font-black text-white" href="{% url 'crm_dashboard' %}">Open CRM</a>
-      {% endif %}
     </div>
   </section>
 
