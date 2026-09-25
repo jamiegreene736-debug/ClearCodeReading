@@ -1,0 +1,6 @@
+<div class="field">
+  <label class="font-black" for="{{ field.id_for_label }}">{{ field.label }}</label>
+  {{ field }}
+  {{ field.errors }}
+  {% if help %}<p class="mt-1 text-sm text-ink/60">{{ help }}</p>{% endif %}
+</div>

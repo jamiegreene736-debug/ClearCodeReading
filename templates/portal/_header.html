@@ -115,12 +115,18 @@
     </ul>
 
     <div class="relative shrink-0" data-portal-disclosure>
-      <button id="account-navigation-button" data-testid="account-menu-button" class="focus-ring inline-flex min-h-11 items-center gap-2 rounded-full bg-mediumTeal px-4 py-2 text-sm font-extrabold text-white shadow-lg shadow-mediumTeal/25 transition hover:-translate-y-0.5 hover:bg-[#277f73]" type="button" aria-expanded="false" aria-controls="account-navigation-panel">
-        Account
+      <button id="account-navigation-button" data-testid="account-menu-button" class="focus-ring inline-flex min-h-11 items-center gap-2 rounded-full bg-mediumTeal px-4 py-2 text-sm font-extrabold text-white shadow-lg shadow-mediumTeal/25 transition hover:-translate-y-0.5 hover:bg-[#277f73]" type="button" aria-expanded="false" aria-controls="account-navigation-panel" aria-label="Account menu">
+        {% if request.user.account_menu_name %}
+          <span data-testid="account-menu-name">{{ request.user.account_menu_name }}</span>
+          <span class="font-semibold text-white/80">Account</span>
+        {% else %}
+          Account
+        {% endif %}
         <svg aria-hidden="true" class="h-3 w-3 transition-transform" data-disclosure-chevron viewBox="0 0 12 8" fill="none" stroke="currentColor" stroke-width="2"><path d="m1 1.5 5 5 5-5" /></svg>
       </button>
       <div id="account-navigation-panel" class="absolute right-0 top-[calc(100%+.65rem)] z-50 hidden w-[min(18rem,calc(100vw-2rem))] rounded-3xl bg-white p-3 text-ink shadow-2xl shadow-ink/20 ring-1 ring-ink/10" aria-labelledby="account-navigation-button">
-        <p class="truncate px-3 pb-3 text-xs font-bold text-ink/60">Signed in as {{ request.user.email }}</p>
+        <p class="truncate px-3 pb-1 text-xs font-bold text-ink/60">Signed in as {{ request.user.email }}</p>
+        <a data-testid="account-profile-link" href="{% url 'account_profile' %}" class="focus-ring mt-2 block rounded-2xl px-3 py-3 font-black hover:bg-linen">My profile</a>
         <a href="/" class="focus-ring block rounded-2xl px-3 py-3 font-black hover:bg-linen">View public website</a>
         <form method="post" action="{% url 'logout' %}">
           {% csrf_token %}

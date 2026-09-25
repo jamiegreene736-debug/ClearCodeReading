@@ -43,6 +43,7 @@ from apps.crm.views import (
 from apps.core.discovery_views import LlmsTxtView, RobotsTxtView, SitemapXmlView
 from apps.sessions.views import RapidSessionLogView
 from apps.users.onboarding_views import manage_users, resend_invitation, AcceptInvitationView, gmail_welcome
+from apps.users.account import AccountProfileView
 from apps.users.portal_views import (
     AssignLessonTemplateToChildView,
     AssignTeacherView,
@@ -126,6 +127,7 @@ urlpatterns = [
     path("portal/blog/", include("apps.blog.manage_urls")),
     path("login/", PortalLoginView.as_view(), name="login"),
     path("logout/", LogoutView.as_view(next_page="/"), name="logout"),
+    path("account/", AccountProfileView.as_view(), name="account_profile"),
     path("dashboard/", PortalDashboardView.as_view(), name="portal_dashboard"),
     path("portal/sessions/rapid-log/", RapidSessionLogView.as_view(), name="rapid_session_log"),
     path("crm/hiring/", HiringWorkspaceView.as_view(), name="crm_hiring"),

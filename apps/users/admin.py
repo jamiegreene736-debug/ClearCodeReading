@@ -9,7 +9,20 @@ class ProfileInline(admin.StackedInline):
     model = Profile
     extra = 0
     can_delete = False
-    fields = ("display_name", "avatar", "timezone", "preferences", "onboarding_completed_at")
+    fields = (
+        "display_name",
+        "avatar",
+        "timezone",
+        "preferred_contact_method",
+        "organization_name",
+        "job_title",
+        "city",
+        "region",
+        "postal_code",
+        "about",
+        "preferences",
+        "onboarding_completed_at",
+    )
 
 
 class GuardianRelationshipInline(admin.TabularInline):
@@ -58,7 +71,15 @@ class CustomUserAdmin(UserAdmin):
 
 @admin.register(Profile)
 class ProfileAdmin(admin.ModelAdmin):
-    list_display = ("user", "display_name", "timezone", "onboarding_completed_at", "is_deleted", "created_at")
+    list_display = (
+        "user",
+        "display_name",
+        "organization_name",
+        "timezone",
+        "onboarding_completed_at",
+        "is_deleted",
+        "created_at",
+    )
     list_filter = ("timezone", "is_deleted", "onboarding_completed_at", "created_at")
     search_fields = ("user__email", "user__first_name", "user__last_name", "display_name")
     autocomplete_fields = ("user",)

@@ -66,8 +66,24 @@ class PortalNavigationTests(SimpleTestCase):
         content = self.render_header(role=CustomUser.Role.SUPER_ADMIN, is_staff=True)
 
         self.assertEqual(content.count('aria-expanded="false"'), 3)
+        self.assertIn('data-testid="account-profile-link"', content)
+        self.assertIn('href="/account/"', content)
         self.assertIn("event.key !== 'Escape'", content)
         self.assertIn("if (!header.contains(document.activeElement)) closeAll()", content)
+
+    def test_account_menu_uses_first_name_then_account(self):
+        request = self.request_factory.get("/dashboard/")
+        request.user = CustomUser(
+            email="jamie@example.com",
+            role=CustomUser.Role.GUARDIAN,
+            first_name="Jamie",
+        )
+        request.resolver_match = resolve("/dashboard/")
+        content = render_to_string("portal/_header.html", request=request)
+
+        self.assertIn('data-testid="account-menu-name"', content)
+        self.assertIn("Jamie", content)
+        self.assertIn(">Account<", content)
 
     def test_dashboard_and_session_log_expose_shared_navigation_destinations(self):
         dashboard = Path(settings.BASE_DIR, "templates/portal/dashboard.html").read_text()

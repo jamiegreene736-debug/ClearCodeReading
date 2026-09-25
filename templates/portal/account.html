@@ -1,0 +1,105 @@
+{% load static %}
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="referrer" content="same-origin">
+  <title>Your account | ClearCode Reading</title>
+  <link rel="icon" href="/assets/logo/cc-favicon-gold-teal-32.png" type="image/png" sizes="32x32">
+  <link rel="stylesheet" href="{% static 'css/clearcode-tailwind.css' %}">
+  <style>
+    .focus-ring:focus-visible { outline: 4px solid rgba(245, 166, 35, .75); outline-offset: 3px; }
+    .page-bg {
+      background:
+        radial-gradient(circle at 12% 12%, rgba(245, 166, 35, .20), transparent 24%),
+        radial-gradient(circle at 86% 16%, rgba(46, 184, 184, .12), transparent 24%),
+        linear-gradient(135deg, #F7F2EA 0%, #A8CFC4 48%, #E8D5B0 100%);
+    }
+    .field input, .field select, .field textarea {
+      width: 100%;
+      margin-top: 0.4rem;
+      border-radius: 1rem;
+      border: 1px solid rgba(33, 51, 67, .16);
+      background: white;
+      padding: 0.8rem 1rem;
+      font-weight: 700;
+      color: #213343;
+    }
+    .field .errorlist { margin: 0.35rem 0 0; color: #9b2929; font-weight: 700; }
+  </style>
+</head>
+<body class="page-bg min-h-screen font-sans text-ink antialiased">
+  {% include "portal/_header.html" %}
+
+  <main class="mx-auto max-w-3xl px-4 py-10 sm:px-6 lg:px-8">
+    {% if messages %}
+      <div class="mb-6">
+        {% include "_site_messages.html" with site_messages_layout="block" %}
+      </div>
+    {% endif %}
+
+    <section class="rounded-[2rem] bg-white p-6 shadow-2xl shadow-ink/10 ring-1 ring-ink/10 sm:p-8">
+      <p class="text-sm font-black uppercase tracking-[0.18em] text-deepTeal">Your account</p>
+      <h1 class="mt-2 text-3xl font-black sm:text-5xl">Profile</h1>
+      <p class="mt-4 max-w-2xl text-lg leading-8 text-ink/70">{{ intro }}</p>
+
+      <form method="post" class="mt-8 space-y-8" data-testid="account-profile-form">
+        {% csrf_token %}
+        {{ profile_form.non_field_errors }}
+
+        <fieldset class="space-y-4">
+          <legend class="text-sm font-black uppercase tracking-[0.16em] text-mediumTeal">Your name</legend>
+          {% include "portal/_account_field.html" with field=profile_form.display_name help="This is the name on the account menu. Leave it blank to use your first name." %}
+          <div class="grid gap-4 sm:grid-cols-2">
+            {% include "portal/_account_field.html" with field=profile_form.first_name %}
+            {% include "portal/_account_field.html" with field=profile_form.last_name %}
+          </div>
+        </fieldset>
+
+        <fieldset class="space-y-4">
+          <legend class="text-sm font-black uppercase tracking-[0.16em] text-mediumTeal">How we reach you</legend>
+          <div class="field">
+            <span class="font-black">Email</span>
+            <p class="mt-1 rounded-2xl bg-linen px-4 py-3 font-bold" data-testid="account-email">{{ account_email }}</p>
+            <p class="mt-1 text-sm text-ink/60">This is the address you use to sign in. Ask us if it needs to change.</p>
+          </div>
+          <div class="grid gap-4 sm:grid-cols-2">
+            {% include "portal/_account_field.html" with field=profile_form.phone_number %}
+            {% include "portal/_account_field.html" with field=profile_form.preferred_contact_method %}
+          </div>
+          {% include "portal/_account_field.html" with field=profile_form.timezone help="We use this for sessions, calls, and messages." %}
+        </fieldset>
+
+        {% if show_organization %}
+          <fieldset class="space-y-4">
+            <legend class="text-sm font-black uppercase tracking-[0.16em] text-mediumTeal">Where you are</legend>
+            <div class="grid gap-4 sm:grid-cols-2">
+              {% include "portal/_account_field.html" with field=profile_form.organization_name %}
+              {% include "portal/_account_field.html" with field=profile_form.job_title %}
+              {% include "portal/_account_field.html" with field=profile_form.city %}
+              {% include "portal/_account_field.html" with field=profile_form.region %}
+            </div>
+            {% include "portal/_account_field.html" with field=profile_form.postal_code %}
+            {% include "portal/_account_field.html" with field=profile_form.about help="Optional. For example, the grades you teach or the kind of partnership you have in mind." %}
+          </fieldset>
+        {% endif %}
+
+        <button class="focus-ring rounded-full bg-mediumTeal px-6 py-3 font-black text-white shadow-lg shadow-mediumTeal/25" type="submit" name="save" value="profile">Save profile</button>
+      </form>
+    </section>
+
+    <section class="mt-6 rounded-[2rem] bg-white p-6 shadow-xl shadow-ink/10 ring-1 ring-ink/10 sm:p-8">
+      <h2 class="text-2xl font-black">Password</h2>
+      <p class="mt-2 text-ink/70">Choose a new password for this account.</p>
+      <form method="post" class="mt-6 space-y-4" data-testid="account-password-form">
+        {% csrf_token %}
+        {% for field in password_form %}
+          {% include "portal/_account_field.html" with field=field %}
+        {% endfor %}
+        <button class="focus-ring rounded-full bg-ink px-6 py-3 font-black text-white" type="submit" name="save" value="password">Update password</button>
+      </form>
+    </section>
+  </main>
+</body>
+</html>
