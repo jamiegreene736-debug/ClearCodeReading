@@ -268,7 +268,6 @@ class MarketingPageTests(SimpleTestCase):
             "marketing-website/assessment.html",
             "templates/registration/login.html",
             "templates/portal/dashboard.html",
-            "templates/portal/inbox.html",
             "templates/sessions/rapid_log.html",
         ]
 
@@ -790,7 +789,6 @@ class MarketingPageTests(SimpleTestCase):
         template_paths = [
             "templates/registration/login.html",
             "templates/portal/dashboard.html",
-            "templates/portal/inbox.html",
             "templates/sessions/rapid_log.html",
         ]
 

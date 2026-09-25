@@ -1297,27 +1297,6 @@ class CrmWorkspaceTests(TestCase):
         self.assertNotIn('aria-current="page"', crm_link.group())
         self.assertContains(response, "/assets/logo/cc-monogram-gold-teal.png")
 
-    def test_inbox_header_highlights_inbox_instead_of_dashboard(self):
-        self.client.force_login(self.admin_user)
-
-        response = self.client.get(reverse("portal_inbox"))
-
-        self.assertEqual(response.status_code, 200)
-        dashboard_link = re.search(
-            r'<a\s+[^>]*data-testid="dashboard-header-link"[^>]*>',
-            response.content.decode(),
-        )
-        inbox_link = re.search(
-            r'<a\s+[^>]*data-testid="inbox-header-link"[^>]*>',
-            response.content.decode(),
-        )
-        self.assertIsNotNone(dashboard_link)
-        self.assertIsNotNone(inbox_link)
-        self.assertNotIn('aria-current="page"', dashboard_link.group())
-        self.assertIn('aria-current="page"', inbox_link.group())
-        self.assertContains(response, "Fluency first")
-        self.assertContains(response, 'aria-live="polite"')
-
     def test_crm_workspaces_include_phone_specific_navigation_and_views(self):
         self.client.force_login(self.admin_user)
 

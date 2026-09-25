@@ -112,9 +112,6 @@
           </div>
         </li>
       {% endif %}
-      <li>
-        <a data-testid="inbox-header-link" href="{% url 'portal_inbox' %}" {% if request.resolver_match.url_name == 'portal_inbox' %}aria-current="page"{% endif %} class="focus-ring inline-flex min-h-11 items-center rounded-full px-3 py-2 text-sm font-black transition hover:-translate-y-0.5 sm:px-4 {% if request.resolver_match.url_name == 'portal_inbox' %}bg-ink text-white shadow-lg shadow-ink/15{% else %}text-ink/70 hover:bg-white/70 hover:text-deepTeal{% endif %}">Inbox</a>
-      </li>
     </ul>
 
     <div class="relative shrink-0" data-portal-disclosure>
