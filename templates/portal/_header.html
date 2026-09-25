@@ -15,7 +15,9 @@
       </li>
 
       {% if request.user.has_resource_access %}
-        <li><a href="{% url 'resources:manager' %}" class="focus-ring inline-flex min-h-11 items-center rounded-full px-4 py-2 text-sm font-black">Resources</a></li>
+        <li>
+          <a data-testid="free-resources-header-link" href="{% url 'resources:manager' %}" class="focus-ring inline-flex min-h-11 items-center rounded-full px-4 py-2 text-sm font-black {% if request.resolver_match.url_name == 'manager' %}bg-ink text-white shadow-lg shadow-ink/15{% else %}text-ink/70 hover:bg-white/70 hover:text-deepTeal{% endif %}">Free resources</a>
+        </li>
       {% endif %}
       {% if request.user.is_superuser or request.user.role == 'super_admin' or request.user.role == 'school_admin' %}
         <li class="static lg:relative" data-portal-disclosure>
@@ -46,11 +48,16 @@
               <li><a data-testid="lesson-library-menu-link" href="{% url 'portal_lesson_library' %}" {% if request.resolver_match.url_name == 'portal_lesson_library' %}aria-current="page"{% endif %} class="focus-ring block rounded-2xl px-3 py-3 hover:bg-linen"><span class="block font-black">Lesson library</span><span class="mt-1 block text-xs text-ink/60">Create lessons and share them with the teachers who will use them</span></a></li>
               <li><a href="{% url 'manage_users' %}#recent-invitations" class="focus-ring block rounded-2xl px-3 py-3 font-black hover:bg-linen">User invitations</a></li>
             </ul>
-            {% if request.user.can_manage_blog %}
+            {% if request.user.can_manage_blog or request.user.has_resource_access %}
               <p class="mt-3 border-t border-ink/10 px-3 pb-2 pt-4 text-xs font-black uppercase tracking-[0.16em] text-mediumTeal">Website content</p>
               <ul class="grid gap-1" data-testid="manage-blog-links">
-                <li><a data-testid="blog-manage-menu-link" href="{% url 'blog_manage:list' %}" class="focus-ring block rounded-2xl px-3 py-3 hover:bg-linen"><span class="block font-black">Blog posts</span><span class="mt-1 block text-xs text-ink/60">Write, edit, schedule and publish articles</span></a></li>
-                <li><a href="{% url 'blog:list' %}" target="_blank" rel="noopener" class="focus-ring block rounded-2xl px-3 py-3 font-black hover:bg-linen">View the public blog ↗</a></li>
+                {% if request.user.has_resource_access %}
+                  <li><a data-testid="free-resources-menu-link" href="{% url 'resources:manager' %}" class="focus-ring block rounded-2xl px-3 py-3 hover:bg-linen"><span class="block font-black">Free resources</span><span class="mt-1 block text-xs text-ink/60">Add worksheets, videos, and guides to the public page</span></a></li>
+                {% endif %}
+                {% if request.user.can_manage_blog %}
+                  <li><a data-testid="blog-manage-menu-link" href="{% url 'blog_manage:list' %}" class="focus-ring block rounded-2xl px-3 py-3 hover:bg-linen"><span class="block font-black">Blog posts</span><span class="mt-1 block text-xs text-ink/60">Write, edit, schedule and publish articles</span></a></li>
+                  <li><a href="{% url 'blog:list' %}" target="_blank" rel="noopener" class="focus-ring block rounded-2xl px-3 py-3 font-black hover:bg-linen">View the public blog ↗</a></li>
+                {% endif %}
               </ul>
             {% endif %}
           </div>

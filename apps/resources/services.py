@@ -115,6 +115,18 @@ def publish(
     record_change(resource, user, "scheduled" if at else "published")
 
 
+def unpublish(resource: Resource, user: CustomUser) -> None:
+    if resource.archived:
+        raise ValidationError("Restore this resource before changing publication.")
+    if not resource.live_id and not resource.scheduled_id:
+        raise ValidationError("This resource is not on the free resources page.")
+    resource.live = None
+    resource.scheduled = None
+    resource.publish_at = None
+    resource.submitted = False
+    record_change(resource, user, "unpublished")
+
+
 def duplicate(resource: Resource, user: CustomUser) -> Resource:
     values = revision_values(resource.draft)
     values["title"] = f"{values['title'][:190]} (copy)"

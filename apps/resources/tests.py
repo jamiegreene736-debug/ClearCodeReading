@@ -94,6 +94,73 @@ class ResourceWorkflowTests(TestCase):
         self.assertContains(response, "Preview resource")
         self.assertContains(response, "Publish now")
         self.assertContains(response, "Schedule publication")
+        self.assertContains(response, "On the free resources page")
+
+    def test_manager_is_the_free_resources_library(self):
+        response = self.client.get(reverse("resources:manager"))
+        self.assertContains(response, "free resources page")
+        self.assertContains(response, "Reading together")
+        self.assertContains(response, "Draft")
+        families = create_resource(
+            self.publisher,
+            kind="article",
+            title="Educator only guide",
+            description="For teachers.",
+            body="Lesson notes.",
+            topic=self.topic,
+            audience="educators",
+        )
+        listing = self.client.get(reverse("resources:manager") + "?audience=educators")
+        self.assertContains(listing, "Educator only guide")
+        self.assertNotContains(listing, "Reading together")
+        self.assertEqual(families.draft.audience, "educators")
+
+    def test_link_start_saves_the_url_and_rejects_a_blank_link(self):
+        response = self.client.post(
+            reverse("resources:add"),
+            {
+                "kind": "link",
+                "url": "https://example.com/family-guide",
+                "title": "Family guide",
+            },
+        )
+        self.assertEqual(response.status_code, 302)
+        revision = Revision.objects.get(title="Family guide")
+        self.assertEqual(revision.url, "https://example.com/family-guide")
+        self.assertEqual(revision.kind, "link")
+        invalid = self.client.post(
+            reverse("resources:add"), {"kind": "link", "url": ""}
+        )
+        self.assertEqual(invalid.status_code, 200)
+        self.assertContains(invalid, "Paste a public HTTPS link")
+
+    def test_unpublish_removes_a_resource_from_the_public_page(self):
+        self.action("publish")
+        self.unlock()
+        self.assertEqual(
+            self.client.get(self.resource.get_absolute_url()).status_code, 200
+        )
+        self.action("unpublish")
+        self.resource.refresh_from_db()
+        self.assertIsNone(self.resource.live_id)
+        self.assertIsNone(self.resource.scheduled_id)
+        self.assertEqual(
+            self.client.get(self.resource.get_absolute_url()).status_code, 404
+        )
+        self.assertFalse(published_revisions().filter(resource=self.resource).exists())
+        owned = create_resource(
+            self.author,
+            kind="article",
+            title="Author live guide",
+            description="Summary",
+            body="Body",
+            topic=self.topic,
+        )
+        publish(owned, self.publisher)
+        self.client.force_login(self.author)
+        self.assertEqual(self.action("unpublish", owned).status_code, 403)
+        owned.refresh_from_db()
+        self.assertIsNotNone(owned.live_id)
 
     def test_save_creates_revision_and_leaves_live_content_unchanged(self):
         publish(self.resource, self.publisher)

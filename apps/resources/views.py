@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from io import BytesIO
 from typing import Any
+from urllib.parse import urlencode
 from uuid import UUID, uuid4
 
 from django.contrib import messages
@@ -30,6 +31,7 @@ from apps.resources.forms import (
     ResourceForm,
     ScheduleForm,
     validate_publication,
+    validate_resource_url,
     video_embed,
 )
 from apps.resources.models import Resource, Revision, Topic
@@ -43,6 +45,7 @@ from apps.resources.services import (
     record_change,
     revision_values,
     save_draft,
+    unpublish,
 )
 
 
@@ -94,47 +97,102 @@ def library_context(request: HttpRequest) -> dict[str, Any]:
     }
 
 
-@editor_required
-@require_GET
-def manager(request: EditorRequest) -> HttpResponseBase:
-    resources = scoped_resources(request.user)
+def _library_filters(
+    request: EditorRequest, resources: QuerySet[Resource]
+) -> tuple[QuerySet[Resource], dict[str, str]]:
     query = request.GET.get("q", "").strip()[:200]
-    tab = request.GET.get("tab", "all")
+    audience = request.GET.get("audience", "")
+    topic = request.GET.get("topic", "")
+    kind = request.GET.get("kind", "")
     if query:
         resources = resources.filter(
             Q(draft__title__icontains=query) | Q(draft__description__icontains=query)
         )
+    if audience in Revision.Audience.values:
+        resources = resources.filter(draft__audience=audience)
+    if topic.isdigit():
+        resources = resources.filter(draft__topic_id=topic)
+    if kind in Revision.Kind.values:
+        resources = resources.filter(draft__kind=kind)
+    return resources, {
+        "q": query,
+        "audience": audience if audience in Revision.Audience.values else "",
+        "topic": topic if topic.isdigit() else "",
+        "kind": kind if kind in Revision.Kind.values else "",
+    }
+
+
+@editor_required
+@require_GET
+def manager(request: EditorRequest) -> HttpResponseBase:
+    resources, filters = _library_filters(request, scoped_resources(request.user))
+    tab = request.GET.get("tab", "all")
+    if tab not in {"all", "drafts", "review", "scheduled", "published", "archived"}:
+        tab = "all"
+    now = timezone.now()
+    active = Q(archived=False)
+    counts = resources.aggregate(
+        all=Count("pk", filter=active),
+        drafts=Count(
+            "pk",
+            filter=active
+            & Q(live__isnull=True)
+            & (Q(scheduled__isnull=True) | Q(publish_at__gt=now)),
+        ),
+        review=Count("pk", filter=active & Q(submitted=True)),
+        scheduled=Count("pk", filter=active & Q(publish_at__gt=now)),
+        published=Count(
+            "pk",
+            filter=active & (Q(live__isnull=False) | Q(publish_at__lte=now)),
+        ),
+        archived=Count("pk", filter=Q(archived=True)),
+    )
     if tab == "archived":
         resources = resources.filter(archived=True)
     else:
         resources = resources.filter(archived=False)
         if tab == "drafts":
             resources = resources.filter(live__isnull=True).filter(
-                Q(scheduled__isnull=True) | Q(publish_at__gt=timezone.now())
+                Q(scheduled__isnull=True) | Q(publish_at__gt=now)
             )
         elif tab == "published":
-            resources = resources.filter(
-                Q(live__isnull=False) | Q(publish_at__lte=timezone.now())
-            )
+            resources = resources.filter(Q(live__isnull=False) | Q(publish_at__lte=now))
         elif tab == "review":
             resources = resources.filter(submitted=True)
         elif tab == "scheduled":
-            resources = resources.filter(publish_at__gt=timezone.now())
+            resources = resources.filter(publish_at__gt=now)
+    ordering = request.GET.get("sort", "updated")
+    if ordering == "title":
+        resources = resources.order_by("draft__title", "-updated_at")
+    elif ordering == "featured":
+        resources = resources.order_by("-draft__featured", "-updated_at")
+    else:
+        ordering = "updated"
+    list_query = urlencode({**filters, "tab": tab, "sort": ordering})
     return render(
         request,
         "resources/manager.html",
         {
-            "page": Paginator(resources, 20).get_page(request.GET.get("page")),
+            "page": Paginator(resources, 12).get_page(request.GET.get("page")),
             "tab": tab,
-            "query": query,
+            "query": filters["q"],
+            "selected_audience": filters["audience"],
+            "selected_topic": filters["topic"],
+            "selected_kind": filters["kind"],
+            "sort": ordering,
+            "list_query": list_query,
+            "filter_query": urlencode({**filters, "sort": ordering}),
             "publisher": can_publish(request.user),
+            "topics": Topic.objects.all(),
+            "live_count": published_revisions().count(),
+            "counts": counts,
             "tabs": [
-                ("all", "All"),
-                ("drafts", "Drafts"),
-                ("review", "In review"),
-                ("scheduled", "Scheduled"),
-                ("published", "Published"),
-                ("archived", "Archived"),
+                ("all", "All", counts["all"]),
+                ("drafts", "Drafts", counts["drafts"]),
+                ("review", "In review", counts["review"]),
+                ("scheduled", "Scheduled", counts["scheduled"]),
+                ("published", "On the page", counts["published"]),
+                ("archived", "Archived", counts["archived"]),
             ],
         },
     )
@@ -178,7 +236,20 @@ def add(request: EditorRequest) -> HttpResponseBase:
                         f"{len(resources)} drafts created. Open each to review and publish.",
                     )
                     return redirect("resources:manager")
-                resource = create_resource(request.user, kind=kind)
+                title = (
+                    request.POST.get("title", "").strip()[:200] or "Untitled resource"
+                )
+                values: dict[str, Any] = {}
+                if kind == Revision.Kind.LINK:
+                    url = validate_resource_url(request.POST.get("url", "").strip())
+                    if not url:
+                        raise ValidationError(
+                            "Paste a public HTTPS link, such as https://example.com/guide."
+                        )
+                    values["url"] = url
+                resource = create_resource(
+                    request.user, kind=kind, title=title, **values
+                )
                 return redirect("resources:edit", pk=resource.pk)
         except ValidationError as exc:
             errors = exc.messages
@@ -289,6 +360,7 @@ def action(request: EditorRequest, pk: UUID) -> HttpResponseBase:
             operation = request.POST.get("action")
             if operation in {
                 "publish",
+                "unpublish",
                 "schedule",
                 "cancel_schedule",
                 "archive",
@@ -313,7 +385,13 @@ def action(request: EditorRequest, pk: UUID) -> HttpResponseBase:
                     request,
                     "Publication scheduled (Eastern Time)."
                     if at
-                    else "Published — your resource is now available.",
+                    else "Published. Families can now find it on the free resources page.",
+                )
+            elif operation == "unpublish":
+                unpublish(resource, request.user)
+                messages.success(
+                    request,
+                    "Removed from the free resources page. Your draft is still here.",
                 )
             elif operation == "submit":
                 if resource.archived:

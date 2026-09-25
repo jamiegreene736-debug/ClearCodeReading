@@ -2,20 +2,28 @@
 {% block content %}
     <div class="rm-toolbar">
         <div>
-            <p class="rm-eyebrow">Your content, ready to share</p>
+            <p class="rm-eyebrow">Free resources page</p>
             <h1 class="rm-title">Resources</h1>
-            <p class="rm-subtitle">Helpful tools for families and educators. Add the content; we’ll handle the layout.</p>
+            <p class="rm-subtitle">Add worksheets, videos, and guides for families and educators. Publish a resource and it appears on the public free resources page.</p>
         </div>
         <a class="rm-button" href="{% url 'resources:add' %}">＋ Add resource</a>
     </div>
+    <p class="rm-live-line">
+        <strong>{{ live_count }}</strong>
+        {% if live_count == 1 %}resource is{% else %}resources are{% endif %}
+        live on the
+        <a href="/resources/" target="_blank" rel="noopener">free resources page</a>.
+        Drafts stay private until you publish.
+    </p>
     <nav class="rm-tabs" aria-label="Resource status">
-        {% for key,label in tabs %}
-            <a href="?tab={{ key }}&amp;q={{ query|urlencode }}"
-               {% if tab == key %}aria-current="page"{% endif %}>{{ label }}</a>
+        {% for key, label, count in tabs %}
+            <a href="?tab={{ key }}&amp;{{ filter_query }}"
+               {% if tab == key %}aria-current="page"{% endif %}>{{ label }} <span class="rm-count">{{ count }}</span></a>
         {% endfor %}
     </nav>
     <form class="rm-search" method="get">
         <input type="hidden" name="tab" value="{{ tab }}">
+        <input type="hidden" name="sort" value="{{ sort }}">
         <div>
             <label for="search">Find a resource</label>
             <input id="search"
@@ -24,59 +32,95 @@
                    placeholder="Search titles and descriptions"
                    maxlength="200">
         </div>
+        <div>
+            <label for="audience">Audience</label>
+            <select id="audience" name="audience">
+                <option value="">Everyone</option>
+                <option value="families" {% if selected_audience == "families" %}selected{% endif %}>Families</option>
+                <option value="educators" {% if selected_audience == "educators" %}selected{% endif %}>Educators</option>
+                <option value="both" {% if selected_audience == "both" %}selected{% endif %}>Families and educators</option>
+            </select>
+        </div>
+        <div>
+            <label for="topic">Topic</label>
+            <select id="topic" name="topic">
+                <option value="">All topics</option>
+                {% for topic in topics %}
+                    <option value="{{ topic.pk }}" {% if selected_topic == topic.pk|stringformat:"s" %}selected{% endif %}>{{ topic.name }}</option>
+                {% endfor %}
+            </select>
+        </div>
+        <div>
+            <label for="kind">Format</label>
+            <select id="kind" name="kind">
+                <option value="">All formats</option>
+                <option value="file" {% if selected_kind == "file" %}selected{% endif %}>Files</option>
+                <option value="link" {% if selected_kind == "link" %}selected{% endif %}>Links &amp; videos</option>
+                <option value="article" {% if selected_kind == "article" %}selected{% endif %}>Guides</option>
+            </select>
+        </div>
+        <div>
+            <label for="sort">Sort</label>
+            <select id="sort" name="sort">
+                <option value="updated" {% if sort == "updated" %}selected{% endif %}>Recently updated</option>
+                <option value="title" {% if sort == "title" %}selected{% endif %}>Title</option>
+                <option value="featured" {% if sort == "featured" %}selected{% endif %}>Featured first</option>
+            </select>
+        </div>
         <button class="rm-button secondary">Search</button>
     </form>
     {% if page.object_list %}
-        <div class="rm-table-wrap">
-            <table class="rm-table">
-                <thead>
-                    <tr>
-                        <th scope="col">Resource</th>
-                        <th scope="col">Audience</th>
-                        <th scope="col">Status</th>
-                        <th scope="col">Last updated</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    {% for resource in page %}
-                        <tr>
-                            <td>
-                                <div class="rm-row-title">
-                                    <div class="rm-mini-cover" aria-hidden="true">{{ resource.draft.kind }}</div>
-                                    <div>
-                                        <a href="{% url 'resources:edit' resource.pk %}">{{ resource.draft.title }}</a>
-                                        {% if resource.has_unpublished_changes %}
-                                            <p class="rm-status-line">Unpublished changes</p>
-                                        {% endif %}
-                                    </div>
-                                </div>
-                            </td>
-                            <td>{{ resource.draft.get_audience_display }}</td>
-                            <td>
-                                <span class="rm-badge">{{ resource.state }}</span>
-                            </td>
-                            <td>
-                                {{ resource.updated_at|date:"M j, Y" }}
-                                <br>
-                                <span class="rm-subtle">{{ resource.updated_at|date:"H:i T" }}</span>
-                            </td>
-                        </tr>
-                    {% endfor %}
-                </tbody>
-            </table>
+        <div class="rm-grid rm-library-grid">
+            {% for resource in page %}
+                <article class="rm-card rm-manage-card">
+                    <a class="rm-card-cover"
+                       href="{% url 'resources:edit' resource.pk %}"
+                       aria-hidden="true"
+                       tabindex="-1">
+                        {% if resource.draft.image_asset %}
+                            <img src="{% url 'resources:preview_asset' resource.pk 'cover' %}"
+                                 alt=""
+                                 loading="lazy">
+                        {% else %}
+                            <span>ClearCode Reading</span>
+                            <span>{{ resource.draft.get_kind_display }}{% if resource.draft.topic %} · {{ resource.draft.topic.name }}{% endif %}</span>
+                        {% endif %}
+                    </a>
+                    <div class="rm-card-body">
+                        <div class="rm-card-meta">
+                            <span class="rm-badge rm-badge-{{ resource.state|slugify }}">{{ resource.state }}</span>
+                            {% if resource.draft.featured %}<span class="rm-badge rm-badge-featured">Featured</span>{% endif %}
+                        </div>
+                        <span class="rm-eyebrow">{{ resource.draft.get_audience_display }}</span>
+                        <h2>
+                            <a href="{% url 'resources:edit' resource.pk %}">{{ resource.draft.title }}</a>
+                        </h2>
+                        <p>{{ resource.draft.description|default:"Add a short description before publishing." }}</p>
+                        {% if resource.has_unpublished_changes %}
+                            <p class="rm-status-line">Unpublished changes. Visitors still see the published version.</p>
+                        {% endif %}
+                        <p class="rm-subtle">Updated {{ resource.updated_at|date:"M j, Y" }}</p>
+                        <a class="rm-card-link" href="{% url 'resources:edit' resource.pk %}">Edit resource →</a>
+                    </div>
+                </article>
+            {% endfor %}
         </div>
     {% else %}
         <section class="rm-panel rm-empty">
-            <p class="rm-eyebrow">A useful resource starts here</p>
-            <h2>{% if query %}No matching resources{% else %}Make something helpful easy to find.{% endif %}</h2>
+            <p class="rm-eyebrow">{% if query or selected_audience or selected_topic or selected_kind %}Nothing matches{% else %}The free resources page is waiting{% endif %}</p>
+            <h2>{% if query or selected_audience or selected_topic or selected_kind %}No matching resources{% else %}Add the first thing families can use.{% endif %}</h2>
             <p>
-                {% if query %}Try a different title or clear your search.{% else %}Upload a worksheet, share a video, or write a guide. Your first version stays private until it’s published.{% endif %}
+                {% if query or selected_audience or selected_topic or selected_kind %}
+                    Try a different title or clear a filter.
+                {% else %}
+                    Upload a worksheet, paste a video, or write a guide. It stays a private draft until you publish it to the free resources page.
+                {% endif %}
             </p>
             <a class="rm-button" href="{% url 'resources:add' %}">Add a resource</a>
         </section>
     {% endif %}
     {% include "resources/pagination.html" %}
     {% if not publisher %}
-        <p class="rm-muted">You can create and edit your own resources, then submit them for review.</p>
+        <p class="rm-muted">You can create and edit your own resources, then submit them for review. A publisher adds them to the free resources page.</p>
     {% endif %}
 {% endblock %}
