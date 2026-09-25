@@ -1260,10 +1260,16 @@ class AssessmentQueueTests(TestCase):
         self.assertEqual(legacy.context["queue"], "waiting")
         self.assertContains(search, "Casey")
         self.assertNotContains(search, "Avery")
-        self.assertContains(dashboard, "People to finish")
+        self.assertContains(dashboard, "Still finishing")
         self.assertContains(dashboard, "Waiting to finish an assessment")
+        self.assertContains(dashboard, "Assessments to review")
         self.assertContains(dashboard, "Parent Queue")
+        self.assertContains(dashboard, "Casey")
+        self.assertContains(dashboard, "Finished Parent")
+        self.assertNotContains(dashboard, "Drew")
+        self.assertNotContains(dashboard, "Hidden")
         self.assertEqual(dashboard.context["assessments_waiting"], 1)
+        self.assertEqual(dashboard.context["assessments_to_review"], 1)
 
     def test_detail_shows_where_the_family_is_in_the_flow(self):
         response = self.client.get(reverse("inventory_detail", args=[self.started.pk]))

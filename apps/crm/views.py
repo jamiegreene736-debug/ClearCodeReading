@@ -47,7 +47,7 @@ from apps.crm.models import (
     pipeline_category_for,
 )
 from apps.crm.newsletters import resolve_unsubscribe_token
-from apps.crm.assessment_queue import pending_completion_people_count, waiting_preview
+from apps.crm.assessment_queue import assessment_summary, review_preview, waiting_preview
 from apps.crm.routing import pending_routing_people_count, pending_routing_queryset, routing_queue
 from apps.crm.serializers import CompanySerializer, LeadSerializer, OpportunitySerializer
 from apps.crm.services import (
@@ -658,9 +658,10 @@ class CrmDashboardView(CrmAccessMixin, TemplateView):
         now = timezone.now()
         contacts = Lead.objects.filter(is_deleted=False)
         deals = Opportunity.objects.filter(is_deleted=False)
+        open_deals = deals.exclude(stage__in=TERMINAL_DEAL_STAGES)
         pipeline_rows = {
             row["pipeline"]: row
-            for row in deals.values("pipeline").annotate(
+            for row in open_deals.values("pipeline").annotate(
                 deal_count=Count("id"),
                 total_value=Sum("value"),
             )
@@ -677,22 +678,33 @@ class CrmDashboardView(CrmAccessMixin, TemplateView):
                 }
             )
 
-        open_tasks = list(
-            CrmActivity.objects.filter(
-                lead__is_deleted=False,
-                activity_type=CrmActivity.ActivityType.TASK,
-                completed_at__isnull=True,
+        work_scope = self.request.GET.get("work", "team")
+        if work_scope not in {"team", "mine"}:
+            work_scope = "team"
+        open_tasks = CrmActivity.objects.filter(
+            lead__is_deleted=False,
+            activity_type=CrmActivity.ActivityType.TASK,
+            completed_at__isnull=True,
+        ).select_related("lead", "assigned_to")
+        if work_scope == "mine":
+            open_tasks = open_tasks.filter(assigned_to=self.request.user)
+        open_task_count = open_tasks.count()
+        task_rows = []
+        for task in open_tasks.order_by(F("due_at").asc(nulls_last=True), "created_at")[:6]:
+            owner = task.assigned_to
+            owner_label = "Unassigned"
+            if owner is not None:
+                owner_label = owner.get_full_name() or owner.email or "Unassigned"
+            task_rows.append(
+                {
+                    "task": task,
+                    "is_overdue": bool(task.due_at and task.due_at < now),
+                    "owner_label": owner_label,
+                }
             )
-            .select_related("lead", "assigned_to")
-            .order_by(F("due_at").asc(nulls_last=True), "created_at")[:6]
-        )
-        task_rows = [
-            {"task": task, "is_overdue": bool(task.due_at and task.due_at < now)}
-            for task in open_tasks
-        ]
+        assessment = assessment_summary(now)
         context.update(
             {
-                "total_contacts": contacts.count(),
                 "new_contacts": contacts.filter(status=Lead.Status.NEW).count(),
                 "unassigned_contacts": contacts.filter(assigned_to__isnull=True).count(),
                 "overdue_tasks": CrmActivity.objects.filter(
@@ -702,19 +714,18 @@ class CrmDashboardView(CrmAccessMixin, TemplateView):
                     due_at__lt=now,
                 ).count(),
                 "pending_triage": pending_routing_people_count(),
-                "assessments_waiting": pending_completion_people_count(),
-                "assessment_waiting": waiting_preview(),
-                "recent_submissions": FormSubmission.objects.filter(
-                    created_at__gte=now - timezone.timedelta(days=30)
-                ).count(),
+                "assessments_waiting": assessment["people_waiting"],
+                "assessments_to_review": assessment["needs_review"],
+                "assessment_email_attention": assessment["email_attention"],
+                "assessment_waiting": waiting_preview(now=now),
+                "assessment_review": review_preview(now=now),
                 "recent_contacts": contacts.select_related("assigned_to", "company").annotate(
                     last_submission_at=Max("form_submissions__created_at")
-                ).order_by(F("last_submission_at").desc(nulls_last=True), "-created_at")[:6],
+                ).order_by(F("last_submission_at").desc(nulls_last=True), "-created_at")[:5],
+                "work_scope": work_scope,
+                "open_task_count": open_task_count,
                 "task_rows": task_rows,
-                "triage_items": IntakeTriage.objects.filter(
-                    lead__is_deleted=False,
-                    status=IntakeTriage.Status.PENDING
-                ).select_related("lead", "submission").order_by("created_at")[:5],
+                "routing_people": routing_queue(now)["people"][:5],
                 "pipeline_summaries": pipeline_summaries,
             }
         )

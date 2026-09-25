@@ -1110,7 +1110,9 @@ class CrmWorkspaceTests(TestCase):
         self.assertEqual(response.status_code, 200)
         self.assertContains(response, 'data-testid="business-menu-button"')
         self.assertContains(response, 'data-testid="crm-header-link"')
-        self.assertContains(response, 'aria-label="Workspace sections"')
+        self.assertContains(response, 'aria-label="Program status"')
+        self.assertNotContains(response, 'aria-label="Workspace sections"')
+        self.assertContains(response, "What needs you")
         self.assertContains(response, f'href="{reverse("crm_dashboard")}"')
 
     def test_crm_opens_on_an_actionable_overview(self):
@@ -1138,7 +1140,15 @@ class CrmWorkspaceTests(TestCase):
         self.assertContains(response, "Call Alex")
         self.assertContains(response, "Overdue")
         self.assertContains(response, "Families / Enrollment")
-        self.assertContains(response, "Simple CRM flow")
+        self.assertContains(response, "Follow-up queue")
+        self.assertContains(response, "Needs routing")
+        self.assertNotContains(response, "Simple CRM flow")
+        self.assertContains(response, f'href="{reverse("crm_contact_list")}?queue=overdue"')
+        mine = self.client.get(reverse("crm_dashboard"), {"work": "mine"})
+        self.assertContains(mine, "Call Alex")
+        other = self.client.get(reverse("crm_dashboard"))
+        self.assertEqual(other.context["work_scope"], "team")
+        self.assertEqual(mine.context["work_scope"], "mine")
 
     def test_contact_is_created_inside_the_crm_without_admin_fields(self):
         self.client.force_login(self.admin_user)

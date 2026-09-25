@@ -32,6 +32,9 @@
       </div>
     {% endif %}
 
+    {% if is_admin %}
+      {% include "portal/_admin_workspace.html" %}
+    {% else %}
     <section class="grid min-w-0 gap-6 lg:grid-cols-[.85fr_1.15fr] lg:items-start">
       <aside id="portal-overview" class="min-w-0 scroll-mt-40 rounded-[2rem] bg-white/90 p-6 shadow-2xl shadow-deepTeal/10 ring-1 ring-deepTeal/10 lg:sticky lg:top-28">
         <p class="text-sm font-black uppercase tracking-[0.18em] text-mediumTeal">
@@ -152,7 +155,7 @@
           {% endfor %}
         {% endif %}
 
-        {% if is_teacher or is_admin %}
+        {% if is_teacher %}
           <section id="session-launchpad" class="scroll-mt-40 rounded-[2rem] bg-white p-6 shadow-xl ring-1 ring-deepTeal/10">
             <p class="text-sm font-black uppercase tracking-[0.18em] text-deepTeal">Specialist launchpad</p>
             <h2 class="mt-2 text-3xl font-black">Upcoming sessions and current instruction</h2>
@@ -179,24 +182,7 @@
           </section>
         {% endif %}
 
-        {% if is_admin and operations_metrics %}
-          <section id="operations" class="scroll-mt-36 rounded-[2rem] bg-ink p-6 text-white shadow-xl">
-            <p class="text-sm font-black uppercase tracking-[0.18em] text-gold">Operations intelligence</p>
-            <h2 class="mt-2 text-3xl font-black">Capacity and demand</h2>
-            <div class="mt-5 grid gap-3 sm:grid-cols-3">
-              <div class="rounded-3xl bg-white/10 p-5"><p class="text-sm font-bold">Utilization</p><p class="mt-2 text-4xl font-black">{{ operations_metrics.utilization_percent }}%</p><p class="text-xs">{% if operations_metrics.utilization_threshold_reached %}75% expansion trigger reached{% else %}Target trigger: 75%{% endif %}</p></div>
-              <div class="rounded-3xl bg-white/10 p-5"><p class="text-sm font-bold">Waitlist</p><p class="mt-2 text-4xl font-black">{{ operations_metrics.waitlist_count }}</p><p class="text-xs">Expansion trigger: 25</p></div>
-              <div class="rounded-3xl bg-white/10 p-5"><p class="text-sm font-bold">{{ operations_metrics.top_submarket|default:"Top submarket" }}</p><p class="mt-2 text-4xl font-black">{{ operations_metrics.top_submarket_percent }}%</p><p class="text-xs">Demand trigger: 40%</p></div>
-            </div>
-            <div class="mt-5 grid gap-3">
-              {% for group in grouping_suggestions %}
-                <article class="rounded-3xl bg-white/10 p-5"><div class="flex flex-wrap justify-between gap-2"><p class="font-black">{{ group.specialist_name }} · {{ group.methodology|upper }}</p><span class="rounded-full bg-gold px-3 py-1 text-xs font-black text-ink">Staff approval required</span></div><p class="mt-2 text-sm">{{ group.availability.day_of_week|title }} {{ group.availability.start_time }}–{{ group.availability.end_time }} · Score {{ group.score }}</p><p class="mt-2 text-sm">{% for student in group.students %}{{ student.display_name }} ({{ student.position_code }}){% if not forloop.last %}, {% endif %}{% endfor %}</p></article>
-              {% empty %}<p class="rounded-3xl bg-white/10 p-5">Add provider availability and at least two compatible students to generate recommendations.</p>{% endfor %}
-            </div>
-          </section>
-        {% endif %}
-
-        {% if is_teacher or is_admin %}
+        {% if is_teacher %}
           <section id="placement-review" class="scroll-mt-36 rounded-[2rem] bg-white p-6 shadow-xl shadow-ink/8 ring-1 ring-deepTeal/10">
             <p class="text-sm font-black uppercase tracking-[0.18em] text-deepTeal">Intervention placement</p>
             <h2 class="mt-2 text-3xl font-black">Review recommended sequences</h2>
@@ -239,135 +225,6 @@
                 <p class="rounded-3xl bg-linen p-5 font-bold text-ink/70">No placement recommendations are awaiting review.</p>
               {% endfor %}
             </div>
-          </section>
-        {% endif %}
-        {% if is_admin %}
-          <section id="admin-actions" class="scroll-mt-40 rounded-[2rem] bg-white p-6 shadow-xl shadow-ink/8 ring-1 ring-ink/10">
-            <div class="flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
-              <div>
-                <p class="text-sm font-black uppercase tracking-[0.18em] text-mediumTeal">Program administration</p>
-                <h2 class="mt-2 text-3xl font-black">Assign a teacher to a reader</h2>
-              </div>
-              <a href="/admin/" class="focus-ring rounded-full bg-ink px-5 py-3 text-sm font-black text-white transition hover:-translate-y-0.5">Open Django admin</a>
-            </div>
-            <form class="mt-5 grid gap-3 md:grid-cols-[1fr_1fr_auto]" method="post" action="{% url 'assign_teacher' %}">
-              {% csrf_token %}
-              <label class="block">
-                <span class="text-sm font-black text-ink/65">Reader</span>
-                <select class="mt-2 w-full rounded-2xl border border-ink/15 px-4 py-3 font-bold focus:border-deepTeal focus:outline-none" name="child_id" required>
-                  {% for child in children %}
-                    <option value="{{ child.id }}">{{ child }}{% if child.learning_profile.assigned_teacher_name %} - {{ child.learning_profile.assigned_teacher_name }}{% endif %}</option>
-                  {% endfor %}
-                </select>
-              </label>
-              <label class="block">
-                <span class="text-sm font-black text-ink/65">Teacher</span>
-                <select class="mt-2 w-full rounded-2xl border border-ink/15 px-4 py-3 font-bold focus:border-deepTeal focus:outline-none" name="teacher_id" required>
-                  {% for teacher in teachers %}
-                    <option value="{{ teacher.id }}">{{ teacher.get_full_name|default:teacher.email }}</option>
-                  {% endfor %}
-                </select>
-              </label>
-              <button class="focus-ring self-end rounded-full bg-deepTeal px-6 py-3 font-black text-white shadow-lg shadow-deepTeal/20 transition hover:-translate-y-0.5" type="submit">Assign</button>
-            </form>
-          </section>
-
-          <section id="lesson-library" class="scroll-mt-36 rounded-[2rem] bg-white p-6 shadow-xl shadow-ink/8 ring-1 ring-ink/10">
-            <div>
-              <p class="text-sm font-black uppercase tracking-[0.18em] text-deepTeal">Lesson library</p>
-              <h2 class="mt-2 text-3xl font-black">Assign lesson templates to teachers</h2>
-            </div>
-            <form class="mt-5 grid gap-3 md:grid-cols-[1fr_1fr_auto]" method="post" action="{% url 'portal_assign_template_to_teacher' %}">
-              {% csrf_token %}
-              <label class="block">
-                <span class="text-sm font-black text-ink/65">Teacher</span>
-                <select class="mt-2 w-full rounded-2xl border border-ink/15 px-4 py-3 font-bold focus:border-deepTeal focus:outline-none" name="teacher_id" required>
-                  {% for teacher in teachers %}
-                    <option value="{{ teacher.id }}">{{ teacher.get_full_name|default:teacher.email }}</option>
-                  {% endfor %}
-                </select>
-              </label>
-              <label class="block">
-                <span class="text-sm font-black text-ink/65">Template</span>
-                <select class="mt-2 w-full rounded-2xl border border-ink/15 px-4 py-3 font-bold focus:border-deepTeal focus:outline-none" name="template_id" required>
-                  {% for template in lesson_templates %}
-                    <option value="{{ template.id }}">{{ template.title }} · {{ template.grade_band|default:"All levels" }}</option>
-                  {% endfor %}
-                </select>
-              </label>
-              <button class="focus-ring self-end rounded-full bg-mediumTeal px-6 py-3 font-black text-white shadow-lg shadow-mediumTeal/20 transition hover:-translate-y-0.5" type="submit">Give access</button>
-              <label class="block md:col-span-3">
-                <span class="text-sm font-black text-ink/65">Admin note</span>
-                <input class="mt-2 w-full rounded-2xl border border-ink/15 px-4 py-3 font-bold focus:border-deepTeal focus:outline-none" name="notes" placeholder="Optional: when this template is best used">
-              </label>
-            </form>
-            <div class="mt-5 grid gap-3 md:grid-cols-2">
-              {% for assignment in teacher_template_assignments %}
-                <article class="rounded-3xl bg-seafoam p-5">
-                  <p class="font-black">{{ assignment.template.title }}</p>
-                  <p class="mt-1 text-sm font-bold text-ink/65">{{ assignment.teacher.get_full_name|default:assignment.teacher.email }}</p>
-                  {% if assignment.notes %}
-                    <p class="mt-3 text-sm leading-6 text-ink/65">{{ assignment.notes }}</p>
-                  {% endif %}
-                </article>
-              {% empty %}
-                <p class="rounded-3xl bg-linen p-5 font-bold text-ink/70 md:col-span-2">No teacher template access has been assigned yet.</p>
-              {% endfor %}
-            </div>
-          </section>
-
-          <section id="website-signups" class="scroll-mt-36 rounded-[2rem] bg-white p-6 shadow-xl shadow-ink/8 ring-1 ring-ink/10">
-            <div class="flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
-              <div>
-                <p class="text-sm font-black uppercase tracking-[0.18em] text-deepTeal">CRM intake</p>
-                <h2 class="mt-2 text-3xl font-black">Website signups</h2>
-              </div>
-              <div class="flex gap-2 text-sm font-black">
-                <span class="rounded-full bg-seafoam px-4 py-2 text-deepTeal">{{ lead_count }} total</span>
-                <span class="rounded-full bg-sand px-4 py-2 text-mediumTeal">{{ new_lead_count }} new</span>
-                {% if request.user.is_staff or request.user.is_superuser or request.user.role == 'super_admin' %}
-                  <a class="focus-ring rounded-full bg-ink px-4 py-2 text-white transition hover:bg-deepTeal" href="{% url 'crm_dashboard' %}">Open CRM</a>
-                {% endif %}
-              </div>
-            </div>
-            <div class="mt-5 grid gap-3">
-              {% for lead in recent_leads %}
-                <article class="rounded-3xl bg-linen p-5">
-                  <div class="flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
-                    <div>
-                      <div class="flex flex-wrap items-center gap-2">
-                        <h3 class="text-xl font-black">{% if request.user.is_staff or request.user.is_superuser or request.user.role == 'super_admin' %}<a class="hover:text-deepTeal" href="{% url 'crm_contact_detail' lead.pk %}">{{ lead.contact_name }}</a>{% else %}{{ lead.contact_name }}{% endif %}</h3>
-                        <span class="rounded-full bg-white px-3 py-1 text-xs font-black text-ink/60">{{ lead.get_audience_display }}</span>
-                        <span class="rounded-full bg-white px-3 py-1 text-xs font-black text-deepTeal">{{ lead.get_status_display }}</span>
-                      </div>
-                      <p class="mt-2 text-sm font-bold text-ink/65">{{ lead.contact_email }}{% if lead.contact_phone %} · {{ lead.contact_phone }}{% endif %}</p>
-                      <p class="mt-1 text-sm text-ink/60">{{ lead.organization_name|default:lead.school_name }}</p>
-                      {% if lead.notes %}
-                        <p class="mt-3 text-sm leading-6 text-ink/70">{{ lead.notes }}</p>
-                      {% endif %}
-                    </div>
-                    <div class="text-sm font-bold text-ink/55 md:text-right">
-                      <p>{{ lead.created_at|date:"M j, Y" }}</p>
-                      {% if lead.linked_user %}
-                        <p class="mt-1 text-deepTeal">Linked to {{ lead.linked_user.get_full_name|default:lead.linked_user.email }}</p>
-                      {% else %}
-                        <p class="mt-1 text-mediumTeal">No account yet</p>
-                      {% endif %}
-                    </div>
-                  </div>
-                </article>
-              {% empty %}
-                <p class="rounded-3xl bg-seafoam p-5 font-bold text-ink/70">No website signups yet.</p>
-              {% endfor %}
-            </div>
-          </section>
-
-          <section id="account-creation" class="scroll-mt-36 rounded-[2rem] bg-white p-6 shadow-xl shadow-ink/8 ring-1 ring-ink/10">
-            <div>
-              <p class="text-sm font-black uppercase tracking-[0.18em] text-mediumTeal">Account creation</p>
-              <h2 class="mt-2 text-3xl font-black">Create a parent or teacher login</h2>
-            </div>
-            <p class="mt-5"><a class="focus-ring rounded-full bg-deepTeal px-5 py-3 font-black text-white" href="{% url 'manage_users' %}">Add user &amp; send invitation</a></p>
           </section>
         {% endif %}
 
@@ -573,6 +430,7 @@
         </section>
       </section>
     </section>
+    {% endif %}
   </main>
 </body>
 </html>
