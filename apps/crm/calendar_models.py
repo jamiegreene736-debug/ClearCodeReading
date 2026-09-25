@@ -23,9 +23,9 @@ class HostCalendar(models.Model):
 
 class BlockingRule(models.Model):
     class Mode(models.TextChoices):
-        NONE = "none", "No block"
-        RANGE = "range", "Block a time range"
-        ALL = "all", "Block all day"
+        NONE = "none", "Open to bookings"
+        RANGE = "range", "Block these hours"
+        ALL = "all", "Block the whole day"
 
     mode = models.CharField(max_length=5, choices=Mode.choices, default=Mode.NONE)
     starts_at = models.TimeField(null=True, blank=True)
