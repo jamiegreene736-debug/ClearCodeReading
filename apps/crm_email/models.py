@@ -232,9 +232,16 @@ class StageEmailPilot(models.Model):
 
 
 class StageEmailDelivery(models.Model):
-    deal = models.OneToOneField("crm.Opportunity", on_delete=models.CASCADE)
+    # Survey introductions belong to the contact alone; first-stage emails to a deal.
+    deal = models.OneToOneField(
+        "crm.Opportunity", null=True, blank=True, on_delete=models.CASCADE
+    )
+    lead = models.ForeignKey(
+        "crm.Lead", on_delete=models.CASCADE, related_name="stage_email_deliveries"
+    )
     pilot = models.ForeignKey(StageEmailPilot, on_delete=models.PROTECT)
-    pipeline = models.CharField(max_length=32)
+    # Blank means Bethany's mailbox with no pipeline-specific sender.
+    pipeline = models.CharField(max_length=32, blank=True)
     # Automated-email registry key; blank means the pipeline's own first-stage email.
     template_key = models.CharField(max_length=60, blank=True)
     message = models.OneToOneField(
