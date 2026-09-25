@@ -94,8 +94,8 @@
 | `/crm/contacts/assign/` | POST-only bulk contact-owner assignment |
 | `/crm/team/` | CRM owner workload and super-admin-only CRM user creation |
 | `/crm/companies/` | Company records shared by contacts and deals |
-| `/crm/deals/` | Five pipeline-specific deal boards |
-| `/crm/triage/` | Human routing for ambiguous partner-interest intake |
+| `/crm/deals/` | Pipeline work for deals whose path is already known |
+| `/crm/triage/` | Needs routing for inquiries that are not deals yet |
 | `/crm/signup/` | POST-only validated intake; career submissions sync to the recruiting communication queue outside sales CRM |
 | `/newsletter/subscribe/` | POST-only explicit-consent newsletter signup |
 | `/newsletter/unsubscribe/<signed-token>/` | Confirmation page and POST endpoint for signed opt-outs |

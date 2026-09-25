@@ -1299,7 +1299,12 @@ class CrmTriageResolveView(CrmAccessMixin, View):
                 "advocate": resolved.advocate_selected,
             },
         )
-        messages.success(request, "Triage item dismissed." if dismiss else "Triage complete and selected deal records are ready.")
+        messages.success(
+            request,
+            "Dismissed. No deal was created."
+            if dismiss
+            else "Routing saved. Selected deals are on the pipeline.",
+        )
         return redirect("crm_triage_list")
 
 

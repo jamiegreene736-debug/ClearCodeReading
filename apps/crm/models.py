@@ -679,6 +679,8 @@ class IntakeTriage(TimestampedModel):
 
     class Meta:
         ordering = ["-created_at"]
+        verbose_name = "routing decision"
+        verbose_name_plural = "routing decisions"
         indexes = [
             models.Index(fields=["status", "created_at"], name="crm_triage_status_created"),
             models.Index(fields=["source_signal", "status"], name="crm_triage_signal_status"),

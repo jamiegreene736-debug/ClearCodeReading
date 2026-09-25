@@ -1763,6 +1763,10 @@ class CrmWorkspaceTests(TestCase):
         )
 
         self.assertEqual(triage_response.status_code, 200)
+        self.assertContains(triage_response, "Needs a routing decision")
+        self.assertContains(triage_response, "Needs routing")
+        self.assertContains(triage_response, 'aria-label="1 awaiting a routing decision"')
+        self.assertNotContains(triage_response, "Intake triage")
         self.assertContains(triage_response, "North Star Foundation")
         self.assertRedirects(response, reverse("crm_triage_list"), fetch_redirect_response=False)
         triage.refresh_from_db()
@@ -1820,6 +1824,9 @@ class CrmWorkspaceTests(TestCase):
         self.assertNotIn("Assessment", labels)
         self.assertContains(response, "Pipeline board")
         self.assertContains(response, "All deals")
+        self.assertContains(response, "Pipeline work")
+        self.assertContains(response, "Needs routing")
+        self.assertNotContains(response, "Intake triage")
 
     def test_all_deals_view_lists_every_category(self):
         Opportunity.objects.create(

@@ -88,7 +88,7 @@ Useful URLs:
 - OpenAPI schema: `http://localhost:8000/api/schema/`
 - Health check: `http://localhost:8000/api/v1/health/`
 - AI search / ChatGPT presence playbook: [`docs/AI_SEARCH_PRESENCE.md`](docs/AI_SEARCH_PRESENCE.md)
-- CRM contacts, companies, deals, triage, and team assignment: `http://localhost:8000/crm/` (central staff and CRM users only)
+- CRM contacts, companies, deals, needs routing, and team assignment: `http://localhost:8000/crm/` (central staff and CRM users only)
 
 Demo credentials:
 
@@ -213,8 +213,8 @@ CRM:
 
 - `/crm/` — staff contacts, form-submission activity, notes, and tasks
 - `/crm/companies/` — companies shared by contacts and deals
-- `/crm/deals/` — five pipeline-specific deal boards
-- `/crm/triage/` — human review for ambiguous intake routing
+- `/crm/deals/` — pipeline work for known deals
+- `/crm/triage/` — Needs routing for inquiries that are not deals yet
 - `/crm/team/` — CRM user creation and owner workload summary
 - `/api/v1/leads/`
 - `/api/v1/leads/<id>/qualify/`

@@ -220,7 +220,7 @@ def resolve_triage_item(*, triage, pipelines, actor, notes="", dismiss=False, ad
     if invalid:
         raise ValueError("One or more selected pipelines are invalid.")
     if not dismiss and not selected and not advocate:
-        raise ValueError("Choose at least one destination pipeline, choose Advocate, or dismiss the triage item.")
+        raise ValueError("Choose at least one deal pipeline, choose Advocate, or dismiss this inquiry.")
 
     created_deals = []
     if not dismiss:
