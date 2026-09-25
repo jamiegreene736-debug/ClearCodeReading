@@ -1,11 +1,75 @@
 {% extends "crm/base.html" %}
 {% block title %}My calendar{% endblock %}
+{% block extra_style %}
+.cal-page { max-width:920px; }
+.cal-lead { max-width:68ch; color:var(--muted); }
+.cal-tabs { display:flex; gap:18px; margin:18px 0 22px; border-bottom:1px solid var(--line); overflow-x:auto; }
+.cal-tab { min-height:44px; display:inline-flex; align-items:center; padding:10px 2px; color:var(--muted); background:transparent; border:0; border-bottom:3px solid transparent; font-weight:700; white-space:nowrap; }
+.cal-tab:hover { color:var(--ink); }
+.cal-tab[aria-selected="true"] { color:var(--teal); border-bottom-color:var(--teal); }
+.cal-tab:focus-visible { outline:3px solid rgba(26,122,122,.35); outline-offset:2px; }
+.cal-panel[hidden] { display:none; }
+.cal-next { display:flex; flex-wrap:wrap; gap:10px; align-items:center; margin-top:8px; }
+.calendar-blocks { padding:24px; margin-bottom:24px; }
+.calendar-blocks h2 { margin-bottom:8px; }
+.block-help { margin:0 0 12px; color:var(--muted); font-size:13px; }
+.zone-row { display:grid; gap:6px; max-width:420px; margin:18px 0; }
+.week-glance { margin:0 0 16px; padding:14px 16px; border-radius:8px; background:var(--teal-soft); color:var(--navy); font-weight:600; }
+.pattern-bar { display:flex; flex-wrap:wrap; gap:8px; align-items:center; margin:0 0 8px; }
+.pattern-label { color:var(--muted); font-size:12px; font-weight:700; letter-spacing:.04em; text-transform:uppercase; }
+.day-list { list-style:none; margin:8px 0 0; padding:0; }
+.day-rule { margin:0; padding:14px 0; border-top:1px solid #e3ebf0; }
+.day-rule legend { position:absolute; width:1px; height:1px; overflow:hidden; clip-path:inset(50%); }
+.day-main { display:grid; grid-template-columns:112px minmax(140px,1fr) minmax(180px,220px); gap:12px 16px; align-items:center; }
+.day-name { color:var(--navy); font-weight:800; }
+.day-visual { display:grid; gap:6px; min-width:0; }
+.day-track { height:10px; border-radius:999px; background:#e7eef2; overflow:hidden; }
+.day-caption { color:var(--muted); font-size:12px; font-weight:600; }
+.day-controls { display:grid; gap:8px; }
+.day-controls label { display:block; margin-bottom:4px; color:var(--ink); font-size:12px; font-weight:700; }
+.day-times { display:grid; grid-template-columns:1fr 1fr; gap:8px; }
+.day-rule:not([data-mode="range"]) .day-times { display:none; }
+.day-rule.is-closed .day-name { color:#8a5a12; }
+.save-bar { display:flex; flex-wrap:wrap; gap:12px; align-items:center; margin-top:18px; }
+.save-bar [role="status"] { color:#8a5a12; font-weight:700; }
+.calendar-blocks .errorlist { margin:4px 0 0; padding-left:18px; color:#a12424; }
+.calendar-blocks details { margin-top:16px; }
+.calendar-blocks summary { cursor:pointer; font-weight:700; min-height:44px; display:flex; align-items:center; }
+.exception-form { display:grid; grid-template-columns:minmax(140px,180px) minmax(180px,1fr) minmax(220px,1.2fr) auto; gap:12px; align-items:end; margin:12px 0 8px; }
+.exception-form label { display:block; margin-bottom:4px; font-size:12px; font-weight:700; }
+.exception-times { display:grid; grid-template-columns:1fr 1fr; gap:8px; }
+.exception-form:not([data-mode="range"]) .exception-times { display:none; }
+.block-override { display:flex; gap:16px; align-items:center; justify-content:space-between; padding:14px 0; border-top:1px solid #e3ebf0; }
+.block-override p { margin:0; }
+.connect-card, .feed-card { padding:24px; }
+.connect-card h2, .feed-card h2 { margin-bottom:8px; }
+.google-box { margin:20px 0; padding:20px; background:var(--teal-soft); border:1px solid #b9d9d7; border-radius:10px; }
+.google-box h3, .connect-card h3 { margin-bottom:8px; }
+@media (max-width:800px) {
+  .calendar-blocks, .connect-card, .feed-card { padding:16px; }
+  .day-main, .exception-form { grid-template-columns:1fr; }
+  .block-override { align-items:flex-start; flex-direction:column; }
+}
+{% endblock %}
 {% block content %}
+<div class="cal-page" data-cal-shell data-open="{% if form.errors %}connected{% else %}hours{% endif %}" {% if override_form.errors %}data-scroll="exceptions"{% endif %}>
 <h1>My calendar</h1>
-<p>Connect the calendar you already use to your own profile. Personal event details are never shown to families or other team members.</p>
-<p><a class="btn" href="{% url 'inventory_slots' %}?host={{ request.user.pk }}">Manage my consultation times</a></p>
+<p class="cal-lead">Close the hours you cannot take calls, connect a calendar so other commitments are respected, then offer the consultation times families can book. Personal event details are never shown to families or other team members.</p>
+<nav class="cal-tabs" role="tablist" aria-label="Calendar settings">
+<button type="button" class="cal-tab" role="tab" id="tab-hours" data-tab="hours" aria-controls="panel-hours" aria-selected="true">Unavailable hours</button>
+<button type="button" class="cal-tab" role="tab" id="tab-connected" data-tab="connected" aria-controls="panel-connected" aria-selected="false" tabindex="-1">Connected calendar</button>
+<button type="button" class="cal-tab" role="tab" id="tab-bookings" data-tab="bookings" aria-controls="panel-bookings" aria-selected="false" tabindex="-1">Bookings in my calendar</button>
+</nav>
+
+<section id="panel-hours" class="cal-panel" role="tabpanel" aria-labelledby="tab-hours" data-panel="hours" tabindex="0">
 {% include "crm/_calendar_blocks.html" %}
-<section class="card" style="padding:24px;max-width:760px;margin-bottom:24px">
+<div class="cal-next">
+<a class="btn btn-primary" href="{% url 'inventory_slots' %}?host={{ request.user.pk }}">Manage consultation times</a>
+<p class="block-help" style="margin:0">Unavailable hours do not create times families can book. Add those separately.</p>
+</div>
+</section>
+
+<section id="panel-connected" class="cal-panel card connect-card" role="tabpanel" aria-labelledby="tab-connected" data-panel="connected" tabindex="0" hidden>
 <h2>Check your existing calendar for busy times</h2>
 <p>Choose the calendar that contains your commitments. ClearCode checks busy times when families view availability and again before booking.</p>
 {% if profile.encrypted_url or profile.encrypted_google_refresh_token %}
@@ -15,7 +79,7 @@
 <form method="post">{% csrf_token %}<button class="btn" name="action" value="check">Check connection</button> <button class="btn" name="action" value="disconnect">Disconnect calendar</button></form>
 <h3 style="margin-top:24px">Replace connected calendar</h3>
 {% endif %}
-<div style="margin:20px 0;padding:20px;background:var(--teal-soft);border:1px solid #b9d9d7;border-radius:10px">
+<div class="google-box">
 <h3>Google Calendar</h3>
 <p>Sign in to Google and allow ClearCode to see when your primary calendar is busy. No calendar link to find or paste.</p>
 <p>We only check availability. We do not read your Gmail, event titles, guests, or descriptions, and we do not change your Google events.</p>
@@ -29,7 +93,8 @@
 <p style="margin-top:16px">Your saved sharing link is encrypted and is never displayed again.</p>
 </details>
 </section>
-<section class="card" style="padding:24px;max-width:760px">
+
+<section id="panel-bookings" class="cal-panel card feed-card" role="tabpanel" aria-labelledby="tab-bookings" data-panel="bookings" tabindex="0" hidden>
 <h2>Show ClearCode bookings in your calendar</h2>
 <p>Subscribe to your personal ClearCode calendar. New bookings appear when your calendar app refreshes its subscription. This is a read-only subscription; changing a copied event in another calendar does not reschedule a ClearCode booking.</p>
 {% if feed_url %}
@@ -40,5 +105,43 @@
 {% else %}<form method="post">{% csrf_token %}<button class="btn" name="action" value="subscribe">Create my subscription link</button></form>{% endif %}
 <p style="margin-top:16px">Only booking times are shared. Family names, phone numbers, and assessment details remain in the CRM.</p>
 </section>
-<p style="margin-top:24px">Finally, add and confirm the consultation times you want to offer. Connecting a calendar does not create working hours. Families can book confirmed times within the next 90 days that do not overlap busy events.</p>
+</div>
+<noscript><style>.cal-panel[hidden]{display:block}</style></noscript>
+<script>
+(() => {
+  const shell = document.querySelector("[data-cal-shell]");
+  if (!shell) return;
+  const tabs = [...shell.querySelectorAll("[data-tab]")];
+  const panels = [...shell.querySelectorAll("[data-panel]")];
+  const show = (id, updateHash) => {
+    tabs.forEach((tab) => {
+      const on = tab.dataset.tab === id;
+      tab.setAttribute("aria-selected", String(on));
+      tab.tabIndex = on ? 0 : -1;
+    });
+    panels.forEach((panel) => { panel.hidden = panel.dataset.panel !== id; });
+    if (updateHash) history.replaceState(null, "", "#" + id);
+  };
+  const dirty = () => document.getElementById("weekly-block-form")?.dataset.dirty === "true";
+  tabs.forEach((tab) => {
+    tab.addEventListener("click", () => {
+      if (tab.getAttribute("aria-selected") === "true") return;
+      if (dirty() && !window.confirm("You have unsaved unavailable hours. Leave this section without saving?")) return;
+      show(tab.dataset.tab, true);
+    });
+  });
+  shell.querySelector("[role=tablist]").addEventListener("keydown", (event) => {
+    const current = tabs.findIndex((tab) => tab.getAttribute("aria-selected") === "true");
+    if (event.key !== "ArrowRight" && event.key !== "ArrowLeft") return;
+    event.preventDefault();
+    const next = tabs[(current + (event.key === "ArrowRight" ? 1 : -1) + tabs.length) % tabs.length];
+    next.focus();
+    next.click();
+  });
+  const hash = location.hash.replace("#", "");
+  const initial = ["hours", "connected", "bookings"].includes(hash) ? hash : shell.dataset.open;
+  show(initial || "hours", false);
+  if (shell.dataset.scroll) document.getElementById(shell.dataset.scroll)?.scrollIntoView();
+})();
+</script>
 {% endblock %}

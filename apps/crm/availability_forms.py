@@ -17,13 +17,31 @@ WEEKDAYS = (
     "Sunday",
 )
 
+COMMON_TIMEZONES = (
+    ("America/New_York", "Eastern — New York"),
+    ("America/Chicago", "Central — Chicago"),
+    ("America/Denver", "Mountain — Denver"),
+    ("America/Phoenix", "Arizona — Phoenix"),
+    ("America/Los_Angeles", "Pacific — Los Angeles"),
+    ("America/Anchorage", "Alaska — Anchorage"),
+    ("Pacific/Honolulu", "Hawaii — Honolulu"),
+)
+
+
+def timezone_choices() -> list[tuple[str, list[tuple[str, str]]]]:
+    common_ids = {zone for zone, _label in COMMON_TIMEZONES}
+    others = [
+        (zone, zone.replace("_", " "))
+        for zone in sorted(available_timezones())
+        if zone not in common_ids
+    ]
+    return [("Common", list(COMMON_TIMEZONES)), ("All time zones", others)]
+
 
 class BlockingTimezoneForm(forms.Form):
     blocking_timezone = forms.ChoiceField(
-        label="Time zone for weekly blocks and date overrides",
-        choices=[
-            (zone, zone.replace("_", " ")) for zone in sorted(available_timezones())
-        ],
+        label="Time zone",
+        choices=timezone_choices(),
         initial="America/New_York",
     )
 
@@ -37,7 +55,7 @@ class BlockingTimezoneForm(forms.Form):
 
 
 class BlockingRuleForm(forms.Form):
-    mode = forms.ChoiceField(choices=BlockingRule.Mode.choices, label="Blocking rule")
+    mode = forms.ChoiceField(choices=BlockingRule.Mode.choices, label="This day")
     starts_at = forms.TimeField(
         required=False,
         label="From",
@@ -66,6 +84,6 @@ class BlockingRuleForm(forms.Form):
 
 class DateOverrideForm(BlockingRuleForm):
     date = forms.DateField(
-        label="Date to override", widget=forms.DateInput(attrs={"type": "date"})
+        label="Date", widget=forms.DateInput(attrs={"type": "date"})
     )
     field_order = ("date", "mode", "starts_at", "ends_at")
