@@ -2,105 +2,202 @@
 {% block title %}CRM overview{% endblock %}
 {% block extra_style %}
   .page-head { display:flex; align-items:flex-end; justify-content:space-between; gap:18px; }
-  .overview-grid { display:grid; grid-template-columns:minmax(0,1.35fr) minmax(300px,.65fr); gap:18px; align-items:start; }
+  .attention { display:grid; grid-template-columns:repeat(auto-fit,minmax(160px,1fr)); gap:14px; margin:22px 0; }
+  .attention .stat { display:block; text-decoration:none; }
+  .attention .stat:hover { border-color:#8ca5b7; }
+  .attention .is-hot { border-color:#e7c56a; background:#fffaf0; }
+  .attention .is-hot .stat-value { color:#8a5a00; }
+  .stat-hint { margin-top:4px; color:var(--muted); font-size:12px; }
+  .work-grid { display:grid; grid-template-columns:minmax(0,1.25fr) minmax(280px,.75fr); gap:18px; align-items:start; }
+  .queue-stack { display:grid; gap:18px; }
   .section-card { padding:20px; }
   .section-head { display:flex; align-items:center; justify-content:space-between; gap:12px; margin-bottom:14px; }
   .section-head h2 { margin:0; }
-  .section-links { display:flex; flex-wrap:wrap; gap:12px; }
+  .section-links { display:flex; flex-wrap:wrap; gap:12px; align-items:center; }
+  .scope { display:inline-flex; padding:3px; border:1px solid var(--line); border-radius:999px; background:#f5f8fa; }
+  .scope a { padding:4px 10px; border-radius:999px; color:var(--muted); font-size:12px; font-weight:700; text-decoration:none; }
+  .scope a.is-current { color:#0f5c5c; background:white; }
   .action-list { display:grid; gap:10px; }
   .action-row { display:flex; align-items:center; justify-content:space-between; gap:14px; padding:13px; border:1px solid #e2e9ee; border-radius:6px; text-decoration:none; }
   .action-row:hover { border-color:#8ca5b7; background:#fbfdfe; }
+  .action-row.is-overdue { border-color:#e7c56a; background:#fffaf0; }
   .action-row strong { color:var(--navy); }
   .action-meta { color:var(--muted); font-size:12px; }
+  .signal-row { display:flex; flex-wrap:wrap; gap:6px; margin-top:6px; }
   .pipeline-grid { display:grid; grid-template-columns:repeat(5,minmax(175px,1fr)); gap:12px; overflow:auto; padding-bottom:4px; }
   .pipeline-card { min-width:175px; padding:16px; text-decoration:none; }
   .pipeline-card:hover { border-color:#8ca5b7; }
   .pipeline-card h3 { min-height:42px; margin-bottom:12px; font-size:15px; }
   .pipeline-value { color:var(--navy); font-size:20px; font-weight:800; }
-  .step-list { margin:0; padding-left:20px; }
-  .step-list li { margin:10px 0; }
-  @media (max-width:1000px) { .overview-grid { grid-template-columns:1fr; } }
+  .quiet-card { background:#fbfcfd; }
+  @media (max-width:1000px) { .work-grid { grid-template-columns:1fr; } }
   @media (max-width:650px) { .page-head { align-items:start; flex-direction:column; } }
 {% endblock %}
 {% block content %}
   <div class="page-head">
-    <div><p class="eyebrow">CRM command center</p><h1>What needs attention</h1><p class="subtle">Start here, work the queue, and keep every relationship moving.</p></div>
-    <a class="btn btn-primary" href="{% url 'crm_contact_create' %}">+ Add contact</a>
+    <div>
+      <p class="eyebrow">CRM command center</p>
+      <h1>What needs attention</h1>
+      <p class="subtle">Clear overdue follow-ups first, route people who are not on a pipeline, then read finished assessments.</p>
+    </div>
   </div>
 
-  <section class="stats" aria-label="CRM summary">
-    <a class="card stat" href="{% url 'crm_contact_list' %}" style="text-decoration:none"><div class="stat-label">All contacts</div><div class="stat-value">{{ total_contacts }}</div></a>
-    <a class="card stat" href="{% url 'crm_contact_list' %}?status=new" style="text-decoration:none"><div class="stat-label">New to review</div><div class="stat-value">{{ new_contacts }}</div></a>
-    <a class="card stat" href="{% url 'crm_contact_list' %}?owner=unassigned" style="text-decoration:none"><div class="stat-label">Unassigned</div><div class="stat-value">{{ unassigned_contacts }}</div></a>
-    <div class="card stat"><div class="stat-label">Overdue tasks</div><div class="stat-value">{{ overdue_tasks }}</div></div>
-    <a class="card stat" href="{% url 'crm_triage_list' %}" style="text-decoration:none"><div class="stat-label">People waiting</div><div class="stat-value">{{ pending_triage }}</div></a>
-    <a class="card stat" href="{% url 'inventory_list' %}" style="text-decoration:none"><div class="stat-label">People to finish</div><div class="stat-value">{{ assessments_waiting }}</div></a>
-    {% if hiring_counts %}<a class="card stat" href="{% url 'crm_hiring' %}?owner=all&amp;stage=application" style="text-decoration:none"><div class="stat-label">Teachers pending intake</div><div class="stat-value">{{ hiring_counts.pending_intake }}</div></a>{% endif %}
-    <div class="card stat"><div class="stat-label">Submissions · 30 days</div><div class="stat-value">{{ recent_submissions }}</div></div>
+  <section class="attention" aria-label="Work to do now">
+    <a class="card stat {% if overdue_tasks %}is-hot{% endif %}" href="#follow-ups">
+      <div class="stat-label">Overdue follow-ups</div>
+      <div class="stat-value">{{ overdue_tasks }}</div>
+      <div class="stat-hint">{% if overdue_tasks %}Do these first{% else %}None overdue{% endif %}</div>
+    </a>
+    <a class="card stat {% if pending_triage %}is-hot{% endif %}" href="#routing">
+      <div class="stat-label">Needs routing</div>
+      <div class="stat-value">{{ pending_triage }}</div>
+      <div class="stat-hint">{% if pending_triage %}Choose a pipeline{% else %}Queue is clear{% endif %}</div>
+    </a>
+    <a class="card stat {% if assessments_to_review %}is-hot{% endif %}" href="#reviews">
+      <div class="stat-label">Assessments to review</div>
+      <div class="stat-value">{{ assessments_to_review }}</div>
+      <div class="stat-hint">{% if assessments_to_review %}Finished, unread{% else %}Nothing to read{% endif %}</div>
+    </a>
+    <a class="card stat" href="#waiting">
+      <div class="stat-label">Still finishing</div>
+      <div class="stat-value">{{ assessments_waiting }}</div>
+      <div class="stat-hint">{% if assessments_waiting %}Waiting on a family{% else %}No open assessments{% endif %}</div>
+    </a>
+    {% if hiring_counts %}
+      <a class="card stat {% if hiring_counts.pending_intake %}is-hot{% endif %}" href="#intake">
+        <div class="stat-label">Teachers pending intake</div>
+        <div class="stat-value">{{ hiring_counts.pending_intake }}</div>
+        <div class="stat-hint">{% if hiring_counts.pending_intake %}First review{% else %}Intake is clear{% endif %}</div>
+      </a>
+    {% endif %}
   </section>
 
-  <div class="overview-grid">
-    <section class="card section-card">
-      <div class="section-head"><h2>Follow-up queue</h2><a href="{% url 'crm_contact_list' %}">View contacts</a></div>
+  <div class="work-grid">
+    <section class="card section-card" id="follow-ups">
+      <div class="section-head">
+        <h2>Follow-up queue</h2>
+        <div class="section-links">
+          <span class="scope" aria-label="Follow-up scope">
+            <a class="{% if work_scope != 'mine' %}is-current{% endif %}" href="{% url 'crm_dashboard' %}#follow-ups" {% if work_scope != 'mine' %}aria-current="true"{% endif %}>Team</a>
+            <a class="{% if work_scope == 'mine' %}is-current{% endif %}" href="{% url 'crm_dashboard' %}?work=mine#follow-ups" {% if work_scope == 'mine' %}aria-current="page"{% endif %}>Mine</a>
+          </span>
+        </div>
+      </div>
+      <p class="subtle" style="margin-top:-6px">{{ open_task_count }} open{% if work_scope == 'mine' %} assigned to you{% endif %}. Oldest due dates are first.</p>
       <div class="action-list">
         {% for row in task_rows %}
-          <a class="action-row" href="{% url 'crm_contact_detail' row.task.lead.pk %}#activity"><span><strong>{{ row.task.subject }}</strong><br><span class="action-meta">{{ row.task.lead.contact_name }}{% if row.task.assigned_to %} · {{ row.task.assigned_to.get_full_name|default:row.task.assigned_to.email }}{% endif %}</span></span><span class="badge {% if row.is_overdue %}badge-warn{% else %}badge-neutral{% endif %}">{% if row.task.due_at %}{% if row.is_overdue %}Overdue · {% endif %}{{ row.task.due_at|date:"M j, g:i A" }}{% else %}No due date{% endif %}</span></a>
-        {% empty %}<div class="empty"><strong>No open follow-up tasks.</strong><br>Create one from any contact record.</div>{% endfor %}
+          <a class="action-row {% if row.is_overdue %}is-overdue{% endif %}" href="{% url 'crm_contact_detail' row.task.lead.pk %}#activity">
+            <span>
+              <strong>{{ row.task.subject }}</strong><br>
+              <span class="action-meta">{{ row.task.lead.contact_name }} · {{ row.owner_label }}</span>
+            </span>
+            <span class="badge {% if row.is_overdue %}badge-warn{% else %}badge-neutral{% endif %}">{% if row.task.due_at %}{% if row.is_overdue %}Overdue · {% endif %}{{ row.task.due_at|date:"M j, g:i A" }}{% else %}No due date{% endif %}</span>
+          </a>
+        {% empty %}
+          <div class="empty">
+            <strong>{% if work_scope == 'mine' %}Nothing is assigned to you.{% else %}No open follow-up tasks.{% endif %}</strong><br>
+            {% if work_scope == 'mine' %}<a href="{% url 'crm_dashboard' %}#follow-ups">Show the team queue</a>{% else %}Open a contact and add the next task.{% endif %}
+          </div>
+        {% endfor %}
       </div>
     </section>
 
-    <aside class="card section-card">
-      <div class="section-head"><h2>Simple CRM flow</h2></div>
-      <ol class="step-list">
-        <li><strong>Capture or add a contact.</strong><br><span class="subtle">Website forms arrive automatically; manual contacts use Add contact.</span></li>
-        <li><strong>Assign the next action.</strong><br><span class="subtle">Set an owner, add a note, and create a follow-up task.</span></li>
-        <li><strong>Route inquiries that are not deals yet.</strong><br><span class="subtle">Needs routing holds unclear partner, community, and career signals.</span></li>
-        <li><strong>Work the pipeline.</strong><br><span class="subtle">Create or move a deal only when the enrollment, partner, donor, grant, or investment path is known.</span></li>
-        <li><strong>Watch open assessments.</strong><br><span class="subtle">Send a reading inventory from the contact. Assessments shows how many people still need to finish.</span></li>
-      </ol>
-    </aside>
+    <div class="queue-stack">
+      <section class="card section-card" id="routing">
+        <div class="section-head"><h2>Needs routing</h2><a href="{% url 'crm_triage_list' %}">Open queue</a></div>
+        <div class="action-list">
+          {% for person in routing_people %}
+            <a class="action-row" href="{% url 'crm_triage_list' %}?lead={{ person.lead.pk }}">
+              <span>
+                <strong>{{ person.lead.contact_name }}</strong>
+                <span class="signal-row">{% for signal in person.signals %}<span class="badge badge-neutral">{{ signal }}</span>{% empty %}<span class="badge badge-warn">Needs a decision</span>{% endfor %}</span>
+              </span>
+              <span class="badge badge-warn">{{ person.waiting_label }}</span>
+            </a>
+          {% empty %}<div class="empty">Nothing needs routing.</div>{% endfor %}
+        </div>
+      </section>
 
-    <section class="card section-card">
-      <div class="section-head"><h2>Recent contacts</h2><a href="{% url 'crm_contact_list' %}">See all</a></div>
+      <section class="card section-card" id="reviews">
+        <div class="section-head"><h2>Assessments to review</h2><a href="{% url 'inventory_list' %}?queue=review">Open queue</a></div>
+        <div class="action-list">
+          {% for person in assessment_review %}
+            <a class="action-row" href="{% url 'inventory_detail' person.invitation.pk %}">
+              <span>
+                <strong>{{ person.lead.contact_name }}</strong><br>
+                <span class="action-meta">{{ person.child_name }}{% if person.outcome_label %} · {{ person.outcome_label }}{% endif %}</span>
+              </span>
+              <span class="badge badge-warn">{{ person.waiting_label }}</span>
+            </a>
+          {% empty %}<div class="empty"><strong>No finished assessments are waiting.</strong><br>Families still working appear under Still finishing.</div>{% endfor %}
+        </div>
+      </section>
+
+      {% if hiring_counts %}
+      <section class="card section-card" id="intake">
+        <div class="section-head"><h2>Teacher intake</h2><a href="{% url 'crm_hiring' %}?owner=all&amp;stage=application">Open queue</a></div>
+        <p class="subtle" style="margin-top:-6px">
+          {{ hiring_counts.pending_intake }} waiting for a first review.
+          {% if hiring_counts.needs_attention %}<a href="{% url 'crm_hiring' %}?owner=all&amp;stage=active&amp;attention=1">{{ hiring_counts.needs_attention }} need attention</a>.{% endif %}
+          {% if hiring_counts.offers_waiting %}<a href="{% url 'crm_hiring' %}?owner=all&amp;stage=offer&amp;waiting=offer">{{ hiring_counts.offers_waiting }} offer{{ hiring_counts.offers_waiting|pluralize }} awaiting a response</a>.{% endif %}
+        </p>
+        <div class="action-list">
+          {% for item in pending_intake %}
+            <a class="action-row" href="{% url 'crm_hiring' %}?owner=all&amp;stage=application&amp;candidate={{ item.pk }}">
+              <span><strong>{{ item.application.name }}</strong><br><span class="action-meta">{{ item.application.owner|default:"Needs owner" }} · {{ item.next_action }}</span></span>
+              <span class="badge badge-warn">Pending intake</span>
+            </a>
+          {% empty %}<div class="empty">No teachers are waiting for intake.</div>{% endfor %}
+        </div>
+      </section>
+      {% endif %}
+
+      <section class="card section-card quiet-card" id="waiting">
+        <div class="section-head"><h2>Waiting to finish an assessment</h2><a href="{% url 'inventory_list' %}">Open queue</a></div>
+        {% if assessment_email_attention %}
+          <p class="subtle" style="margin-top:-6px"><a href="{% url 'inventory_list' %}?queue=attention">{% if assessment_email_attention == 1 %}1 assessment email needs attention{% else %}{{ assessment_email_attention }} assessment emails need attention{% endif %}</a></p>
+        {% endif %}
+        <div class="action-list">
+          {% for person in assessment_waiting %}
+            <a class="action-row" href="{% url 'inventory_detail' person.invitation.pk %}">
+              <span><strong>{{ person.lead.contact_name }}</strong><br><span class="action-meta">{{ person.child_label }}{% if person.open_count > 1 %} · {{ person.open_count }} assessments{% endif %}</span></span>
+              <span class="badge badge-neutral">{{ person.waiting_label }}</span>
+            </a>
+          {% empty %}<div class="empty"><strong>0 people waiting to finish.</strong><br>Open a contact and send an assessment when a family is ready.</div>{% endfor %}
+        </div>
+      </section>
+    </div>
+
+    <section class="card section-card" id="recent">
+      <div class="section-head">
+        <h2>Recent contacts</h2>
+        <span class="section-links">
+          <a href="{% url 'crm_contact_list' %}?status=new">New · {{ new_contacts }}</a>
+          <a href="{% url 'crm_contact_list' %}?owner=unassigned">Unassigned · {{ unassigned_contacts }}</a>
+          <a href="{% url 'crm_contact_list' %}">See all</a>
+        </span>
+      </div>
       <div class="action-list">
         {% for contact in recent_contacts %}
-          <a class="action-row" href="{% url 'crm_contact_detail' contact.pk %}"><span><strong>{{ contact.contact_name }}</strong><br><span class="action-meta">{{ contact.contact_email }} · {{ contact.organization_name|default:contact.school_name }}</span></span><span class="badge {% if contact.status == 'new' %}badge-warn{% endif %}">{{ contact.get_status_display }}</span></a>
-        {% empty %}<div class="empty">No contacts yet.</div>{% endfor %}
+          <a class="action-row" href="{% url 'crm_contact_detail' contact.pk %}">
+            <span><strong>{{ contact.contact_name }}</strong><br><span class="action-meta">{{ contact.contact_email }}{% if contact.organization_name or contact.school_name %} · {{ contact.organization_name|default:contact.school_name }}{% endif %}</span></span>
+            <span class="badge {% if contact.status == 'new' %}badge-warn{% else %}badge-neutral{% endif %}">{{ contact.get_status_display }}</span>
+          </a>
+        {% empty %}<div class="empty">No contacts yet. <a href="{% url 'crm_contact_create' %}">Add a contact</a>.</div>{% endfor %}
       </div>
     </section>
-
-    {% if hiring_counts %}
-    <aside class="card section-card">
-      <div class="section-head"><h2>Teacher intake</h2><a href="{% url 'crm_hiring' %}?owner=all&amp;stage=application">Open queue</a></div>
-      <p class="subtle">{{ hiring_counts.pending_intake }} application{{ hiring_counts.pending_intake|pluralize }} waiting for a first review. {{ hiring_counts.needs_attention }} need attention. {{ hiring_counts.offers_waiting }} offer{{ hiring_counts.offers_waiting|pluralize }} still awaiting a response.</p>
-      <div class="action-list">
-        {% for item in pending_intake %}<a class="action-row" href="{% url 'crm_hiring' %}?owner=all&amp;stage=application&amp;candidate={{ item.pk }}"><span><strong>{{ item.application.name }}</strong><br><span class="action-meta">{{ item.application.owner|default:"Needs owner" }} · {{ item.next_action }}</span></span><span class="badge badge-warn">Pending intake</span></a>
-        {% empty %}<div class="empty">No teachers are waiting for intake.</div>{% endfor %}
-      </div>
-    </aside>
-    {% endif %}
-    <aside class="card section-card">
-      <div class="section-head"><h2>Waiting to finish an assessment</h2><a href="{% url 'inventory_list' %}">Open queue</a></div>
-      <div class="action-list">
-        {% for person in assessment_waiting %}
-          <a class="action-row" href="{% url 'inventory_detail' person.invitation.pk %}"><span><strong>{{ person.lead.contact_name }}</strong><br><span class="action-meta">{{ person.child_label }}{% if person.open_count > 1 %} · {{ person.open_count }} assessments{% endif %}</span></span><span class="badge badge-warn">{{ person.waiting_label }}</span></a>
-        {% empty %}<div class="empty"><strong>0 people waiting to finish.</strong><br>Open a contact and send an assessment when a family is ready.</div>{% endfor %}
-      </div>
-    </aside>
-
-    <aside class="card section-card">
-      <div class="section-head"><h2>Needs routing</h2><a href="{% url 'crm_triage_list' %}">Open queue</a></div>
-      <div class="action-list">
-        {% for item in triage_items %}<a class="action-row" href="{% url 'crm_triage_list' %}?lead={{ item.lead_id }}"><span><strong>{{ item.lead.contact_name }}</strong><br><span class="action-meta">{{ item.created_at|timesince }} waiting</span></span><span class="badge badge-warn">Needs a decision</span></a>
-        {% empty %}<div class="empty">Nothing needs routing.</div>{% endfor %}
-      </div>
-    </aside>
   </div>
 
   <section style="margin-top:18px">
-    <div class="section-head"><h2>Deal pipelines</h2><span class="section-links"><a href="{% url 'crm_deal_list' %}?view=all">All deals</a><a href="{% url 'crm_deal_list' %}">Open pipeline board</a></span></div>
+    <div class="section-head"><h2>Open deals</h2><span class="section-links"><a href="{% url 'crm_deal_list' %}?view=all">All deals</a><a href="{% url 'crm_deal_list' %}">Pipeline board</a></span></div>
     <div class="pipeline-grid">
-      {% for pipeline in pipeline_summaries %}<a class="card pipeline-card" href="{% url 'crm_deal_list' %}?pipeline={{ pipeline.value }}"><h3>{{ pipeline.label }}</h3><div class="pipeline-value">{{ pipeline.deal_count }} deal{{ pipeline.deal_count|pluralize }}</div><div class="action-meta">${{ pipeline.total_value|floatformat:2 }} total value</div></a>{% endfor %}
+      {% for pipeline in pipeline_summaries %}
+        <a class="card pipeline-card" href="{% url 'crm_deal_list' %}?pipeline={{ pipeline.value }}">
+          <h3>{{ pipeline.label }}</h3>
+          <div class="pipeline-value">{{ pipeline.deal_count }} open</div>
+          <div class="action-meta">{% if pipeline.total_value %}${{ pipeline.total_value|floatformat:2 }} open value{% else %}No open value{% endif %}</div>
+        </a>
+      {% endfor %}
     </div>
   </section>
 {% endblock %}

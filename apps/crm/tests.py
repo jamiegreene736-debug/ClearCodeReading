@@ -1138,7 +1138,15 @@ class CrmWorkspaceTests(TestCase):
         self.assertContains(response, "Call Alex")
         self.assertContains(response, "Overdue")
         self.assertContains(response, "Families / Enrollment")
-        self.assertContains(response, "Simple CRM flow")
+        self.assertContains(response, "Follow-up queue")
+        self.assertContains(response, "Needs routing")
+        self.assertNotContains(response, "Simple CRM flow")
+        self.assertContains(response, 'href="#follow-ups"')
+        mine = self.client.get(reverse("crm_dashboard"), {"work": "mine"})
+        self.assertContains(mine, "Call Alex")
+        other = self.client.get(reverse("crm_dashboard"))
+        self.assertEqual(other.context["work_scope"], "team")
+        self.assertEqual(mine.context["work_scope"], "mine")
 
     def test_contact_is_created_inside_the_crm_without_admin_fields(self):
         self.client.force_login(self.admin_user)
