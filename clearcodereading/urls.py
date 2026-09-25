@@ -47,12 +47,15 @@ from apps.users.portal_views import (
     AssignLessonTemplateToChildView,
     AssignTeacherView,
     AssignTemplateToTeacherView,
+    CreateLessonTemplateView,
     CreatePortalUserView,
+    LessonLibraryView,
     ConfirmPlacementRecommendationView,
     DemoLoginView,
     PortalDashboardView,
     PortalInboxView,
     PortalLoginView,
+    TeacherAssignmentsView,
 )
 
 from apps.crm.calendar_views import CalendarSettingsView, GoogleCalendarConnectView, calendar_feed
@@ -170,6 +173,9 @@ urlpatterns = [
         NewsletterUnsubscribeView.as_view(),
         name="newsletter_unsubscribe",
     ),
+    path("portal/teacher-assignments/", TeacherAssignmentsView.as_view(), name="portal_teacher_assignments"),
+    path("portal/lesson-library/", LessonLibraryView.as_view(), name="portal_lesson_library"),
+    path("portal/lesson-library/create/", CreateLessonTemplateView.as_view(), name="portal_create_lesson"),
     path("assign-teacher/", AssignTeacherView.as_view(), name="assign_teacher"),
     path("portal/templates/assign-teacher/", AssignTemplateToTeacherView.as_view(), name="portal_assign_template_to_teacher"),
     path("portal/lessons/assign-child/", AssignLessonTemplateToChildView.as_view(), name="portal_assign_lesson_to_child"),

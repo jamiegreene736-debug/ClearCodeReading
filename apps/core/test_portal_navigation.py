@@ -29,7 +29,14 @@ class PortalNavigationTests(SimpleTestCase):
         self.assertIn('data-testid="manage-menu-button"', content)
         self.assertIn('data-testid="business-menu-button"', content)
         self.assertIn('aria-controls="program-navigation-panel"', content)
-        self.assertIn('href="/dashboard/#admin-actions"', content)
+        self.assertIn('data-testid="teacher-assignments-menu-link"', content)
+        self.assertIn('href="/portal/teacher-assignments/"', content)
+        self.assertIn("Pair each reader with the teacher who leads their instruction", content)
+        self.assertIn('data-testid="lesson-library-menu-link"', content)
+        self.assertIn('href="/portal/lesson-library/"', content)
+        self.assertIn("Create lessons and share them with the teachers who will use them", content)
+        self.assertNotIn('href="/dashboard/#admin-actions"', content)
+        self.assertNotIn('href="/dashboard/#lesson-library"', content)
         self.assertIn('data-testid="crm-header-link"', content)
         self.assertNotIn('data-testid="teaching-menu-button"', content)
         self.assertNotIn('role="menu"', content)
@@ -62,6 +69,8 @@ class PortalNavigationTests(SimpleTestCase):
     def test_dashboard_and_session_log_expose_shared_navigation_destinations(self):
         dashboard = Path(settings.BASE_DIR, "templates/portal/dashboard.html").read_text()
         admin_workspace = Path(settings.BASE_DIR, "templates/portal/_admin_workspace.html").read_text()
+        teacher_assignments = Path(settings.BASE_DIR, "templates/portal/teacher_assignments.html").read_text()
+        lesson_library = Path(settings.BASE_DIR, "templates/portal/lesson_library.html").read_text()
         rapid_log = Path(settings.BASE_DIR, "templates/sessions/rapid_log.html").read_text()
         portal_markup = dashboard + admin_workspace
 
@@ -69,8 +78,6 @@ class PortalNavigationTests(SimpleTestCase):
             "progress-overview",
             "session-launchpad",
             "placement-review",
-            "admin-actions",
-            "lesson-library",
             "website-signups",
             "lesson-planning",
             "assessment-review",
@@ -78,6 +85,12 @@ class PortalNavigationTests(SimpleTestCase):
             "latest-kpis",
         ):
             self.assertIn(f'id="{destination}"', portal_markup)
+        self.assertIn('id="admin-actions"', teacher_assignments)
+        self.assertIn('id="lesson-library"', lesson_library)
+        self.assertIn("{% url 'portal_teacher_assignments' %}", admin_workspace)
+        self.assertIn("{% url 'portal_lesson_library' %}", admin_workspace)
+        self.assertNotIn('id="admin-actions"', admin_workspace)
+        self.assertNotIn("{% url 'assign_teacher' %}", admin_workspace)
         self.assertNotIn('id="account-creation"', portal_markup)
         self.assertNotIn("Specialist launchpad", admin_workspace)
         self.assertNotIn("KPI areas", admin_workspace)
