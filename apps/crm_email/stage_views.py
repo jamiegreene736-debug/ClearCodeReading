@@ -224,7 +224,7 @@ def first_stage(request: EmailRequest) -> HttpResponse:
             "previews": previews,
             "recipient": TEST_RECIPIENT,
             "deliveries": StageEmailDelivery.objects.filter(pilot=pilot)
-            .select_related("deal", "message")
+            .select_related("deal", "lead", "message")
             .order_by("-pk")[:30],
         },
     )

@@ -217,13 +217,18 @@ restore, and "Restore default" deletes the override. Covered emails:
   review notice, and both consultation-booked messages.
 - The five first-stage pipeline emails (`stage_<pipeline>`); the defaults still
   come from `first_stage_copy.json` and the pilot page links to each editor.
-- Pipeline introduction emails: `survey_family_enrollment` (same default copy as the
-  Families & Enrollment first-stage email) and `survey_general`, one email shared by
-  every other pipeline the survey routes to. `route_survey_deliveries` in
-  `stage_signals.py` re-points the survey's first-stage deliveries at these keys and
-  cancels all but one non-family delivery, so a respondent who picks donor and
-  referral interests gets a single general email. The general copy is a draft until
-  the approved wording is supplied.
+- Survey introduction emails: `survey_family_enrollment` (same default copy as the
+  Families & Enrollment first-stage email) and `survey_general` (the approved
+  "Thanks for connecting with ClearCode" wording). The early interest survey's
+  "Which best describes your situation?" answer alone decides which one a respondent
+  gets: every parent answer, including "interested for the future or on behalf of
+  another family", gets the family introduction and the "educator, specialist, local
+  parent, donor, supporter, or other" answer gets the general one. The engagement
+  checkboxes only route deals. `route_survey_deliveries` in `stage_signals.py` creates
+  one contact-level `StageEmailDelivery` (no deal) per survey contact and cancels the
+  first-stage deliveries of any deals the survey created, so a respondent never gets a
+  pipeline email on top of the introduction and a family that joins the waitlist
+  straight away still gets theirs.
 - The account invitation sent when a team member or portal user is created.
 
 The message and "what happens next" fields use a rich editor

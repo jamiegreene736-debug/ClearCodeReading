@@ -404,8 +404,12 @@ def record_early_interest_survey(*, answers: EarlyInterestSurveyAnswers, source:
                 triage.resolved_at = None
                 triage.save(update_fields=["status", "resolved_at", "updated_at"])
 
-    # Survey-created first-stage emails use the survey wording from Email settings.
-    route_survey_deliveries(survey_deals)
+    # One introduction email per survey, chosen by the situation answer alone.
+    route_survey_deliveries(
+        lead,
+        family=answers.audience == Lead.PipelineCategory.FAMILY_ENROLLMENT,
+        deals=survey_deals,
+    )
 
     if "opening_updates" in answers.engagement_interests:
         existing_name = (

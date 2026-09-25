@@ -6,9 +6,17 @@ from django.db import connection
 from django.db.models.signals import post_save, pre_save
 from django.dispatch import receiver
 
-from apps.crm.models import Opportunity
+from apps.crm.models import Lead, Opportunity
 from apps.crm_email.models import StageEmailDelivery, StageEmailPilot
 from apps.crm_email.stage_emails import TEST_RECIPIENT
+
+SURVEY_FAMILY_KEY = "survey_family_enrollment"
+SURVEY_GENERAL_KEY = "survey_general"
+SURVEY_KEYS = (SURVEY_FAMILY_KEY, SURVEY_GENERAL_KEY)
+
+
+def active_pilot() -> StageEmailPilot | None:
+    return StageEmailPilot.objects.filter(enabled=True).order_by("pk").first()
 
 
 @receiver(pre_save, sender=Opportunity)
@@ -48,17 +56,12 @@ def capture_entry(
         return
     if deal.lead.contact_email.strip().lower() != TEST_RECIPIENT:
         return
-    pilot = (
-        StageEmailPilot.objects.filter(
-            enabled=True,
-        )
-        .order_by("pk")
-        .first()
-    )
+    pilot = active_pilot()
     if pilot:
         StageEmailDelivery.objects.get_or_create(
             deal=deal,
             defaults={
+                "lead": deal.lead,
                 "pilot": pilot,
                 "pipeline": deal.pipeline,
                 "template_key": getattr(instance, "_email_template_key", ""),
@@ -66,28 +69,33 @@ def capture_entry(
         )
 
 
-def route_survey_deliveries(deals: list[Opportunity]) -> None:
-    """Point survey-created first-stage emails at the survey wording.
+def route_survey_deliveries(
+    lead: Lead, *, family: bool, deals: list[Opportunity]
+) -> None:
+    """Queue the one survey introduction email and drop the deal emails.
 
-    Families get the survey Families & Enrollment email. Every other pipeline
-    shares one general survey email, so only the first such deal keeps its
-    delivery and the rest are cancelled before anything is queued.
+    The survey's "which best describes your situation" answer decides the
+    wording: every parent answer gets the Families & Enrollment introduction
+    and the community answer gets the general introduction. The engagement
+    checkboxes only route deals, so any first-stage emails those deals
+    captured are cancelled here before anything is queued. The introduction
+    belongs to the contact, not a deal, so it still goes out when the answers
+    create no deal and when a family joins the waitlist straight away.
     """
-    general_sent = False
+    key = SURVEY_FAMILY_KEY if family else SURVEY_GENERAL_KEY
     for deal in deals:
-        delivery = StageEmailDelivery.objects.filter(
+        StageEmailDelivery.objects.filter(
             deal=deal, message__isnull=True, cancelled=False
-        ).first()
-        if delivery is None:
-            continue
-        if deal.pipeline == Opportunity.Pipeline.FAMILY_ENROLLMENT:
-            delivery.template_key = "survey_family_enrollment"
-            delivery.save(update_fields=["template_key"])
-        elif general_sent:
-            delivery.cancelled = True
-            delivery.error = "Covered by the single survey email for other pipelines."
-            delivery.save(update_fields=["cancelled", "error"])
-        else:
-            delivery.template_key = "survey_general"
-            delivery.save(update_fields=["template_key"])
-            general_sent = True
+        ).update(cancelled=True, error="Covered by the survey introduction email.")
+    if lead.is_deleted or lead.contact_email.strip().lower() != TEST_RECIPIENT:
+        return
+    pilot = active_pilot()
+    if pilot is None:
+        return
+    if StageEmailDelivery.objects.filter(
+        lead=lead, deal__isnull=True, template_key__in=SURVEY_KEYS, cancelled=False
+    ).exists():
+        return
+    StageEmailDelivery.objects.create(
+        lead=lead, pilot=pilot, pipeline="", template_key=key
+    )
