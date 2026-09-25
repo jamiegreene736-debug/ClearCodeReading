@@ -209,7 +209,7 @@
         <h2 class="side-title">Open tasks <span class="badge badge-neutral">{{ open_tasks|length }}</span></h2>
         {% for task in open_tasks %}<div class="task-row"><strong>{{ task.subject }}</strong><div class="event-meta">Due {{ task.due_at|date:"M j, g:i A" }}</div><form method="post" action="{% url 'crm_task_complete' lead.pk task.pk %}">{% csrf_token %}<button class="btn btn-small" type="submit">✓ Mark complete</button></form></div>{% empty %}<p class="subtle">No open follow-up tasks.</p>{% endfor %}
       </section>
-      {% if pending_triage_count %}<section class="card panel" style="margin-top:18px"><h2 class="side-title">Intake triage</h2><p><span class="badge badge-warn">{{ pending_triage_count }} pending</span></p><a class="btn btn-small" href="{% url 'crm_triage_list' %}">Review triage</a></section>{% endif %}
+      {% if pending_triage_count %}<section class="card panel" style="margin-top:18px"><h2 class="side-title">Needs routing</h2><p><span class="badge badge-warn">{{ pending_triage_count }} need{{ pending_triage_count|pluralize:"s," }} a decision</span></p><a class="btn btn-small" href="{% url 'crm_triage_list' %}">Make routing decision</a></section>{% endif %}
       {% if lead.notes %}<section class="card panel" style="margin-top:18px"><h2 class="side-title">Latest inquiry notes</h2><p>{{ lead.notes|linebreaksbr }}</p></section>{% endif %}
     </aside>
   </div>

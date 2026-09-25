@@ -81,9 +81,9 @@
 {% block content %}
   <div class="page-head">
     <div>
-      <p class="eyebrow">Deal management</p>
+      <p class="eyebrow">Pipeline work</p>
       <h1>{% if view == "all" %}All deals{% else %}{{ pipeline_label }}{% endif %}</h1>
-      <p class="subtle">{% if view == "all" %}Every pipeline category on one page. Open a category board when you want to move work stage by stage.{% else %}Scan this pipeline by stage. Cards show who the deal is with, what it is worth, and the next step.{% endif %}</p>
+      <p class="subtle">{% if view == "all" %}Known pipeline work, grouped by category. Create a deal when the path is already clear. Inquiries that still need a destination stay in Needs routing.{% else %}Work this pipeline by stage. Create a deal when you already know who it is for and which path it belongs on.{% endif %}</p>
     </div>
     <div class="page-actions">
       <a class="btn btn-primary" href="{% url 'crm_deal_new' %}{% if view == 'board' %}?pipeline={{ pipeline }}{% endif %}">Create {% if view == "board" %}{{ pipeline_label|lower }} {% endif %}deal</a>

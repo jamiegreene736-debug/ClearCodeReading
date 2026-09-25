@@ -30,7 +30,7 @@ The workspace follows familiar CRM patterns:
 - super-admin-only creation of least-privilege CRM user accounts;
 - company records shared by multiple contacts and deals;
 - five deal pipelines with pipeline-specific stages; and
-- a human triage queue for ambiguous family partner-interest signals.
+- a Needs routing queue for inquiries that are not yet a deal.
 
 These behaviors were informed by HubSpot's records index, record activity timeline, form-submission detail, and task-management documentation. ClearCode branding, authorization, and data handling remain independent.
 
@@ -53,10 +53,10 @@ The HTML workspace and leads API are restricted to superusers, staff, central `S
 - `/crm/team/` — assignment-ready users, workload counts, and restricted CRM account creation.
 - `/crm/contacts/<id>/` — contact record and activity timeline.
 - `/crm/companies/` — company records with contact and deal rollups.
-- `/crm/deals/` — pipeline-specific deal boards.
-- `/crm/deals/new/` — create a convention-named deal.
+- `/crm/deals/` — pipeline work for deals whose path is already known.
+- `/crm/deals/new/` — create a convention-named deal when the pipeline is already known.
 - `/crm/deals/<id>/` — edit pipeline-specific deal properties.
-- `/crm/triage/` — pending intake routing decisions.
+- `/crm/triage/` — Needs routing: inquiries that still need a pipeline decision.
 - `/crm/signup/` — public inquiry ingestion.
 - `/crm/survey/` — validated early interest survey ingestion from the main survey page and local articles.
 - `/newsletter/subscribe/` — public newsletter consent and CRM ingestion.
@@ -73,7 +73,7 @@ Each deal belongs to one pipeline and one stage. Priority and comma-separated se
 
 Family consultation and assessment follow-up intake creates or reuses one open Families / Enrollment placeholder and marks it for naming review until the student and term/year are supplied. The assessment follow-up lets a family select Referral Partner, Donor, Advocate, or any combination of the three. Selections are retained separately on the submission and contact, exposed as a CRM contact filter, and sent together to one `IntakeTriage` item. Staff choose the appropriate referral, donor, and/or advocate path; Advocate is explicitly recorded without inventing a sixth deal pipeline. Resulting deal placeholders remain visibly marked for naming review, and the system never creates several deal records merely because several interests were selected.
 
-The Early Interest Survey uses one server contract in both placements. Every accepted response stores normalized answers as an immutable `FormSubmission`, deduplicates the CRM contact by normalized email, records page/article attribution, and updates the latest survey properties on the contact. All five family situations, including older-child/future interest, update the open Families / Enrollment deal with ZIP, grade band, funding signal, and waitlist intent. Explicit donor selections create or reuse a Foundation Donors deal; referral partner, family referral, and professional connection selections create or reuse a School & Teacher Referral Partners deal. Multiple explicit interests can produce linked deals in both pipelines. Broad community partnerships and survey career interest remain pending in intake triage; career interest alone does not constitute a job application. Updates-only community responses remain contacts and newsletter subscribers. No grant or equity intent is inferred from donor interest. Explicit survey email consent also creates or reactivates the separate newsletter subscription, preserving its source path and unsubscribe controls. Conditional Q5-Q9 answers and family-only engagement choices are enforced on the server, not only in browser JavaScript.
+The Early Interest Survey uses one server contract in both placements. Every accepted response stores normalized answers as an immutable `FormSubmission`, deduplicates the CRM contact by normalized email, records page/article attribution, and updates the latest survey properties on the contact. All five family situations, including older-child/future interest, update the open Families / Enrollment deal with ZIP, grade band, funding signal, and waitlist intent. Explicit donor selections create or reuse a Foundation Donors deal; referral partner, family referral, and professional connection selections create or reuse a School & Teacher Referral Partners deal. Multiple explicit interests can produce linked deals in both pipelines. Broad community partnerships and survey career interest remain in Needs routing; career interest alone does not constitute a job application. Updates-only community responses remain contacts and newsletter subscribers. No grant or equity intent is inferred from donor interest. Explicit survey email consent also creates or reactivates the separate newsletter subscription, preserving its source path and unsubscribe controls. Conditional Q5-Q9 answers and family-only engagement choices are enforced on the server, not only in browser JavaScript.
 
 The `/assessment/` contact handoff stores a server-recomputed digital reading result plus the validated child, ZIP, grade, and parent-inventory answers. Those structured fields are visible in the CRM submission timeline and update the open family deal without trusting client-calculated score fields.
 

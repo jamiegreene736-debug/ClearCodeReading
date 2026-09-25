@@ -28,7 +28,7 @@
 {% block content %}
   <div class="form-shell">
     <div class="form-head"><div><p class="eyebrow">{% if deal %}{{ deal.deal_label }}{% else %}New pipeline record{% endif %}</p><h1>{% if deal %}{{ deal.name }}{% else %}Create a deal{% endif %}</h1><p class="subtle">Names are generated from the master convention. Use a second deal for separate students, pipelines, cycles, or rounds.</p></div><a class="btn" href="{% url 'crm_deal_list' %}{% if deal %}?pipeline={{ deal.pipeline }}{% endif %}">Back to pipelines</a>{% if deal %}<a class="btn" href="{% url 'crm_deal_remove' deal.pk %}">Remove from pipeline</a>{% endif %}</div>
-    {% if deal.needs_naming_review %}<div class="errors"><strong>Naming review required.</strong> This record came from intake or triage. {% if deal.pipeline == "family_enrollment" %}You can save edits now. Add the student name and term/year when known to finish the naming review.{% else %}Complete the pipeline-specific naming fields before saving.{% endif %}</div>{% endif %}
+    {% if deal.needs_naming_review %}<div class="errors"><strong>Naming review required.</strong> This placeholder came from an inquiry that still needs a proper name. {% if deal.pipeline == "family_enrollment" %}You can save edits now. Add the student name and term/year when known to finish the naming review.{% else %}Complete the pipeline-specific naming fields before saving.{% endif %}</div>{% endif %}
     <form class="card deal-form" method="post" novalidate>{% csrf_token %}
       {% if form.non_field_errors %}<div class="errors">{{ form.non_field_errors }}</div>{% endif %}
       <div class="form-grid">
