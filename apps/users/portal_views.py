@@ -228,15 +228,28 @@ class PortalDashboardView(PortalAuthMixin, TemplateView):
                 .select_related("child")
                 .order_by("child_id", "scheduled_start")
             }
+            next_session_by_child = {}
+            for session in upcoming_sessions:
+                next_session_by_child.setdefault(session.child_id, session)
             student_snapshots = [
                 {
                     "child": child,
                     "placement": placements.get(child.id),
                     "latest_session": latest_sessions.get(child.id),
+                    "next_session": next_session_by_child.get(child.id),
+                    "teacher_name": (child.learning_profile or {}).get("assigned_teacher_name") or "",
+                    "unassigned": not (child.learning_profile or {}).get("assigned_teacher_id"),
                     "can_log_session": user_can_log_session(user, child),
                 }
                 for child in children
             ]
+            student_snapshots.sort(
+                key=lambda snapshot: (
+                    not snapshot["unassigned"],
+                    snapshot["child"].last_name,
+                    snapshot["child"].first_name,
+                )
+            )
 
         operations = None
         grouping_suggestions = []
@@ -249,6 +262,10 @@ class PortalDashboardView(PortalAuthMixin, TemplateView):
                 operations = operations_metrics(center)
                 grouping_suggestions = ranked_group_suggestions(center)[:8]
 
+        unassigned_readers = [
+            child for child in children if not (child.learning_profile or {}).get("assigned_teacher_id")
+        ]
+        placement_pending_count = placement_recommendations.count()
         teachers = CustomUser.objects.filter(role=CustomUser.Role.TEACHER, is_active=True, is_deleted=False)
         if context["is_admin"] and not user.is_superuser and user.role != CustomUser.Role.SUPER_ADMIN:
             teachers = teachers.filter(
@@ -266,6 +283,9 @@ class PortalDashboardView(PortalAuthMixin, TemplateView):
                 "pending_review_count": pending_reviews.count(),
                 "average_reading_age": latest_results.aggregate(value=Avg("reading_age"))["value"],
                 "child_count": len(children),
+                "unassigned_count": len(unassigned_readers),
+                "placement_pending_count": placement_pending_count,
+                "attention_count": len(unassigned_readers) + placement_pending_count + new_lead_count + pending_reviews.count(),
                 "kpi_count": self._kpi_count(latest_results.first()),
                 "teachers": teachers,
                 "recent_leads": recent_leads,

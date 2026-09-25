@@ -61,7 +61,9 @@ class PortalNavigationTests(SimpleTestCase):
 
     def test_dashboard_and_session_log_expose_shared_navigation_destinations(self):
         dashboard = Path(settings.BASE_DIR, "templates/portal/dashboard.html").read_text()
+        admin_workspace = Path(settings.BASE_DIR, "templates/portal/_admin_workspace.html").read_text()
         rapid_log = Path(settings.BASE_DIR, "templates/sessions/rapid_log.html").read_text()
+        portal_markup = dashboard + admin_workspace
 
         for destination in (
             "progress-overview",
@@ -70,11 +72,14 @@ class PortalNavigationTests(SimpleTestCase):
             "admin-actions",
             "lesson-library",
             "website-signups",
-            "account-creation",
             "lesson-planning",
             "assessment-review",
             "teacher-plan",
             "latest-kpis",
         ):
-            self.assertIn(f'id="{destination}"', dashboard)
+            self.assertIn(f'id="{destination}"', portal_markup)
+        self.assertNotIn('id="account-creation"', portal_markup)
+        self.assertNotIn("Specialist launchpad", admin_workspace)
+        self.assertNotIn("KPI areas", admin_workspace)
+        self.assertIn('aria-label="Program status"', admin_workspace)
         self.assertIn('{% include "portal/_header.html" %}', rapid_log)
