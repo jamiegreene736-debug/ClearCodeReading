@@ -16,7 +16,7 @@ from typing import cast
 
 from django.utils.html import escape
 
-from apps.crm_email.models import AutomatedEmail
+from apps.crm_email.models import BETHANY_SIGNATURE, AutomatedEmail
 from apps.crm_email.security import plain_text
 
 FIELD_LABELS: Mapping[str, str] = {
@@ -89,15 +89,22 @@ def fill(text: str, values: Mapping[str, str]) -> str:
     return TOKEN.sub(lambda match: values.get(match.group(1).strip(), ""), text)
 
 
+_URL = re.compile(r"https://[^\s<>\"']+")
+
+
 def html_value(value: str) -> str:
-    """Escape a substituted value for HTML, keeping line breaks and linking bare URLs."""
+    """Escape a substituted value for HTML, keeping line breaks and linking HTTPS URLs."""
     lines = []
     for line in value.split("\n"):
-        stripped = line.strip()
-        if re.fullmatch(r"https://\S+", stripped):
-            lines.append(f'<a href="{escape(stripped)}">{escape(stripped)}</a>')
-        else:
-            lines.append(escape(line))
+        parts: list[str] = []
+        end = 0
+        for match in _URL.finditer(line):
+            url = match.group(0).rstrip(".,;:!?)")
+            parts.append(escape(line[end : match.start()]))
+            parts.append(f'<a href="{escape(url)}">{escape(url)}</a>')
+            end = match.start() + len(url)
+        parts.append(escape(line[end:]))
+        lines.append("".join(parts))
     return "<br>".join(lines)
 
 
@@ -213,7 +220,7 @@ _STAGE_SAMPLE = {
     "contact.firstname": "Jordan",
     "company.name": "Example Organization",
     "scheduling_link": "https://clearcodereading.com/book/",
-    "Bethany’s email signature": "Bethany Fleming\nFounder & CEO, ClearCode Reading Center",
+    "Bethany’s email signature": BETHANY_SIGNATURE,
     "investment_category": "education",
     "foundation_name": "Bethany Fleming",
     "gmail_signature": "ClearCode, Inc.",
@@ -256,11 +263,13 @@ def _survey_family() -> AutomatedEmailSpec:
         group="Pipeline introduction emails",
         name="Families & Enrollment introduction",
         trigger=(
-            "Bethany’s introduction to a family whose survey answers put them in the "
-            "Families & Enrollment pipeline. Not a confirmation; currently delivered "
-            "only to the internal test inbox"
+            "Bethany’s introduction to a survey respondent who chose any parent "
+            "answer to “Which best describes your situation?” (a struggling reader "
+            "at home, more than one child, or interest for the future or another "
+            "family). Not a confirmation; currently delivered only to the internal "
+            "test inbox"
         ),
-        recipient="The family (contact on the new deal)",
+        recipient="The family (the survey contact)",
         defaults=base.defaults,
         placeholders=base.placeholders,
         sample=base.sample,
@@ -463,27 +472,32 @@ def _build_specs() -> tuple[AutomatedEmailSpec, ...]:
         AutomatedEmailSpec(
             key="survey_general",
             group="Pipeline introduction emails",
-            name="All other pipelines introduction",
+            name="Community introduction",
             trigger=(
-                "Bethany’s introduction to a contact whose survey answers put them in "
-                "any other pipeline (referral partners, donors, investors and so on); "
-                "one email even when several pipelines apply. Not a confirmation; "
-                "currently delivered only to the internal test inbox. Draft wording "
-                "until the approved copy is posted"
+                "Bethany’s introduction to a survey respondent who chose “I am an "
+                "educator, reading specialist, local parent, potential donor or "
+                "supporter, or other” for “Which best describes your situation?”; "
+                "one email regardless of the engagement boxes ticked. Not a "
+                "confirmation; currently delivered only to the internal test inbox"
             ),
-            recipient="The contact on the new deal",
+            recipient="The survey contact",
             defaults={
-                "subject": "Thanks for connecting with ClearCode Reading Center",
+                "subject": "Thanks for connecting with ClearCode",
                 "body": (
                     "Hi {{contact.firstname}},\n\n"
-                    "Thank you for completing our early interest survey and for telling us how "
-                    "you’d like to connect with ClearCode Reading Center.\n\n"
-                    "I’m Bethany Fleming, Founder & CEO of ClearCode Reading Center. We’re a "
-                    "structured literacy intervention center opening in the Orlando area in 2027, "
-                    "built for K–8 students who haven’t yet reached grade-level reading proficiency. "
-                    "Whether you’re interested in referring families, supporting our foundation, "
-                    "investing, or partnering with us in another way, I’d love to talk.\n\n"
-                    "Grab a time on my calendar that works for you: {{scheduling_link}}\n\n"
+                    "Thank you for your interest in ClearCode! ClearCode Reading Center is a "
+                    "structured literacy intervention center opening in the Orlando area in 2027 "
+                    "with a mission to ensure every K–8th grade student has a path to becoming a "
+                    "confident reader. Additionally, our nonprofit arm, ClearCode Foundation, will "
+                    "fund scholarships for qualifying families and other community-based literacy "
+                    "initiatives.\n\n"
+                    "People get involved with ClearCode in many ways: referring families, "
+                    "partnering on community literacy, supporting the Foundation, and helping us "
+                    "grow the center. However you'd like to be part of this, we're glad you're "
+                    "here.\n\n"
+                    "Someone from our team will follow up personally based on what you shared. In "
+                    "the meantime, feel free to reply with any questions. I'd love to hear what "
+                    "drew you to ClearCode.\n\n"
                     "Warmly,\n"
                     "{{Bethany’s email signature}}"
                 ),

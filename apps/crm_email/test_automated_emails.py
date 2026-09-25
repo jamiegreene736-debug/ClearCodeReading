@@ -224,7 +224,7 @@ class AutomatedEmailTests(TestCase):
         edited = render_copy(sample_deal("family_enrollment", pilot), pilot)
         self.assertEqual(edited.subject, "Hello Test")
         self.assertIn("Book here: https://example.com/book", edited.body)
-        self.assertIn("bethany@clearcodereading.com", edited.body)
+        self.assertIn("c: (256) 762-8094", edited.body)
         self.assertEqual(edited.missing, ())
         self.assertEqual(edited.source, "Edited in CRM email settings")
         response = self.client.get(reverse("crm_first_stage_emails"))
@@ -406,7 +406,7 @@ class RichAutomatedEmailTests(TestCase):
         self.assertEqual(response.status_code, 400)
         self.assertEqual(AutomatedEmailImage.objects.count(), 1)
 
-    def test_survey_routes_family_and_one_general_email(self) -> None:
+    def test_survey_situation_answer_picks_the_introduction_email(self) -> None:
         from apps.crm.surveys import (
             EarlyInterestSurveyAnswers,
             SurveySource,
@@ -442,41 +442,69 @@ class RichAutomatedEmailTests(TestCase):
             )
 
         source = SurveySource(path="/survey/", placement="Main survey page")
-        with patch("apps.crm_email.stage_emails.require_configured"):
-            record_early_interest_survey(
-                answers=answers("prek_2_struggling", ["opening_updates"]), source=source
-            )
-            family = StageEmailDelivery.objects.get()
-            self.assertEqual(family.template_key, "survey_family_enrollment")
-            enqueue_stage_emails()
-        family.refresh_from_db()
-        assert family.message is not None
-        self.assertIn("<p>Hi Survey,</p>", family.message.body_html)
-        self.assertTrue(
-            family.message.subject.startswith("[TEST] Thanks for reaching out")
-        )
 
-        Lead.objects.filter(contact_email=TEST_RECIPIENT).update(is_deleted=True)
-        StageEmailDelivery.objects.all().delete()
+        def submit(situation: str, interests: list[str]) -> list[StageEmailDelivery]:
+            Lead.objects.filter(contact_email=TEST_RECIPIENT).update(is_deleted=True)
+            StageEmailDelivery.objects.all().delete()
+            with patch("apps.crm_email.stage_emails.require_configured"):
+                record_early_interest_survey(
+                    answers=answers(situation, interests), source=source
+                )
+                enqueue_stage_emails()
+            return list(StageEmailDelivery.objects.order_by("pk"))
+
+        # A parent who joins the waitlist leaves the first stage immediately, but
+        # the introduction belongs to the contact and still goes out.
+        deliveries = submit("prek_2_struggling", ["priority_waitlist", "refer_family"])
+        live = [d for d in deliveries if not d.cancelled]
+        self.assertEqual([d.template_key for d in live], ["survey_family_enrollment"])
+        self.assertIsNone(live[0].deal)
+        self.assertEqual(live[0].lead.contact_email, TEST_RECIPIENT)
+        self.assertEqual(sum(1 for d in deliveries if d.cancelled), 2)
+        assert live[0].message is not None
+        self.assertIn("<p>Hi Survey,</p>", live[0].message.body_html)
+        self.assertTrue(
+            live[0].message.subject.startswith("[TEST] Thanks for reaching out")
+        )
+        self.assertEqual(live[0].message.lead_id, live[0].lead_id)
+
+        # "Interested for the future or on behalf of another family" is a parent answer.
+        deliveries = submit("older_than_grade_8", ["donor"])
+        live = [d for d in deliveries if not d.cancelled]
+        self.assertEqual([d.template_key for d in live], ["survey_family_enrollment"])
+
+        # The community answer gets the general introduction even when the
+        # engagement boxes create no deal at all.
+        deliveries = submit("community_supporter", ["career_interest"])
+        self.assertEqual([d.template_key for d in deliveries], ["survey_general"])
+        assert deliveries[0].message is not None
+        self.assertEqual(
+            deliveries[0].message.subject, "[TEST] Thanks for connecting with ClearCode"
+        )
+        self.assertIn("Hi Survey,", deliveries[0].message.body_text)
+        self.assertIn("ClearCode Foundation", deliveries[0].message.body_text)
+        self.assertNotIn("{{", deliveries[0].message.body_text)
+        self.assertNotIn("<p>", deliveries[0].message.body_text)
+
+        # Several partner interests still mean one email, with the deal emails cancelled.
         AutomatedEmail.objects.create(
             key="survey_general",
             subject="Welcome partner {{contact.firstname}}",
             body="<p>Thanks for your interest.</p><p>{{scheduling_link}}</p>",
         )
-        with patch("apps.crm_email.stage_emails.require_configured"):
-            record_early_interest_survey(
-                answers=answers("community_supporter", ["donor", "referral_partner"]),
-                source=source,
+        deliveries = submit("community_supporter", ["donor", "referral_partner"])
+        self.assertEqual(len(deliveries), 3)
+        self.assertEqual(
+            [d.template_key for d in deliveries if not d.cancelled], ["survey_general"]
+        )
+        self.assertTrue(
+            all(
+                d.error == "Covered by the survey introduction email."
+                for d in deliveries
+                if d.cancelled
             )
-            deliveries = list(StageEmailDelivery.objects.order_by("pk"))
-            self.assertEqual(len(deliveries), 2)
-            self.assertEqual(
-                sorted(d.template_key for d in deliveries if not d.cancelled),
-                ["survey_general"],
-            )
-            self.assertEqual(sum(1 for d in deliveries if d.cancelled), 1)
-            enqueue_stage_emails()
-        sent = [d.message for d in StageEmailDelivery.objects.all() if d.message]
+        )
+        sent = [d.message for d in deliveries if d.message]
         self.assertEqual(len(sent), 1)
         self.assertEqual(sent[0].subject, "[TEST] Welcome partner Survey")
         self.assertIn(
@@ -485,9 +513,26 @@ class RichAutomatedEmailTests(TestCase):
         )
         self.assertIn("https://example.com/book", sent[0].body_text)
         self.assertNotIn("<p>", sent[0].body_text)
+
+        # A second survey from the same contact does not send the introduction again.
+        with patch("apps.crm_email.stage_emails.require_configured"):
+            record_early_interest_survey(
+                answers=answers("community_supporter", ["general_email"]), source=source
+            )
+            enqueue_stage_emails()
+        self.assertEqual(
+            StageEmailDelivery.objects.filter(
+                cancelled=False, deal__isnull=True
+            ).count(),
+            1,
+        )
+
         response = self.client.get(reverse("crm_email_notifications"))
         self.assertContains(response, "Pipeline introduction emails")
-        self.assertContains(response, "All other pipelines introduction")
+        self.assertContains(response, "Community introduction")
+        response = self.client.get(reverse("crm_first_stage_emails"))
+        self.assertContains(response, "Survey introduction")
+        self.assertContains(response, "Survey Person")
 
 
 def html_part(message: object) -> str:

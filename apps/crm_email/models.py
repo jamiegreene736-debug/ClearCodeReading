@@ -4,6 +4,15 @@ from typing import ClassVar
 from django.conf import settings
 from django.db import models
 
+# Bethany's signature on every automated email sent in her name.
+BETHANY_SIGNATURE = (
+    "Bethany Fleming, M.Ed.\n"
+    "Founder & CEO\n"
+    "c: (256) 762-8094\n"
+    "Website: https://clearcodereading.com\n"
+    "Blog: https://clearcodereading.com/blog/"
+)
+
 
 class Mailbox(models.Model):
     class Status(models.TextChoices):
@@ -222,9 +231,7 @@ class StageEmailPilot(models.Model):
     equity_signature = models.TextField(blank=True)
     enabled = models.BooleanField(default=False)
     scheduling_link = models.URLField(blank=True, max_length=1000)
-    bethany_signature = models.TextField(
-        default="Bethany Fleming\nFounder & CEO, ClearCode Reading Center\nbethany@clearcodereading.com"
-    )
+    bethany_signature = models.TextField(default=BETHANY_SIGNATURE)
     foundation_name = models.CharField(default="Bethany Fleming", max_length=150)
     sample_company = models.CharField(default="Example Organization", max_length=255)
     sample_investment_category = models.CharField(blank=True, max_length=255)
@@ -232,9 +239,16 @@ class StageEmailPilot(models.Model):
 
 
 class StageEmailDelivery(models.Model):
-    deal = models.OneToOneField("crm.Opportunity", on_delete=models.CASCADE)
+    # Survey introductions belong to the contact alone; first-stage emails to a deal.
+    deal = models.OneToOneField(
+        "crm.Opportunity", null=True, blank=True, on_delete=models.CASCADE
+    )
+    lead = models.ForeignKey(
+        "crm.Lead", on_delete=models.CASCADE, related_name="stage_email_deliveries"
+    )
     pilot = models.ForeignKey(StageEmailPilot, on_delete=models.PROTECT)
-    pipeline = models.CharField(max_length=32)
+    # Blank means Bethany's mailbox with no pipeline-specific sender.
+    pipeline = models.CharField(max_length=32, blank=True)
     # Automated-email registry key; blank means the pipeline's own first-stage email.
     template_key = models.CharField(max_length=60, blank=True)
     message = models.OneToOneField(
