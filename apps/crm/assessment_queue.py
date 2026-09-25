@@ -184,6 +184,30 @@ def family_open_counts(parent_ids, now=None) -> dict[int, int]:
     return {row["child__parent_id"]: row["total"] for row in rows}
 
 
+def review_preview(limit=5, now=None) -> list[dict]:
+    """Oldest finished inventories that still need a person to read them."""
+    now = now or timezone.now()
+    invitations = (
+        visible_invitations()
+        .filter(completed_at__isnull=False, reviewed_at__isnull=True, revoked_at__isnull=True)
+        .select_related("child__parent")
+        .order_by("completed_at")[:limit]
+    )
+    rows = []
+    for invitation in invitations:
+        result = invitation.result if isinstance(invitation.result, dict) else {}
+        rows.append(
+            {
+                "lead": invitation.child.parent,
+                "invitation": invitation,
+                "child_name": invitation.child.name,
+                "outcome_label": OUTCOME_LABELS.get(result.get("outcome"), ""),
+                "waiting_label": waiting_label(invitation.completed_at, now),
+            }
+        )
+    return rows
+
+
 def waiting_preview(limit=5, now=None) -> list[dict]:
     """Oldest families who still need to finish, for the CRM overview."""
     now = now or timezone.now()
