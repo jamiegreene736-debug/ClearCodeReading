@@ -6,11 +6,12 @@ from django.contrib import messages
 from django.contrib.auth import get_user_model, login
 from django.contrib.auth.views import LoginView
 from django.core.exceptions import ValidationError
-from django.db.models import Avg
+from django.db.models import Avg, Q
 from django.shortcuts import redirect
 from django.urls import reverse_lazy
 from django.utils import timezone
-from django.utils.dateparse import parse_date
+from django.utils.dateparse import parse_date, parse_datetime
+from django.utils.text import slugify
 from django.views.generic import TemplateView, View
 
 from apps.assessments.models import Assessment, AssessmentResult
@@ -21,6 +22,7 @@ from apps.curriculum.models import (
     CurriculumSequence,
     LessonTemplate,
     PlacementRecommendation,
+    Skill,
     TeacherLessonTemplate,
 )
 from apps.curriculum.placement import confirm_recommendation
@@ -57,6 +59,91 @@ DEMO_INBOX_MESSAGES = [
         "sent_at": "Today, 9:34 AM",
     },
 ]
+
+
+def user_can_manage_instruction(user) -> bool:
+    return bool(
+        getattr(user, "is_authenticated", False)
+        and (
+            user.is_superuser
+            or user.role in {CustomUser.Role.SUPER_ADMIN, CustomUser.Role.SCHOOL_ADMIN}
+        )
+    )
+
+
+def program_children(user):
+    children = ChildProfile.objects.filter(is_deleted=False)
+    if not user.is_superuser and user.role != CustomUser.Role.SUPER_ADMIN:
+        children = children.filter(
+            school__memberships__user=user,
+            school__memberships__is_deleted=False,
+        )
+    return children.distinct().order_by("last_name", "first_name")
+
+
+def program_teachers(user):
+    teachers = CustomUser.objects.filter(role=CustomUser.Role.TEACHER, is_active=True, is_deleted=False)
+    if not user.is_superuser and user.role != CustomUser.Role.SUPER_ADMIN:
+        teachers = teachers.filter(
+            school_memberships__school__memberships__user=user,
+            school_memberships__school__memberships__is_deleted=False,
+        ).distinct()
+    return teachers.order_by("last_name", "first_name", "email")
+
+
+def reader_assignment(child, teachers_by_id):
+    profile = child.learning_profile or {}
+    teacher_id = profile.get("assigned_teacher_id")
+    teacher = teachers_by_id.get(str(teacher_id)) if teacher_id else None
+    assigned_at = parse_datetime(profile.get("assigned_at") or "")
+    teacher_name = ""
+    if teacher is not None:
+        teacher_name = teacher.get_full_name() or teacher.email
+    elif teacher_id:
+        teacher_name = profile.get("assigned_teacher_name") or profile.get("assigned_teacher_email") or "Assigned teacher"
+    return {
+        "child": child,
+        "teacher": teacher,
+        "teacher_name": teacher_name,
+        "assigned": bool(teacher_id),
+        "assigned_at": assigned_at,
+    }
+
+
+def instruction_workspace_summary(user):
+    teachers_by_id = {str(teacher.id): teacher for teacher in program_teachers(user)}
+    roster = [reader_assignment(child, teachers_by_id) for child in program_children(user)]
+    assigned_reader_count = sum(1 for row in roster if row["assigned"])
+    lesson_count = LessonTemplate.objects.filter(is_deleted=False, is_active=True).count()
+    shared_lesson_count = TeacherLessonTemplate.objects.filter(is_deleted=False).count()
+    return {
+        "reader_count": len(roster),
+        "assigned_reader_count": assigned_reader_count,
+        "unassigned_reader_count": len(roster) - assigned_reader_count,
+        "lesson_count": lesson_count,
+        "shared_lesson_count": shared_lesson_count,
+    }
+
+
+def _list_field(raw_value, *, limit=12):
+    lines = []
+    for line in (raw_value or "").splitlines():
+        item = " ".join(line.split())
+        if item:
+            lines.append(item[:240])
+        if len(lines) >= limit:
+            break
+    return lines
+
+
+def _unique_lesson_slug(title):
+    base = (slugify(title) or "lesson")[:140]
+    slug = base
+    suffix = 2
+    while LessonTemplate.objects.filter(slug=slug).exists():
+        slug = f"{base}-{suffix}"[:160]
+        suffix += 1
+    return slug
 
 
 class PortalLoginView(LoginView):
@@ -305,6 +392,8 @@ class PortalDashboardView(PortalAuthMixin, TemplateView):
                 "student_snapshots": student_snapshots,
                 "operations_metrics": operations,
                 "grouping_suggestions": grouping_suggestions,
+                "lesson_count": lesson_templates.count() if context["is_admin"] else 0,
+                "shared_lesson_count": teacher_template_assignments.count() if context["is_admin"] else 0,
             }
         )
         return context
@@ -402,19 +491,167 @@ class ConfirmPlacementRecommendationView(PortalAuthMixin, View):
         return redirect("portal_inbox")
 
 
+class TeacherAssignmentsView(PortalAuthMixin, TemplateView):
+    template_name = "portal/teacher_assignments.html"
+
+    def dispatch(self, request, *args, **kwargs):
+        if request.user.is_authenticated and not user_can_manage_instruction(request.user):
+            messages.error(request, "Only program administrators can assign teachers.")
+            return redirect("portal_dashboard")
+        return super().dispatch(request, *args, **kwargs)
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        user = self.request.user
+        teachers = list(program_teachers(user))
+        teachers_by_id = {str(teacher.id): teacher for teacher in teachers}
+        roster = [reader_assignment(child, teachers_by_id) for child in program_children(user)]
+        query = self.request.GET.get("q", "").strip()
+        status = self.request.GET.get("status", "all")
+        if status not in {"all", "needs", "assigned"}:
+            status = "all"
+        visible = roster
+        if status == "needs":
+            visible = [row for row in visible if not row["assigned"]]
+        elif status == "assigned":
+            visible = [row for row in visible if row["assigned"]]
+        if query:
+            needle = query.casefold()
+            visible = [
+                row
+                for row in visible
+                if needle in str(row["child"]).casefold()
+                or needle in row["teacher_name"].casefold()
+                or (row["teacher"] and needle in row["teacher"].email.casefold())
+            ]
+        context.update(
+            {
+                "teachers": teachers,
+                "assignment_choices": roster,
+                "roster": visible,
+                "reader_count": len(roster),
+                "assigned_reader_count": sum(1 for row in roster if row["assigned"]),
+                "unassigned_reader_count": sum(1 for row in roster if not row["assigned"]),
+                "query": query,
+                "status": status,
+            }
+        )
+        return context
+
+
+class LessonLibraryView(PortalAuthMixin, TemplateView):
+    template_name = "portal/lesson_library.html"
+
+    def dispatch(self, request, *args, **kwargs):
+        if request.user.is_authenticated and not user_can_manage_instruction(request.user):
+            messages.error(request, "Only program administrators can manage the lesson library.")
+            return redirect("portal_dashboard")
+        return super().dispatch(request, *args, **kwargs)
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        query = self.request.GET.get("q", "").strip()
+        grade = self.request.GET.get("grade", "").strip()
+        lessons = LessonTemplate.objects.filter(is_deleted=False).select_related("skill")
+        grade_bands = list(
+            lessons.exclude(grade_band="").order_by("grade_band").values_list("grade_band", flat=True).distinct()
+        )
+        if grade:
+            lessons = lessons.filter(grade_band=grade)
+        if query:
+            lessons = lessons.filter(
+                Q(title__icontains=query) | Q(goal__icontains=query) | Q(description__icontains=query)
+            )
+        assignments = TeacherLessonTemplate.objects.filter(is_deleted=False).select_related("teacher", "template")
+        shares_by_template = {}
+        for assignment in assignments:
+            shares_by_template.setdefault(assignment.template_id, []).append(assignment)
+        lesson_rows = []
+        for lesson in lessons.order_by("title"):
+            shares = shares_by_template.get(lesson.id, [])
+            lesson_rows.append(
+                {
+                    "lesson": lesson,
+                    "shares": shares,
+                    "activities": lesson.activities if isinstance(lesson.activities, list) else [],
+                }
+            )
+        context.update(
+            {
+                "teachers": program_teachers(self.request.user),
+                "active_lessons": LessonTemplate.objects.filter(is_deleted=False, is_active=True).order_by("title"),
+                "lesson_rows": lesson_rows,
+                "lesson_count": LessonTemplate.objects.filter(is_deleted=False, is_active=True).count(),
+                "shared_lesson_count": assignments.count(),
+                "skills": Skill.objects.filter(is_deleted=False).order_by("domain", "code"),
+                "query": query,
+                "grade": grade,
+                "grade_bands": grade_bands,
+            }
+        )
+        return context
+
+
+class CreateLessonTemplateView(PortalAuthMixin, View):
+    def post(self, request):
+        if not user_can_manage_instruction(request.user):
+            messages.error(request, "Only program administrators can create lessons.")
+            return redirect("portal_dashboard")
+
+        title = " ".join(request.POST.get("title", "").split())
+        if not title:
+            messages.error(request, "Give the lesson a title before saving it.")
+            return redirect("portal_lesson_library")
+        if len(title) > 255:
+            messages.error(request, "Lesson titles need to be 255 characters or fewer.")
+            return redirect("portal_lesson_library")
+
+        minutes_raw = request.POST.get("recommended_minutes", "").strip() or "15"
+        try:
+            recommended_minutes = int(minutes_raw)
+        except ValueError:
+            recommended_minutes = 0
+        if recommended_minutes < 1 or recommended_minutes > 180:
+            messages.error(request, "Recommended time needs to be between 1 and 180 minutes.")
+            return redirect("portal_lesson_library")
+
+        skill = None
+        skill_id = request.POST.get("skill_id", "").strip()
+        if skill_id:
+            skill = Skill.objects.filter(id=skill_id, is_deleted=False).first()
+            if skill is None:
+                messages.error(request, "Choose a valid reading skill, or leave that field blank.")
+                return redirect("portal_lesson_library")
+
+        lesson = LessonTemplate.objects.create(
+            title=title,
+            slug=_unique_lesson_slug(title),
+            skill=skill,
+            grade_band=request.POST.get("grade_band", "").strip()[:64],
+            description=request.POST.get("description", "").strip()[:2000],
+            goal=request.POST.get("goal", "").strip()[:255],
+            recommended_minutes=recommended_minutes,
+            activities=_list_field(request.POST.get("activities", "")),
+            materials=_list_field(request.POST.get("materials", "")),
+            is_active=True,
+        )
+        messages.success(request, f"Created {lesson.title}. Share it with a teacher when they should use it.")
+        return redirect("portal_lesson_library")
+
+
 class AssignTeacherView(PortalAuthMixin, View):
     def post(self, request):
-        if request.user.role not in {CustomUser.Role.SUPER_ADMIN, CustomUser.Role.SCHOOL_ADMIN}:
+        if not user_can_manage_instruction(request.user):
             messages.error(request, "Only program administrators can assign teachers.")
             return redirect("portal_dashboard")
 
         child_id = request.POST.get("child_id")
         teacher_id = request.POST.get("teacher_id")
-        child = ChildProfile.objects.filter(id=child_id, is_deleted=False).first()
-        teacher = CustomUser.objects.filter(id=teacher_id, role=CustomUser.Role.TEACHER, is_active=True, is_deleted=False).first()
+        child = program_children(request.user).filter(id=child_id).first()
+        teacher = program_teachers(request.user).filter(id=teacher_id).first()
         if child is None or teacher is None:
             messages.error(request, "Choose a valid reader and teacher.")
-            return redirect("portal_dashboard")
+            return redirect("portal_teacher_assignments")
 
         child.learning_profile = {
             **(child.learning_profile or {}),
@@ -426,21 +663,16 @@ class AssignTeacherView(PortalAuthMixin, View):
         }
         child.save(update_fields=["learning_profile", "updated_at"])
         messages.success(request, f"Assigned {teacher.get_full_name() or teacher.email} to {child}.")
-        return redirect("portal_dashboard")
+        return redirect("portal_teacher_assignments")
 
 
 class AssignTemplateToTeacherView(PortalAuthMixin, View):
     def post(self, request):
-        if request.user.role not in {CustomUser.Role.SUPER_ADMIN, CustomUser.Role.SCHOOL_ADMIN}:
+        if not user_can_manage_instruction(request.user):
             messages.error(request, "Only program administrators can assign lesson templates.")
             return redirect("portal_dashboard")
 
-        teacher = CustomUser.objects.filter(
-            id=request.POST.get("teacher_id"),
-            role=CustomUser.Role.TEACHER,
-            is_active=True,
-            is_deleted=False,
-        ).first()
+        teacher = program_teachers(request.user).filter(id=request.POST.get("teacher_id")).first()
         template = LessonTemplate.objects.filter(
             id=request.POST.get("template_id"),
             is_active=True,
@@ -448,7 +680,7 @@ class AssignTemplateToTeacherView(PortalAuthMixin, View):
         ).first()
         if teacher is None or template is None:
             messages.error(request, "Choose a valid teacher and lesson template.")
-            return redirect("portal_dashboard")
+            return redirect("portal_lesson_library")
 
         assignment, created = TeacherLessonTemplate.objects.update_or_create(
             teacher=teacher,
@@ -462,12 +694,12 @@ class AssignTemplateToTeacherView(PortalAuthMixin, View):
         )
         verb = "Assigned" if created else "Updated"
         messages.success(request, f"{verb} {template.title} for {teacher.get_full_name() or teacher.email}.")
-        return redirect("portal_dashboard")
+        return redirect("portal_lesson_library")
 
 
 class AssignLessonTemplateToChildView(PortalAuthMixin, View):
     def post(self, request):
-        if request.user.role not in {CustomUser.Role.SUPER_ADMIN, CustomUser.Role.SCHOOL_ADMIN, CustomUser.Role.TEACHER}:
+        if request.user.role not in {CustomUser.Role.SUPER_ADMIN, CustomUser.Role.SCHOOL_ADMIN, CustomUser.Role.TEACHER} and not user_can_manage_instruction(request.user):
             messages.error(request, "Only teachers and administrators can assign lessons.")
             return redirect("portal_dashboard")
 

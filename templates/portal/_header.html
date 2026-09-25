@@ -42,8 +42,8 @@
             <p class="px-3 pb-2 text-xs font-black uppercase tracking-[0.16em] text-mediumTeal">People &amp; instruction</p>
             <ul class="grid gap-1">
               <li><a data-testid="add-user-menu-link" href="{% url 'manage_users' %}" class="focus-ring block rounded-2xl px-3 py-3 hover:bg-linen"><span class="block font-black">Add user</span><span class="mt-1 block text-xs text-ink/60">Invite an employee, teacher or parent</span></a></li>
-              <li><a href="{% url 'portal_dashboard' %}#admin-actions" class="focus-ring block rounded-2xl px-3 py-3 font-black hover:bg-linen">Teacher assignments</a></li>
-              <li><a href="{% url 'portal_dashboard' %}#lesson-library" class="focus-ring block rounded-2xl px-3 py-3 font-black hover:bg-linen">Lesson library</a></li>
+              <li><a data-testid="teacher-assignments-menu-link" href="{% url 'portal_teacher_assignments' %}" {% if request.resolver_match.url_name == 'portal_teacher_assignments' %}aria-current="page"{% endif %} class="focus-ring block rounded-2xl px-3 py-3 hover:bg-linen"><span class="block font-black">Teacher assignments</span><span class="mt-1 block text-xs text-ink/60">Pair each reader with the teacher who leads their instruction</span></a></li>
+              <li><a data-testid="lesson-library-menu-link" href="{% url 'portal_lesson_library' %}" {% if request.resolver_match.url_name == 'portal_lesson_library' %}aria-current="page"{% endif %} class="focus-ring block rounded-2xl px-3 py-3 hover:bg-linen"><span class="block font-black">Lesson library</span><span class="mt-1 block text-xs text-ink/60">Create lessons and share them with the teachers who will use them</span></a></li>
               <li><a href="{% url 'manage_users' %}#recent-invitations" class="focus-ring block rounded-2xl px-3 py-3 font-black hover:bg-linen">User invitations</a></li>
             </ul>
             {% if request.user.can_manage_blog %}
