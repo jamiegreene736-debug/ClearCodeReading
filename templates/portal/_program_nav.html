@@ -1,0 +1,11 @@
+<nav class="mb-6 flex gap-2 overflow-x-auto" aria-label="Program pages">
+  {% if is_teacher or is_admin %}
+    <a data-testid="readers-page-link" href="{% url 'portal_readers' %}" class="focus-ring shrink-0 rounded-full px-4 py-2 text-sm font-black {% if request.resolver_match.url_name == 'portal_readers' %}bg-ink text-white{% else %}bg-white text-deepTeal ring-1 ring-deepTeal/15{% endif %}" {% if request.resolver_match.url_name == 'portal_readers' %}aria-current="page"{% endif %}>Readers</a>
+    <a data-testid="sessions-page-link" href="{% url 'portal_sessions' %}" class="focus-ring shrink-0 rounded-full px-4 py-2 text-sm font-black {% if request.resolver_match.url_name == 'portal_sessions' %}bg-ink text-white{% else %}bg-white text-deepTeal ring-1 ring-deepTeal/15{% endif %}" {% if request.resolver_match.url_name == 'portal_sessions' %}aria-current="page"{% endif %}>Sessions</a>
+    <a data-testid="placements-page-link" href="{% url 'portal_placements' %}" class="focus-ring shrink-0 rounded-full px-4 py-2 text-sm font-black {% if request.resolver_match.url_name == 'portal_placements' %}bg-ink text-white{% else %}bg-white text-deepTeal ring-1 ring-deepTeal/15{% endif %}" {% if request.resolver_match.url_name == 'portal_placements' %}aria-current="page"{% endif %}>Placement review</a>
+  {% endif %}
+  <a data-testid="results-page-link" href="{% url 'portal_results' %}" class="focus-ring shrink-0 rounded-full px-4 py-2 text-sm font-black {% if request.resolver_match.url_name == 'portal_results' %}bg-ink text-white{% else %}bg-white text-deepTeal ring-1 ring-deepTeal/15{% endif %}" {% if request.resolver_match.url_name == 'portal_results' %}aria-current="page"{% endif %}>Reading results</a>
+  {% if is_admin %}
+    <a data-testid="lessons-page-link" href="{% url 'portal_lessons' %}" class="focus-ring shrink-0 rounded-full px-4 py-2 text-sm font-black {% if request.resolver_match.url_name == 'portal_lessons' %}bg-ink text-white{% else %}bg-white text-deepTeal ring-1 ring-deepTeal/15{% endif %}" {% if request.resolver_match.url_name == 'portal_lessons' %}aria-current="page"{% endif %}>Lesson library</a>
+  {% endif %}
+</nav>

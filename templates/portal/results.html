@@ -1,0 +1,72 @@
+{% extends "portal/page.html" %}
+{% block title %}Reading results{% endblock %}
+{% block content %}
+  {% include "portal/_program_nav.html" %}
+  <section data-testid="results-page" class="rounded-[2rem] bg-white p-6 shadow-xl ring-1 ring-ink/10 sm:p-8">
+    <p class="text-sm font-black uppercase tracking-[0.18em] text-deepTeal">Program · results</p>
+    <h1 class="mt-2 text-3xl font-black sm:text-5xl">Reading results</h1>
+    <p class="mt-3 max-w-2xl text-lg leading-8 text-ink/70">Review reading age, strengths, growth areas, and the skill scores behind each snapshot.</p>
+    {% if children|length > 1 %}
+      <form class="mt-6" method="get">
+        <label>
+          <span class="text-sm font-black text-ink/65">Reader</span>
+          <select class="mt-2 w-full max-w-md rounded-2xl border border-ink/15 px-4 py-3 font-bold" name="child" onchange="this.form.requestSubmit()">
+            <option value="">All readers</option>
+            {% for child in children %}
+              <option value="{{ child.id }}" {% if selected_child and selected_child.id == child.id %}selected{% endif %}>{{ child }}</option>
+            {% endfor %}
+          </select>
+        </label>
+      </form>
+    {% endif %}
+    <div class="mt-6 grid gap-4">
+      {% for row in result_rows %}
+        <article class="rounded-3xl bg-white p-5 shadow-sm ring-1 ring-ink/10">
+          <div class="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+            <div>
+              <h2 class="text-2xl font-black">{{ row.result.assessment.child }}</h2>
+              <p class="mt-1 text-sm font-bold text-ink/60">{{ row.result.grade_equivalent }} placement estimate · {{ row.result.created_at|date:"M j, Y" }}</p>
+            </div>
+            <div class="rounded-2xl bg-seafoam px-4 py-3 text-center">
+              <p class="text-xs font-black uppercase tracking-[0.14em] text-deepTeal">Reading age</p>
+              <p class="text-3xl font-black">{{ row.result.reading_age }}</p>
+            </div>
+          </div>
+          <div class="mt-5 grid gap-3 md:grid-cols-2">
+            <div class="rounded-2xl bg-linen p-4">
+              <p class="font-black">Strengths</p>
+              <p class="mt-2 text-sm leading-6 text-ink/70">{{ row.result.strengths|join:", "|default:"None recorded" }}</p>
+            </div>
+            <div class="rounded-2xl bg-sand p-4">
+              <p class="font-black">Growth areas</p>
+              <p class="mt-2 text-sm leading-6 text-ink/70">{{ row.result.growth_areas|join:", "|default:"None recorded" }}</p>
+            </div>
+          </div>
+          {% if row.kpis %}
+            <div class="mt-5 grid gap-3">
+              {% for kpi in row.kpis %}
+                <div>
+                  <div class="flex items-center justify-between text-sm font-black">
+                    <span>{{ kpi.label }}</span>
+                    <span>{% if kpi.score != None %}{{ kpi.score|floatformat:0 }}%{% else %}--{% endif %}</span>
+                  </div>
+                  <div class="mt-1 h-2 rounded-full bg-linen">
+                    <div class="h-2 rounded-full bg-deepTeal" style="width: {% if kpi.score != None %}{{ kpi.score|floatformat:0 }}{% else %}0{% endif %}%"></div>
+                  </div>
+                </div>
+              {% endfor %}
+            </div>
+          {% endif %}
+          {% if row.result.teacher_summary %}
+            <p class="mt-4 rounded-2xl bg-ink px-4 py-3 text-sm leading-6 text-white/85">{{ row.result.teacher_summary }}</p>
+          {% endif %}
+          {% if show_evaluator_notes and row.result.evaluator_notes %}
+            <p class="mt-3 rounded-2xl bg-linen px-4 py-3 text-sm leading-6"><strong>Evaluator notes.</strong> {{ row.result.evaluator_notes }}</p>
+          {% endif %}
+        </article>
+      {% empty %}
+        <p class="rounded-3xl bg-linen p-5 font-bold text-ink/70">No reading results yet. Start with the free digital assessment.</p>
+      {% endfor %}
+    </div>
+  </section>
+{% endblock %}

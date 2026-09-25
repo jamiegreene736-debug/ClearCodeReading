@@ -15,7 +15,7 @@ from django.views.generic import TemplateView, View
 
 from apps.assessments.models import Assessment, AssessmentResult
 from apps.crm.models import Lead
-from apps.api.permissions import has_coppa_consent, user_can_evaluate_child, user_can_log_session
+from apps.api.permissions import has_coppa_consent, user_can_evaluate_child
 from apps.curriculum.models import (
     ChildLessonAssignment,
     CurriculumSequence,
@@ -24,11 +24,11 @@ from apps.curriculum.models import (
     TeacherLessonTemplate,
 )
 from apps.curriculum.placement import confirm_recommendation
-from apps.curriculum.models import StudentPlacement
 from apps.progress.dashboard import build_parent_dashboard
 from apps.scheduling.services import operations_metrics, ranked_group_suggestions
 from apps.sessions.models import Session
 from apps.users.models import ChildProfile, CustomUser, GuardianRelationship
+from apps.users.program_access import children_for_portal_user, portal_return, role_flags
 
 
 DEMO_LOGINS = {
@@ -122,31 +122,16 @@ class PortalDashboardView(PortalAuthMixin, TemplateView):
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         user = self.request.user
-        context["is_admin"] = user.role in {CustomUser.Role.SUPER_ADMIN, CustomUser.Role.SCHOOL_ADMIN}
-        context["is_parent"] = user.role == CustomUser.Role.GUARDIAN
-        context["is_teacher"] = user.role == CustomUser.Role.TEACHER
-        context["is_child"] = user.role == CustomUser.Role.STUDENT
+        context.update(role_flags(user))
 
+        children = children_for_portal_user(user)
+        relationships = GuardianRelationship.objects.none()
         if context["is_parent"]:
             relationships = GuardianRelationship.objects.filter(
                 guardian=user,
                 is_deleted=False,
                 child__is_deleted=False,
             ).select_related("child")
-            children = [relationship.child for relationship in relationships]
-        elif context["is_child"]:
-            child_profile = getattr(user, "child_profile", None)
-            children = [child_profile] if child_profile and not child_profile.is_deleted else []
-        elif context["is_teacher"]:
-            children = self._children_for_teacher(user)
-        else:
-            child_queryset = ChildProfile.objects.filter(is_deleted=False)
-            if not user.is_superuser and user.role != CustomUser.Role.SUPER_ADMIN:
-                child_queryset = child_queryset.filter(
-                    school__memberships__user=user,
-                    school__memberships__is_deleted=False,
-                )
-            children = list(child_queryset.distinct().order_by("last_name", "first_name")[:12])
 
         assessments = (
             Assessment.objects.filter(child__in=children, is_deleted=False)
@@ -168,15 +153,12 @@ class PortalDashboardView(PortalAuthMixin, TemplateView):
             lead_count = lead_queryset.count()
             new_lead_count = lead_queryset.filter(status=Lead.Status.NEW).count()
 
-        lesson_templates = LessonTemplate.objects.filter(is_active=True, is_deleted=False).select_related("skill")
         teacher_template_assignments = TeacherLessonTemplate.objects.filter(is_deleted=False).select_related(
             "teacher", "template", "assigned_by"
         )
         if context["is_teacher"]:
             teacher_template_assignments = teacher_template_assignments.filter(teacher=user)
             available_lesson_templates = [assignment.template for assignment in teacher_template_assignments]
-        elif context["is_admin"]:
-            available_lesson_templates = lesson_templates
         else:
             available_lesson_templates = LessonTemplate.objects.none()
 
@@ -204,39 +186,14 @@ class PortalDashboardView(PortalAuthMixin, TemplateView):
             }
             parent_dashboards = [build_parent_dashboard(child) for child in children if child.id in allowed_child_ids]
 
-        upcoming_sessions = Session.objects.none()
-        student_snapshots = []
+        upcoming_session_count = 0
         if context["is_teacher"] or context["is_admin"]:
-            upcoming_sessions = (
-                Session.objects.filter(
-                    child__in=children,
-                    status=Session.Status.SCHEDULED,
-                    scheduled_start__gte=timezone.now(),
-                    is_deleted=False,
-                )
-                .select_related("child", "specialist", "curriculum_position")
-                .order_by("scheduled_start")[:12]
-            )
-            placements = {
-                placement.child_id: placement
-                for placement in StudentPlacement.objects.filter(child__in=children, is_active=True, is_deleted=False)
-                .select_related("current_position", "curriculum")
-            }
-            latest_sessions = {
-                session.child_id: session
-                for session in Session.objects.filter(child__in=children, status=Session.Status.COMPLETED, is_deleted=False)
-                .select_related("child")
-                .order_by("child_id", "scheduled_start")
-            }
-            student_snapshots = [
-                {
-                    "child": child,
-                    "placement": placements.get(child.id),
-                    "latest_session": latest_sessions.get(child.id),
-                    "can_log_session": user_can_log_session(user, child),
-                }
-                for child in children
-            ]
+            upcoming_session_count = Session.objects.filter(
+                child__in=children,
+                status=Session.Status.SCHEDULED,
+                scheduled_start__gte=timezone.now(),
+                is_deleted=False,
+            ).count()
 
         operations = None
         grouping_suggestions = []
@@ -249,50 +206,32 @@ class PortalDashboardView(PortalAuthMixin, TemplateView):
                 operations = operations_metrics(center)
                 grouping_suggestions = ranked_group_suggestions(center)[:8]
 
-        teachers = CustomUser.objects.filter(role=CustomUser.Role.TEACHER, is_active=True, is_deleted=False)
-        if context["is_admin"] and not user.is_superuser and user.role != CustomUser.Role.SUPER_ADMIN:
-            teachers = teachers.filter(
-                school_memberships__school__memberships__user=user,
-                school_memberships__school__memberships__is_deleted=False,
-            ).distinct()
-
         context.update(
             {
                 "children": children,
                 "assessments": assessments[:8],
-                "latest_results": latest_results[:6],
                 "pending_reviews": pending_reviews[:8],
                 "assessment_count": assessments.count(),
                 "pending_review_count": pending_reviews.count(),
+                "result_count": latest_results.count(),
                 "average_reading_age": latest_results.aggregate(value=Avg("reading_age"))["value"],
                 "child_count": len(children),
                 "kpi_count": self._kpi_count(latest_results.first()),
-                "teachers": teachers,
                 "recent_leads": recent_leads,
                 "lead_count": lead_count,
                 "new_lead_count": new_lead_count,
                 "inbox_messages": self._inbox_messages()[-2:],
-                "lesson_templates": lesson_templates,
                 "available_lesson_templates": available_lesson_templates,
-                "teacher_template_assignments": teacher_template_assignments[:12],
                 "child_lesson_assignments": child_lesson_assignments[:12],
-                "placement_recommendations": placement_recommendations[:12],
+                "pending_placement_count": placement_recommendations.count(),
                 "parent_dashboards": parent_dashboards,
-                "upcoming_sessions": upcoming_sessions,
-                "student_snapshots": student_snapshots,
+                "upcoming_session_count": upcoming_session_count,
+                "lesson_template_count": LessonTemplate.objects.filter(is_active=True, is_deleted=False).count() if context["is_admin"] else 0,
                 "operations_metrics": operations,
                 "grouping_suggestions": grouping_suggestions,
             }
         )
         return context
-
-    @staticmethod
-    def _children_for_teacher(teacher):
-        assigned_children = []
-        for child in ChildProfile.objects.filter(is_deleted=False).order_by("last_name", "first_name"):
-            if str((child.learning_profile or {}).get("assigned_teacher_id")) == str(teacher.id):
-                assigned_children.append(child)
-        return assigned_children
 
     @staticmethod
     def _kpi_count(result):
@@ -328,10 +267,10 @@ class ConfirmPlacementRecommendationView(PortalAuthMixin, View):
         )
         if recommendation is None:
             messages.error(request, "That placement recommendation is no longer pending.")
-            return redirect("portal_dashboard")
+            return redirect(portal_return(request, "portal_placements"))
         if not user_can_evaluate_child(request.user, recommendation.evidence.child):
             messages.error(request, "You are not assigned to this reader's center.")
-            return redirect("portal_dashboard")
+            return redirect(portal_return(request, "portal_placements"))
 
         final_position = recommendation.recommended_position
         final_position_id = request.POST.get("final_position_id")
@@ -343,7 +282,7 @@ class ConfirmPlacementRecommendationView(PortalAuthMixin, View):
             ).first()
         if final_position is None:
             messages.error(request, "Choose a valid final sequence position.")
-            return redirect("portal_dashboard")
+            return redirect(portal_return(request, "portal_placements"))
         try:
             confirm_recommendation(
                 recommendation,
@@ -354,9 +293,9 @@ class ConfirmPlacementRecommendationView(PortalAuthMixin, View):
             )
         except ValidationError as error:
             messages.error(request, "; ".join(getattr(error, "messages", [str(error)])))
-            return redirect("portal_dashboard")
+            return redirect(portal_return(request, "portal_placements"))
         messages.success(request, "Placement decision saved with its audit record.")
-        return redirect("portal_dashboard")
+        return redirect(portal_return(request, "portal_placements"))
 
     def post(self, request, *args, **kwargs):
         body = request.POST.get("message", "").strip()
@@ -383,7 +322,7 @@ class AssignTeacherView(PortalAuthMixin, View):
     def post(self, request):
         if request.user.role not in {CustomUser.Role.SUPER_ADMIN, CustomUser.Role.SCHOOL_ADMIN}:
             messages.error(request, "Only program administrators can assign teachers.")
-            return redirect("portal_dashboard")
+            return redirect(portal_return(request, "portal_readers"))
 
         child_id = request.POST.get("child_id")
         teacher_id = request.POST.get("teacher_id")
@@ -391,7 +330,7 @@ class AssignTeacherView(PortalAuthMixin, View):
         teacher = CustomUser.objects.filter(id=teacher_id, role=CustomUser.Role.TEACHER, is_active=True, is_deleted=False).first()
         if child is None or teacher is None:
             messages.error(request, "Choose a valid reader and teacher.")
-            return redirect("portal_dashboard")
+            return redirect(portal_return(request, "portal_readers"))
 
         child.learning_profile = {
             **(child.learning_profile or {}),
@@ -403,14 +342,14 @@ class AssignTeacherView(PortalAuthMixin, View):
         }
         child.save(update_fields=["learning_profile", "updated_at"])
         messages.success(request, f"Assigned {teacher.get_full_name() or teacher.email} to {child}.")
-        return redirect("portal_dashboard")
+        return redirect(portal_return(request, "portal_readers"))
 
 
 class AssignTemplateToTeacherView(PortalAuthMixin, View):
     def post(self, request):
         if request.user.role not in {CustomUser.Role.SUPER_ADMIN, CustomUser.Role.SCHOOL_ADMIN}:
             messages.error(request, "Only program administrators can assign lesson templates.")
-            return redirect("portal_dashboard")
+            return redirect(portal_return(request, "portal_lessons"))
 
         teacher = CustomUser.objects.filter(
             id=request.POST.get("teacher_id"),
@@ -425,7 +364,7 @@ class AssignTemplateToTeacherView(PortalAuthMixin, View):
         ).first()
         if teacher is None or template is None:
             messages.error(request, "Choose a valid teacher and lesson template.")
-            return redirect("portal_dashboard")
+            return redirect(portal_return(request, "portal_lessons"))
 
         assignment, created = TeacherLessonTemplate.objects.update_or_create(
             teacher=teacher,
@@ -439,7 +378,7 @@ class AssignTemplateToTeacherView(PortalAuthMixin, View):
         )
         verb = "Assigned" if created else "Updated"
         messages.success(request, f"{verb} {template.title} for {teacher.get_full_name() or teacher.email}.")
-        return redirect("portal_dashboard")
+        return redirect(portal_return(request, "portal_lessons"))
 
 
 class AssignLessonTemplateToChildView(PortalAuthMixin, View):

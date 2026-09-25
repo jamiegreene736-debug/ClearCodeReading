@@ -1,0 +1,65 @@
+{% extends "portal/page.html" %}
+{% block title %}Placement review{% endblock %}
+{% block content %}
+  {% include "portal/_program_nav.html" %}
+  <section data-testid="placements-page" class="rounded-[2rem] bg-white p-6 shadow-xl ring-1 ring-deepTeal/10 sm:p-8">
+    <p class="text-sm font-black uppercase tracking-[0.18em] text-deepTeal">Program · placement</p>
+    <h1 class="mt-2 text-3xl font-black sm:text-5xl">Placement review</h1>
+    <p class="mt-3 max-w-2xl text-lg leading-8 text-ink/70">Confirm or adjust a recommended sequence. Decisions stay advisory until you save them, and earlier decisions stay here for review.</p>
+    <div class="mt-5 flex flex-wrap gap-2">
+      <a class="rounded-full px-4 py-2 text-sm font-black {% if status == 'pending' %}bg-ink text-white{% else %}bg-linen text-deepTeal{% endif %}" href="{{ filter_pending }}">Waiting for review</a>
+      <a class="rounded-full px-4 py-2 text-sm font-black {% if status == 'decided' %}bg-ink text-white{% else %}bg-linen text-deepTeal{% endif %}" href="{{ filter_decided }}">Decided</a>
+      <a class="rounded-full px-4 py-2 text-sm font-black {% if status == 'all' %}bg-ink text-white{% else %}bg-linen text-deepTeal{% endif %}" href="{{ filter_all }}">All</a>
+    </div>
+    <div class="mt-6 grid gap-4">
+      {% for recommendation in recommendations %}
+        <article class="rounded-3xl bg-seafoam p-5">
+          <div class="flex flex-wrap items-start justify-between gap-3">
+            <div>
+              <h2 class="text-xl font-black">{{ recommendation.evidence.child }}</h2>
+              <p class="mt-1 font-bold text-deepTeal">{{ recommendation.recommended_curriculum.get_code_display }}</p>
+              <p class="mt-2 text-sm leading-6 text-ink/70">{{ recommendation.rationale }}</p>
+              {% if recommendation.advisory_narrative %}<p class="mt-2 text-sm leading-6">{{ recommendation.advisory_narrative }}</p>{% endif %}
+            </div>
+            <span class="rounded-full bg-white px-3 py-1 text-xs font-black">{{ recommendation.get_status_display }}</span>
+          </div>
+          <ol class="mt-4 grid gap-2 sm:grid-cols-2">
+            {% for step in recommendation.recommended_sequence.all %}
+              <li class="rounded-2xl bg-white px-4 py-3 text-sm"><strong>{{ step.priority }}. {{ step.position.code }}</strong> · {{ step.position.title }}</li>
+            {% endfor %}
+          </ol>
+          {% if recommendation.status == 'pending' %}
+            <form class="mt-4 grid gap-3 md:grid-cols-[1fr_2fr_auto]" method="post" action="{% url 'portal_confirm_placement' %}">
+              {% csrf_token %}
+              <input type="hidden" name="next" value="{{ page_next }}">
+              <input type="hidden" name="recommendation_id" value="{{ recommendation.id }}">
+              <label>
+                <span class="text-xs font-black text-ink/60">Final position</span>
+                <select class="mt-1 w-full rounded-2xl border border-ink/15 px-3 py-2 font-bold" name="final_position_id" required>
+                  {% for step in recommendation.recommended_sequence.all %}
+                    <option value="{{ step.position.id }}" {% if step.position_id == recommendation.recommended_position_id %}selected{% endif %}>{{ step.position.code }}</option>
+                  {% endfor %}
+                </select>
+              </label>
+              <label>
+                <span class="text-xs font-black text-ink/60">Override rationale, only if you change the position</span>
+                <input class="mt-1 w-full rounded-2xl border border-ink/15 px-3 py-2" name="override_rationale" placeholder="Instructional evidence for a different start">
+              </label>
+              <button class="focus-ring self-end rounded-full bg-deepTeal px-5 py-3 font-black text-white" type="submit">Save decision</button>
+            </form>
+          {% else %}
+            <p class="mt-4 text-sm font-bold text-ink/70">
+              {{ recommendation.get_decision_display }}
+              {% if recommendation.final_position %} · {{ recommendation.final_position.code }}{% endif %}
+              {% if recommendation.confirmed_by %} · {{ recommendation.confirmed_by.get_full_name|default:recommendation.confirmed_by.email }}{% endif %}
+              {% if recommendation.confirmed_at %} · {{ recommendation.confirmed_at|date:"M j, Y" }}{% endif %}
+            </p>
+            {% if recommendation.override_rationale %}<p class="mt-2 text-sm leading-6">{{ recommendation.override_rationale }}</p>{% endif %}
+          {% endif %}
+        </article>
+      {% empty %}
+        <p class="rounded-3xl bg-linen p-5 font-bold text-ink/70">No placement recommendations in this view.</p>
+      {% endfor %}
+    </div>
+  </section>
+{% endblock %}

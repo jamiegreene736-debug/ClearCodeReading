@@ -1,0 +1,80 @@
+{% extends "portal/page.html" %}
+{% block title %}Readers{% endblock %}
+{% block content %}
+  {% include "portal/_program_nav.html" %}
+  <section data-testid="readers-page" class="rounded-[2rem] bg-white p-6 shadow-xl ring-1 ring-deepTeal/10 sm:p-8">
+    <div class="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
+      <div>
+        <p class="text-sm font-black uppercase tracking-[0.18em] text-deepTeal">Program · readers</p>
+        <h1 class="mt-2 text-3xl font-black sm:text-5xl">Readers</h1>
+        <p class="mt-3 max-w-2xl text-lg leading-8 text-ink/70">Find a reader, see who teaches them, and open their sessions, placement, or results. Teacher assignment happens on this page.</p>
+      </div>
+      <p class="rounded-full bg-seafoam px-4 py-2 text-sm font-black text-deepTeal">{{ reader_rows|length }} shown</p>
+    </div>
+
+    <form class="mt-6 flex flex-col gap-3 sm:flex-row" method="get">
+      <label class="min-w-0 flex-1">
+        <span class="sr-only">Search readers</span>
+        <input class="w-full rounded-2xl border border-ink/15 px-4 py-3 font-bold focus:border-deepTeal focus:outline-none" type="search" name="q" value="{{ query }}" placeholder="Search by reader or teacher">
+      </label>
+      {% if assignment != "all" %}<input type="hidden" name="assignment" value="{{ assignment }}">{% endif %}
+      <button class="focus-ring rounded-full bg-ink px-5 py-3 font-black text-white" type="submit">Search</button>
+    </form>
+    {% if is_admin %}
+      <div class="mt-4 flex flex-wrap gap-2" aria-label="Assignment filters">
+        <a class="rounded-full px-4 py-2 text-sm font-black {% if assignment == 'all' %}bg-ink text-white{% else %}bg-linen text-deepTeal{% endif %}" href="{{ filter_all }}">All</a>
+        <a class="rounded-full px-4 py-2 text-sm font-black {% if assignment == 'unassigned' %}bg-ink text-white{% else %}bg-linen text-deepTeal{% endif %}" href="{{ filter_unassigned }}">Needs a teacher</a>
+        <a class="rounded-full px-4 py-2 text-sm font-black {% if assignment == 'assigned' %}bg-ink text-white{% else %}bg-linen text-deepTeal{% endif %}" href="{{ filter_assigned }}">Assigned</a>
+      </div>
+    {% endif %}
+
+    <div class="mt-6 grid gap-4">
+      {% for row in reader_rows %}
+        <article id="reader-{{ row.child.id }}" class="rounded-3xl bg-seafoam/60 p-5 ring-1 ring-deepTeal/10">
+          <div class="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
+            <div>
+              <h2 class="text-2xl font-black">{{ row.child }}</h2>
+              <p class="mt-1 text-sm font-bold text-deepTeal">
+                {% if row.child.grade_level %}{{ row.child.get_grade_level_display }} · {% endif %}
+                {% if row.placement %}{{ row.placement.curriculum.get_code_display }} · {{ row.placement.current_position.code }}{% else %}Placement pending{% endif %}
+              </p>
+              <p class="mt-2 text-sm text-ink/70">{% if row.teacher_name %}Teacher: {{ row.teacher_name }}{% else %}No teacher assigned{% endif %}</p>
+              {% if row.latest_session %}
+                <p class="mt-2 text-sm"><strong>Latest accuracy:</strong> {{ row.latest_session.accuracy_rate|default:"--" }}%</p>
+              {% endif %}
+            </div>
+            <div class="flex flex-wrap gap-2">
+              <a class="rounded-full bg-white px-4 py-2 text-sm font-black text-deepTeal ring-1 ring-deepTeal/15" href="{% url 'portal_sessions' %}?child={{ row.child.id }}">Sessions</a>
+              <a class="rounded-full bg-white px-4 py-2 text-sm font-black text-deepTeal ring-1 ring-deepTeal/15" href="{% url 'portal_results' %}?child={{ row.child.id }}">Results</a>
+              {% if row.can_log_session %}
+                <a class="rounded-full bg-ink px-4 py-2 text-sm font-black text-white" href="{% url 'rapid_session_log' %}?child={{ row.child.id }}">Log session</a>
+              {% endif %}
+              {% if row.family_lead %}
+                <a class="rounded-full bg-sand px-4 py-2 text-sm font-black text-ink" href="{% url 'crm_contact_detail' row.family_lead.pk %}">Family in CRM</a>
+              {% endif %}
+            </div>
+          </div>
+          {% if is_admin %}
+            <form class="mt-4 grid gap-3 border-t border-deepTeal/10 pt-4 md:grid-cols-[1fr_auto]" method="post" action="{% url 'assign_teacher' %}">
+              {% csrf_token %}
+              <input type="hidden" name="next" value="{{ page_next }}">
+              <input type="hidden" name="child_id" value="{{ row.child.id }}">
+              <label>
+                <span class="text-xs font-black text-ink/60">Assign teacher</span>
+                <select class="mt-1 w-full rounded-2xl border border-ink/15 bg-white px-3 py-2 font-bold" name="teacher_id" required>
+                  <option value="">Choose a teacher</option>
+                  {% for teacher in teachers %}
+                    <option value="{{ teacher.id }}" {% if row.teacher_name == teacher.get_full_name or row.teacher_name == teacher.email %}selected{% endif %}>{{ teacher.get_full_name|default:teacher.email }}</option>
+                  {% endfor %}
+                </select>
+              </label>
+              <button class="focus-ring self-end rounded-full bg-deepTeal px-5 py-3 font-black text-white" type="submit">Save teacher</button>
+            </form>
+          {% endif %}
+        </article>
+      {% empty %}
+        <p class="rounded-3xl bg-linen p-5 font-bold text-ink/70">No readers match this view.</p>
+      {% endfor %}
+    </div>
+  </section>
+{% endblock %}

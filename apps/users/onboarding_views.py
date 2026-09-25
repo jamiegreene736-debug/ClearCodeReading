@@ -129,18 +129,10 @@ def manage_users(request: PortalRequest) -> HttpResponse:
                 )
                 return redirect("manage_users")
         status = 400
-    invitations = UserInvitation.objects.select_related("user").filter(
-        user__is_deleted=False
-    )
-    if not request.user.can_manage_crm_users:
-        invitations = invitations.filter(
-            created_by=request.user,
-            user__role__in=[CustomUser.Role.TEACHER, CustomUser.Role.GUARDIAN],
-        )
     return render(
         request,
         "portal/manage_users.html",
-        {"form": form, "invitations": invitations.order_by("-created_at")[:100]},
+        {"form": form},
         status=status,
     )
 
@@ -165,7 +157,7 @@ def resend_invitation(request: PortalRequest, pk: int) -> HttpResponse:
             or invitation.user.is_deleted
         ):
             messages.error(request, "This invitation is no longer available.")
-            return redirect("manage_users")
+            return redirect("portal_invitations")
         if (
             invitation.attempted_at
             and invitation.attempted_at > timezone.now() - timedelta(minutes=2)
@@ -174,14 +166,14 @@ def resend_invitation(request: PortalRequest, pk: int) -> HttpResponse:
                 request,
                 "Please wait two minutes between invitations. Check sent mail before trying again.",
             )
-            return redirect("manage_users")
+            return redirect("portal_invitations")
         # A new invitation revokes all previously emailed links, including in-browser setup sessions.
         invitation.nonce = secrets.token_hex(32)
         invitation.status = "pending"
         invitation.sent_at = None
         invitation.save()
     invitation_feedback(request, deliver_invitation(invitation.pk, request.user))
-    return redirect("manage_users")
+    return redirect("portal_invitations")
 
 
 class AcceptInvitationView(PasswordResetConfirmView):

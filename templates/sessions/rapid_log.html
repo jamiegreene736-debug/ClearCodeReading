@@ -34,7 +34,7 @@
           <p class="mt-3">Accuracy {{ saved_session.accuracy_numerator }}/{{ saved_session.accuracy_denominator }} · Revision {{ saved_session.revision }}</p>
           <div class="mt-6 flex flex-wrap gap-3">
             <a class="rounded-full bg-deepTeal px-5 py-3 font-black text-white" href="?child={{ saved_session.child_id }}">Log another</a>
-            <a class="rounded-full bg-ink px-5 py-3 font-black text-white" href="/dashboard/#reader-{{ saved_session.child_id }}">Back to {{ saved_session.child.first_name }}’s position</a>
+            <a class="rounded-full bg-ink px-5 py-3 font-black text-white" href="{% url 'portal_readers' %}#reader-{{ saved_session.child_id }}">Back to {{ saved_session.child.first_name }}’s page</a>
           </div>
         </div>
       {% else %}

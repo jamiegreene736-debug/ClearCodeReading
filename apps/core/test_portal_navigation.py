@@ -29,7 +29,13 @@ class PortalNavigationTests(SimpleTestCase):
         self.assertIn('data-testid="manage-menu-button"', content)
         self.assertIn('data-testid="business-menu-button"', content)
         self.assertIn('aria-controls="program-navigation-panel"', content)
-        self.assertIn('href="/dashboard/#admin-actions"', content)
+        self.assertIn('href="/portal/readers/"', content)
+        self.assertIn('href="/portal/placements/"', content)
+        self.assertIn('href="/portal/results/"', content)
+        self.assertIn('href="/portal/lessons/"', content)
+        self.assertIn('href="/portal/invitations/"', content)
+        self.assertNotIn('href="/dashboard/#admin-actions"', content)
+        self.assertNotIn("Teacher assignments", content)
         self.assertIn('data-testid="crm-header-link"', content)
         self.assertNotIn('data-testid="teaching-menu-button"', content)
         self.assertNotIn('role="menu"', content)
@@ -39,7 +45,9 @@ class PortalNavigationTests(SimpleTestCase):
 
         self.assertIn('data-testid="teaching-menu-button"', content)
         self.assertIn('href="/portal/sessions/rapid-log/"', content)
+        self.assertIn('href="/portal/sessions/"', content)
         self.assertIn('href="/dashboard/#assessment-review"', content)
+        self.assertNotIn('href="/dashboard/#latest-kpis"', content)
         self.assertNotIn('data-testid="business-menu-button"', content)
         self.assertNotIn('data-testid="crm-header-link"', content)
 
@@ -49,6 +57,7 @@ class PortalNavigationTests(SimpleTestCase):
         self.assertIn('data-testid="family-menu-button"', content)
         self.assertIn('href="/dashboard/#progress-overview"', content)
         self.assertIn('href="/dashboard/#teacher-plan"', content)
+        self.assertIn('href="/portal/results/"', content)
         self.assertNotIn('data-testid="teaching-menu-button"', content)
         self.assertNotIn("Django admin", content)
 
@@ -65,16 +74,23 @@ class PortalNavigationTests(SimpleTestCase):
 
         for destination in (
             "progress-overview",
-            "session-launchpad",
-            "placement-review",
-            "admin-actions",
-            "lesson-library",
+            "program-workspaces",
             "website-signups",
             "account-creation",
             "lesson-planning",
             "assessment-review",
             "teacher-plan",
-            "latest-kpis",
         ):
             self.assertIn(f'id="{destination}"', dashboard)
+        for removed in ("session-launchpad", "placement-review", "admin-actions", "lesson-library", "latest-kpis"):
+            self.assertNotIn(f'id="{removed}"', dashboard)
+        for page in (
+            "templates/portal/readers.html",
+            "templates/portal/sessions.html",
+            "templates/portal/placements.html",
+            "templates/portal/results.html",
+            "templates/portal/lessons.html",
+            "templates/portal/invitations.html",
+        ):
+            self.assertTrue(Path(settings.BASE_DIR, page).exists())
         self.assertIn('{% include "portal/_header.html" %}', rapid_log)
