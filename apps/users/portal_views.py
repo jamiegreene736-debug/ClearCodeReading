@@ -122,8 +122,11 @@ class PortalDashboardView(PortalAuthMixin, TemplateView):
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         user = self.request.user
-        context["is_admin"] = user.role in {CustomUser.Role.SUPER_ADMIN, CustomUser.Role.SCHOOL_ADMIN}
-        context["is_parent"] = user.role == CustomUser.Role.GUARDIAN
+        context["is_admin"] = user.is_superuser or user.role in {
+            CustomUser.Role.SUPER_ADMIN,
+            CustomUser.Role.SCHOOL_ADMIN,
+        }
+        context["is_parent"] = user.role == CustomUser.Role.GUARDIAN and not context["is_admin"]
         context["is_teacher"] = user.role == CustomUser.Role.TEACHER
         context["is_child"] = user.role == CustomUser.Role.STUDENT
 
