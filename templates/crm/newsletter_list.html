@@ -1,18 +1,53 @@
 {% extends "crm/email_base.html" %}
-{% block title %}Newsletter · Email & notification settings{% endblock %}
+{% block title %}Newsletter{% endblock %}
 {% block email_content %}
-<div class="page-head"><div><p class="eyebrow">Your workspace</p><h1>Email &amp; notification settings</h1>
-<p class="subtle">Write newsletters with the rich editor, send yourself a test, then send to every active subscriber.</p></div>
+<div class="page-head"><div><p class="eyebrow">Workspace</p><h1>Newsletter</h1>
+<p class="subtle">Write a campaign, preview it, send yourself a test, then send it to every active subscriber from {{ from_email|default:"ClearCode Reading &lt;hello@clearcodereading.com&gt;" }}.</p></div>
 <div class="actions"><a class="btn btn-primary" href="{% url 'crm_newsletter_new' %}">New newsletter</a></div></div>
 {% include "crm/_email_settings_nav.html" %}
+<nav class="tabs" aria-label="Newsletter">
+<a class="tab {% if newsletter_tab != 'subscribers' %}active{% endif %}" href="{% url 'crm_newsletter_list' %}">Campaigns</a>
+<a class="tab {% if newsletter_tab == 'subscribers' %}active{% endif %}" href="{% url 'crm_newsletter_list' %}?tab=subscribers">Subscribers</a>
+</nav>
 <div class="stats">
 <div class="card stat"><div class="stat-label">Active subscribers</div><div class="stat-value">{{ newsletter_subscribers }}</div></div>
+<div class="card stat"><div class="stat-label">Unsubscribed</div><div class="stat-value">{{ unsubscribed_count }}</div></div>
 <div class="card stat"><div class="stat-label">Drafts</div><div class="stat-value">{{ draft_count }}</div></div>
 <div class="card stat"><div class="stat-label">Sent newsletters</div><div class="stat-value">{{ sent_count }}</div></div>
 <div class="card stat"><div class="stat-label">Last sent</div><div class="stat-value" style="font-size:16px;line-height:1.4">{% if last_sent %}{{ last_sent.sent_at|date:"M j, Y" }}<br><span class="subtle" style="font-weight:500">{{ last_sent.subject|truncatechars:40 }}</span>{% else %}—{% endif %}</div></div>
 </div>
+{% if newsletter_tab == 'subscribers' %}
 <section class="card flush">
-<div class="section-head"><div><h2>Newsletters</h2><p class="subtle">Drafts can be edited until they are sent. Sending is irreversible and every email carries its own unsubscribe link.</p></div></div>
+<div class="section-head"><div><h2>Subscribers</h2><p class="subtle">People on this list receive the next send. Add someone here, or from their contact card, only after they agree.</p></div></div>
+<form method="get" class="card-body" style="display:flex;gap:10px;flex-wrap:wrap;align-items:end;border-bottom:1px solid var(--line)">
+<input type="hidden" name="tab" value="subscribers">
+<div class="field" style="flex:1;min-width:180px;margin:0"><label for="subscriber-q">Search</label><input id="subscriber-q" name="q" value="{{ subscriber_query }}" placeholder="Name or email"></div>
+<div class="field" style="min-width:160px;margin:0"><label for="subscriber-status">Status</label>
+<select id="subscriber-status" name="status"><option value="">All</option><option value="active" {% if subscriber_status == 'active' %}selected{% endif %}>Active</option><option value="unsubscribed" {% if subscriber_status == 'unsubscribed' %}selected{% endif %}>Unsubscribed</option></select></div>
+<button class="btn" type="submit">Filter</button>
+</form>
+<form method="post" action="{% url 'crm_newsletter_subscriber' %}" class="card-body" style="display:grid;gap:10px;border-bottom:1px solid var(--line)">{% csrf_token %}
+<input type="hidden" name="action" value="subscribe">
+<div style="display:flex;gap:10px;flex-wrap:wrap">
+<div class="field" style="flex:1;min-width:180px;margin:0"><label for="add-name">Name</label><input id="add-name" name="name" maxlength="255"></div>
+<div class="field" style="flex:1;min-width:220px;margin:0"><label for="add-email">Email</label><input id="add-email" name="email" type="email" required maxlength="254"></div>
+</div>
+<label style="font-weight:600"><input type="checkbox" name="consent" value="yes" required style="width:auto;min-height:0;margin-right:8px">This person agreed to receive the newsletter</label>
+<div><button class="btn btn-primary" type="submit">Add subscriber</button></div>
+</form>
+<div class="table-wrap"><table><thead><tr><th>Subscriber</th><th>Status</th><th>Contact</th><th>Last sent</th><th></th></tr></thead><tbody>
+{% for item in subscriber_rows %}<tr>
+<td><span class="row-title">{{ item.name|default:item.email }}</span><span class="row-meta">{{ item.email }}</span></td>
+<td>{% if item.status == 'active' %}<span class="pill pill-ok">Active</span>{% else %}<span class="pill pill-neutral">Unsubscribed</span>{% endif %}</td>
+<td>{% if item.lead %}<a class="row-title" href="{% url 'crm_contact_detail' item.lead.pk %}">{{ item.lead.contact_name }}</a>{% else %}<span class="subtle">No contact</span>{% endif %}</td>
+<td class="subtle">{% if item.last_sent_at %}{{ item.last_sent_at|date:"M j, Y" }}{% else %}—{% endif %}</td>
+<td>{% if item.status == 'active' %}<form method="post" action="{% url 'crm_newsletter_subscriber' %}">{% csrf_token %}<input type="hidden" name="action" value="unsubscribe"><input type="hidden" name="subscription_id" value="{{ item.pk }}"><button class="btn btn-small" type="submit">Unsubscribe</button></form>{% endif %}</td>
+</tr>{% empty %}<tr><td colspan="5" class="empty">No subscribers match this filter.</td></tr>{% endfor %}
+</tbody></table></div>
+</section>
+{% else %}
+<section class="card flush">
+<div class="section-head"><div><h2>Newsletters</h2><p class="subtle">Drafts stay editable until you send. Sending snapshots the active list, and every email includes its own unsubscribe link.</p></div></div>
 <div class="table-wrap"><table><thead><tr><th>Newsletter</th><th>Status</th><th>Recipients</th><th>Updated</th><th></th></tr></thead><tbody>
 {% for item in campaigns %}<tr>
 <td><a class="row-title" href="{% url 'crm_newsletter' item.pk %}">{{ item.subject }}</a>{% if item.preview_text %}<span class="row-meta">{{ item.preview_text }}</span>{% endif %}</td>
@@ -23,4 +58,5 @@
 </tr>{% empty %}<tr><td colspan="5" class="empty">No newsletters yet. Start with <a href="{% url 'crm_newsletter_new' %}">New newsletter</a>.</td></tr>{% endfor %}
 </tbody></table></div>
 </section>
+{% endif %}
 {% endblock %}

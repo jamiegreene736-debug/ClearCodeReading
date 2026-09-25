@@ -22,21 +22,25 @@ class PortalNavigationTests(SimpleTestCase):
         request.resolver_match = resolve(path)
         return render_to_string("portal/_header.html", request=request)
 
-    def test_administrator_gets_horizontal_program_management_and_business_menus(self):
+    def test_administrator_gets_program_and_manage_menus_plus_a_crm_link(self):
         content = self.render_header(role=CustomUser.Role.SUPER_ADMIN, is_staff=True)
 
         self.assertIn('data-testid="program-menu-button"', content)
         self.assertIn('data-testid="manage-menu-button"', content)
-        self.assertIn('data-testid="business-menu-button"', content)
-        self.assertIn('aria-controls="program-navigation-panel"', content)
-        self.assertIn('href="/portal/readers/"', content)
-        self.assertIn('href="/portal/placements/"', content)
-        self.assertIn('href="/portal/results/"', content)
-        self.assertIn('href="/portal/lessons/"', content)
-        self.assertIn('href="/portal/invitations/"', content)
-        self.assertNotIn('href="/dashboard/#admin-actions"', content)
-        self.assertNotIn("Teacher assignments", content)
+        self.assertNotIn('data-testid="business-menu-button"', content)
+        self.assertNotIn("Business tools", content)
         self.assertIn('data-testid="crm-header-link"', content)
+        self.assertIn(">CRM</a>", content)
+        self.assertIn('aria-controls="program-navigation-panel"', content)
+        self.assertIn('data-testid="teacher-assignments-menu-link"', content)
+        self.assertIn('href="/portal/teacher-assignments/"', content)
+        self.assertIn("Pair each reader with the teacher who leads their instruction", content)
+        self.assertIn('data-testid="lesson-library-menu-link"', content)
+        self.assertIn('href="/portal/lesson-library/"', content)
+        self.assertIn("Create lessons and share them with the teachers who will use them", content)
+        self.assertNotIn('href="/dashboard/#admin-actions"', content)
+        self.assertNotIn('href="/dashboard/#lesson-library"', content)
+        self.assertNotIn('href="/dashboard/#website-signups"', content)
         self.assertNotIn('data-testid="teaching-menu-button"', content)
         self.assertNotIn('role="menu"', content)
 
@@ -45,7 +49,9 @@ class PortalNavigationTests(SimpleTestCase):
 
         self.assertIn('data-testid="teaching-menu-button"', content)
         self.assertIn('href="/portal/sessions/rapid-log/"', content)
+        self.assertIn('href="/portal/readers/"', content)
         self.assertIn('href="/portal/sessions/"', content)
+        self.assertIn('href="/portal/results/"', content)
         self.assertIn('href="/dashboard/#assessment-review"', content)
         self.assertNotIn('href="/dashboard/#latest-kpis"', content)
         self.assertNotIn('data-testid="business-menu-button"', content)
@@ -64,33 +70,38 @@ class PortalNavigationTests(SimpleTestCase):
     def test_every_disclosure_exposes_state_and_keyboard_dismissal(self):
         content = self.render_header(role=CustomUser.Role.SUPER_ADMIN, is_staff=True)
 
-        self.assertEqual(content.count('aria-expanded="false"'), 4)
+        self.assertEqual(content.count('aria-expanded="false"'), 3)
         self.assertIn("event.key !== 'Escape'", content)
         self.assertIn("if (!header.contains(document.activeElement)) closeAll()", content)
 
     def test_dashboard_and_session_log_expose_shared_navigation_destinations(self):
         dashboard = Path(settings.BASE_DIR, "templates/portal/dashboard.html").read_text()
+        admin_workspace = Path(settings.BASE_DIR, "templates/portal/_admin_workspace.html").read_text()
+        teacher_assignments = Path(settings.BASE_DIR, "templates/portal/teacher_assignments.html").read_text()
+        lesson_library = Path(settings.BASE_DIR, "templates/portal/lesson_library.html").read_text()
         rapid_log = Path(settings.BASE_DIR, "templates/sessions/rapid_log.html").read_text()
+        portal_markup = dashboard + admin_workspace
 
         for destination in (
             "progress-overview",
             "program-workspaces",
-            "website-signups",
-            "account-creation",
             "lesson-planning",
             "assessment-review",
             "teacher-plan",
         ):
-            self.assertIn(f'id="{destination}"', dashboard)
-        for removed in ("session-launchpad", "placement-review", "admin-actions", "lesson-library", "latest-kpis"):
-            self.assertNotIn(f'id="{removed}"', dashboard)
-        for page in (
-            "templates/portal/readers.html",
-            "templates/portal/sessions.html",
-            "templates/portal/placements.html",
-            "templates/portal/results.html",
-            "templates/portal/lessons.html",
-            "templates/portal/invitations.html",
-        ):
-            self.assertTrue(Path(settings.BASE_DIR, page).exists())
+            self.assertIn(f'id="{destination}"', portal_markup)
+        for removed in ("session-launchpad", "placement-review", "latest-kpis"):
+            self.assertNotIn(f'id="{removed}"', portal_markup)
+        self.assertIn('id="admin-actions"', teacher_assignments)
+        self.assertIn('id="lesson-library"', lesson_library)
+        self.assertIn("{% url 'portal_teacher_assignments' %}", admin_workspace)
+        self.assertIn("{% url 'portal_lesson_library' %}", admin_workspace)
+        self.assertNotIn('id="admin-actions"', admin_workspace)
+        self.assertNotIn("{% url 'assign_teacher' %}", admin_workspace)
+        self.assertNotIn('id="website-signups"', portal_markup)
+        self.assertNotIn("New signups", admin_workspace)
+        self.assertNotIn('id="account-creation"', portal_markup)
+        self.assertNotIn("Specialist launchpad", admin_workspace)
+        self.assertNotIn("KPI areas", admin_workspace)
+        self.assertIn('aria-label="Program status"', admin_workspace)
         self.assertIn('{% include "portal/_header.html" %}', rapid_log)

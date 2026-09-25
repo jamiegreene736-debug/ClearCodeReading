@@ -1,9 +1,12 @@
 {% extends "portal/onboarding_base.html" %}
 
-{% block title %}{% if post %}Edit post{% else %}Write a new post{% endif %}{% endblock %}
+{% block title %}{% if post %}Edit post{% else %}New post{% endif %}{% endblock %}
 
 {% block extra_head %}
 <style>
+  main { max-width: 76rem; }
+  @media (max-width: 1023px) { .blog-save-desktop { display: none; } }
+  @media (min-width: 1024px) { .blog-save-mobile { display: none; } }
   .blog-cms input[type=checkbox], .blog-cms input[type=radio] { width: 1.1rem; height: 1.1rem; padding: 0; accent-color: #1A7A7A; }
   .blog-cms input[type=file] { border: 0; padding: 0; }
   .blog-cms .errorlist { list-style: none; padding: 0; margin: .35rem 0 0; font-size: .875rem; font-weight: 700; }
@@ -25,198 +28,200 @@
 {% endblock %}
 
 {% block content %}
-<div class="blog-cms" data-testid="blog-editor">
-  <p class="text-xs font-black uppercase tracking-[.18em] text-mediumTeal"><a href="{% url 'blog_manage:list' %}" class="focus-ring rounded hover:underline">Blog posts</a> <span aria-hidden="true">›</span> {% if post %}Edit{% else %}New post{% endif %}</p>
-  <div class="mt-2 flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
-    <div>
-      <h1 class="text-4xl font-black tracking-tight text-ink">{% if post %}{{ post.title }}{% else %}Write a new post{% endif %}</h1>
-      {% if post %}
-        <p class="mt-2 text-sm font-bold text-ink/55">
-          <span class="rounded-full px-3 py-1 text-xs font-black uppercase tracking-[.14em] {% if post.is_live %}bg-emerald-100 text-emerald-800{% elif post.is_scheduled %}bg-amber-100 text-amber-800{% else %}bg-linen text-ink/60{% endif %}">{{ post.state }}</span>
-          <span class="ml-2">Last saved {{ post.updated_at|date:"M j, Y, g:i A" }}</span>
-        </p>
-      {% else %}
-        <p class="mt-2 max-w-2xl text-base leading-7 text-ink/65">Write the article, add a cover, then publish it or schedule it. It appears on the public blog as a tile the moment it goes live.</p>
-      {% endif %}
-    </div>
-    {% if post %}
-      <div class="flex flex-wrap gap-2">
-        {% if post.is_live %}
-          <a href="{{ post.get_absolute_url }}" target="_blank" rel="noopener" class="focus-ring inline-flex items-center rounded-full bg-white px-4 py-2 text-sm font-black text-deepTeal ring-1 ring-deepTeal/20 hover:bg-linen">View live ↗</a>
-        {% else %}
-          <a href="{% url 'blog_manage:preview' post.pk %}" target="_blank" rel="noopener" class="focus-ring inline-flex items-center rounded-full bg-white px-4 py-2 text-sm font-black text-deepTeal ring-1 ring-deepTeal/20 hover:bg-linen">Preview ↗</a>
-        {% endif %}
-      </div>
-    {% endif %}
-  </div>
-
-  {% if form.non_field_errors %}
-    <div role="alert" class="mt-6 rounded-2xl bg-red-50 p-4 text-sm font-bold text-red-800 ring-1 ring-red-200">{{ form.non_field_errors }}</div>
-  {% endif %}
-
-  <form method="post" enctype="multipart/form-data" id="blog-post-form" class="mt-8 grid gap-8 lg:grid-cols-[minmax(0,1fr)_22rem]" novalidate>
+<div class="blog-cms pb-20" data-testid="blog-editor">
+  <form method="post" enctype="multipart/form-data" id="blog-post-form" novalidate>
     {% csrf_token %}
-    <div class="grid gap-6">
-      <section class="rounded-[1.75rem] bg-white p-6 shadow-sm ring-1 ring-ink/10 sm:p-8">
-        <div class="grid gap-5">
-          <div>
-            <label for="{{ form.title.id_for_label }}" class="text-sm font-black text-ink">Title</label>
-            <div class="mt-2">{{ form.title }}</div>
-            {{ form.title.errors }}
+    <div class="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+      <div class="min-w-0">
+        <a href="{% url 'blog_manage:list' %}" class="focus-ring inline-flex items-center gap-1 rounded-full text-sm font-black text-deepTeal hover:underline">← Posts</a>
+        <div class="mt-2 flex flex-wrap items-center gap-3">
+          <h1 class="text-3xl font-black tracking-tight text-ink">{% if post %}Edit post{% else %}New post{% endif %}</h1>
+          {% if post %}
+            <span class="rounded-full px-3 py-1 text-xs font-black uppercase tracking-[.14em] {% if post.is_live %}bg-emerald-100 text-emerald-800{% elif post.is_scheduled %}bg-amber-100 text-amber-800{% else %}bg-linen text-ink/60{% endif %}">{{ post.state }}</span>
+            <span class="text-sm font-bold text-ink/55">Saved {{ post.updated_at|date:"M j, Y, g:i A" }}</span>
+          {% endif %}
+        </div>
+      </div>
+      <div class="flex flex-wrap items-center gap-2">
+        {% if post %}
+          {% if post.is_live %}
+            <a href="{{ post.get_absolute_url }}" target="_blank" rel="noopener" class="focus-ring inline-flex items-center rounded-full bg-white px-4 py-2 text-sm font-black text-deepTeal ring-1 ring-deepTeal/20 hover:bg-linen">View live</a>
+          {% else %}
+            <a href="{% url 'blog_manage:preview' post.pk %}" target="_blank" rel="noopener" class="focus-ring inline-flex items-center rounded-full bg-white px-4 py-2 text-sm font-black text-deepTeal ring-1 ring-deepTeal/20 hover:bg-linen">Preview</a>
+          {% endif %}
+        {% endif %}
+        <button type="submit" data-testid="save-post-button" data-save-label {% if post and post.is_live %}data-live="1"{% endif %} class="blog-save-desktop focus-ring inline-flex items-center justify-center rounded-full bg-gold px-5 py-3 font-black text-ink transition hover:-translate-y-0.5">{% if form.status.value == 'published' %}{% if post and post.is_live %}Update post{% else %}Publish{% endif %}{% else %}Save draft{% endif %}</button>
+      </div>
+    </div>
+
+    {% if form.non_field_errors %}
+      <div role="alert" class="mt-6 rounded-2xl bg-red-50 p-4 text-sm font-bold text-red-800 ring-1 ring-red-200">{{ form.non_field_errors }}</div>
+    {% endif %}
+
+    <div class="mt-6 grid gap-6 lg:grid-cols-[minmax(0,1fr)_22rem]">
+      <div class="grid content-start gap-6">
+        <section class="rounded-[1.75rem] bg-white p-6 shadow-sm ring-1 ring-ink/10 sm:p-8">
+          <h2 class="text-lg font-black text-ink">Cover</h2>
+          <div class="mt-4 overflow-hidden rounded-2xl bg-linen ring-1 ring-ink/10" data-cover-preview>
+            {% if post and post.has_cover %}
+              <img src="{{ post.cover_url }}" alt="{{ post.cover_image_alt }}" class="aspect-[16/10] w-full object-cover">
+            {% else %}
+              <span class="dot-grid grid aspect-[16/10] w-full place-items-center bg-seafoam text-sm font-black text-deepTeal">Add a cover so the blog tile has an image</span>
+            {% endif %}
           </div>
-          <div class="grid gap-5 sm:grid-cols-2">
+          <div class="mt-4 grid gap-4 sm:grid-cols-2">
             <div>
-              <label for="{{ form.slug.id_for_label }}" class="text-sm font-black text-ink">URL slug</label>
-              <div class="mt-2">{{ form.slug }}</div>
-              <p class="mt-1 text-xs text-ink/55">Leave blank to generate it from the title. Public address: /blog/<span data-slug-preview>{% if post %}{{ post.slug }}{% else %}your-title{% endif %}</span>/</p>
-              {{ form.slug.errors }}
+              <label for="{{ form.cover_upload.id_for_label }}" class="text-sm font-black text-ink">{% if post and post.has_cover %}Replace image{% else %}Upload image{% endif %}</label>
+              <div class="mt-2">{{ form.cover_upload }}</div>
+              <p class="mt-1 text-xs text-ink/55">{{ form.cover_upload.help_text }}</p>
+              {{ form.cover_upload.errors }}
+            </div>
+            <div>
+              <label for="{{ form.cover_image_alt.id_for_label }}" class="text-sm font-black text-ink">Image description</label>
+              <div class="mt-2">{{ form.cover_image_alt }}</div>
+              <p class="mt-1 text-xs text-ink/55">Required when a cover is set. Read aloud by screen readers.</p>
+              {{ form.cover_image_alt.errors }}
+            </div>
+          </div>
+          {% if post and post.has_cover %}
+            <label class="mt-4 flex cursor-pointer items-center gap-3 text-sm font-bold text-ink/70">{{ form.remove_cover }} Remove the current cover</label>
+          {% endif %}
+        </section>
+
+        <section class="rounded-[1.75rem] bg-white p-6 shadow-sm ring-1 ring-ink/10 sm:p-8">
+          <div class="grid gap-5">
+            <div>
+              <label for="{{ form.title.id_for_label }}" class="text-sm font-black text-ink">Title</label>
+              <div class="mt-2">{{ form.title }}</div>
+              {{ form.title.errors }}
+            </div>
+            <div>
+              <label for="{{ form.excerpt.id_for_label }}" class="text-sm font-black text-ink">Summary</label>
+              <div class="mt-2">{{ form.excerpt }}</div>
+              <p class="mt-1 text-xs text-ink/55">Shown on the blog tile and in search. <span data-count-for="{{ form.excerpt.id_for_label }}" data-max="320"></span></p>
+              {{ form.excerpt.errors }}
             </div>
             <div>
               <label for="{{ form.category.id_for_label }}" class="text-sm font-black text-ink">Category</label>
               <div class="mt-2">{{ form.category }}</div>
               <datalist id="blog-category-options">{% for category in categories %}<option value="{{ category }}">{% endfor %}</datalist>
-              <p class="mt-1 text-xs text-ink/55">Shown on the tile, for example “For families” or “Specialist notes”.</p>
+              <p class="mt-1 text-xs text-ink/55">Shown on the tile, for example “For families”.</p>
               {{ form.category.errors }}
             </div>
           </div>
-          <div>
-            <label for="{{ form.excerpt.id_for_label }}" class="text-sm font-black text-ink">Summary</label>
-            <div class="mt-2">{{ form.excerpt }}</div>
-            <p class="mt-1 text-xs text-ink/55">Appears on the blog tile and in search results. <span data-count-for="{{ form.excerpt.id_for_label }}" data-max="320"></span></p>
-            {{ form.excerpt.errors }}
-          </div>
-        </div>
-      </section>
+        </section>
 
-      <section class="rounded-[1.75rem] bg-white p-6 shadow-sm ring-1 ring-ink/10 sm:p-8">
-        <div class="flex flex-wrap items-center justify-between gap-3">
-          <h2 class="text-lg font-black text-ink">Article</h2>
-          <fieldset class="flex flex-wrap gap-2" data-body-format>
-            <legend class="sr-only">Editor mode</legend>
-            {% for radio in form.body_format %}
-              <label class="inline-flex cursor-pointer items-center gap-2 rounded-full bg-linen px-3 py-1.5 text-xs font-black text-ink/70 ring-1 ring-ink/10 has-[:checked]:bg-ink has-[:checked]:text-white">{{ radio.tag }} {{ radio.choice_label }}</label>
+        <section class="rounded-[1.75rem] bg-white p-6 shadow-sm ring-1 ring-ink/10 sm:p-8">
+          <div class="flex flex-wrap items-center justify-between gap-3">
+            <h2 class="text-lg font-black text-ink">Article</h2>
+            <fieldset class="flex flex-wrap gap-2" data-body-format>
+              <legend class="sr-only">Editor mode</legend>
+              {% for radio in form.body_format %}
+                <label class="inline-flex cursor-pointer items-center gap-2 rounded-full bg-linen px-3 py-1.5 text-xs font-black text-ink/70 ring-1 ring-ink/10 has-[:checked]:bg-ink has-[:checked]:text-white">{{ radio.tag }} {{ radio.choice_label }}</label>
+              {% endfor %}
+            </fieldset>
+          </div>
+          {{ form.body_format.errors }}
+
+          <div class="mt-4 hidden" data-rich-editor>
+            <div class="flex flex-wrap gap-1.5 rounded-2xl bg-linen p-2" role="toolbar" aria-label="Formatting">
+              <button type="button" class="editor-tool" data-command="bold" title="Bold"><strong>B</strong></button>
+              <button type="button" class="editor-tool" data-command="italic" title="Italic"><em>I</em></button>
+              <button type="button" class="editor-tool" data-command="formatBlock" data-value="h2" title="Heading">H2</button>
+              <button type="button" class="editor-tool" data-command="formatBlock" data-value="h3" title="Subheading">H3</button>
+              <button type="button" class="editor-tool" data-command="formatBlock" data-value="p" title="Paragraph">¶</button>
+              <button type="button" class="editor-tool" data-command="insertUnorderedList" title="Bulleted list">• List</button>
+              <button type="button" class="editor-tool" data-command="insertOrderedList" title="Numbered list">1. List</button>
+              <button type="button" class="editor-tool" data-command="formatBlock" data-value="blockquote" title="Quote">“ Quote</button>
+              <button type="button" class="editor-tool" data-action="link" title="Add link">Link</button>
+              <button type="button" class="editor-tool" data-action="upload" title="Upload an image from your computer">Upload image</button>
+              <button type="button" class="editor-tool" data-action="image" title="Insert image from a web address">Image URL</button>
+              <button type="button" class="editor-tool" data-command="insertHorizontalRule" title="Divider">—</button>
+              <button type="button" class="editor-tool" data-command="removeFormat" title="Clear formatting">Clear</button>
+            </div>
+            <div id="article-editor" class="article-editor mt-3 rounded-2xl border border-ink/15 bg-white px-5 py-4 text-ink" contenteditable="true" data-placeholder="Start writing. Use the toolbar for headings, lists, quotes and links." aria-label="Article body" data-upload-url="{% url 'blog_manage:image_upload' %}"{% if post %} data-post-id="{{ post.pk }}"{% endif %}></div>
+            <input type="file" accept="image/jpeg,image/png,image/webp,image/gif" multiple class="hidden" data-image-file-input>
+            <p class="mt-2 text-xs text-ink/55">Paste from Google Docs or Word, drop images onto the article, or use Upload image.</p>
+            <p class="mt-2 hidden rounded-xl bg-amber-50 px-4 py-3 text-sm text-amber-900 ring-1 ring-amber-200" role="status" data-editor-notice></p>
+          </div>
+          <div class="mt-4" data-plain-editor>
+            {{ form.body }}
+            <p class="mt-1 text-xs text-ink/55">Blank lines become paragraphs.</p>
+          </div>
+          {{ form.body.errors }}
+        </section>
+      </div>
+
+      <aside class="grid content-start gap-4 lg:sticky lg:top-28 lg:self-start">
+        <section class="rounded-[1.75rem] bg-white p-6 shadow-sm ring-1 ring-ink/10">
+          <h2 class="text-lg font-black text-ink">Visibility</h2>
+          <fieldset class="mt-4 grid gap-2">
+            <legend class="sr-only">Status</legend>
+            {% for radio in form.status %}
+              <label class="flex cursor-pointer items-start gap-3 rounded-2xl bg-linen px-4 py-3 ring-1 ring-ink/10 has-[:checked]:bg-ink has-[:checked]:text-white has-[:checked]:ring-gold">
+                <span class="mt-1">{{ radio.tag }}</span>
+                <span>
+                  <span class="block font-black">{{ radio.choice_label }}</span>
+                  <span class="block text-xs opacity-70">{% if radio.data.value == 'draft' %}Only editors can see it.{% else %}Live now, or at the date below.{% endif %}</span>
+                </span>
+              </label>
             {% endfor %}
           </fieldset>
-        </div>
-        {{ form.body_format.errors }}
-
-        <div class="mt-4 hidden" data-rich-editor>
-          <div class="flex flex-wrap gap-1.5 rounded-2xl bg-linen p-2" role="toolbar" aria-label="Formatting">
-            <button type="button" class="editor-tool" data-command="bold" title="Bold"><strong>B</strong></button>
-            <button type="button" class="editor-tool" data-command="italic" title="Italic"><em>I</em></button>
-            <button type="button" class="editor-tool" data-command="formatBlock" data-value="h2" title="Heading">H2</button>
-            <button type="button" class="editor-tool" data-command="formatBlock" data-value="h3" title="Subheading">H3</button>
-            <button type="button" class="editor-tool" data-command="formatBlock" data-value="p" title="Paragraph">¶</button>
-            <button type="button" class="editor-tool" data-command="insertUnorderedList" title="Bulleted list">• List</button>
-            <button type="button" class="editor-tool" data-command="insertOrderedList" title="Numbered list">1. List</button>
-            <button type="button" class="editor-tool" data-command="formatBlock" data-value="blockquote" title="Quote">“ Quote</button>
-            <button type="button" class="editor-tool" data-action="link" title="Add link">Link</button>
-            <button type="button" class="editor-tool" data-action="upload" title="Upload an image from your computer">Upload image</button>
-            <button type="button" class="editor-tool" data-action="image" title="Insert image from a web address">Image URL</button>
-            <button type="button" class="editor-tool" data-command="insertHorizontalRule" title="Divider">—</button>
-            <button type="button" class="editor-tool" data-command="removeFormat" title="Clear formatting">Clear</button>
+          {{ form.status.errors }}
+          <div class="mt-4 {% if form.status.value != 'published' %}hidden{% endif %}" data-publish-date>
+            <label for="{{ form.published_at.id_for_label }}" class="text-sm font-black text-ink">Publish date</label>
+            <div class="mt-2">{{ form.published_at }}</div>
+            <p class="mt-1 text-xs text-ink/55">Leave blank to go live now. Pick a future time to schedule it.</p>
+            {{ form.published_at.errors }}
           </div>
-          <div id="article-editor" class="article-editor mt-3 rounded-2xl border border-ink/15 bg-white px-5 py-4 text-ink" contenteditable="true" data-placeholder="Start writing. Use the toolbar for headings, lists, quotes and links." aria-label="Article body" data-upload-url="{% url 'blog_manage:image_upload' %}"{% if post %} data-post-id="{{ post.pk }}"{% endif %}></div>
-          <input type="file" accept="image/jpeg,image/png,image/webp,image/gif" multiple class="hidden" data-image-file-input>
-          <p class="mt-2 text-xs text-ink/55">Paste from Google Docs or Word, drop image files onto the article, or use Upload image. Pictures are stored with the post.</p>
-          <p class="mt-2 hidden rounded-xl bg-amber-50 px-4 py-3 text-sm text-amber-900 ring-1 ring-amber-200" role="status" data-editor-notice></p>
-        </div>
-        <div class="mt-4" data-plain-editor>
-          {{ form.body }}
-          <p class="mt-1 text-xs text-ink/55">Plain text: blank lines become paragraphs. Switch to Rich text for headings, lists and links.</p>
-        </div>
-        {{ form.body.errors }}
-      </section>
+          <label class="mt-4 flex cursor-pointer items-start gap-3 text-sm font-bold text-ink">
+            <span class="mt-0.5">{{ form.is_featured }}</span>
+            <span>Feature this post<span class="block text-xs font-medium text-ink/55">Uses the large tile at the top of the blog.</span></span>
+          </label>
+          {{ form.is_featured.errors }}
+        </section>
 
-      <section class="rounded-[1.75rem] bg-white p-6 shadow-sm ring-1 ring-ink/10 sm:p-8">
-        <h2 class="text-lg font-black text-ink">Search &amp; sharing</h2>
-        <p class="mt-1 text-sm text-ink/60">Optional. The title and summary are used when these are blank.</p>
-        <div class="mt-4 grid gap-5">
-          <div>
-            <label for="{{ form.seo_title.id_for_label }}" class="text-sm font-black text-ink">Search title</label>
-            <div class="mt-2">{{ form.seo_title }}</div>
-            <p class="mt-1 text-xs text-ink/55"><span data-count-for="{{ form.seo_title.id_for_label }}" data-max="70"></span></p>
-            {{ form.seo_title.errors }}
-          </div>
-          <div>
-            <label for="{{ form.seo_description.id_for_label }}" class="text-sm font-black text-ink">Search description</label>
-            <div class="mt-2">{{ form.seo_description }}</div>
-            <p class="mt-1 text-xs text-ink/55"><span data-count-for="{{ form.seo_description.id_for_label }}" data-max="160"></span></p>
-            {{ form.seo_description.errors }}
-          </div>
-        </div>
-      </section>
-    </div>
-
-    <aside class="grid content-start gap-6">
-      <section class="rounded-[1.75rem] bg-ink p-6 text-white shadow-xl shadow-ink/20">
-        <h2 class="text-lg font-black">Publish</h2>
-        <fieldset class="mt-4 grid gap-2">
-          <legend class="sr-only">Status</legend>
-          {% for radio in form.status %}
-            <label class="flex cursor-pointer items-start gap-3 rounded-2xl bg-white/5 px-4 py-3 ring-1 ring-white/10 has-[:checked]:bg-white/15 has-[:checked]:ring-gold">
-              <span class="mt-1">{{ radio.tag }}</span>
-              <span>
-                <span class="block font-black">{{ radio.choice_label }}</span>
-                <span class="block text-xs text-white/65">{% if radio.data.value == 'draft' %}Private. Only editors can preview it.{% else %}Live on the blog now, or at the date below.{% endif %}</span>
-              </span>
-            </label>
-          {% endfor %}
-        </fieldset>
-        {{ form.status.errors }}
-        <div class="mt-4">
-          <label for="{{ form.published_at.id_for_label }}" class="text-sm font-black">Publish date</label>
-          <div class="mt-2 [&_input]:text-ink">{{ form.published_at }}</div>
-          <p class="mt-1 text-xs text-white/65">{{ form.published_at.help_text }}</p>
-          {{ form.published_at.errors }}
-        </div>
-        <label class="mt-4 flex cursor-pointer items-start gap-3 text-sm font-bold">
-          <span class="mt-0.5">{{ form.is_featured }}</span>
-          <span>Feature this post<span class="block text-xs font-medium text-white/65">Featured posts take the large tile at the top of the blog.</span></span>
-        </label>
-        {{ form.is_featured.errors }}
-        <div class="mt-6 grid gap-2">
-          <button type="submit" data-testid="save-post-button" class="focus-ring inline-flex w-full items-center justify-center rounded-full bg-gold px-5 py-3 font-black text-ink transition hover:-translate-y-0.5">Save post</button>
-          <a href="{% url 'blog_manage:list' %}" class="focus-ring inline-flex w-full items-center justify-center rounded-full px-5 py-3 text-sm font-black text-white/80 hover:text-white">Back to all posts</a>
-        </div>
-      </section>
-
-      <section class="rounded-[1.75rem] bg-white p-6 shadow-sm ring-1 ring-ink/10">
-        <h2 class="text-lg font-black text-ink">Cover image</h2>
-        <div class="mt-4 overflow-hidden rounded-2xl bg-linen ring-1 ring-ink/10" data-cover-preview>
-          {% if post and post.has_cover %}
-            <img src="{{ post.cover_url }}" alt="{{ post.cover_image_alt }}" class="aspect-[16/10] w-full object-cover">
-          {% else %}
-            <span class="dot-grid grid aspect-[16/10] w-full place-items-center bg-seafoam text-sm font-black text-deepTeal">No cover yet</span>
-          {% endif %}
-        </div>
-        <div class="mt-4">
-          <label for="{{ form.cover_upload.id_for_label }}" class="text-sm font-black text-ink">{% if post and post.has_cover %}Replace image{% else %}Upload image{% endif %}</label>
-          <div class="mt-2">{{ form.cover_upload }}</div>
-          <p class="mt-1 text-xs text-ink/55">{{ form.cover_upload.help_text }}</p>
-          {{ form.cover_upload.errors }}
-        </div>
-        <div class="mt-4">
-          <label for="{{ form.cover_image_alt.id_for_label }}" class="text-sm font-black text-ink">Image description</label>
-          <div class="mt-2">{{ form.cover_image_alt }}</div>
-          <p class="mt-1 text-xs text-ink/55">Read aloud by screen readers. Required when there is a cover.</p>
-          {{ form.cover_image_alt.errors }}
-        </div>
-        {% if post and post.has_cover %}
-          <label class="mt-4 flex cursor-pointer items-center gap-3 text-sm font-bold text-ink/70">{{ form.remove_cover }} Remove the current cover</label>
-        {% endif %}
-      </section>
-
-      {% if post %}
         <section class="rounded-[1.75rem] bg-white p-6 shadow-sm ring-1 ring-ink/10">
-          <h2 class="text-lg font-black text-ink">More actions</h2>
-          <div class="mt-4 grid gap-2">
-            <button type="submit" form="duplicate-form" class="focus-ring inline-flex w-full items-center justify-center rounded-full bg-white px-4 py-2 text-sm font-black text-ink/70 ring-1 ring-ink/10 hover:bg-linen">Duplicate as a new draft</button>
-            <button type="submit" form="delete-form" class="focus-ring inline-flex w-full items-center justify-center rounded-full bg-transparent px-4 py-2 text-sm font-black text-red-700 hover:bg-red-50">Delete this post</button>
+          <h2 class="text-lg font-black text-ink">Link</h2>
+          <div class="mt-4">
+            <label for="{{ form.slug.id_for_label }}" class="text-sm font-black text-ink">URL slug</label>
+            <div class="mt-2">{{ form.slug }}</div>
+            <p class="mt-1 text-xs text-ink/55">/blog/<span data-slug-preview>{% if post %}{{ post.slug }}{% else %}your-title{% endif %}</span>/</p>
+            {{ form.slug.errors }}
           </div>
         </section>
-      {% endif %}
-    </aside>
+
+        <details class="rounded-[1.75rem] bg-white p-6 shadow-sm ring-1 ring-ink/10" {% if form.seo_title.errors or form.seo_description.errors %}open{% endif %}>
+          <summary class="cursor-pointer text-lg font-black text-ink">Search &amp; sharing</summary>
+          <p class="mt-2 text-sm text-ink/60">Optional. The title and summary are used when these are blank.</p>
+          <div class="mt-4 grid gap-5">
+            <div>
+              <label for="{{ form.seo_title.id_for_label }}" class="text-sm font-black text-ink">Search title</label>
+              <div class="mt-2">{{ form.seo_title }}</div>
+              <p class="mt-1 text-xs text-ink/55"><span data-count-for="{{ form.seo_title.id_for_label }}" data-max="70"></span></p>
+              {{ form.seo_title.errors }}
+            </div>
+            <div>
+              <label for="{{ form.seo_description.id_for_label }}" class="text-sm font-black text-ink">Search description</label>
+              <div class="mt-2">{{ form.seo_description }}</div>
+              <p class="mt-1 text-xs text-ink/55"><span data-count-for="{{ form.seo_description.id_for_label }}" data-max="160"></span></p>
+              {{ form.seo_description.errors }}
+            </div>
+          </div>
+        </details>
+
+        {% if post %}
+          <div class="flex flex-wrap gap-x-4 gap-y-2 px-2 text-sm font-black">
+            <button type="submit" form="duplicate-form" class="focus-ring rounded-full text-ink/70 hover:text-ink">Duplicate</button>
+            <button type="submit" form="delete-form" class="focus-ring rounded-full text-red-700 hover:underline">Delete</button>
+          </div>
+        {% endif %}
+      </aside>
+    </div>
+
+    <div class="blog-save-mobile fixed inset-x-0 bottom-0 z-30 border-t border-ink/10 bg-linen/95 p-3 backdrop-blur">
+      <button type="submit" data-save-label {% if post and post.is_live %}data-live="1"{% endif %} class="focus-ring inline-flex w-full items-center justify-center rounded-full bg-gold px-5 py-3 font-black text-ink">{% if form.status.value == 'published' %}{% if post and post.is_live %}Update post{% else %}Publish{% endif %}{% else %}Save draft{% endif %}</button>
+    </div>
   </form>
 
   {% if post %}
@@ -224,6 +229,7 @@
     <form id="delete-form" method="post" action="{% url 'blog_manage:delete' post.pk %}" data-confirm="Delete “{{ post.title }}”? This cannot be undone.">{% csrf_token %}</form>
   {% endif %}
 </div>
+
 {% endblock %}
 
 {% block scripts %}
@@ -508,6 +514,23 @@
     img.src = URL.createObjectURL(file);
     preview.replaceChildren(img);
   });
+
+  const statusInputs = [...form.querySelectorAll('input[name="status"]')];
+  const publishDate = form.querySelector('[data-publish-date]');
+  const dateInput = form.querySelector('input[name="published_at"]');
+  const saveButtons = [...form.querySelectorAll('[data-save-label]')];
+  const syncPublish = () => {
+    const status = (statusInputs.find((input) => input.checked) || {}).value;
+    publishDate?.classList.toggle('hidden', status !== 'published');
+    const when = dateInput?.value ? new Date(dateInput.value) : null;
+    const future = when && !Number.isNaN(when.getTime()) && when.getTime() > Date.now();
+    const live = saveButtons.some((button) => button.dataset.live === '1');
+    const label = status !== 'published' ? 'Save draft' : future ? 'Schedule' : live ? 'Update post' : 'Publish';
+    saveButtons.forEach((button) => { button.textContent = label; });
+  };
+  statusInputs.forEach((input) => input.addEventListener('change', syncPublish));
+  dateInput?.addEventListener('input', syncPublish);
+  syncPublish();
 
   const del = document.getElementById('delete-form');
   del?.addEventListener('submit', (event) => { if (!window.confirm(del.dataset.confirm)) event.preventDefault(); });

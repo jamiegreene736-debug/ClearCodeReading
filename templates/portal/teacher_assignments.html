@@ -1,0 +1,133 @@
+{% load static %}
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Teacher assignments | ClearCode Reading</title>
+  <meta name="description" content="Pair each ClearCode reader with the teacher who leads their instruction.">
+  <link rel="icon" href="/assets/logo/cc-favicon-gold-teal-32.png" type="image/png" sizes="32x32">
+  <link rel="apple-touch-icon" href="/assets/logo/cc-apple-touch-icon-gold-teal-180.png" sizes="180x180">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="{% static 'css/clearcode-tailwind.css' %}">
+  <style>
+    .focus-ring:focus-visible { outline: 4px solid rgba(245, 166, 35, .75); outline-offset: 3px; }
+    .page-bg {
+      background:
+        radial-gradient(circle at 12% 12%, rgba(245, 166, 35, .20), transparent 24%),
+        radial-gradient(circle at 86% 16%, rgba(46, 184, 184, .12), transparent 24%),
+        linear-gradient(135deg, #F7F2EA 0%, #A8CFC4 48%, #E8D5B0 100%);
+    }
+  </style>
+</head>
+<body class="page-bg min-h-screen font-sans text-ink antialiased">
+  {% include "portal/_header.html" %}
+
+  <main class="mx-auto max-w-7xl px-4 py-10 sm:px-6 lg:px-8">
+    {% if messages %}
+      <div class="mb-6">{% include "_site_messages.html" with site_messages_layout="block" %}</div>
+    {% endif %}
+
+    <div class="grid gap-6 lg:grid-cols-[minmax(0,1fr)_22rem] lg:items-start">
+      <section class="min-w-0">
+        <p class="text-sm font-black uppercase tracking-[0.18em] text-deepTeal">People and instruction</p>
+        <h1 class="mt-2 text-3xl font-black leading-tight sm:text-5xl">Teacher assignments</h1>
+        <p class="mt-4 max-w-3xl text-lg leading-8 text-ink/70">Pair each reader with one teacher. That teacher then plans lessons and logs sessions. Sharing the lesson itself happens in the lesson library.</p>
+
+        <div class="mt-6 grid gap-3 sm:grid-cols-3">
+          <div class="rounded-3xl bg-white p-5 shadow-lg ring-1 ring-ink/10">
+            <p class="text-sm font-black text-ink/60">Readers</p>
+            <p class="mt-2 text-4xl font-black">{{ reader_count }}</p>
+          </div>
+          <div class="rounded-3xl bg-sand p-5 shadow-lg">
+            <p class="text-sm font-black text-mediumTeal">Needs a teacher</p>
+            <p class="mt-2 text-4xl font-black">{{ unassigned_reader_count }}</p>
+          </div>
+          <div class="rounded-3xl bg-seafoam p-5 shadow-lg">
+            <p class="text-sm font-black text-deepTeal">Assigned</p>
+            <p class="mt-2 text-4xl font-black">{{ assigned_reader_count }}</p>
+          </div>
+        </div>
+
+        <form class="mt-6 flex flex-col gap-3 rounded-3xl bg-white p-4 shadow-lg ring-1 ring-ink/10 sm:flex-row sm:items-end" method="get">
+          <label class="block min-w-0 flex-1">
+            <span class="text-sm font-black text-ink/65">Search readers or teachers</span>
+            <input class="mt-2 w-full rounded-2xl border border-ink/15 px-4 py-3 font-bold focus:border-deepTeal focus:outline-none" name="q" value="{{ query }}" placeholder="Name or email">
+          </label>
+          <label class="block sm:w-48">
+            <span class="text-sm font-black text-ink/65">Show</span>
+            <select class="mt-2 w-full rounded-2xl border border-ink/15 px-4 py-3 font-bold focus:border-deepTeal focus:outline-none" name="status">
+              <option value="all" {% if status == "all" %}selected{% endif %}>Everyone</option>
+              <option value="needs" {% if status == "needs" %}selected{% endif %}>Needs a teacher</option>
+              <option value="assigned" {% if status == "assigned" %}selected{% endif %}>Already assigned</option>
+            </select>
+          </label>
+          <button class="focus-ring min-h-11 rounded-full bg-ink px-5 py-3 font-black text-white" type="submit">Filter</button>
+        </form>
+
+        <div class="mt-5 grid gap-3">
+          {% for row in roster %}
+            <article class="rounded-3xl p-5 shadow-lg {% if row.assigned %}bg-white ring-1 ring-ink/10{% else %}bg-sand{% endif %}">
+              <div class="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+                <div class="min-w-0">
+                  <h2 class="text-xl font-black">{{ row.child }}</h2>
+                  <p class="mt-1 text-sm font-bold text-ink/65">
+                    {% if row.child.grade_level %}{{ row.child.get_grade_level_display }}{% else %}Grade not set{% endif %}
+                    {% if row.child.school %} · {{ row.child.school }}{% endif %}
+                  </p>
+                </div>
+                {% if row.assigned %}
+                  <span class="w-fit rounded-full bg-seafoam px-3 py-2 text-sm font-black text-deepTeal">{{ row.teacher_name }}</span>
+                {% else %}
+                  <span class="w-fit rounded-full bg-white px-3 py-2 text-sm font-black text-mediumTeal">Needs a teacher</span>
+                {% endif %}
+              </div>
+              {% if row.assigned_at %}
+                <p class="mt-3 text-xs font-bold text-ink/50">Assigned {{ row.assigned_at|date:"M j, Y" }}</p>
+              {% endif %}
+            </article>
+          {% empty %}
+            <div class="rounded-3xl bg-white p-8 text-center shadow-lg ring-1 ring-ink/10">
+              <h2 class="text-2xl font-black">{% if query or status != "all" %}No readers match this filter{% else %}No readers yet{% endif %}</h2>
+              <p class="mt-2 text-ink/65">{% if query or status != "all" %}Clear the search to see the full roster.{% else %}Add a reader before creating a teacher assignment.{% endif %}</p>
+            </div>
+          {% endfor %}
+        </div>
+      </section>
+
+      <aside id="admin-actions" class="scroll-mt-28 rounded-[2rem] bg-white p-6 shadow-xl ring-1 ring-ink/10 lg:sticky lg:top-28">
+        <p class="text-sm font-black uppercase tracking-[0.18em] text-mediumTeal">Create an assignment</p>
+        <h2 class="mt-2 text-2xl font-black">Choose a reader and a teacher</h2>
+        <p class="mt-2 text-sm leading-6 text-ink/65">Saving again replaces the reader’s current teacher. One reader has one lead teacher.</p>
+        {% if teachers and reader_count %}
+          <form class="mt-5 grid gap-4" method="post" action="{% url 'assign_teacher' %}">
+            {% csrf_token %}
+            <label class="block">
+              <span class="text-sm font-black text-ink/65">Reader</span>
+              <select class="mt-2 w-full rounded-2xl border border-ink/15 px-4 py-3 font-bold focus:border-deepTeal focus:outline-none" name="child_id" required>
+                {% for row in assignment_choices %}
+                  <option value="{{ row.child.id }}">{{ row.child }}{% if row.assigned %} · {{ row.teacher_name }}{% else %} · Needs a teacher{% endif %}</option>
+                {% endfor %}
+              </select>
+            </label>
+            <label class="block">
+              <span class="text-sm font-black text-ink/65">Teacher</span>
+              <select class="mt-2 w-full rounded-2xl border border-ink/15 px-4 py-3 font-bold focus:border-deepTeal focus:outline-none" name="teacher_id" required>
+                {% for teacher in teachers %}
+                  <option value="{{ teacher.id }}">{{ teacher.get_full_name|default:teacher.email }}</option>
+                {% endfor %}
+              </select>
+            </label>
+            <button class="focus-ring min-h-11 rounded-full bg-deepTeal px-6 py-3 font-black text-white shadow-lg shadow-deepTeal/20" type="submit">Save assignment</button>
+          </form>
+        {% else %}
+          <p class="mt-5 rounded-3xl bg-linen p-4 text-sm font-bold leading-6 text-ink/70">Add at least one reader and one teacher before creating an assignment.</p>
+        {% endif %}
+        <p class="mt-5 text-sm leading-6 text-ink/60">Next, open the <a class="font-black text-deepTeal underline decoration-gold decoration-2 underline-offset-4" href="{% url 'portal_lesson_library' %}">lesson library</a> to create a lesson and share it with that teacher.</p>
+      </aside>
+    </div>
+  </main>
+</body>
+</html>

@@ -50,7 +50,6 @@ ROBOTS_DISALLOW_PATHS = (
     "/admin/",
     "/crm/",
     "/dashboard/",
-    "/inbox/",
     "/login/",
     "/portal/",
     "/account/",

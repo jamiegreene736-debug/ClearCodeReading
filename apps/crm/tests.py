@@ -1102,15 +1102,20 @@ class CrmWorkspaceTests(TestCase):
         self.assertEqual(anonymous_response.status_code, 302)
         self.assertEqual(guardian_response.status_code, 403)
 
-    def test_admin_dashboard_header_exposes_crm_in_business_menu(self):
+    def test_admin_dashboard_header_links_directly_to_the_crm(self):
         self.client.force_login(self.admin_user)
 
         response = self.client.get(reverse("portal_dashboard"))
 
         self.assertEqual(response.status_code, 200)
-        self.assertContains(response, 'data-testid="business-menu-button"')
+        self.assertNotContains(response, 'data-testid="business-menu-button"')
+        self.assertNotContains(response, "Business tools")
+        self.assertNotContains(response, "Website signups")
+        self.assertNotContains(response, 'id="website-signups"')
         self.assertContains(response, 'data-testid="crm-header-link"')
-        self.assertContains(response, 'aria-label="Workspace sections"')
+        self.assertContains(response, 'aria-label="Program status"')
+        self.assertNotContains(response, 'aria-label="Workspace sections"')
+        self.assertContains(response, "What needs you")
         self.assertContains(response, f'href="{reverse("crm_dashboard")}"')
 
     def test_crm_opens_on_an_actionable_overview(self):
@@ -1138,7 +1143,15 @@ class CrmWorkspaceTests(TestCase):
         self.assertContains(response, "Call Alex")
         self.assertContains(response, "Overdue")
         self.assertContains(response, "Families / Enrollment")
-        self.assertContains(response, "Simple CRM flow")
+        self.assertContains(response, "Follow-up queue")
+        self.assertContains(response, "Needs routing")
+        self.assertNotContains(response, "Simple CRM flow")
+        self.assertContains(response, f'href="{reverse("crm_contact_list")}?queue=overdue"')
+        mine = self.client.get(reverse("crm_dashboard"), {"work": "mine"})
+        self.assertContains(mine, "Call Alex")
+        other = self.client.get(reverse("crm_dashboard"))
+        self.assertEqual(other.context["work_scope"], "team")
+        self.assertEqual(mine.context["work_scope"], "mine")
 
     def test_contact_is_created_inside_the_crm_without_admin_fields(self):
         self.client.force_login(self.admin_user)
@@ -1283,27 +1296,6 @@ class CrmWorkspaceTests(TestCase):
         self.assertIn('aria-current="page"', dashboard_link.group())
         self.assertNotIn('aria-current="page"', crm_link.group())
         self.assertContains(response, "/assets/logo/cc-monogram-gold-teal.png")
-
-    def test_inbox_header_highlights_inbox_instead_of_dashboard(self):
-        self.client.force_login(self.admin_user)
-
-        response = self.client.get(reverse("portal_inbox"))
-
-        self.assertEqual(response.status_code, 200)
-        dashboard_link = re.search(
-            r'<a\s+[^>]*data-testid="dashboard-header-link"[^>]*>',
-            response.content.decode(),
-        )
-        inbox_link = re.search(
-            r'<a\s+[^>]*data-testid="inbox-header-link"[^>]*>',
-            response.content.decode(),
-        )
-        self.assertIsNotNone(dashboard_link)
-        self.assertIsNotNone(inbox_link)
-        self.assertNotIn('aria-current="page"', dashboard_link.group())
-        self.assertIn('aria-current="page"', inbox_link.group())
-        self.assertContains(response, "Fluency first")
-        self.assertContains(response, 'aria-live="polite"')
 
     def test_crm_workspaces_include_phone_specific_navigation_and_views(self):
         self.client.force_login(self.admin_user)
@@ -1516,9 +1508,68 @@ class CrmWorkspaceTests(TestCase):
 
         self.assertEqual(response.status_code, 200)
         self.assertContains(response, "Alex Reader")
-        self.assertContains(response, "Every valid website submission")
+        self.assertContains(response, "Repeat website inquiries stay on the same contact.")
         self.assertEqual(list(response.context["contacts"]), [self.lead])
         self.assertEqual(response.context["contacts"][0].submission_count, 1)
+
+    def test_overdue_queue_lists_only_contacts_with_past_due_tasks(self):
+        other = Lead.objects.create(
+            school_name="On time",
+            contact_name="On Time",
+            contact_email="ontime@example.com",
+            audience=Lead.PipelineCategory.OTHER,
+        )
+        CrmActivity.objects.create(
+            lead=self.lead,
+            activity_type=CrmActivity.ActivityType.TASK,
+            subject="Call back",
+            due_at=timezone.now() - timezone.timedelta(days=1),
+        )
+        CrmActivity.objects.create(
+            lead=other,
+            activity_type=CrmActivity.ActivityType.TASK,
+            subject="Later",
+            due_at=timezone.now() + timezone.timedelta(days=2),
+        )
+        self.client.force_login(self.admin_user)
+
+        response = self.client.get(reverse("crm_contact_list"), {"queue": "overdue"})
+
+        self.assertEqual(list(response.context["contacts"]), [self.lead])
+        self.assertEqual(response.context["overdue_contacts"], 1)
+        self.assertContains(response, "past due")
+
+    def test_contact_detail_returns_to_the_filtered_list(self):
+        self.client.force_login(self.admin_user)
+        listing = self.client.get(reverse("crm_contact_list"), {"status": "new"})
+        detail = self.client.get(
+            reverse("crm_contact_detail", args=[self.lead.pk]),
+            {"next": "/crm/contacts/?status=new"},
+        )
+        blocked = self.client.get(
+            reverse("crm_contact_detail", args=[self.lead.pk]),
+            {"next": "https://evil.example/crm/contacts/"},
+        )
+
+        self.assertContains(listing, "next=/crm/contacts/%3Fstatus%3Dnew")
+        self.assertContains(detail, 'class="crumb" href="/crm/contacts/?status=new"')
+        self.assertContains(blocked, 'class="crumb" href="/crm/contacts/"')
+
+    def test_bulk_assign_returns_to_the_filtered_list(self):
+        self.client.force_login(self.admin_user)
+        response = self.client.post(
+            reverse("crm_contact_bulk_assign"),
+            {
+                "lead_ids": [self.lead.pk],
+                "assigned_to": self.admin_user.pk,
+                "next": "/crm/contacts/?owner=unassigned",
+            },
+        )
+        self.assertRedirects(
+            response,
+            "/crm/contacts/?owner=unassigned",
+            fetch_redirect_response=False,
+        )
 
     def test_recent_sort_places_captured_submissions_before_uncaptured_contacts(self):
         Lead.objects.create(

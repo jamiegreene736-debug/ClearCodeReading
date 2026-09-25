@@ -55,21 +55,7 @@
             </div>
           </div>
           {% if is_admin %}
-            <form class="mt-4 grid gap-3 border-t border-deepTeal/10 pt-4 md:grid-cols-[1fr_auto]" method="post" action="{% url 'assign_teacher' %}">
-              {% csrf_token %}
-              <input type="hidden" name="next" value="{{ page_next }}">
-              <input type="hidden" name="child_id" value="{{ row.child.id }}">
-              <label>
-                <span class="text-xs font-black text-ink/60">Assign teacher</span>
-                <select class="mt-1 w-full rounded-2xl border border-ink/15 bg-white px-3 py-2 font-bold" name="teacher_id" required>
-                  <option value="">Choose a teacher</option>
-                  {% for teacher in teachers %}
-                    <option value="{{ teacher.id }}" {% if row.teacher_name == teacher.get_full_name or row.teacher_name == teacher.email %}selected{% endif %}>{{ teacher.get_full_name|default:teacher.email }}</option>
-                  {% endfor %}
-                </select>
-              </label>
-              <button class="focus-ring self-end rounded-full bg-deepTeal px-5 py-3 font-black text-white" type="submit">Save teacher</button>
-            </form>
+            <p class="mt-4 border-t border-deepTeal/10 pt-4 text-sm"><a class="font-black text-deepTeal" href="{% url 'portal_teacher_assignments' %}">Assign or change this reader's teacher</a></p>
           {% endif %}
         </article>
       {% empty %}

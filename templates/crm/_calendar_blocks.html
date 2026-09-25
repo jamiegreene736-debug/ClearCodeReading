@@ -1,80 +1,197 @@
-<style>
-.calendar-blocks{max-width:900px;padding:24px;margin-bottom:24px}.block-row{display:grid;grid-template-columns:110px minmax(160px,1.4fr) repeat(2,minmax(120px,1fr));gap:12px;align-items:end;border-top:1px solid #dbe4df;padding:16px 0}.block-row label{display:block;font-size:.85rem;margin-bottom:4px}.block-row input,.block-row select{width:100%;min-width:0;box-sizing:border-box}.block-day{align-self:center;font-weight:600}.block-copy{padding:16px;background:#f2f7f4;border-radius:12px;margin:20px 0}.block-copy .block-row{border:0}.block-override{border-top:1px solid #dbe4df;padding:16px 0;display:flex;gap:16px;align-items:center;justify-content:space-between}.block-override p{margin:0}.calendar-blocks .errorlist{color:#a12424}.block-help{font-size:.9rem;color:#42564c}.calendar-blocks fieldset{border:0;padding:0;margin:0}.calendar-blocks legend{font-weight:600}.weekday-rule legend{position:absolute;width:1px;height:1px;overflow:hidden;clip-path:inset(50%)}.calendar-blocks input:disabled{background:#edf2f5;color:#526574}.block-zone select{max-width:100%}@media(max-width:1100px){.calendar-blocks{padding:16px}.block-row{grid-template-columns:1fr 1fr}.block-day{grid-column:1/-1}.block-mode{grid-column:1/-1}.block-override{align-items:start;flex-direction:column}}
-</style>
 <section class="card calendar-blocks" aria-labelledby="weekly-heading">
-<h2 id="weekly-heading">Weekly blocks</h2>
-<p>Protect time from new invitation and consultation bookings, even without a connected calendar. Set the same hours for every day, then adjust any weekday below.</p>
-<p class="block-help">These are <strong>times you cannot be booked</strong>. Confirmed consultation times outside these blocks can still be offered. Google/iCal busy events also apply. Existing bookings are unchanged.</p>
+<h2 id="weekly-heading">Weekly hours</h2>
+<p>These hours are closed to new invitation and consultation bookings, even without a connected calendar. A day left open can still be booked when you have confirmed a consultation time.</p>
+<p class="block-help">Google and iCal busy events also close time. Existing bookings stay as they are.</p>
 <form method="post" id="weekly-block-form">{% csrf_token %}
-<div class="block-zone">{{ zone_form.as_p }}</div>
-<div class="block-copy">
-<h3>Start with the same block every day</h3>
-<div class="block-row">
-<span class="block-day">Every day</span>
-<div class="block-mode"><label for="copy-mode">Blocking rule</label><select id="copy-mode"><option value="range">Block a time range</option><option value="all">Block all day</option><option value="none">No block</option></select></div>
-<div><label for="copy-start">From</label><input type="time" id="copy-start" value="09:00"></div>
-<div><label for="copy-end">To</label><input type="time" id="copy-end" value="17:00"></div>
+<div class="zone-row">
+<label for="{{ zone_form.blocking_timezone.id_for_label }}">Time zone</label>
+{{ zone_form.blocking_timezone }}
+{{ zone_form.blocking_timezone.errors }}
+<p class="block-help">Weekly hours and date exceptions use this time zone.</p>
 </div>
-<button type="button" class="btn" id="copy-week">Apply to all seven days</button>
-<span role="status" id="copy-status"></span>
+<p class="week-glance" id="week-glance" aria-live="polite"></p>
+<div class="pattern-bar" role="group" aria-label="Fill the week">
+<span class="pattern-label">Fill the week</span>
+<button type="button" class="btn" data-preset="weekdays">Block weekdays 9 AM–5 PM</button>
+<button type="button" class="btn" data-preset="weekends">Block weekends</button>
+<button type="button" class="btn" data-preset="copy-monday">Copy Monday to every day</button>
+<button type="button" class="btn" data-preset="clear">Clear all blocks</button>
 </div>
+<ol class="day-list">
 {% for day, day_form in weekly_rows %}
-<fieldset class="weekday-rule"><legend>{{ day }}</legend>{{ day_form.non_field_errors }}
-<div class="block-row">
-<span class="block-day" aria-hidden="true">{{ day }}</span>
-{% for field in day_form %}<div {% if field.name == 'mode' %}class="block-mode"{% endif %}>{{ field.label_tag }}{{ field }}{{ field.errors }}</div>{% endfor %}
-</div></fieldset>
+<li><fieldset class="day-rule" data-mode="{{ day_form.mode.value|default:'none' }}" data-day="{{ day }}"><legend>{{ day }}</legend>{{ day_form.non_field_errors }}
+<div class="day-main">
+<span class="day-name" aria-hidden="true">{{ day }}</span>
+<div class="day-visual" aria-hidden="true"><div class="day-track"></div><span class="day-caption"></span></div>
+<div class="day-controls">
+<div class="day-mode">{{ day_form.mode.label_tag }}{{ day_form.mode }}{{ day_form.mode.errors }}</div>
+<div class="day-times">
+<div>{{ day_form.starts_at.label_tag }}{{ day_form.starts_at }}{{ day_form.starts_at.errors }}</div>
+<div>{{ day_form.ends_at.label_tag }}{{ day_form.ends_at }}{{ day_form.ends_at.errors }}</div>
+</div>
+</div>
+</div></fieldset></li>
 {% endfor %}
-<p class="block-help">An end time earlier than the start continues into the next day. For example, 10:00 PM–7:00 AM blocks overnight. Use “Block all day” for a full day. During daylight-saving changes, repeated clock times are both blocked.</p>
-<button class="btn btn-primary" name="action" value="save_weekly">Save weekly blocks</button>
-<p class="block-help">Applying to all days fills the rows. Save to make your changes active.</p>
+</ol>
+<div class="save-bar">
+<button class="btn btn-primary" name="action" value="save_weekly">Save unavailable hours</button>
+<span role="status" id="hours-status"></span>
+</div>
+<details>
+<summary>Overnight blocks and daylight saving</summary>
+<p class="block-help">An end time earlier than the start continues into the next day. For example, 10:00 PM–7:00 AM blocks overnight. Use “Block the whole day” for a full day. During daylight-saving changes, repeated clock times are both blocked.</p>
+</details>
 </form>
 </section>
-<section class="card calendar-blocks" aria-labelledby="override-heading">
-<h2 id="override-heading">Date overrides</h2>
-<p>Make an exception for a specific date in <strong>{{ profile.blocking_timezone|default:"America/New_York" }}</strong>. This replaces its weekly block, including any overnight block carried from the previous day. Google/iCal busy events still apply.</p>
-<p class="block-help">Choose “No block” to remove your local blocks for that date, “Block all day” for a day off, or enter different hours. Saving the same date updates its override.</p>
-<form method="post" id="date-override-form">{% csrf_token %}{{ override_form.as_p }}<button class="btn btn-primary" name="action" value="save_override">Save date override</button></form>
-<h3>Saved overrides</h3>
+<section class="card calendar-blocks" id="exceptions" aria-labelledby="override-heading">
+<h2 id="override-heading">Date exceptions</h2>
+<p>Use an exception when one date should differ from its weekly hours. It replaces that day’s weekly rule, including an overnight block carried from the previous day. A connected calendar’s busy times still apply.</p>
+<form method="post" id="date-override-form" class="exception-form" data-mode="{{ override_form.mode.value|default:'range' }}">{% csrf_token %}
+{{ override_form.non_field_errors }}
+<div>{{ override_form.date.label_tag }}{{ override_form.date }}{{ override_form.date.errors }}</div>
+<div>{{ override_form.mode.label_tag }}{{ override_form.mode }}{{ override_form.mode.errors }}</div>
+<div class="exception-times">
+<div>{{ override_form.starts_at.label_tag }}{{ override_form.starts_at }}{{ override_form.starts_at.errors }}</div>
+<div>{{ override_form.ends_at.label_tag }}{{ override_form.ends_at }}{{ override_form.ends_at.errors }}</div>
+</div>
+<button class="btn btn-primary" name="action" value="save_override">Save exception</button>
+</form>
+<h3>Saved exceptions</h3>
 {% for override in overrides %}
-<div class="block-override"><p><strong>{{ override.date|date:"D, M j, Y" }}</strong><br>{{ override.get_mode_display }}{% if override.mode == 'range' %}: {{ override.starts_at|time:"g:i A" }}–{{ override.ends_at|time:"g:i A" }}{% if override.ends_at < override.starts_at %} (ends next day){% endif %}{% endif %}</p>
-<form method="post">{% csrf_token %}<input type="hidden" name="override_id" value="{{ override.pk }}"><button class="btn" name="action" value="delete_override" aria-label="Remove override for {{ override.date|date:'M j, Y' }}">Use weekly rule again</button></form></div>
-{% empty %}<p>No date overrides. Your weekly rules apply every week.</p>{% endfor %}
+<div class="block-override"><p><strong>{{ override.date|date:"l, M j, Y" }}</strong><br>{{ override.get_mode_display }}{% if override.mode == 'range' %}: {{ override.starts_at|time:"g:i A" }}–{{ override.ends_at|time:"g:i A" }}{% if override.ends_at < override.starts_at %} (ends next day){% endif %}{% endif %}</p>
+<form method="post">{% csrf_token %}<input type="hidden" name="override_id" value="{{ override.pk }}"><button class="btn" name="action" value="delete_override" aria-label="Remove exception for {{ override.date|date:'M j, Y' }}">Use weekly hours again</button></form></div>
+{% empty %}<p class="block-help">No date exceptions. Your weekly hours apply every week.</p>{% endfor %}
 </section>
+<noscript><style>.day-times,.exception-times{display:grid !important}</style></noscript>
 <script>
 (() => {
-  const form = document.getElementById('weekly-block-form');
-  const updateRow = (container) => {
-    const mode = container.querySelector('select');
-    container.querySelectorAll('input[type="time"]').forEach(input => {
-      input.disabled = mode.value !== 'range';
-      input.required = mode.value === 'range';
-    });
+  const form = document.getElementById("weekly-block-form");
+  if (!form) return;
+  const status = document.getElementById("hours-status");
+  const glance = document.getElementById("week-glance");
+  const formatTime = (value) => {
+    if (!value) return "";
+    const [hourText, minuteText] = value.split(":");
+    const hour = Number(hourText);
+    const suffix = hour >= 12 ? "PM" : "AM";
+    return `${hour % 12 || 12}:${minuteText} ${suffix}`;
   };
-  form.querySelectorAll('.weekday-rule').forEach(row => {
-    row.querySelector('select').addEventListener('change', () => updateRow(row));
-    updateRow(row);
-  });
-  const overrideForm = document.getElementById('date-override-form');
-  overrideForm.querySelector('select').addEventListener('change', () => updateRow(overrideForm));
-  updateRow(overrideForm);
-  const copy = form.querySelector('.block-copy');
-  copy.querySelector('select').addEventListener('change', () => updateRow(copy));
-  document.getElementById('copy-week').addEventListener('click', () => {
-    const mode = document.getElementById('copy-mode').value;
-    const start = document.getElementById('copy-start');
-    const end = document.getElementById('copy-end');
-    if (mode === 'range' && (!start.value || !end.value || start.value === end.value)) {
-      document.getElementById('copy-status').textContent = 'Enter different start and end times, or choose Block all day.';
+  const describe = (mode, start, end) => {
+    if (mode === "all") return "Blocked all day";
+    if (mode !== "range" || !start || !end) return "Open";
+    const overnight = end <= start ? ", into the next day" : "";
+    return `Blocked ${formatTime(start)}–${formatTime(end)}${overnight}`;
+  };
+  const paintTrack = (track, mode, start, end) => {
+    const open = "#e7eef2";
+    const closed = "#e7b15a";
+    if (mode === "all") {
+      track.style.background = closed;
       return;
     }
-    form.querySelectorAll('.weekday-rule').forEach(row => {
-      row.querySelector('select').value = mode;
-      row.querySelector('input[name$="starts_at"]').value = start.value;
-      row.querySelector('input[name$="ends_at"]').value = end.value;
-      updateRow(row);
-    });
-    document.getElementById('copy-status').textContent = 'Applied. Adjust any day below, then save.';
+    if (mode !== "range" || !start || !end || start === end) {
+      track.style.background = open;
+      return;
+    }
+    const minutes = (value) => {
+      const [hour, minute] = value.split(":").map(Number);
+      return ((hour * 60 + minute) / 1440) * 100;
+    };
+    const from = minutes(start);
+    const to = minutes(end);
+    if (to > from) {
+      track.style.background = `linear-gradient(90deg, ${open} ${from}%, ${closed} ${from}% ${to}%, ${open} ${to}%)`;
+    } else {
+      track.style.background = `linear-gradient(90deg, ${closed} ${to}%, ${open} ${to}% ${from}%, ${closed} ${from}%)`;
+    }
+  };
+  const rowFields = (row) => ({
+    mode: row.querySelector("select"),
+    start: row.querySelector('input[name$="starts_at"]'),
+    end: row.querySelector('input[name$="ends_at"]'),
   });
+  const syncRow = (row) => {
+    const { mode, start, end } = rowFields(row);
+    row.dataset.mode = mode.value;
+    row.classList.toggle("is-closed", mode.value !== "none");
+    const times = mode.value === "range";
+    [start, end].forEach((input) => {
+      input.disabled = !times;
+      input.required = times;
+    });
+    if (times) {
+      if (!start.value) start.value = "09:00";
+      if (!end.value) end.value = "17:00";
+    }
+    const caption = describe(mode.value, start.value, end.value);
+    row.querySelector(".day-caption").textContent = caption;
+    paintTrack(row.querySelector(".day-track"), mode.value, start.value, end.value);
+    return caption;
+  };
+  const rows = [...form.querySelectorAll(".day-rule")];
+  const snapshot = () => rows.map((row) => {
+    const { mode, start, end } = rowFields(row);
+    return [mode.value, mode.value === "range" ? start.value : "", mode.value === "range" ? end.value : ""].join("|");
+  }).join(";") + "|" + (form.querySelector("[name=blocking_timezone]")?.value || "");
+  let saved = snapshot();
+    const mark = () => {
+    const changed = snapshot() !== saved;
+    form.dataset.dirty = String(changed);
+    status.textContent = changed ? "Unsaved changes. Save to update what families can book." : "";
+  };
+  const summarize = () => {
+    const parts = rows.map((row) => ({ day: row.dataset.day, text: syncRow(row) }));
+    const groups = [];
+    parts.forEach((part) => {
+      const last = groups[groups.length - 1];
+      if (last && last.text === part.text) last.days.push(part.day);
+      else groups.push({ text: part.text, days: [part.day] });
+    });
+    const label = (days) => days.length === 1 ? days[0] : `${days[0]}–${days[days.length - 1]}`;
+    glance.textContent = groups.length === 1 && groups[0].text === "Open"
+      ? "The whole week is open to bookings."
+      : "Closed to new bookings: " + groups.map((group) => `${label(group.days)}, ${group.text}`).join(". ") + ".";
+    mark();
+  };
+  const apply = (row, mode, start, end) => {
+    const fields = rowFields(row);
+    fields.mode.value = mode;
+    if (start) fields.start.value = start;
+    if (end) fields.end.value = end;
+  };
+  form.querySelectorAll("[data-preset]").forEach((button) => {
+    button.addEventListener("click", () => {
+      const preset = button.dataset.preset;
+      if (preset === "clear") rows.forEach((row) => apply(row, "none"));
+      if (preset === "weekdays") rows.forEach((row, index) => apply(row, index < 5 ? "range" : "none", "09:00", "17:00"));
+      if (preset === "weekends") rows.forEach((row, index) => { if (index >= 5) apply(row, "all"); });
+      if (preset === "copy-monday") {
+        const source = rowFields(rows[0]);
+        rows.forEach((row) => apply(row, source.mode.value, source.start.value, source.end.value));
+      }
+      summarize();
+    });
+  });
+  rows.forEach((row) => {
+    row.addEventListener("change", summarize);
+    row.addEventListener("input", summarize);
+  });
+  form.querySelector("[name=blocking_timezone]")?.addEventListener("change", mark);
+  const overrideForm = document.getElementById("date-override-form");
+  const syncOverride = () => {
+    const mode = overrideForm.querySelector("select");
+    overrideForm.dataset.mode = mode.value;
+    overrideForm.querySelectorAll('input[type="time"]').forEach((input) => {
+      input.disabled = mode.value !== "range";
+      input.required = mode.value === "range";
+      if (mode.value === "range" && !input.value) input.value = input.name.endsWith("starts_at") ? "09:00" : "17:00";
+    });
+  };
+  overrideForm.querySelector("select").addEventListener("change", syncOverride);
+  summarize();
+  syncOverride();
+  saved = snapshot();
+  form.dataset.dirty = "false";
+  status.textContent = "";
 })();
 </script>

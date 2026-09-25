@@ -1,0 +1,200 @@
+{% load static %}
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Lesson library | ClearCode Reading</title>
+  <meta name="description" content="Create ClearCode lessons and share them with the teachers who will use them.">
+  <link rel="icon" href="/assets/logo/cc-favicon-gold-teal-32.png" type="image/png" sizes="32x32">
+  <link rel="apple-touch-icon" href="/assets/logo/cc-apple-touch-icon-gold-teal-180.png" sizes="180x180">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="{% static 'css/clearcode-tailwind.css' %}">
+  <style>
+    .focus-ring:focus-visible { outline: 4px solid rgba(245, 166, 35, .75); outline-offset: 3px; }
+    .page-bg {
+      background:
+        radial-gradient(circle at 12% 12%, rgba(245, 166, 35, .20), transparent 24%),
+        radial-gradient(circle at 86% 16%, rgba(46, 184, 184, .12), transparent 24%),
+        linear-gradient(135deg, #F7F2EA 0%, #A8CFC4 48%, #E8D5B0 100%);
+    }
+  </style>
+</head>
+<body class="page-bg min-h-screen font-sans text-ink antialiased">
+  {% include "portal/_header.html" %}
+
+  <main class="mx-auto max-w-7xl px-4 py-10 sm:px-6 lg:px-8">
+    {% if messages %}
+      <div class="mb-6">{% include "_site_messages.html" with site_messages_layout="block" %}</div>
+    {% endif %}
+
+    <div class="grid gap-6 lg:grid-cols-[minmax(0,1fr)_22rem] lg:items-start">
+      <section class="min-w-0">
+        <p class="text-sm font-black uppercase tracking-[0.18em] text-deepTeal">People and instruction</p>
+        <h1 class="mt-2 text-3xl font-black leading-tight sm:text-5xl">Lesson library</h1>
+        <p class="mt-4 max-w-3xl text-lg leading-8 text-ink/70">Build the lessons teachers can use, then share each one with the teachers who need it. Teachers assign a shared lesson to their readers from their own lesson plan.</p>
+
+        <ol class="mt-6 grid gap-3 sm:grid-cols-3">
+          <li class="rounded-3xl bg-white p-5 shadow-lg ring-1 ring-ink/10"><p class="text-sm font-black text-deepTeal">1. Create</p><p class="mt-2 font-bold leading-6">Write the goal, time, and steps.</p></li>
+          <li class="rounded-3xl bg-white p-5 shadow-lg ring-1 ring-ink/10"><p class="text-sm font-black text-deepTeal">2. Share</p><p class="mt-2 font-bold leading-6">Give that lesson to a teacher.</p></li>
+          <li class="rounded-3xl bg-white p-5 shadow-lg ring-1 ring-ink/10"><p class="text-sm font-black text-deepTeal">3. Assign</p><p class="mt-2 font-bold leading-6">The teacher gives it to a reader.</p></li>
+        </ol>
+
+        <div class="mt-6 grid gap-3 sm:grid-cols-2">
+          <div class="rounded-3xl bg-seafoam p-5 shadow-lg">
+            <p class="text-sm font-black text-deepTeal">Active lessons</p>
+            <p class="mt-2 text-4xl font-black">{{ lesson_count }}</p>
+          </div>
+          <div class="rounded-3xl bg-sand p-5 shadow-lg">
+            <p class="text-sm font-black text-mediumTeal">Shared with teachers</p>
+            <p class="mt-2 text-4xl font-black">{{ shared_lesson_count }}</p>
+          </div>
+        </div>
+
+        <form class="mt-6 flex flex-col gap-3 rounded-3xl bg-white p-4 shadow-lg ring-1 ring-ink/10 sm:flex-row sm:items-end" method="get">
+          <label class="block min-w-0 flex-1">
+            <span class="text-sm font-black text-ink/65">Search lessons</span>
+            <input class="mt-2 w-full rounded-2xl border border-ink/15 px-4 py-3 font-bold focus:border-deepTeal focus:outline-none" name="q" value="{{ query }}" placeholder="Title, goal, or description">
+          </label>
+          <label class="block sm:w-48">
+            <span class="text-sm font-black text-ink/65">Grade band</span>
+            <select class="mt-2 w-full rounded-2xl border border-ink/15 px-4 py-3 font-bold focus:border-deepTeal focus:outline-none" name="grade">
+              <option value="">All bands</option>
+              {% for band in grade_bands %}
+                <option value="{{ band }}" {% if grade == band %}selected{% endif %}>{{ band }}</option>
+              {% endfor %}
+            </select>
+          </label>
+          <button class="focus-ring min-h-11 rounded-full bg-ink px-5 py-3 font-black text-white" type="submit">Filter</button>
+        </form>
+
+        <div class="mt-5 grid gap-3">
+          {% for row in lesson_rows %}
+            <article id="lesson-{{ row.lesson.id }}" class="rounded-3xl bg-white p-5 shadow-lg ring-1 ring-ink/10">
+              <div class="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+                <div class="min-w-0">
+                  <h2 class="text-xl font-black">{{ row.lesson.title }}</h2>
+                  <p class="mt-1 text-sm font-bold text-ink/65">{{ row.lesson.grade_band|default:"All levels" }} · {{ row.lesson.recommended_minutes }} min{% if row.lesson.skill %} · {{ row.lesson.skill.name }}{% endif %}</p>
+                </div>
+                {% if row.lesson.is_active %}
+                  <span class="w-fit rounded-full bg-seafoam px-3 py-2 text-xs font-black text-deepTeal">Active</span>
+                {% else %}
+                  <span class="w-fit rounded-full bg-linen px-3 py-2 text-xs font-black text-ink/60">Inactive</span>
+                {% endif %}
+              </div>
+              {% if row.lesson.goal %}<p class="mt-3 font-bold leading-6 text-ink/80">{{ row.lesson.goal }}</p>{% endif %}
+              {% if row.lesson.description %}<p class="mt-2 text-sm leading-6 text-ink/65">{{ row.lesson.description }}</p>{% endif %}
+              {% if row.activities %}
+                <ol class="mt-3 grid gap-1 text-sm leading-6 text-ink/75">
+                  {% for activity in row.activities %}
+                    <li>{{ forloop.counter }}. {{ activity }}</li>
+                  {% endfor %}
+                </ol>
+              {% endif %}
+              <p class="mt-4 text-sm font-bold text-ink/60">
+                {% if row.shares %}
+                  Shared with
+                  {% for share in row.shares %}{{ share.teacher.get_full_name|default:share.teacher.email }}{% if not forloop.last %}, {% endif %}{% endfor %}
+                {% else %}
+                  Not shared with a teacher yet
+                {% endif %}
+              </p>
+            </article>
+          {% empty %}
+            <div class="rounded-3xl bg-white p-8 text-center shadow-lg ring-1 ring-ink/10">
+              <h2 class="text-2xl font-black">{% if query or grade %}No lessons match this filter{% else %}No lessons yet{% endif %}</h2>
+              <p class="mt-2 text-ink/65">Use the form to create the first lesson teachers can share with readers.</p>
+            </div>
+          {% endfor %}
+        </div>
+      </section>
+
+      <div class="grid gap-6 lg:sticky lg:top-28">
+        <section id="create-lesson" class="scroll-mt-28 rounded-[2rem] bg-white p-6 shadow-xl ring-1 ring-ink/10">
+          <p class="text-sm font-black uppercase tracking-[0.18em] text-mediumTeal">Create a lesson</p>
+          <h2 class="mt-2 text-2xl font-black">Add it to the library</h2>
+          <form class="mt-5 grid gap-4" method="post" action="{% url 'portal_create_lesson' %}">
+            {% csrf_token %}
+            <label class="block">
+              <span class="text-sm font-black text-ink/65">Title</span>
+              <input class="mt-2 w-full rounded-2xl border border-ink/15 px-4 py-3 font-bold focus:border-deepTeal focus:outline-none" name="title" maxlength="255" required placeholder="Short vowel decoding">
+            </label>
+            <div class="grid gap-4 sm:grid-cols-2 lg:grid-cols-1">
+              <label class="block">
+                <span class="text-sm font-black text-ink/65">Grade band</span>
+                <input class="mt-2 w-full rounded-2xl border border-ink/15 px-4 py-3 font-bold focus:border-deepTeal focus:outline-none" name="grade_band" maxlength="64" placeholder="1-2">
+              </label>
+              <label class="block">
+                <span class="text-sm font-black text-ink/65">Minutes</span>
+                <input class="mt-2 w-full rounded-2xl border border-ink/15 px-4 py-3 font-bold focus:border-deepTeal focus:outline-none" name="recommended_minutes" type="number" min="1" max="180" value="15" required>
+              </label>
+            </div>
+            <label class="block">
+              <span class="text-sm font-black text-ink/65">Reading skill</span>
+              <select class="mt-2 w-full rounded-2xl border border-ink/15 px-4 py-3 font-bold focus:border-deepTeal focus:outline-none" name="skill_id">
+                <option value="">No specific skill</option>
+                {% for skill in skills %}
+                  <option value="{{ skill.id }}">{{ skill.name }}</option>
+                {% endfor %}
+              </select>
+            </label>
+            <label class="block">
+              <span class="text-sm font-black text-ink/65">Goal</span>
+              <input class="mt-2 w-full rounded-2xl border border-ink/15 px-4 py-3 font-bold focus:border-deepTeal focus:outline-none" name="goal" maxlength="255" placeholder="What the reader should be able to do">
+            </label>
+            <label class="block">
+              <span class="text-sm font-black text-ink/65">Description</span>
+              <textarea class="mt-2 min-h-24 w-full rounded-2xl border border-ink/15 px-4 py-3 font-bold focus:border-deepTeal focus:outline-none" name="description" maxlength="2000" placeholder="When a teacher should choose this lesson"></textarea>
+            </label>
+            <label class="block">
+              <span class="text-sm font-black text-ink/65">Steps, one per line</span>
+              <textarea class="mt-2 min-h-28 w-full rounded-2xl border border-ink/15 px-4 py-3 font-bold focus:border-deepTeal focus:outline-none" name="activities" placeholder="Warm up with letter sounds.&#10;Blend five words aloud."></textarea>
+            </label>
+            <label class="block">
+              <span class="text-sm font-black text-ink/65">Materials, one per line</span>
+              <textarea class="mt-2 min-h-20 w-full rounded-2xl border border-ink/15 px-4 py-3 font-bold focus:border-deepTeal focus:outline-none" name="materials" placeholder="Whiteboard&#10;Word cards"></textarea>
+            </label>
+            <button class="focus-ring min-h-11 rounded-full bg-deepTeal px-6 py-3 font-black text-white shadow-lg shadow-deepTeal/20" type="submit">Create lesson</button>
+          </form>
+        </section>
+
+        <section id="lesson-library" class="scroll-mt-28 rounded-[2rem] bg-ink p-6 text-white shadow-xl">
+          <p class="text-sm font-black uppercase tracking-[0.18em] text-gold">Share a lesson</p>
+          <h2 class="mt-2 text-2xl font-black">Give a teacher access</h2>
+          <p class="mt-2 text-sm leading-6 text-white/75">Teachers can assign a lesson to a reader only after you share it here.</p>
+          {% if teachers and active_lessons %}
+            <form class="mt-5 grid gap-4" method="post" action="{% url 'portal_assign_template_to_teacher' %}">
+              {% csrf_token %}
+              <label class="block">
+                <span class="text-sm font-black text-white/70">Teacher</span>
+                <select class="mt-2 w-full rounded-2xl border-0 px-4 py-3 font-bold text-ink focus:outline-none focus:ring-4 focus:ring-gold/50" name="teacher_id" required>
+                  {% for teacher in teachers %}
+                    <option value="{{ teacher.id }}">{{ teacher.get_full_name|default:teacher.email }}</option>
+                  {% endfor %}
+                </select>
+              </label>
+              <label class="block">
+                <span class="text-sm font-black text-white/70">Lesson</span>
+                <select class="mt-2 w-full rounded-2xl border-0 px-4 py-3 font-bold text-ink focus:outline-none focus:ring-4 focus:ring-gold/50" name="template_id" required>
+                  {% for lesson in active_lessons %}
+                    <option value="{{ lesson.id }}">{{ lesson.title }}</option>
+                  {% endfor %}
+                </select>
+              </label>
+              <label class="block">
+                <span class="text-sm font-black text-white/70">Note for the teacher</span>
+                <input class="mt-2 w-full rounded-2xl border-0 px-4 py-3 font-bold text-ink focus:outline-none focus:ring-4 focus:ring-gold/50" name="notes" placeholder="Optional: when this lesson is the right fit">
+              </label>
+              <button class="focus-ring min-h-11 rounded-full bg-mediumTeal px-6 py-3 font-black text-white" type="submit">Share lesson</button>
+            </form>
+          {% else %}
+            <p class="mt-5 rounded-3xl bg-white/10 p-4 text-sm font-bold leading-6">Create a lesson and add a teacher before sharing.</p>
+          {% endif %}
+        </section>
+      </div>
+    </div>
+  </main>
+</body>
+</html>

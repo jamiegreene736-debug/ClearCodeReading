@@ -10,7 +10,7 @@
 {% if not editable %}<p role="status"><strong>This newsletter has been sent, so its wording is locked.</strong> Start a new newsletter to send an updated version.</p>{% endif %}
 <div class="grid">
 <section class="card"><h2>Content</h2>
-<p class="subtle">Style text, add images and links. Saving keeps a draft; nothing is sent until you review and confirm on the next screen.</p>
+<p class="subtle">Style text, add images and links. Saving keeps a draft. Nothing is sent until you review and confirm. Sent mail comes from {{ from_email }}.</p>
 <form method="post" data-automated-form novalidate>{% csrf_token %}{{ form.non_field_errors }}
 {% for field in form %}<div class="field{% if field.errors %} has-error{% endif %}">{{ field.label_tag }}{{ field }}{% if field.help_text %}<p class="subtle">{{ field.help_text }}</p>{% endif %}{{ field.errors }}</div>{% endfor %}
 {% if editable %}<div class="actions"><button class="btn btn-primary" name="action" value="save">Save draft</button><button class="btn" name="action" value="send">Save &amp; review sending</button>{% if campaign %}<button class="btn" name="action" value="delete" formnovalidate onclick="return confirm('Delete this draft?')">Delete draft</button>{% endif %}</div>{% endif %}
@@ -22,7 +22,8 @@
 <h2 class="preview-heading" data-preview-field="subject">{{ form.subject.value|default:"" }}</h2>
 <div data-preview-field="body_html" data-preview-rich="1">{{ preview_html|safe }}</div>
 </div></div>
-{% if campaign and campaign.status != 'draft' %}<p>{% if campaign.status == 'partially_failed' %}<a class="btn" href="{% url 'crm_newsletter_send' campaign.pk %}">Retry failed deliveries</a>{% endif %}</p>{% endif %}
+{% if campaign and campaign.status != 'draft' %}<p>{% if campaign.status == 'partially_failed' %}<a class="btn" href="{% url 'crm_newsletter_send' campaign.pk %}">Retry failed deliveries</a>{% endif %}
+<form method="post" action="{% url 'crm_newsletter_duplicate' campaign.pk %}">{% csrf_token %}<button class="btn" type="submit">Duplicate as new draft</button></form></p>{% endif %}
 </section>
 </div>
 {% if deliveries %}<section class="card"><h2>Deliveries</h2>

@@ -32,6 +32,9 @@
       </div>
     {% endif %}
 
+    {% if is_admin %}
+      {% include "portal/_admin_workspace.html" %}
+    {% else %}
     <section class="grid min-w-0 gap-6 lg:grid-cols-[.85fr_1.15fr] lg:items-start">
       <aside id="portal-overview" class="min-w-0 scroll-mt-40 rounded-[2rem] bg-white/90 p-6 shadow-2xl shadow-deepTeal/10 ring-1 ring-deepTeal/10 lg:sticky lg:top-28">
         <p class="text-sm font-black uppercase tracking-[0.18em] text-mediumTeal">
@@ -78,24 +81,22 @@
           {% if is_teacher or is_admin %}<a class="focus-ring min-h-11 shrink-0 rounded-xl bg-linen px-4 py-3 text-sm font-black text-deepTeal" href="{% url 'portal_sessions' %}">Sessions</a>{% endif %}
           {% if is_teacher or is_admin %}<a class="focus-ring min-h-11 shrink-0 rounded-xl bg-linen px-4 py-3 text-sm font-black text-deepTeal" href="{% url 'portal_placements' %}">Placement</a>{% endif %}
           <a class="focus-ring min-h-11 shrink-0 rounded-xl bg-linen px-4 py-3 text-sm font-black text-deepTeal" href="{% url 'portal_results' %}">Reading results</a>
-          {% if is_admin %}<a class="focus-ring min-h-11 shrink-0 rounded-xl bg-linen px-4 py-3 text-sm font-black text-deepTeal" href="{% url 'portal_lessons' %}">Lesson library</a>{% endif %}
-          {% if is_teacher %}<a class="focus-ring min-h-11 shrink-0 rounded-xl bg-linen px-4 py-3 text-sm font-black text-deepTeal" href="#lesson-planning">Lesson planning</a>{% endif %}
-          <a class="focus-ring min-h-11 shrink-0 rounded-xl bg-linen px-4 py-3 text-sm font-black text-deepTeal" href="{% url 'portal_inbox' %}">Inbox</a>
+          {% if is_admin %}<a class="focus-ring min-h-11 shrink-0 rounded-xl bg-linen px-4 py-3 text-sm font-black text-deepTeal" href="{% url 'portal_teacher_assignments' %}">Teacher assignments</a>{% endif %}
+          {% if is_admin %}<a class="focus-ring min-h-11 shrink-0 rounded-xl bg-linen px-4 py-3 text-sm font-black text-deepTeal" href="{% url 'portal_lesson_library' %}">Lesson library</a>{% endif %}
         </nav>
         <section id="program-workspaces" class="rounded-[2rem] bg-white p-6 shadow-xl ring-1 ring-deepTeal/10">
           <p class="text-sm font-black uppercase tracking-[0.18em] text-deepTeal">Open a workspace</p>
-          <h2 class="mt-2 text-3xl font-black">Go to the page for the work</h2>
-          <p class="mt-2 text-sm leading-6 text-ink/65">Readers, sessions, placement, results, and the lesson library each have their own page. This dashboard only shows what needs attention.</p>
+          <h2 class="mt-2 text-3xl font-black">Each job has its own page</h2>
           <div class="mt-5 grid gap-3 sm:grid-cols-2">
             {% if is_teacher or is_admin %}
-              <a class="rounded-3xl bg-seafoam p-5" href="{% url 'portal_readers' %}"><p class="text-sm font-black text-deepTeal">Readers</p><p class="mt-2 text-4xl font-black">{{ child_count }}</p><p class="mt-2 text-sm text-ink/70">Roster and teacher assignment</p></a>
-              <a class="rounded-3xl bg-linen p-5" href="{% url 'portal_sessions' %}"><p class="text-sm font-black text-ink/65">Upcoming sessions</p><p class="mt-2 text-4xl font-black">{{ upcoming_session_count }}</p><p class="mt-2 text-sm text-ink/70">Schedule and completed logs</p></a>
-              <a class="rounded-3xl bg-sand p-5" href="{% url 'portal_placements' %}"><p class="text-sm font-black text-mediumTeal">Placement review</p><p class="mt-2 text-4xl font-black">{{ pending_placement_count }}</p><p class="mt-2 text-sm text-ink/70">Waiting for a decision</p></a>
+              <a class="rounded-3xl bg-seafoam p-5" href="{% url 'portal_readers' %}"><p class="text-sm font-black text-deepTeal">Readers</p><p class="mt-2 text-4xl font-black">{{ child_count }}</p></a>
+              <a class="rounded-3xl bg-linen p-5" href="{% url 'portal_sessions' %}"><p class="text-sm font-black text-ink/65">Upcoming sessions</p><p class="mt-2 text-4xl font-black">{{ upcoming_session_count }}</p></a>
+              <a class="rounded-3xl bg-sand p-5" href="{% url 'portal_placements' %}"><p class="text-sm font-black text-mediumTeal">Placement review</p><p class="mt-2 text-4xl font-black">{{ placement_pending_count }}</p></a>
             {% endif %}
-            <a class="rounded-3xl bg-white p-5 ring-1 ring-ink/10" href="{% url 'portal_results' %}"><p class="text-sm font-black text-ink/65">Reading results</p><p class="mt-2 text-4xl font-black">{{ result_count }}</p><p class="mt-2 text-sm text-ink/70">Skill scores and snapshots</p></a>
+            <a class="rounded-3xl bg-white p-5 ring-1 ring-ink/10" href="{% url 'portal_results' %}"><p class="text-sm font-black text-ink/65">Reading results</p><p class="mt-2 text-4xl font-black">{{ result_count }}</p></a>
             {% if is_admin %}
-              <a class="rounded-3xl bg-seafoam p-5" href="{% url 'portal_lessons' %}"><p class="text-sm font-black text-deepTeal">Lesson library</p><p class="mt-2 text-4xl font-black">{{ lesson_template_count }}</p><p class="mt-2 text-sm text-ink/70">Templates and teacher access</p></a>
-              <a class="rounded-3xl bg-linen p-5" href="{% url 'portal_invitations' %}"><p class="text-sm font-black text-ink/65">User invitations</p><p class="mt-2 text-sm font-black text-deepTeal">Open the queue</p><p class="mt-2 text-sm text-ink/70">Delivery status and resends</p></a>
+              <a class="rounded-3xl bg-seafoam p-5" href="{% url 'portal_teacher_assignments' %}"><p class="text-sm font-black text-deepTeal">Needs a teacher</p><p class="mt-2 text-4xl font-black">{{ unassigned_count }}</p></a>
+              <a class="rounded-3xl bg-linen p-5" href="{% url 'portal_lesson_library' %}"><p class="text-sm font-black text-ink/65">Lesson library</p><p class="mt-2 text-4xl font-black">{{ lesson_count }}</p></a>
             {% endif %}
           </div>
         </section>
@@ -171,102 +172,6 @@
             <section id="progress-overview" class="scroll-mt-40 rounded-[2rem] bg-white p-6 shadow-xl ring-1 ring-mediumTeal/15"><h2 class="text-2xl font-black">Progress dashboard unavailable</h2><p class="mt-2 text-ink/65">Active guardian consent and dashboard access are required. Contact your center if this looks unexpected.</p></section>
           {% endfor %}
         {% endif %}
-
-
-        {% if is_admin and operations_metrics %}
-          <section id="operations" class="scroll-mt-36 rounded-[2rem] bg-ink p-6 text-white shadow-xl">
-            <p class="text-sm font-black uppercase tracking-[0.18em] text-gold">Operations intelligence</p>
-            <h2 class="mt-2 text-3xl font-black">Capacity and demand</h2>
-            <div class="mt-5 grid gap-3 sm:grid-cols-3">
-              <div class="rounded-3xl bg-white/10 p-5"><p class="text-sm font-bold">Utilization</p><p class="mt-2 text-4xl font-black">{{ operations_metrics.utilization_percent }}%</p><p class="text-xs">{% if operations_metrics.utilization_threshold_reached %}75% expansion trigger reached{% else %}Target trigger: 75%{% endif %}</p></div>
-              <div class="rounded-3xl bg-white/10 p-5"><p class="text-sm font-bold">Waitlist</p><p class="mt-2 text-4xl font-black">{{ operations_metrics.waitlist_count }}</p><p class="text-xs">Expansion trigger: 25</p></div>
-              <div class="rounded-3xl bg-white/10 p-5"><p class="text-sm font-bold">{{ operations_metrics.top_submarket|default:"Top submarket" }}</p><p class="mt-2 text-4xl font-black">{{ operations_metrics.top_submarket_percent }}%</p><p class="text-xs">Demand trigger: 40%</p></div>
-            </div>
-            <div class="mt-5 grid gap-3">
-              {% for group in grouping_suggestions %}
-                <article class="rounded-3xl bg-white/10 p-5"><div class="flex flex-wrap justify-between gap-2"><p class="font-black">{{ group.specialist_name }} · {{ group.methodology|upper }}</p><span class="rounded-full bg-gold px-3 py-1 text-xs font-black text-ink">Staff approval required</span></div><p class="mt-2 text-sm">{{ group.availability.day_of_week|title }} {{ group.availability.start_time }}–{{ group.availability.end_time }} · Score {{ group.score }}</p><p class="mt-2 text-sm">{% for student in group.students %}{{ student.display_name }} ({{ student.position_code }}){% if not forloop.last %}, {% endif %}{% endfor %}</p></article>
-              {% empty %}<p class="rounded-3xl bg-white/10 p-5">Add provider availability and at least two compatible students to generate recommendations.</p>{% endfor %}
-            </div>
-          </section>
-        {% endif %}
-
-        {% if is_admin %}
-
-          <section id="website-signups" class="scroll-mt-36 rounded-[2rem] bg-white p-6 shadow-xl shadow-ink/8 ring-1 ring-ink/10">
-            <div class="flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
-              <div>
-                <p class="text-sm font-black uppercase tracking-[0.18em] text-deepTeal">CRM intake</p>
-                <h2 class="mt-2 text-3xl font-black">Website signups</h2>
-              </div>
-              <div class="flex gap-2 text-sm font-black">
-                <span class="rounded-full bg-seafoam px-4 py-2 text-deepTeal">{{ lead_count }} total</span>
-                <span class="rounded-full bg-sand px-4 py-2 text-mediumTeal">{{ new_lead_count }} new</span>
-                {% if request.user.is_staff or request.user.is_superuser or request.user.role == 'super_admin' %}
-                  <a class="focus-ring rounded-full bg-ink px-4 py-2 text-white transition hover:bg-deepTeal" href="{% url 'crm_dashboard' %}">Open CRM</a>
-                {% endif %}
-              </div>
-            </div>
-            <div class="mt-5 grid gap-3">
-              {% for lead in recent_leads %}
-                <article class="rounded-3xl bg-linen p-5">
-                  <div class="flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
-                    <div>
-                      <div class="flex flex-wrap items-center gap-2">
-                        <h3 class="text-xl font-black">{% if request.user.is_staff or request.user.is_superuser or request.user.role == 'super_admin' %}<a class="hover:text-deepTeal" href="{% url 'crm_contact_detail' lead.pk %}">{{ lead.contact_name }}</a>{% else %}{{ lead.contact_name }}{% endif %}</h3>
-                        <span class="rounded-full bg-white px-3 py-1 text-xs font-black text-ink/60">{{ lead.get_audience_display }}</span>
-                        <span class="rounded-full bg-white px-3 py-1 text-xs font-black text-deepTeal">{{ lead.get_status_display }}</span>
-                      </div>
-                      <p class="mt-2 text-sm font-bold text-ink/65">{{ lead.contact_email }}{% if lead.contact_phone %} · {{ lead.contact_phone }}{% endif %}</p>
-                      <p class="mt-1 text-sm text-ink/60">{{ lead.organization_name|default:lead.school_name }}</p>
-                      {% if lead.notes %}
-                        <p class="mt-3 text-sm leading-6 text-ink/70">{{ lead.notes }}</p>
-                      {% endif %}
-                    </div>
-                    <div class="text-sm font-bold text-ink/55 md:text-right">
-                      <p>{{ lead.created_at|date:"M j, Y" }}</p>
-                      {% if lead.linked_user %}
-                        <p class="mt-1 text-deepTeal">Linked to {{ lead.linked_user.get_full_name|default:lead.linked_user.email }}</p>
-                      {% else %}
-                        <p class="mt-1 text-mediumTeal">No account yet</p>
-                      {% endif %}
-                    </div>
-                  </div>
-                </article>
-              {% empty %}
-                <p class="rounded-3xl bg-seafoam p-5 font-bold text-ink/70">No website signups yet.</p>
-              {% endfor %}
-            </div>
-          </section>
-
-          <section id="account-creation" class="scroll-mt-36 rounded-[2rem] bg-white p-6 shadow-xl shadow-ink/8 ring-1 ring-ink/10">
-            <div>
-              <p class="text-sm font-black uppercase tracking-[0.18em] text-mediumTeal">Account creation</p>
-              <h2 class="mt-2 text-3xl font-black">Create a parent or teacher login</h2>
-            </div>
-            <p class="mt-5"><a class="focus-ring rounded-full bg-deepTeal px-5 py-3 font-black text-white" href="{% url 'manage_users' %}">Add user &amp; send invitation</a></p>
-          </section>
-        {% endif %}
-
-        <section id="support-thread" class="scroll-mt-40 rounded-[2rem] bg-white p-6 shadow-xl shadow-ink/8 ring-1 ring-ink/10">
-          <div class="flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
-            <div>
-              <p class="text-sm font-black uppercase tracking-[0.18em] text-deepTeal">Family-teacher inbox</p>
-              <h2 class="mt-2 text-3xl font-black">Avery Reader support thread</h2>
-            </div>
-            <a href="/inbox/" class="focus-ring rounded-full bg-mediumTeal px-5 py-3 text-sm font-black text-white shadow-lg shadow-mediumTeal/20 transition hover:-translate-y-0.5">Open inbox</a>
-          </div>
-          <div class="mt-5 grid gap-3">
-            {% for message in inbox_messages %}
-              <article class="rounded-3xl {% if message.audience == request.user.role %}bg-seafoam{% else %}bg-linen{% endif %} p-5">
-                <div class="flex items-center justify-between gap-3">
-                  <p class="font-black">{{ message.sender }}</p>
-                  <p class="text-xs font-bold text-ink/50">{{ message.sent_at }}</p>
-                </div>
-                <p class="mt-2 text-sm leading-6 text-ink/70">{{ message.body }}</p>
-              </article>
-            {% endfor %}
-          </div>
-        </section>
 
         {% if is_teacher %}
           <section id="lesson-planning" class="scroll-mt-36 rounded-[2rem] bg-white p-6 shadow-xl shadow-ink/8 ring-1 ring-ink/10">
@@ -402,10 +307,10 @@
               <span class="block text-lg font-black">Start assessment</span>
               <span class="mt-2 block text-sm leading-6 text-ink/65">Run the child-friendly reading survey.</span>
             </a>
-            <a class="focus-ring rounded-3xl bg-linen p-5 transition hover:-translate-y-1 hover:shadow-xl" href="{% url 'portal_results' %}">
+            <div class="rounded-3xl bg-linen p-5">
               <span class="block text-lg font-black">Review KPIs</span>
               <span class="mt-2 block text-sm leading-6 text-ink/65">Compare phonics, fluency, vocabulary, and comprehension.</span>
-            </a>
+            </div>
             <div class="rounded-3xl bg-sand p-5">
               <span class="block text-lg font-black">Plan support</span>
               <span class="mt-2 block text-sm leading-6 text-ink/65">Use growth areas to guide lessons and human follow-up.</span>
@@ -414,6 +319,7 @@
         </section>
       </section>
     </section>
+    {% endif %}
   </main>
 </body>
 </html>

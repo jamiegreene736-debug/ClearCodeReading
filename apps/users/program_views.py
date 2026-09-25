@@ -278,45 +278,6 @@ class PortalResultsView(ProgramPageMixin, TemplateView):
         return context
 
 
-class PortalLessonsView(ProgramPageMixin, TemplateView):
-    audience = "admin"
-    template_name = "portal/lessons.html"
-
-    def get_context_data(self, **kwargs):
-        context = super().get_context_data(**kwargs)
-        context.update(self.base_context())
-        query = self.request.GET.get("q", "").strip()
-        templates = LessonTemplate.objects.filter(is_active=True, is_deleted=False).select_related("skill")
-        grants = TeacherLessonTemplate.objects.filter(is_deleted=False).select_related("teacher", "template", "assigned_by")
-        if query:
-            templates = templates.filter(
-                Q(title__icontains=query) | Q(goal__icontains=query) | Q(grade_band__icontains=query) | Q(skill__name__icontains=query)
-            )
-            grants = grants.filter(
-                Q(template__title__icontains=query)
-                | Q(teacher__first_name__icontains=query)
-                | Q(teacher__last_name__icontains=query)
-                | Q(teacher__email__icontains=query)
-            )
-        teachers = CustomUser.objects.filter(role=CustomUser.Role.TEACHER, is_active=True, is_deleted=False)
-        user = self.request.user
-        if not user.is_superuser and user.role != CustomUser.Role.SUPER_ADMIN:
-            teachers = teachers.filter(
-                school_memberships__school__memberships__user=user,
-                school_memberships__school__memberships__is_deleted=False,
-            ).distinct()
-        context.update(
-            {
-                "lesson_templates": templates.order_by("title"),
-                "teacher_template_assignments": grants.order_by("teacher__last_name", "template__title")[:80],
-                "teachers": teachers,
-                "query": query,
-                "page_next": self.request.get_full_path(),
-            }
-        )
-        return context
-
-
 class PortalInvitationsView(ProgramPageMixin, TemplateView):
     audience = "manager"
     template_name = "portal/invitations.html"

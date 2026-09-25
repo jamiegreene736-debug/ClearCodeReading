@@ -489,6 +489,13 @@ class NewsletterSubscription(TimestampedModel):
 
     email = models.EmailField(unique=True)
     name = models.CharField(max_length=255, blank=True)
+    lead = models.ForeignKey(
+        "Lead",
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="newsletter_subscriptions",
+    )
     status = models.CharField(max_length=16, choices=Status.choices, default=Status.ACTIVE, db_index=True)
     consented_at = models.DateTimeField(default=timezone.now)
     unsubscribed_at = models.DateTimeField(null=True, blank=True)

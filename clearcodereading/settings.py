@@ -268,6 +268,10 @@ PUBLIC_APP_URL = os.getenv("PUBLIC_APP_URL", "http://localhost:8000")
 PUBLIC_SITE_ORIGIN = os.getenv("PUBLIC_SITE_ORIGIN", "https://clearcodereading.com").rstrip("/")
 NOTIFICATIONS_FAIL_SILENTLY = os.getenv("NOTIFICATIONS_FAIL_SILENTLY", "1") == "1"
 NEWSLETTER_SEND_STALE_MINUTES = max(1, int(os.getenv("NEWSLETTER_SEND_STALE_MINUTES", "30")))
+NEWSLETTER_FROM_EMAIL = os.getenv(
+    "NEWSLETTER_FROM_EMAIL",
+    "ClearCode Reading <hello@clearcodereading.com>",
+).strip()
 RECRUITING_OWNER_EMAIL = os.getenv("RECRUITING_OWNER_EMAIL", "").strip().lower()
 SMS_PROVIDER = os.getenv("SMS_PROVIDER", "stub")
 INSTRUCTIONAL_AI_SERVICE = os.getenv(

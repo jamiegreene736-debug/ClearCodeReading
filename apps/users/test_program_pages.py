@@ -39,16 +39,17 @@ class ProgramPageAccessTests(TestCase):
             "portal_sessions",
             "portal_placements",
             "portal_results",
-            "portal_lessons",
+            "portal_lesson_library",
+            "portal_teacher_assignments",
             "portal_invitations",
         ):
             response = self.client.get(reverse(name))
             self.assertEqual(response.status_code, 200, name)
         dashboard = self.client.get(reverse("portal_dashboard"))
         self.assertContains(dashboard, reverse("portal_readers"))
+        self.assertContains(dashboard, reverse("portal_teacher_assignments"))
         self.assertNotContains(dashboard, 'id="session-launchpad"')
         self.assertNotContains(dashboard, 'id="latest-kpis"')
-        self.assertNotContains(dashboard, "Teacher assignments")
 
     def test_teacher_can_open_instruction_pages_but_not_admin_queues(self):
         self.client.force_login(self.teacher)
@@ -56,7 +57,7 @@ class ProgramPageAccessTests(TestCase):
         self.assertEqual(self.client.get(reverse("portal_readers")).status_code, 200)
         self.assertEqual(self.client.get(reverse("portal_sessions")).status_code, 200)
         self.assertEqual(self.client.get(reverse("portal_results")).status_code, 200)
-        self.assertEqual(self.client.get(reverse("portal_lessons")).status_code, 302)
+        self.assertEqual(self.client.get(reverse("portal_lesson_library")).status_code, 302)
         self.assertEqual(self.client.get(reverse("portal_invitations")).status_code, 302)
 
     def test_parent_results_stay_available_and_staff_tools_do_not(self):
@@ -74,10 +75,9 @@ class ProgramPageAccessTests(TestCase):
             {
                 "child_id": self.child.id,
                 "teacher_id": self.teacher.id,
-                "next": reverse("portal_readers"),
             },
         )
-        self.assertRedirects(response, reverse("portal_readers"))
+        self.assertRedirects(response, reverse("portal_teacher_assignments"))
         self.child.refresh_from_db()
         self.assertEqual(self.child.learning_profile["assigned_teacher_id"], self.teacher.id)
         page = self.client.get(reverse("portal_readers"))

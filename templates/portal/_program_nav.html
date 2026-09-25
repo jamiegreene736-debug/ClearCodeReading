@@ -6,6 +6,7 @@
   {% endif %}
   <a data-testid="results-page-link" href="{% url 'portal_results' %}" class="focus-ring shrink-0 rounded-full px-4 py-2 text-sm font-black {% if request.resolver_match.url_name == 'portal_results' %}bg-ink text-white{% else %}bg-white text-deepTeal ring-1 ring-deepTeal/15{% endif %}" {% if request.resolver_match.url_name == 'portal_results' %}aria-current="page"{% endif %}>Reading results</a>
   {% if is_admin %}
-    <a data-testid="lessons-page-link" href="{% url 'portal_lessons' %}" class="focus-ring shrink-0 rounded-full px-4 py-2 text-sm font-black {% if request.resolver_match.url_name == 'portal_lessons' %}bg-ink text-white{% else %}bg-white text-deepTeal ring-1 ring-deepTeal/15{% endif %}" {% if request.resolver_match.url_name == 'portal_lessons' %}aria-current="page"{% endif %}>Lesson library</a>
+    <a href="{% url 'portal_teacher_assignments' %}" class="focus-ring shrink-0 rounded-full px-4 py-2 text-sm font-black {% if request.resolver_match.url_name == 'portal_teacher_assignments' %}bg-ink text-white{% else %}bg-white text-deepTeal ring-1 ring-deepTeal/15{% endif %}" {% if request.resolver_match.url_name == 'portal_teacher_assignments' %}aria-current="page"{% endif %}>Teacher assignments</a>
+    <a href="{% url 'portal_lesson_library' %}" class="focus-ring shrink-0 rounded-full px-4 py-2 text-sm font-black {% if request.resolver_match.url_name == 'portal_lesson_library' %}bg-ink text-white{% else %}bg-white text-deepTeal ring-1 ring-deepTeal/15{% endif %}" {% if request.resolver_match.url_name == 'portal_lesson_library' %}aria-current="page"{% endif %}>Lesson library</a>
   {% endif %}
 </nav>

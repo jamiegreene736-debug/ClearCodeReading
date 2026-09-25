@@ -46,8 +46,14 @@ from apps.crm.models import (
     Opportunity,
     pipeline_category_for,
 )
-from apps.crm.newsletters import resolve_unsubscribe_token
-from apps.crm.assessment_queue import pending_completion_people_count, waiting_preview
+from apps.crm.newsletters import (
+    link_subscription_to_contact,
+    resolve_unsubscribe_token,
+    subscribe_contact,
+    subscription_for_email,
+    unsubscribe_subscription,
+)
+from apps.crm.assessment_queue import assessment_summary, review_preview, waiting_preview
 from apps.crm.routing import pending_routing_people_count, pending_routing_queryset, routing_queue
 from apps.crm.serializers import CompanySerializer, LeadSerializer, OpportunitySerializer
 from apps.crm.services import (
@@ -421,7 +427,7 @@ class NewsletterSignupView(View):
             NewsletterSubscription.objects.filter(email=email).values_list("name", flat=True).first()
         )
         with transaction.atomic():
-            NewsletterSubscription.objects.update_or_create(
+            subscription, _created = NewsletterSubscription.objects.update_or_create(
                 email=email,
                 defaults={
                     "name": submitted_name or existing_name or "",
@@ -431,6 +437,7 @@ class NewsletterSignupView(View):
                     "source_path": redirect_path,
                 },
             )
+            link_subscription_to_contact(subscription)
             record_form_submission(
                 intake=LeadIntake(
                     contact_email=email,
@@ -658,9 +665,10 @@ class CrmDashboardView(CrmAccessMixin, TemplateView):
         now = timezone.now()
         contacts = Lead.objects.filter(is_deleted=False)
         deals = Opportunity.objects.filter(is_deleted=False)
+        open_deals = deals.exclude(stage__in=TERMINAL_DEAL_STAGES)
         pipeline_rows = {
             row["pipeline"]: row
-            for row in deals.values("pipeline").annotate(
+            for row in open_deals.values("pipeline").annotate(
                 deal_count=Count("id"),
                 total_value=Sum("value"),
             )
@@ -677,22 +685,33 @@ class CrmDashboardView(CrmAccessMixin, TemplateView):
                 }
             )
 
-        open_tasks = list(
-            CrmActivity.objects.filter(
-                lead__is_deleted=False,
-                activity_type=CrmActivity.ActivityType.TASK,
-                completed_at__isnull=True,
+        work_scope = self.request.GET.get("work", "team")
+        if work_scope not in {"team", "mine"}:
+            work_scope = "team"
+        open_tasks = CrmActivity.objects.filter(
+            lead__is_deleted=False,
+            activity_type=CrmActivity.ActivityType.TASK,
+            completed_at__isnull=True,
+        ).select_related("lead", "assigned_to")
+        if work_scope == "mine":
+            open_tasks = open_tasks.filter(assigned_to=self.request.user)
+        open_task_count = open_tasks.count()
+        task_rows = []
+        for task in open_tasks.order_by(F("due_at").asc(nulls_last=True), "created_at")[:6]:
+            owner = task.assigned_to
+            owner_label = "Unassigned"
+            if owner is not None:
+                owner_label = owner.get_full_name() or owner.email or "Unassigned"
+            task_rows.append(
+                {
+                    "task": task,
+                    "is_overdue": bool(task.due_at and task.due_at < now),
+                    "owner_label": owner_label,
+                }
             )
-            .select_related("lead", "assigned_to")
-            .order_by(F("due_at").asc(nulls_last=True), "created_at")[:6]
-        )
-        task_rows = [
-            {"task": task, "is_overdue": bool(task.due_at and task.due_at < now)}
-            for task in open_tasks
-        ]
+        assessment = assessment_summary(now)
         context.update(
             {
-                "total_contacts": contacts.count(),
                 "new_contacts": contacts.filter(status=Lead.Status.NEW).count(),
                 "unassigned_contacts": contacts.filter(assigned_to__isnull=True).count(),
                 "overdue_tasks": CrmActivity.objects.filter(
@@ -702,19 +721,18 @@ class CrmDashboardView(CrmAccessMixin, TemplateView):
                     due_at__lt=now,
                 ).count(),
                 "pending_triage": pending_routing_people_count(),
-                "assessments_waiting": pending_completion_people_count(),
-                "assessment_waiting": waiting_preview(),
-                "recent_submissions": FormSubmission.objects.filter(
-                    created_at__gte=now - timezone.timedelta(days=30)
-                ).count(),
+                "assessments_waiting": assessment["people_waiting"],
+                "assessments_to_review": assessment["needs_review"],
+                "assessment_email_attention": assessment["email_attention"],
+                "assessment_waiting": waiting_preview(now=now),
+                "assessment_review": review_preview(now=now),
                 "recent_contacts": contacts.select_related("assigned_to", "company").annotate(
                     last_submission_at=Max("form_submissions__created_at")
-                ).order_by(F("last_submission_at").desc(nulls_last=True), "-created_at")[:6],
+                ).order_by(F("last_submission_at").desc(nulls_last=True), "-created_at")[:5],
+                "work_scope": work_scope,
+                "open_task_count": open_task_count,
                 "task_rows": task_rows,
-                "triage_items": IntakeTriage.objects.filter(
-                    lead__is_deleted=False,
-                    status=IntakeTriage.Status.PENDING
-                ).select_related("lead", "submission").order_by("created_at")[:5],
+                "routing_people": routing_queue(now)["people"][:5],
                 "pipeline_summaries": pipeline_summaries,
             }
         )
@@ -1396,30 +1414,57 @@ class CrmTeamView(CrmAccessMixin, View):
         )
 
 
+def safe_contact_list_url(request):
+    """Return a same-site contacts list URL, including its filters."""
+    fallback = reverse("crm_contact_list")
+    candidate = (request.POST.get("next") or request.GET.get("next") or "").strip()
+    if not candidate:
+        return fallback
+    if not url_has_allowed_host_and_scheme(
+        candidate,
+        allowed_hosts={request.get_host()},
+        require_https=request.is_secure(),
+    ):
+        return fallback
+    path = candidate.split("?", 1)[0]
+    if path.rstrip("/") != fallback.rstrip("/"):
+        return fallback
+    return candidate
+
+
+def _overdue_contact_filter(now):
+    return Q(
+        crm_activities__activity_type=CrmActivity.ActivityType.TASK,
+        crm_activities__completed_at__isnull=True,
+        crm_activities__due_at__lt=now,
+    )
+
+
 class CrmContactBulkAssignView(CrmAccessMixin, View):
     def post(self, request):
+        return_url = safe_contact_list_url(request)
         raw_lead_ids = list(dict.fromkeys(request.POST.getlist("lead_ids")))
         if not raw_lead_ids or any(not value.isdigit() for value in raw_lead_ids):
             messages.error(request, "Select at least one valid contact to assign.")
-            return redirect("crm_contact_list")
+            return redirect(return_url)
 
         leads = list(
             Lead.objects.filter(pk__in=raw_lead_ids, is_deleted=False).order_by("pk")
         )
         if len(leads) != len(raw_lead_ids):
             messages.error(request, "One or more selected contacts are no longer available.")
-            return redirect("crm_contact_list")
+            return redirect(return_url)
 
         owner_value = request.POST.get("assigned_to", "")
         owner = None
         if owner_value != "unassigned":
             if not owner_value.isdigit():
                 messages.error(request, "Choose a valid CRM user or Unassigned.")
-                return redirect("crm_contact_list")
+                return redirect(return_url)
             owner = crm_owner_queryset().filter(pk=owner_value).first()
             if owner is None:
                 messages.error(request, "Choose a valid CRM user or Unassigned.")
-                return redirect("crm_contact_list")
+                return redirect(return_url)
 
         with transaction.atomic():
             for lead in leads:
@@ -1441,7 +1486,7 @@ class CrmContactBulkAssignView(CrmAccessMixin, View):
             request,
             f"Assigned {len(leads)} contact{'s' if len(leads) != 1 else ''} to {owner_label}.",
         )
-        return redirect("crm_contact_list")
+        return redirect(return_url)
 
 
 class CrmContactListView(CrmAccessMixin, TemplateView):
@@ -1471,6 +1516,10 @@ class CrmContactListView(CrmAccessMixin, TemplateView):
         audience_filter = self.request.GET.get("audience", "")
         relationship_interest_filter = self.request.GET.get("relationship_interest", "")
         owner_filter = self.request.GET.get("owner", "")
+        queue_filter = self.request.GET.get("queue", "")
+        if queue_filter not in {"overdue"}:
+            queue_filter = ""
+        now = timezone.now()
         if query:
             contacts = contacts.filter(
                 Q(contact_name__icontains=query)
@@ -1491,6 +1540,8 @@ class CrmContactListView(CrmAccessMixin, TemplateView):
             contacts = contacts.filter(assigned_to__isnull=True)
         elif owner_filter.isdigit():
             contacts = contacts.filter(assigned_to_id=owner_filter)
+        if queue_filter == "overdue":
+            contacts = contacts.filter(_overdue_contact_filter(now)).distinct()
 
         ordering = self.request.GET.get("sort", "recent")
         order_by = {
@@ -1507,37 +1558,105 @@ class CrmContactListView(CrmAccessMixin, TemplateView):
         query_params.pop("page", None)
         sort_params = query_params.copy()
         sort_params.pop("sort", None)
-        now = timezone.now()
+        owners = list(crm_owner_queryset())
+        owner_labels = {
+            str(owner.pk): owner.get_full_name() or owner.email for owner in owners
+        }
+        status_labels = dict(Lead.Status.choices)
+        audience_labels = dict(Lead.PipelineCategory.choices)
+        interest_labels = dict(Lead.RelationshipInterest.choices)
+        user_pk = str(self.request.user.pk)
+        if queue_filter == "overdue" and not status_filter and not owner_filter:
+            active_queue = "overdue"
+        elif status_filter == Lead.Status.NEW and not owner_filter and not queue_filter:
+            active_queue = "new"
+        elif owner_filter == "unassigned" and not status_filter and not queue_filter:
+            active_queue = "unassigned"
+        elif owner_filter == user_pk and not status_filter and not queue_filter:
+            active_queue = "mine"
+        elif not status_filter and not owner_filter and not queue_filter:
+            active_queue = "all"
+        else:
+            active_queue = "custom"
+        queue_copy = {
+            "all": "Every contact in the CRM. Repeat website inquiries stay on the same contact.",
+            "mine": "Contacts assigned to you.",
+            "new": "Contacts that still need a first look.",
+            "unassigned": "Contacts with no owner. Assign them before they stall.",
+            "overdue": "Contacts with a follow-up task that is past due.",
+            "custom": "Contacts matching the filters below.",
+        }
+        refinement = query_params.copy()
+        for key in ("status", "owner", "queue"):
+            refinement.pop(key, None)
+
+        def queue_href(**overrides):
+            params = refinement.copy()
+            for key, value in overrides.items():
+                if value:
+                    params[key] = value
+            encoded = params.urlencode()
+            return f"?{encoded}" if encoded else reverse("crm_contact_list")
+
+        def without(param):
+            params = query_params.copy()
+            params.pop(param, None)
+            encoded = params.urlencode()
+            return f"?{encoded}" if encoded else reverse("crm_contact_list")
+
+        filter_chips = []
+        if query:
+            filter_chips.append({"label": f"Search: {query}", "href": without("q")})
+        if status_filter in status_labels:
+            filter_chips.append({"label": status_labels[status_filter], "href": without("status")})
+        if audience_filter in audience_labels:
+            filter_chips.append({"label": audience_labels[audience_filter], "href": without("audience")})
+        if relationship_interest_filter in interest_labels:
+            filter_chips.append(
+                {"label": interest_labels[relationship_interest_filter], "href": without("relationship_interest")}
+            )
+        if owner_filter == "unassigned":
+            filter_chips.append({"label": "Unassigned", "href": without("owner")})
+        elif owner_filter in owner_labels:
+            filter_chips.append({"label": owner_labels[owner_filter], "href": without("owner")})
+        if queue_filter == "overdue":
+            filter_chips.append({"label": "Overdue follow-up", "href": without("queue")})
+
         context.update(
             {
                 "contacts": page_obj.object_list,
                 "page_obj": page_obj,
                 "filter_query": query_params.urlencode(),
                 "sort_base_query": sort_params.urlencode(),
+                "list_path": self.request.get_full_path(),
+                "result_count": paginator.count,
                 "total_contacts": all_contacts.count(),
+                "my_contacts": all_contacts.filter(assigned_to=self.request.user).count(),
                 "new_contacts": all_contacts.filter(status=Lead.Status.NEW).count(),
                 "unassigned_contacts": all_contacts.filter(assigned_to__isnull=True).count(),
-                "recent_submissions": FormSubmission.objects.filter(
-                    created_at__gte=now - timezone.timedelta(days=30)
-                ).count(),
-                "overdue_tasks": CrmActivity.objects.filter(
-                    lead__is_deleted=False,
-                    activity_type=CrmActivity.ActivityType.TASK,
-                    completed_at__isnull=True,
-                    due_at__lt=now,
-                ).count(),
-                "pending_triage": pending_routing_people_count(),
-                "owners": crm_owner_queryset(),
+                "overdue_contacts": all_contacts.filter(_overdue_contact_filter(now)).distinct().count(),
+                "owners": owners,
                 "status_choices": Lead.Status.choices,
                 "audience_choices": Lead.PipelineCategory.choices,
                 "relationship_interest_choices": Lead.RelationshipInterest.choices,
+                "active_queue": active_queue,
+                "queue_intro": queue_copy[active_queue],
+                "queue_links": {
+                    "all": queue_href(),
+                    "mine": queue_href(owner=user_pk),
+                    "new": queue_href(status=Lead.Status.NEW),
+                    "unassigned": queue_href(owner="unassigned"),
+                    "overdue": queue_href(queue="overdue"),
+                },
+                "filter_chips": filter_chips,
                 "active_filters": {
                     "q": query,
                     "status": status_filter,
                     "audience": audience_filter,
                     "relationship_interest": relationship_interest_filter,
                     "owner": owner_filter,
-                    "sort": ordering,
+                    "queue": queue_filter,
+                    "sort": ordering if ordering in {"name", "oldest", "recent", "deal", "deal_desc"} else "recent",
                 },
             }
         )
@@ -1594,9 +1713,53 @@ class CrmContactDetailView(CrmAccessMixin, TemplateView):
                 ),
                 "consultations": list(lead.consultation_bookings.all()),
                 "hiring_candidate": getattr(lead, "hiring", None),
+                "list_return_url": safe_contact_list_url(self.request),
+                "newsletter_subscription": subscription_for_email(lead.contact_email),
             }
         )
         return context
+
+
+class CrmContactNewsletterView(CrmAccessMixin, View):
+    """Add or remove the open contact from the newsletter list."""
+
+    def post(self, request, pk):
+        lead = get_object_or_404(Lead, pk=pk, is_deleted=False)
+        action = request.POST.get("action")
+        if action == "subscribe":
+            try:
+                subscription = subscribe_contact(lead, consented=request.POST.get("consent") == "yes")
+            except ValidationError as exc:
+                messages.error(request, " ".join(exc.messages))
+                return redirect("crm_contact_detail", pk=lead.pk)
+            AuditLog.objects.create(
+                actor=request.user,
+                action="crm.newsletter.contact_subscribed",
+                entity_type="crm.NewsletterSubscription",
+                entity_id=str(subscription.pk),
+                after={"email": subscription.email, "lead_id": lead.pk},
+            )
+            messages.success(request, f"{lead.contact_name} is on the newsletter.")
+        elif action == "unsubscribe":
+            subscription = subscription_for_email(lead.contact_email)
+            if subscription is None:
+                messages.error(request, "This contact is not on the newsletter.")
+                return redirect("crm_contact_detail", pk=lead.pk)
+            if subscription.lead_id is None:
+                subscription.lead = lead
+                subscription.save(update_fields=["lead", "updated_at"])
+            unsubscribe_subscription(subscription)
+            AuditLog.objects.create(
+                actor=request.user,
+                action="crm.newsletter.contact_unsubscribed",
+                entity_type="crm.NewsletterSubscription",
+                entity_id=str(subscription.pk),
+                after={"email": subscription.email, "lead_id": lead.pk},
+            )
+            messages.success(request, f"{lead.contact_name} will no longer receive the newsletter.")
+        else:
+            messages.error(request, "Choose whether to add or remove this contact.")
+        return redirect("crm_contact_detail", pk=lead.pk)
 
 
 class CrmContactDeleteView(CrmAccessMixin, View):
