@@ -46,6 +46,7 @@ from apps.crm.models import (
     pipeline_category_for,
 )
 from apps.crm.newsletters import resolve_unsubscribe_token
+from apps.crm.routing import pending_routing_people_count, pending_routing_queryset, routing_queue
 from apps.crm.serializers import CompanySerializer, LeadSerializer, OpportunitySerializer
 from apps.crm.services import (
     LeadIntake,
@@ -698,10 +699,7 @@ class CrmDashboardView(CrmAccessMixin, TemplateView):
                     completed_at__isnull=True,
                     due_at__lt=now,
                 ).count(),
-                "pending_triage": IntakeTriage.objects.filter(
-                    lead__is_deleted=False,
-                    status=IntakeTriage.Status.PENDING
-                ).count(),
+                "pending_triage": pending_routing_people_count(),
                 "recent_submissions": FormSubmission.objects.filter(
                     created_at__gte=now - timezone.timedelta(days=30)
                 ).count(),
@@ -1263,12 +1261,21 @@ class CrmTriageListView(CrmAccessMixin, TemplateView):
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
-        items = (
-            IntakeTriage.objects.filter(status=IntakeTriage.Status.PENDING, lead__is_deleted=False)
-            .select_related("lead__company", "submission")
-            .order_by("created_at")
+        queue = routing_queue()
+        people = queue["people"]
+        requested = self.request.GET.get("lead")
+        selected = next((person for person in people if str(person["lead"].pk) == requested), None)
+        if selected is None and people:
+            selected = people[0]
+        selected_index = people.index(selected) + 1 if selected else 0
+        context.update(
+            {
+                **queue,
+                "selected_person": selected,
+                "selected_index": selected_index,
+                "pipeline_choices": Opportunity.Pipeline.choices,
+            }
         )
-        context.update({"triage_items": items, "pipeline_choices": Opportunity.Pipeline.choices})
         return context
 
 
@@ -1299,12 +1306,17 @@ class CrmTriageResolveView(CrmAccessMixin, View):
                 "advocate": resolved.advocate_selected,
             },
         )
-        messages.success(
-            request,
-            "Dismissed. No deal was created."
-            if dismiss
-            else "Routing saved. Selected deals are on the pipeline.",
-        )
+        remaining = pending_routing_people_count()
+        if dismiss:
+            notice = "Dismissed. No deal was created."
+        else:
+            notice = "Routing saved. Selected deals are on the pipeline."
+        if remaining:
+            notice = f"{notice} {remaining} {('person' if remaining == 1 else 'people')} still waiting."
+        messages.success(request, notice)
+        nxt = pending_routing_queryset().order_by("created_at").values_list("lead_id", flat=True).first()
+        if nxt:
+            return redirect(f"{reverse('crm_triage_list')}?lead={nxt}")
         return redirect("crm_triage_list")
 
 
@@ -1499,7 +1511,7 @@ class CrmContactListView(CrmAccessMixin, TemplateView):
                     completed_at__isnull=True,
                     due_at__lt=now,
                 ).count(),
-                "pending_triage": IntakeTriage.objects.filter(status=IntakeTriage.Status.PENDING, lead__is_deleted=False).count(),
+                "pending_triage": pending_routing_people_count(),
                 "owners": crm_owner_queryset(),
                 "status_choices": Lead.Status.choices,
                 "audience_choices": Lead.PipelineCategory.choices,

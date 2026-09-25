@@ -2,7 +2,8 @@ import json
 
 from django import template
 
-from apps.crm.models import IntakeTriage, Lead
+from apps.crm.models import Lead
+from apps.crm.routing import pending_routing_people_count
 from apps.crm.surveys import SURVEY_FIELD_LABELS, SURVEY_VALUE_LABELS
 
 
@@ -124,11 +125,8 @@ def crm_survey_sections(submitted_data: object) -> list[dict[str, object]]:
 
 @register.simple_tag
 def pending_routing_count():
-    """Inquiries that still need a pipeline decision, excluding deleted contacts."""
-    return IntakeTriage.objects.filter(
-        status=IntakeTriage.Status.PENDING,
-        lead__is_deleted=False,
-    ).count()
+    """Distinct people who still need a pipeline decision."""
+    return pending_routing_people_count()
 
 
 @register.simple_tag(takes_context=True)

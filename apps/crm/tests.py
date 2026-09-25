@@ -1763,9 +1763,10 @@ class CrmWorkspaceTests(TestCase):
         )
 
         self.assertEqual(triage_response.status_code, 200)
-        self.assertContains(triage_response, "Needs a routing decision")
+        self.assertContains(triage_response, "People waiting")
         self.assertContains(triage_response, "Needs routing")
-        self.assertContains(triage_response, 'aria-label="1 awaiting a routing decision"')
+        self.assertContains(triage_response, 'aria-label="1 person waiting"')
+        self.assertContains(triage_response, "Person 1 of 1")
         self.assertNotContains(triage_response, "Intake triage")
         self.assertContains(triage_response, "North Star Foundation")
         self.assertRedirects(response, reverse("crm_triage_list"), fetch_redirect_response=False)
@@ -1802,6 +1803,43 @@ class CrmWorkspaceTests(TestCase):
         self.assertTrue(triage.advocate_selected)
         self.assertEqual(triage.selected_pipelines, [])
         self.assertFalse(Opportunity.objects.exists())
+
+    def test_routing_queue_counts_people_and_opens_the_next_person(self):
+        second = Lead.objects.create(contact_name="Blair Partner", contact_email="blair@example.com")
+        second_submission = FormSubmission.objects.create(
+            lead=second,
+            form_type=FormSubmission.FormType.SURVEY,
+            submitted_data={"engagement_interests": ["career_interest", "community_partner"]},
+        )
+        IntakeTriage.objects.create(
+            lead=self.lead,
+            submission=self.lead.form_submissions.get(),
+            source_signal=IntakeTriage.SourceSignal.PARTNER_INTEREST,
+        )
+        IntakeTriage.objects.create(
+            lead=second,
+            submission=second_submission,
+            source_signal=IntakeTriage.SourceSignal.PARTNER_INTEREST,
+        )
+        self.client.force_login(self.admin_user)
+
+        queue = self.client.get(reverse("crm_triage_list"))
+        chosen = self.client.get(reverse("crm_triage_list"), {"lead": second.pk})
+        response = self.client.post(
+            reverse("crm_triage_resolve", args=[self.lead.triage_items.get().pk]),
+            {"advocate": "yes", "action": "resolve"},
+        )
+
+        self.assertContains(queue, "2")
+        self.assertContains(queue, "People waiting")
+        self.assertContains(queue, "Career interest")
+        self.assertContains(chosen, "Person 2 of 2")
+        self.assertContains(chosen, "Blair Partner")
+        self.assertRedirects(
+            response,
+            f"{reverse('crm_triage_list')}?lead={second.pk}",
+            fetch_redirect_response=False,
+        )
 
     def test_pipeline_board_uses_only_stages_for_selected_pipeline(self):
         Opportunity.objects.create(

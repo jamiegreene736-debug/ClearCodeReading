@@ -2,20 +2,90 @@
 {% load crm_display %}
 {% block title %}Needs routing{% endblock %}
 {% block extra_style %}
-  .triage-list { display:grid; gap:16px; margin-top:22px; }
-  .triage-card { padding:20px; }
-  .triage-head { display:flex; align-items:flex-start; justify-content:space-between; gap:16px; }
+  .routing-head { display:flex; flex-wrap:wrap; align-items:flex-end; justify-content:space-between; gap:16px; }
+  .routing-layout { display:grid; grid-template-columns:minmax(260px,340px) minmax(0,1fr); gap:16px; align-items:start; }
+  .routing-queue { display:grid; gap:8px; }
+  .routing-person { display:block; padding:12px 14px; border:1px solid var(--line); border-radius:10px; background:white; text-decoration:none; }
+  .routing-person:hover { border-color:#8ca5b7; }
+  .routing-person.is-current { border-color:var(--teal); background:var(--teal-soft); }
+  .routing-person strong { display:block; color:var(--navy); }
+  .routing-meta { margin:4px 0 8px; color:var(--muted); font-size:12px; }
+  .routing-chips { display:flex; flex-wrap:wrap; gap:6px; }
+  .routing-detail { padding:20px; }
+  .routing-detail-head { display:flex; align-items:flex-start; justify-content:space-between; gap:16px; }
   .pipeline-options { display:grid; grid-template-columns:repeat(auto-fit,minmax(210px,1fr)); gap:9px; margin:16px 0; }
-  .pipeline-option { display:flex; align-items:center; gap:8px; padding:10px; border:1px solid var(--line); border-radius:5px; }
+  .pipeline-option { display:flex; align-items:center; gap:8px; padding:10px; border:1px solid var(--line); border-radius:5px; background:white; }
   .pipeline-option input { width:auto; }
-  .triage-actions { display:flex; gap:8px; margin-top:12px; }
-  .submission-data { display:grid; grid-template-columns:minmax(110px,.35fr) 1fr; gap:5px 12px; margin-top:14px; padding-top:14px; border-top:1px solid var(--line); }
-  .submission-data dt { color:var(--muted); font-size:12px; text-transform:capitalize; }
-  .submission-data dd { margin:0; overflow-wrap:anywhere; white-space:pre-wrap; }
+  .triage-actions { display:flex; flex-wrap:wrap; gap:8px; margin-top:12px; }
+  .inquiry-block + .inquiry-block { margin-top:22px; padding-top:22px; border-top:1px solid var(--line); }
+  @media (max-width:900px) { .routing-layout { grid-template-columns:1fr; } }
 {% endblock %}
 {% block content %}
-  <p class="eyebrow">Not a deal yet</p><h1>Needs a routing decision</h1><p class="subtle">These inquiries are not on a pipeline. Read the submission, then send it to the right deal, record an advocate with no deal, or dismiss it.</p>
-  <div class="triage-list">
-    {% for item in triage_items %}<article class="card triage-card"><div class="triage-head"><div><span class="badge badge-warn">Needs a decision</span><h2 style="margin-top:8px">{{ item.lead.contact_name }}</h2><p class="subtle">{{ item.lead.contact_email }}{% if item.lead.company %} · {{ item.lead.company.name }}{% endif %} · received {{ item.created_at|date:"M j, Y, g:i A" }}</p></div><a class="btn btn-small" href="{% url 'crm_contact_detail' item.lead.pk %}">Open contact</a></div>{% include "crm/_survey_response.html" with submitted_data=item.submission.submitted_data only %}<form method="post" action="{% url 'crm_triage_resolve' item.pk %}">{% csrf_token %}<fieldset style="border:0;padding:0"><legend class="field-label" style="margin-top:16px">Choose the deal pipelines that belong:</legend><div class="pipeline-options">{% for value,label in pipeline_choices %}<label class="pipeline-option"><input type="checkbox" name="pipelines" value="{{ value }}"> <span>{{ label }}</span></label>{% endfor %}<label class="pipeline-option"><input type="checkbox" name="advocate" value="yes"> <span>Advocate (no deal)</span></label></div></fieldset><div class="field"><label for="triage-notes-{{ item.pk }}">Routing notes</label><textarea id="triage-notes-{{ item.pk }}" name="resolution_notes" placeholder="Why these destinations are appropriate"></textarea></div><div class="triage-actions"><button class="btn btn-primary" name="action" value="resolve" type="submit">Save routing</button><button class="btn" name="action" value="dismiss" type="submit">Dismiss, no deal</button></div></form></article>{% empty %}<div class="card empty"><strong>Nothing needs a routing decision.</strong><br>Unclear partner, community, and career signals will appear here.</div>{% endfor %}
+  <div class="routing-head">
+    <div>
+      <p class="eyebrow">Not a deal yet</p>
+      <h1>Needs routing</h1>
+      <p class="subtle">These people are not on a pipeline. Open the oldest inquiry, then send it to the right deal, record an advocate with no deal, or dismiss it.</p>
+    </div>
   </div>
+  <section class="stats" aria-label="People waiting for a routing decision">
+    <div class="card stat"><div class="stat-label">People waiting</div><div class="stat-value">{{ people_count }}</div></div>
+    <div class="card stat"><div class="stat-label">Inquiries</div><div class="stat-value">{{ inquiry_count }}</div></div>
+    <div class="card stat"><div class="stat-label">Oldest waiting</div><div class="stat-value" style="font-size:22px">{{ oldest_waiting|default:"—" }}</div></div>
+  </section>
+  {% if people %}
+    <div class="routing-layout">
+      <nav class="routing-queue" aria-label="People waiting">
+        {% for person in people %}
+          <a class="routing-person {% if selected_person.lead.pk == person.lead.pk %}is-current{% endif %}" href="?lead={{ person.lead.pk }}" {% if selected_person.lead.pk == person.lead.pk %}aria-current="true"{% endif %}>
+            <strong>{{ person.lead.contact_name }}</strong>
+            <p class="routing-meta">{{ person.waiting_label }}{% if person.inquiry_count > 1 %} · {{ person.inquiry_count }} inquiries{% endif %}{% if person.lead.company %} · {{ person.lead.company.name }}{% endif %}</p>
+            <div class="routing-chips">
+              {% for signal in person.signals %}<span class="badge badge-warn">{{ signal }}</span>{% empty %}<span class="badge badge-neutral">Needs a decision</span>{% endfor %}
+            </div>
+          </a>
+        {% endfor %}
+      </nav>
+      {% if selected_person %}
+        <article class="card routing-detail">
+          <div class="routing-detail-head">
+            <div>
+              <p class="eyebrow">Person {{ selected_index }} of {{ people_count }}</p>
+              <h2>{{ selected_person.lead.contact_name }}</h2>
+              <p class="subtle">{{ selected_person.lead.contact_email }}{% if selected_person.lead.company %} · {{ selected_person.lead.company.name }}{% endif %} · {{ selected_person.waiting_label }}</p>
+            </div>
+            <a class="btn btn-small" href="{% url 'crm_contact_detail' selected_person.lead.pk %}">Open contact</a>
+          </div>
+          {% for item in selected_person.items %}
+            <section class="inquiry-block">
+              <p class="subtle">{{ item.submission.get_form_type_display }} · received {{ item.created_at|date:"M j, Y, g:i A" }}</p>
+              {% include "crm/_survey_response.html" with submitted_data=item.submission.submitted_data only %}
+              <form method="post" action="{% url 'crm_triage_resolve' item.pk %}">
+                {% csrf_token %}
+                <fieldset style="border:0;padding:0">
+                  <legend class="field-label" style="margin-top:16px">Choose the deal pipelines that belong:</legend>
+                  <div class="pipeline-options">
+                    {% for value,label in pipeline_choices %}
+                      <label class="pipeline-option"><input type="checkbox" name="pipelines" value="{{ value }}"> <span>{{ label }}</span></label>
+                    {% endfor %}
+                    <label class="pipeline-option"><input type="checkbox" name="advocate" value="yes"> <span>Advocate (no deal)</span></label>
+                  </div>
+                </fieldset>
+                <div class="field">
+                  <label for="triage-notes-{{ item.pk }}">Routing notes</label>
+                  <textarea id="triage-notes-{{ item.pk }}" name="resolution_notes" placeholder="Why these destinations are appropriate"></textarea>
+                </div>
+                <div class="triage-actions">
+                  <button class="btn btn-primary" name="action" value="resolve" type="submit">Save routing</button>
+                  <button class="btn" name="action" value="dismiss" type="submit">Dismiss, no deal</button>
+                </div>
+              </form>
+            </section>
+          {% endfor %}
+        </article>
+      {% endif %}
+    </div>
+  {% else %}
+    <div class="card empty"><strong>0 people waiting.</strong><br>Unclear partner, community, and career signals will appear here.</div>
+  {% endif %}
 {% endblock %}
