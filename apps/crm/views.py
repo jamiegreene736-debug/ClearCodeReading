@@ -56,6 +56,7 @@ from apps.crm.newsletters import (
 from apps.crm.assessment_queue import assessment_summary, review_preview, waiting_preview
 from apps.crm.routing import pending_routing_people_count, pending_routing_queryset, routing_queue
 from apps.crm.serializers import CompanySerializer, LeadSerializer, OpportunitySerializer
+from apps.crm_email.models import EmailTemplate
 from apps.crm.services import (
     LeadIntake,
     TERMINAL_DEAL_STAGES,
@@ -1715,6 +1716,7 @@ class CrmContactDetailView(CrmAccessMixin, TemplateView):
                 "hiring_candidate": getattr(lead, "hiring", None),
                 "list_return_url": safe_contact_list_url(self.request),
                 "newsletter_subscription": subscription_for_email(lead.contact_email),
+                "email_templates": EmailTemplate.objects.filter(owner=self.request.user),
             }
         )
         return context

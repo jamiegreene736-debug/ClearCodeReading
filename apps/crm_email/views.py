@@ -48,6 +48,7 @@ from apps.crm.newsletters import (
 )
 from apps.crm_email import automated
 from apps.crm_email.automated import text_to_html
+from apps.crm_email.contact_templates import TEMPLATE_PLACEHOLDERS, apply_template
 from apps.crm_email.forms import (
     AutomatedEmailForm,
     ComposeForm,
@@ -742,6 +743,7 @@ def contact_email(request: EmailRequest, pk: int) -> HttpResponse:
                 mailbox__user=request.user, import_pending=True
             ),
             "mailbox": Mailbox.objects.filter(user=request.user).first(),
+            "templates": EmailTemplate.objects.filter(owner=request.user),
         },
     )
 
@@ -827,11 +829,7 @@ def compose(request: EmailRequest, pk: int) -> HttpResponse:
             template = get_object_or_404(
                 EmailTemplate, pk=request.GET["template"], owner=request.user
             )
-            initial.update(
-                subject=template.subject,
-                body_html=clean_html(template.body_html)
-                + clean_html(mailbox.signature),
-            )
+            initial.update(apply_template(template, lead, mailbox))
     except (ValueError, ValidationError):
         raise PermissionDenied
     form = ComposeForm(request.POST or None, initial=initial)
@@ -986,7 +984,13 @@ def template_view(
         messages.success(request, "Email template saved.")
         return redirect("crm_email_settings")
     return render(
-        request, "crm/email_template.html", {"form": form, "template": template}
+        request,
+        "crm/email_template.html",
+        {
+            "form": form,
+            "template": template,
+            "placeholders": TEMPLATE_PLACEHOLDERS,
+        },
     )
 
 
