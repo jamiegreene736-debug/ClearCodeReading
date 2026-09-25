@@ -16,7 +16,7 @@ from typing import cast
 
 from django.utils.html import escape
 
-from apps.crm_email.models import AutomatedEmail
+from apps.crm_email.models import BETHANY_SIGNATURE, AutomatedEmail
 from apps.crm_email.security import plain_text
 
 FIELD_LABELS: Mapping[str, str] = {
@@ -89,15 +89,22 @@ def fill(text: str, values: Mapping[str, str]) -> str:
     return TOKEN.sub(lambda match: values.get(match.group(1).strip(), ""), text)
 
 
+_URL = re.compile(r"https://[^\s<>\"']+")
+
+
 def html_value(value: str) -> str:
-    """Escape a substituted value for HTML, keeping line breaks and linking bare URLs."""
+    """Escape a substituted value for HTML, keeping line breaks and linking HTTPS URLs."""
     lines = []
     for line in value.split("\n"):
-        stripped = line.strip()
-        if re.fullmatch(r"https://\S+", stripped):
-            lines.append(f'<a href="{escape(stripped)}">{escape(stripped)}</a>')
-        else:
-            lines.append(escape(line))
+        parts: list[str] = []
+        end = 0
+        for match in _URL.finditer(line):
+            url = match.group(0).rstrip(".,;:!?)")
+            parts.append(escape(line[end : match.start()]))
+            parts.append(f'<a href="{escape(url)}">{escape(url)}</a>')
+            end = match.start() + len(url)
+        parts.append(escape(line[end:]))
+        lines.append("".join(parts))
     return "<br>".join(lines)
 
 
@@ -213,7 +220,7 @@ _STAGE_SAMPLE = {
     "contact.firstname": "Jordan",
     "company.name": "Example Organization",
     "scheduling_link": "https://clearcodereading.com/book/",
-    "Bethany’s email signature": "Bethany Fleming\nFounder & CEO, ClearCode Reading Center",
+    "Bethany’s email signature": BETHANY_SIGNATURE,
     "investment_category": "education",
     "foundation_name": "Bethany Fleming",
     "gmail_signature": "ClearCode, Inc.",
