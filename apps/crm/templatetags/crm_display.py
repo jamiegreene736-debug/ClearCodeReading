@@ -2,6 +2,7 @@ import json
 
 from django import template
 
+from apps.crm.hiring import hiring_queue_counts
 from apps.crm.models import Lead
 from apps.crm.assessment_queue import pending_completion_people_count
 from apps.crm.routing import pending_routing_people_count
@@ -134,6 +135,12 @@ def pending_routing_count():
 def pending_assessment_count():
     """Distinct people who still need to finish an open reading inventory."""
     return pending_completion_people_count()
+
+
+@register.simple_tag
+def pending_hiring_intake_count():
+    """Teachers still in application received, waiting for intake review."""
+    return hiring_queue_counts()["pending_intake"]
 
 
 @register.simple_tag(takes_context=True)

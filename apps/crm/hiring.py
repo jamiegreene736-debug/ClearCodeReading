@@ -27,6 +27,19 @@ CHECKLISTS = {
     ],
 }
 ACTIVE_STAGES = [value for value, _ in HiringCandidate.Stage.choices][:7]
+TERMINAL_STAGES = ("ready", "not_selected", "withdrawn")
+STAGE_PROMPTS = {
+    "application": "Review the application and documents, then check intake before screening.",
+    "screening": "Confirm qualifications and availability before an interview.",
+    "interview": "Finish the interview or teaching demonstration and record the evaluation.",
+    "decision": "Record the hire-or-decline decision and the rationale.",
+    "offer": "Record the offer already sent, then follow up until there is a response.",
+    "onboarding": "Finish paperwork, training, and the readiness confirmation.",
+    "ready": "Recruiting is complete. This does not create a teacher login.",
+    "hold": "Record why this is paused and the date you will review it.",
+    "not_selected": "Record why this candidate was not selected.",
+    "withdrawn": "Record why the candidate withdrew.",
+}
 DEFAULT_ACTIONS = {
     "application": "Review application",
     "screening": "Complete initial screening",
@@ -36,6 +49,47 @@ DEFAULT_ACTIONS = {
     "onboarding": "Complete onboarding checklist",
     "hold": "Review hold",
 }
+
+
+def attention_filter(eligible: QuerySet[CustomUser]) -> Q:
+    """Overdue work, missing dates, ineligible owners, and recorded blockers."""
+    return (
+        Q(due_date__lt=timezone.localdate())
+        | Q(due_date__isnull=True)
+        | ~Q(application__owner_id__in=eligible.values("pk"))
+        | ~Q(blocker="")
+    )
+
+
+def teacher_candidates() -> QuerySet[HiringCandidate]:
+    return HiringCandidate.objects.filter(application__career_path="teacher")
+
+
+def hiring_queue_counts() -> dict[str, object]:
+    """Team-wide counts. Pending intake is every teacher still in application received."""
+    base = teacher_candidates()
+    stage_counts = {
+        row["stage"]: row["total"]
+        for row in base.values("stage").annotate(total=Count("pk"))
+    }
+    active = base.exclude(stage__in=TERMINAL_STAGES)
+    eligible = hiring_owner_queryset()
+    return {
+        "pending_intake": stage_counts.get(HiringCandidate.Stage.APPLICATION, 0),
+        "needs_attention": active.filter(attention_filter(eligible)).count(),
+        "needs_owner": active.exclude(
+            application__owner_id__in=eligible.values("pk")
+        ).count(),
+        "interviews": stage_counts.get(HiringCandidate.Stage.INTERVIEW, 0),
+        "offers_waiting": base.filter(
+            stage=HiringCandidate.Stage.OFFER,
+            offer_response=HiringCandidate.OfferResponse.PENDING,
+        ).count(),
+        "on_hold": stage_counts.get(HiringCandidate.Stage.HOLD, 0),
+        "ready": stage_counts.get(HiringCandidate.Stage.READY, 0),
+        "active": active.count(),
+        "stages": stage_counts,
+    }
 
 
 def hiring_owner_queryset() -> QuerySet[CustomUser]:

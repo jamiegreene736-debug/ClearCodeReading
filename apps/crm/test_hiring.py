@@ -115,8 +115,32 @@ class HiringTests(TestCase):
         response = self.client.get(reverse("crm_hiring"))
         self.assertContains(response, "Test Teacher")
         self.assertContains(response, "Save candidate updates")
+        self.assertContains(response, "Pending intake")
+        self.assertContains(response, "pending intake")
         self.assertEqual(response["Cache-Control"], "private, no-store")
         self.assertNotContains(response, "private resume")
+
+    def test_pending_intake_count_includes_the_whole_team(self):
+        RecruitingInterest.objects.create(
+            name="New Applicant",
+            email="new-applicant@example.com",
+            career_path="teacher",
+            role_interest="Teacher",
+            notes="Application",
+            owner=self.brook,
+        )
+        mine = self.client.get(reverse("crm_hiring"))
+        self.assertContains(mine, "Pending intake")
+        self.assertContains(mine, ">2<")
+        self.assertNotContains(mine, "New Applicant")
+        intake = self.client.get(
+            reverse("crm_hiring"), {"owner": "all", "stage": "application"}
+        )
+        self.assertContains(intake, "New Applicant")
+        self.assertContains(intake, "Test Teacher")
+        dashboard = self.client.get(reverse("crm_dashboard"))
+        self.assertContains(dashboard, "Teachers pending intake")
+        self.assertContains(dashboard, "New Applicant")
 
     def test_private_access_requires_explicit_hiring_access(self):
         for user in [

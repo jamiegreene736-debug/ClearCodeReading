@@ -2,10 +2,16 @@
 
 ## Workflow
 
-Open **CRM → Teacher hiring**. My candidates is the default. Use Everyone, an
-individual owner, Needs owner, stage, name/email, or Needs attention to find work.
-Needs attention includes overdue dates, missing dates, unavailable owners, and
-recorded blockers. Results are paginated and attention items sort first.
+Open **CRM → Teacher hiring**. The sidebar count is teachers still in
+Application received (pending intake) and opens that queue. The page leads with
+team queues: pending intake, needs attention, needs owner, interviews, offers
+waiting on a response, on hold, and ready for assignment. Stage counts under
+those queues follow the owner filter. My candidates is still the default list.
+Use Everyone, an individual owner, Needs owner, stage, name/email, or Needs
+attention to find work. Needs attention includes overdue dates, missing dates,
+unavailable owners, and recorded blockers. Results are paginated and attention
+items sort first. The overview shows the same pending-intake count for people
+with hiring access.
 
 One person owns the entire application. Only the current owner edits evaluation,
 decision, offer, and onboarding records. Any authorized hiring team member can
