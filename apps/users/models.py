@@ -64,6 +64,17 @@ class CustomUser(AbstractUser, TimestampedModel, SoftDeleteModel):
     def __str__(self):
         return self.get_full_name() or self.email
 
+    def account_menu_name(self):
+        """Name shown on the portal account menu. Prefers the name they asked us to use."""
+        if not self.pk:
+            return (self.first_name or "").strip()
+        preferred = ""
+        try:
+            preferred = self.profile.display_name
+        except Profile.DoesNotExist:
+            preferred = ""
+        return (preferred or self.first_name or "").strip()
+
     @property
     def has_resource_access(self) -> bool:
         from apps.resources.access import can_edit
@@ -121,12 +132,28 @@ class MobileDevice(TimestampedModel):
 
 
 class Profile(TimestampedModel, SoftDeleteModel):
+    class ContactMethod(models.TextChoices):
+        EMAIL = "email", "Email"
+        PHONE = "phone", "Phone call"
+        TEXT = "text", "Text message"
+
     user = models.OneToOneField(CustomUser, on_delete=models.CASCADE, related_name="profile")
     display_name = models.CharField(max_length=255, blank=True)
     avatar = models.ImageField(upload_to="profiles/avatars/", blank=True)
     timezone = models.CharField(max_length=64, default="America/New_York")
     preferences = models.JSONField(default=dict, blank=True)
     onboarding_completed_at = models.DateTimeField(null=True, blank=True)
+    preferred_contact_method = models.CharField(
+        max_length=16,
+        choices=ContactMethod.choices,
+        blank=True,
+    )
+    organization_name = models.CharField(max_length=255, blank=True)
+    job_title = models.CharField(max_length=120, blank=True)
+    city = models.CharField(max_length=120, blank=True)
+    region = models.CharField(max_length=80, blank=True)
+    postal_code = models.CharField(max_length=20, blank=True)
+    about = models.TextField(blank=True)
 
     class Meta:
         ordering = ["user__email"]
