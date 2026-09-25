@@ -1647,6 +1647,7 @@ class CrmWorkspaceTests(TestCase):
         self.assertContains(response, 'href="#assessments"')
         self.assertContains(response, 'href="#deals"')
         self.assertContains(response, 'href="#tasks"')
+        self.assertContains(response, ".identity a:not(.btn)")
         self.assertNotContains(response, 'id="detail-status"')
         self.assertNotContains(response, "Save properties")
         self.assertNotContains(response, "About this contact")
