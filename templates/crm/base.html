@@ -150,7 +150,7 @@
             {% nav_state 'crm_deal_list' 'crm_deal_new' 'crm_deal_create' 'crm_deal_detail' 'crm_deal_remove' 'crm_deal_stage_update' 'crm_enrollment_person_edit' as nav_deals %}
             <a class="nav-link {{ nav_deals.class }}" {% if nav_deals.current %}aria-current="page"{% endif %} href="{% url 'crm_deal_list' %}">{% include "crm/_nav_icon.html" with icon="deals" %}Deals</a>
             {% nav_state 'crm_triage_list' 'crm_triage_resolve' as nav_triage %}
-            <a class="nav-link {{ nav_triage.class }}" {% if nav_triage.current %}aria-current="page"{% endif %} href="{% url 'crm_triage_list' %}">{% include "crm/_nav_icon.html" with icon="triage" %}<span>Needs routing</span>{% pending_routing_count as routing_count %}{% if routing_count %}<span class="nav-count" aria-label="{{ routing_count }} awaiting a routing decision">{{ routing_count }}</span>{% endif %}</a>
+            <a class="nav-link {{ nav_triage.class }}" {% if nav_triage.current %}aria-current="page"{% endif %} href="{% url 'crm_triage_list' %}">{% include "crm/_nav_icon.html" with icon="triage" %}<span>Needs routing</span>{% pending_routing_count as routing_count %}<span class="nav-count" aria-label="{{ routing_count }} {% if routing_count == 1 %}person{% else %}people{% endif %} waiting">{{ routing_count }}</span></a>
             {% if request.user.has_hiring_access %}
               {% nav_state 'crm_hiring' 'crm_hiring_update' 'crm_hiring_assign' 'crm_hiring_document' 'crm_hiring_from_contact' as nav_hiring %}
               <a class="nav-link {{ nav_hiring.class }}" {% if nav_hiring.current %}aria-current="page"{% endif %} href="{% url 'crm_hiring' %}">{% include "crm/_nav_icon.html" with icon="hiring" %}Teacher hiring</a>

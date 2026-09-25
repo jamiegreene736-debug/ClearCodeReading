@@ -33,7 +33,7 @@
     <a class="card stat" href="{% url 'crm_contact_list' %}?status=new" style="text-decoration:none"><div class="stat-label">New to review</div><div class="stat-value">{{ new_contacts }}</div></a>
     <a class="card stat" href="{% url 'crm_contact_list' %}?owner=unassigned" style="text-decoration:none"><div class="stat-label">Unassigned</div><div class="stat-value">{{ unassigned_contacts }}</div></a>
     <div class="card stat"><div class="stat-label">Overdue tasks</div><div class="stat-value">{{ overdue_tasks }}</div></div>
-    <a class="card stat" href="{% url 'crm_triage_list' %}" style="text-decoration:none"><div class="stat-label">Needs routing</div><div class="stat-value">{{ pending_triage }}</div></a>
+    <a class="card stat" href="{% url 'crm_triage_list' %}" style="text-decoration:none"><div class="stat-label">People waiting</div><div class="stat-value">{{ pending_triage }}</div></a>
     <div class="card stat"><div class="stat-label">Submissions · 30 days</div><div class="stat-value">{{ recent_submissions }}</div></div>
   </section>
 
@@ -69,7 +69,7 @@
     <aside class="card section-card">
       <div class="section-head"><h2>Needs routing</h2><a href="{% url 'crm_triage_list' %}">Open queue</a></div>
       <div class="action-list">
-        {% for item in triage_items %}<a class="action-row" href="{% url 'crm_triage_list' %}"><span><strong>{{ item.lead.contact_name }}</strong><br><span class="action-meta">{{ item.get_source_signal_display }}</span></span><span class="badge badge-warn">Needs a decision</span></a>
+        {% for item in triage_items %}<a class="action-row" href="{% url 'crm_triage_list' %}?lead={{ item.lead_id }}"><span><strong>{{ item.lead.contact_name }}</strong><br><span class="action-meta">{{ item.created_at|timesince }} waiting</span></span><span class="badge badge-warn">Needs a decision</span></a>
         {% empty %}<div class="empty">Nothing needs routing.</div>{% endfor %}
       </div>
     </aside>
