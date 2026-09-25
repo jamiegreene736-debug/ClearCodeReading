@@ -288,7 +288,8 @@ class BlogCmsAccessTests(TestCase):
 
         self.assertEqual(response.status_code, 200)
         self.assertIn('data-testid="blog-manage-menu-link"', content)
-        self.assertIn('data-testid="blog-new-menu-link"', content)
+        self.assertNotIn('data-testid="blog-new-menu-link"', content)
+        self.assertEqual(content.count('href="/portal/blog/"'), 1)
         self.assertIn('data-testid="blog-empty-state"', content)
         self.assertNotIn("/admin/blog/blogpost/", content)
 
