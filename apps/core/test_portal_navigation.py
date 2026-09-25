@@ -22,12 +22,15 @@ class PortalNavigationTests(SimpleTestCase):
         request.resolver_match = resolve(path)
         return render_to_string("portal/_header.html", request=request)
 
-    def test_administrator_gets_horizontal_program_management_and_business_menus(self):
+    def test_administrator_gets_program_and_manage_menus_plus_a_crm_link(self):
         content = self.render_header(role=CustomUser.Role.SUPER_ADMIN, is_staff=True)
 
         self.assertIn('data-testid="program-menu-button"', content)
         self.assertIn('data-testid="manage-menu-button"', content)
-        self.assertIn('data-testid="business-menu-button"', content)
+        self.assertNotIn('data-testid="business-menu-button"', content)
+        self.assertNotIn("Business tools", content)
+        self.assertIn('data-testid="crm-header-link"', content)
+        self.assertIn(">CRM</a>", content)
         self.assertIn('aria-controls="program-navigation-panel"', content)
         self.assertIn('data-testid="teacher-assignments-menu-link"', content)
         self.assertIn('href="/portal/teacher-assignments/"', content)
@@ -37,7 +40,7 @@ class PortalNavigationTests(SimpleTestCase):
         self.assertIn("Create lessons and share them with the teachers who will use them", content)
         self.assertNotIn('href="/dashboard/#admin-actions"', content)
         self.assertNotIn('href="/dashboard/#lesson-library"', content)
-        self.assertIn('data-testid="crm-header-link"', content)
+        self.assertNotIn('href="/dashboard/#website-signups"', content)
         self.assertNotIn('data-testid="teaching-menu-button"', content)
         self.assertNotIn('role="menu"', content)
 
@@ -62,7 +65,7 @@ class PortalNavigationTests(SimpleTestCase):
     def test_every_disclosure_exposes_state_and_keyboard_dismissal(self):
         content = self.render_header(role=CustomUser.Role.SUPER_ADMIN, is_staff=True)
 
-        self.assertEqual(content.count('aria-expanded="false"'), 4)
+        self.assertEqual(content.count('aria-expanded="false"'), 3)
         self.assertIn("event.key !== 'Escape'", content)
         self.assertIn("if (!header.contains(document.activeElement)) closeAll()", content)
 
@@ -78,7 +81,6 @@ class PortalNavigationTests(SimpleTestCase):
             "progress-overview",
             "session-launchpad",
             "placement-review",
-            "website-signups",
             "lesson-planning",
             "assessment-review",
             "teacher-plan",
@@ -91,6 +93,8 @@ class PortalNavigationTests(SimpleTestCase):
         self.assertIn("{% url 'portal_lesson_library' %}", admin_workspace)
         self.assertNotIn('id="admin-actions"', admin_workspace)
         self.assertNotIn("{% url 'assign_teacher' %}", admin_workspace)
+        self.assertNotIn('id="website-signups"', portal_markup)
+        self.assertNotIn("New signups", admin_workspace)
         self.assertNotIn('id="account-creation"', portal_markup)
         self.assertNotIn("Specialist launchpad", admin_workspace)
         self.assertNotIn("KPI areas", admin_workspace)

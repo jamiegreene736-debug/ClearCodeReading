@@ -56,28 +56,14 @@
           </div>
         </li>
 
-        <li class="static lg:relative" data-portal-disclosure>
-          <button id="business-navigation-button" data-testid="business-menu-button" class="focus-ring inline-flex min-h-11 items-center gap-2 rounded-full px-3 py-2 text-sm font-black text-ink/70 transition hover:-translate-y-0.5 hover:bg-white/70 hover:text-deepTeal sm:px-4" type="button" aria-expanded="false" aria-controls="business-navigation-panel">
-            Business
-            <svg aria-hidden="true" class="h-3 w-3 transition-transform" data-disclosure-chevron viewBox="0 0 12 8" fill="none" stroke="currentColor" stroke-width="2"><path d="m1 1.5 5 5 5-5" /></svg>
-          </button>
-          <div id="business-navigation-panel" class="absolute left-4 right-4 top-[calc(100%+.65rem)] z-50 hidden max-h-[70vh] overflow-y-auto rounded-3xl bg-white p-3 shadow-2xl shadow-ink/20 ring-1 ring-ink/10 lg:left-auto lg:right-0 lg:w-[21rem]" aria-labelledby="business-navigation-button">
-            <p class="px-3 pb-2 text-xs font-black uppercase tracking-[0.16em] text-mediumTeal">Business tools</p>
-            <ul class="grid gap-1">
-              {% if request.user.is_staff or request.user.is_superuser or request.user.role == 'super_admin' %}
-                <li><a data-testid="crm-header-link" href="{% url 'crm_dashboard' %}" class="focus-ring block rounded-2xl px-3 py-3 font-black hover:bg-linen">CRM workspace</a></li>
-                <li><a href="{% url 'crm_contact_list' %}" class="focus-ring block rounded-2xl px-3 py-3 font-black hover:bg-linen">Contacts &amp; pipeline</a></li>
-              {% endif %}
-              <li><a href="{% url 'portal_dashboard' %}#website-signups" class="focus-ring block rounded-2xl px-3 py-3 font-black hover:bg-linen">Website signups</a></li>
-              {% if request.user.is_staff %}
-                <li><a href="/admin/" class="focus-ring block rounded-2xl px-3 py-3 font-black hover:bg-linen">Django admin</a></li>
-              {% endif %}
-            </ul>
-          </div>
-        </li>
+        {% if request.user.has_crm_access %}
+          <li>
+            <a data-testid="crm-header-link" href="{% url 'crm_dashboard' %}" class="focus-ring inline-flex min-h-11 items-center rounded-full px-3 py-2 text-sm font-black text-ink/70 transition hover:-translate-y-0.5 hover:bg-white/70 hover:text-deepTeal sm:px-4">CRM</a>
+          </li>
+        {% endif %}
       {% elif request.user.role == 'crm_user' %}
         <li>
-          <a data-testid="crm-header-link" href="{% url 'crm_dashboard' %}" class="focus-ring inline-flex min-h-11 items-center rounded-full bg-ink px-4 py-2 text-sm font-black text-white shadow-lg shadow-ink/15">CRM workspace</a>
+          <a data-testid="crm-header-link" href="{% url 'crm_dashboard' %}" class="focus-ring inline-flex min-h-11 items-center rounded-full bg-ink px-4 py-2 text-sm font-black text-white shadow-lg shadow-ink/15">CRM</a>
         </li>
       {% elif request.user.role == 'teacher' %}
         <li class="static lg:relative" data-portal-disclosure>

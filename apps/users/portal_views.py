@@ -15,7 +15,6 @@ from django.utils.text import slugify
 from django.views.generic import TemplateView, View
 
 from apps.assessments.models import Assessment, AssessmentResult
-from apps.crm.models import Lead
 from apps.api.permissions import has_coppa_consent, user_can_evaluate_child, user_can_log_session
 from apps.curriculum.models import (
     ChildLessonAssignment,
@@ -227,14 +226,6 @@ class PortalDashboardView(PortalAuthMixin, TemplateView):
             .order_by("-created_at")
         )
         pending_reviews = assessments.filter(status=Assessment.Status.HUMAN_REVIEW)
-        recent_leads = Lead.objects.none()
-        lead_count = 0
-        new_lead_count = 0
-        if context["is_admin"]:
-            lead_queryset = Lead.objects.filter(is_deleted=False).select_related("assigned_to", "linked_user")
-            recent_leads = lead_queryset.order_by("-created_at")[:8]
-            lead_count = lead_queryset.count()
-            new_lead_count = lead_queryset.filter(status=Lead.Status.NEW).count()
 
         lesson_templates = LessonTemplate.objects.filter(is_active=True, is_deleted=False).select_related("skill")
         teacher_template_assignments = TeacherLessonTemplate.objects.filter(is_deleted=False).select_related(
@@ -353,12 +344,9 @@ class PortalDashboardView(PortalAuthMixin, TemplateView):
                 "child_count": len(children),
                 "unassigned_count": len(unassigned_readers),
                 "placement_pending_count": placement_pending_count,
-                "attention_count": len(unassigned_readers) + placement_pending_count + new_lead_count + pending_reviews.count(),
+                "attention_count": len(unassigned_readers) + placement_pending_count + pending_reviews.count(),
                 "kpi_count": self._kpi_count(latest_results.first()),
                 "teachers": teachers,
-                "recent_leads": recent_leads,
-                "lead_count": lead_count,
-                "new_lead_count": new_lead_count,
                 "lesson_templates": lesson_templates,
                 "available_lesson_templates": available_lesson_templates,
                 "teacher_template_assignments": teacher_template_assignments[:12],
