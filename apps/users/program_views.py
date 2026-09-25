@@ -12,7 +12,7 @@ from django.views.generic import TemplateView
 from apps.assessments.models import Assessment, AssessmentResult
 from apps.crm.models import Lead
 from apps.api.permissions import user_can_log_session
-from apps.curriculum.models import LessonTemplate, PlacementRecommendation, StudentPlacement, TeacherLessonTemplate
+from apps.curriculum.models import PlacementRecommendation, StudentPlacement
 from apps.sessions.models import Session
 from apps.users.models import CustomUser, GuardianRelationship, UserInvitation
 from apps.users.portal_views import PortalAuthMixin
