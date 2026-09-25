@@ -8,10 +8,41 @@
   .btn-danger { background:#a32222; color:white; border-color:#a32222; }
 
   .crumb { display:inline-block; margin-bottom:15px; color:var(--teal); font-weight:600; text-decoration:none; }
-  .record-grid { display:grid; grid-template-columns:250px minmax(0,1fr) 285px; gap:18px; align-items:start; }
+  .hiring-banner, .routing-banner { display:flex; flex-wrap:wrap; align-items:center; justify-content:space-between; gap:14px; padding:16px 18px; margin-bottom:16px; }
+  .hiring-banner p, .routing-banner p { margin:4px 0 0; }
+  .routing-banner { border-color:#e2c36a; background:#fff8e8; }
+  .record-grid { display:grid; grid-template-columns:minmax(260px, 320px) minmax(0,1fr); gap:22px; align-items:start; }
+  .record-facts { position:sticky; top:16px; }
   .panel { padding:18px; }
-  .assessment-entry { margin-top:16px; }
-  .assessment-name { margin:0 0 8px; font-weight:600; overflow-wrap:anywhere; }
+  .identity h1 { margin-bottom:4px; font-size:26px; }
+  .identity .avatar { width:56px; height:56px; margin-bottom:12px; font-size:22px; }
+  .identity a { color:var(--teal); text-decoration:none; }
+  .origin-badges { margin:8px 0 0; display:flex; flex-wrap:wrap; gap:6px; }
+  .quick-actions { display:grid; grid-template-columns:1fr 1fr; gap:8px; margin:16px 0; }
+  .properties { border-top:1px solid var(--line); padding-top:15px; }
+  .property { margin:0 0 13px; }
+  .property dt { color:var(--muted); font-size:11px; font-weight:700; text-transform:uppercase; }
+  .property dd { margin:3px 0 0; overflow-wrap:anywhere; }
+  .inline-property summary { cursor:pointer; display:flex; align-items:center; justify-content:space-between; gap:8px; min-height:44px; border-radius:4px; padding:4px; }
+  .inline-property summary:hover, .inline-property summary:focus-visible { background:#e5f4f2; outline:2px solid var(--teal); }
+  .edit-cue { color:var(--teal); font-size:12px; }
+  .inline-property form { padding:10px 0; }
+  .inline-property select, .inline-property input { width:100%; min-height:44px; }
+  .inline-actions { display:flex; flex-wrap:wrap; gap:8px; margin-top:10px; }
+  .company-create { margin-top:8px; padding-top:10px; border-top:1px solid var(--line); }
+  .company-link { font-size:12px; }
+  .danger-zone { margin-top:8px; padding-top:14px; border-top:1px solid var(--line); }
+  .section-nav { position:sticky; top:0; z-index:5; display:flex; gap:6px; margin-bottom:16px; padding:8px; overflow-x:auto; background:rgba(245,248,250,.94); border:1px solid var(--line); border-radius:10px; backdrop-filter:blur(8px); }
+  .section-nav a { display:inline-flex; align-items:center; gap:8px; min-height:44px; padding:8px 12px; border-radius:8px; color:var(--ink); font-weight:700; text-decoration:none; white-space:nowrap; }
+  .section-nav a:hover, .section-nav a:focus-visible, .section-nav a.is-current { background:var(--teal-soft); color:#0f5c5c; outline:none; }
+  .section-nav a:focus-visible { outline:3px solid rgba(26,122,122,.35); outline-offset:2px; }
+  .section-count { min-width:20px; padding:1px 7px; border-radius:999px; background:#fff; color:var(--navy); font-size:11px; text-align:center; }
+  .record-section { scroll-margin-top:72px; }
+  .section-head { display:flex; flex-wrap:wrap; align-items:flex-start; justify-content:space-between; gap:12px; margin-bottom:8px; }
+  .section-head h2, .section-head p { margin-bottom:0; }
+  .assessment-entry { margin-top:16px; padding-top:16px; border-top:1px solid var(--line); }
+  .assessment-entry:first-of-type { border-top:0; padding-top:0; }
+  .assessment-name { margin:0 0 8px; font-weight:700; overflow-wrap:anywhere; }
   .assessment-action { max-width:100%; white-space:normal; text-align:center; }
   .assessment-action--pending { background:#edf2f7; border-color:#a9b9c8; color:#334155; }
   .assessment-action--started { background:#fff0cc; border-color:#c79528; color:#704b00; }
@@ -21,28 +52,11 @@
   .assessment-action--finished:hover { background:#115632; color:#fff; }
   .assessment-action:focus-visible { outline:3px solid var(--navy); outline-offset:3px; }
   .assessment-meta { margin:8px 0 0; }
-  .identity { text-align:center; }
-  .identity .avatar { width:72px; height:72px; margin:0 auto 13px; font-size:24px; }
-  .identity h1 { font-size:27px; }
-  .identity a { color:var(--teal); text-decoration:none; }
-  .origin-badges { margin:6px 0 0; }
-  .quick-actions { display:grid; grid-template-columns:1fr 1fr; gap:8px; margin:18px 0; }
-  .properties { border-top:1px solid var(--line); padding-top:15px; text-align:left; }
-  .property { margin:0 0 13px; }
-  .property dt { color:var(--muted); font-size:11px; font-weight:700; text-transform:uppercase; }
-  .property dd { margin:3px 0 0; overflow-wrap:anywhere; }
-  .inline-property summary { cursor:pointer; display:flex; align-items:center; justify-content:space-between; gap:8px; min-height:44px; border-radius:4px; padding:4px; }
-  .inline-property summary:hover, .inline-property summary:focus-visible { background:#e5f4f2; outline:2px solid var(--teal); }
-  .edit-cue { color:var(--teal); font-size:12px; }
-  .inline-property form { padding:10px 0; }
-  .inline-property select { width:100%; min-height:44px; }
-  .inline-actions { display:flex; gap:8px; margin-top:10px; }
-  .company-link { font-size:12px; }
-  .composer { padding:18px; }
-  .composer-grid { display:grid; grid-template-columns:1fr 1fr; gap:12px; }
-  .composer form { padding:15px; background:#f5f8fa; border:1px solid var(--line); border-radius:6px; }
-  .composer .field { margin-bottom:10px; }
-  .timeline-title { display:flex; justify-content:space-between; align-items:center; margin:22px 0 10px; }
+  .record-card { padding:18px; }
+  .task-row, .deal-row, .consult-row { display:grid; grid-template-columns:minmax(0,1fr) auto; gap:12px; align-items:center; padding:12px 0; border-top:1px solid var(--line); }
+  .task-row:first-of-type, .deal-row:first-of-type, .consult-row:first-of-type { border-top:0; }
+  .task-form, .note-form { display:grid; gap:10px; margin-top:16px; padding-top:16px; border-top:1px solid var(--line); }
+  .timeline-title { display:flex; justify-content:space-between; align-items:center; margin:0 0 10px; }
   .timeline { position:relative; display:grid; gap:12px; }
   .event { padding:17px 17px 14px 52px; position:relative; }
   .event-icon { position:absolute; left:15px; top:16px; width:25px; height:25px; display:grid; place-items:center; color:white; background:var(--teal); border-radius:50%; font-size:12px; font-weight:700; }
@@ -53,41 +67,56 @@
   .submission-data { display:grid; grid-template-columns:minmax(110px,.35fr) 1fr; gap:5px 12px; margin-top:11px; padding-top:11px; border-top:1px solid #e4ebef; }
   .submission-data dt { color:var(--muted); font-size:12px; text-transform:capitalize; }
   .submission-data dd { margin:0; overflow-wrap:anywhere; white-space:pre-wrap; }
-  .side-title { margin-bottom:12px; font-size:18px; }
-  .task-row { padding:12px 0; border-top:1px solid #e5ebef; }
-  .task-row:first-of-type { border-top:0; }
-  .task-row form { margin-top:8px; }
-  .property-form { display:grid; gap:11px; }
-  .deal-row { display:grid; grid-template-columns:minmax(0,1fr) auto; gap:12px; padding:12px 0; border-top:1px solid var(--line); }
-  .deal-row:first-of-type { border-top:0; }
-  .deal-form { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:10px; align-items:end; }
-  @media (max-width:1150px) { .record-grid { grid-template-columns:220px minmax(0,1fr); } .record-side { grid-column:1/-1; } }
-  @media (max-width:760px) { .record-grid { grid-template-columns:1fr; } .record-side { grid-column:auto; } .composer-grid,.deal-form { grid-template-columns:1fr; } }
+  @media (max-width:900px) {
+    .record-grid { grid-template-columns:1fr; }
+    .record-facts { position:static; }
+  }
+  @media (max-width:640px) {
+    .quick-actions, .task-row, .deal-row, .consult-row { grid-template-columns:1fr; }
+    .submission-data { grid-template-columns:1fr; }
+  }
 {% endblock %}
 {% block content %}
-{% if request.user.has_hiring_access %}<details class="card" style="padding:14px;margin-bottom:16px"><summary>Teacher hiring</summary><p>Confirmed this contact is interested in a teaching role? Open their existing application or add them to hiring with you as the owner.</p><form method="post" action="{% url 'crm_hiring_from_contact' lead.pk %}">{% csrf_token %}<button class="btn" type="submit">Confirm hiring interest and open candidate</button></form></details>{% endif %}
   <a class="crumb" href="{% url 'crm_contact_list' %}">← Back to contacts</a>
+  {% if request.user.has_hiring_access %}
+    <section class="card hiring-banner">
+      {% if hiring_candidate %}
+        <div>
+          <h2>Hiring candidate</h2>
+          <p>{{ hiring_candidate.get_stage_display }}{% if hiring_candidate.next_action %} · Next: {{ hiring_candidate.next_action }}{% endif %}</p>
+        </div>
+        <a class="btn btn-primary" href="{% url 'crm_hiring' %}?owner=all&amp;candidate={{ hiring_candidate.pk }}#candidate-record">Open hiring record</a>
+      {% else %}
+        <div>
+          <h2>Teacher hiring</h2>
+          <p>Confirmed this contact is interested in a teaching role? Add them to hiring with you as the owner.</p>
+        </div>
+        <form method="post" action="{% url 'crm_hiring_from_contact' lead.pk %}">{% csrf_token %}<button class="btn" type="submit">Confirm hiring interest and open candidate</button></form>
+      {% endif %}
+    </section>
+  {% endif %}
+  {% if pending_triage_count %}
+    <section class="card routing-banner">
+      <div>
+        <h2>Needs a routing decision</h2>
+        <p>{{ pending_triage_count }} intake record{{ pending_triage_count|pluralize }} still need{{ pending_triage_count|pluralize:"s," }} a pipeline before this contact is fully routed.</p>
+      </div>
+      <a class="btn btn-primary" href="{% url 'crm_triage_list' %}">Make routing decision</a>
+    </section>
+  {% endif %}
+
   <div class="record-grid">
-    <aside class="card panel identity">
+    <aside class="card panel identity record-facts">
       <span class="avatar">{{ lead.contact_name|slice:":1" }}</span>
       <h1>{{ lead.contact_name }}</h1>
       <p class="subtle">{{ lead.organization_name|default:lead.school_name }}</p>
       {% if lead.origin_labels %}<p class="origin-badges">{% for label in lead.origin_labels %}<span class="badge badge-origin" data-testid="contact-origin">{{ label }}</span>{% endfor %}</p>{% endif %}
       <p><a href="mailto:{{ lead.contact_email }}">{{ lead.contact_email }}</a>{% if lead.contact_phone %}<br><a href="tel:{{ lead.contact_phone }}">{{ lead.contact_phone }}</a>{% endif %}</p>
-      {% if request.user.can_manage_crm_users %}
-      <button class="btn btn-small btn-danger" type="button" onclick="document.getElementById('delete-contact-dialog').showModal()">Delete contact</button>
-      <dialog class="delete-dialog" id="delete-contact-dialog" aria-labelledby="delete-contact-title" aria-describedby="delete-contact-description">
-        <h2 id="delete-contact-title">Delete this CRM contact?</h2>
-        <p id="delete-contact-description">Delete <strong>{{ lead.contact_name }}</strong>{% if lead.contact_email %} ({{ lead.contact_email }}){% endif %} from the CRM? The contact will be hidden from active contacts. Its history will be retained so it can be recovered later with backend assistance. Linked deals are kept.</p>
-        <form method="post" action="{% url 'crm_contact_delete' lead.pk %}">
-          {% csrf_token %}
-          <button class="btn" type="button" autofocus onclick="document.getElementById('delete-contact-dialog').close()">Cancel</button>
-          <button class="btn btn-danger" type="submit" name="confirm" value="delete">Delete from CRM</button>
-        </form>
-      </dialog>
-      {% endif %}
-      <div class="quick-actions"><a class="btn btn-small" href="{% url 'crm_contact_email' lead.pk %}">Email</a><a class="btn btn-small" href="#activity">Add activity</a></div>
-      <p class="subtle">Click a property below to edit.</p>
+      <div class="quick-actions">
+        <a class="btn btn-primary btn-small" href="{% url 'crm_contact_email' lead.pk %}">Email</a>
+        <a class="btn btn-small" href="#activity">Log note</a>
+      </div>
+      <p class="subtle">Properties live here only. Click one to edit.</p>
       <dl class="properties">
         <div class="property"><dt>Lead status</dt><dd>
           <details class="inline-property" id="property-status">
@@ -115,7 +144,13 @@
             <form method="post" action="{% url 'crm_contact_update' lead.pk %}">{% csrf_token %}
               <input type="hidden" name="field" value="company">
               <div class="field"><label for="inline-company">Company</label><select id="inline-company" name="company"><option value="">No company</option>{% for company in companies %}<option value="{{ company.pk }}" {% if lead.company_id == company.pk %}selected{% endif %}>{{ company.name }}</option>{% endfor %}</select></div>
-              <div class="inline-actions"><button class="btn btn-primary btn-small" type="submit">Save</button><button class="btn btn-small" type="button" data-cancel-edit>Cancel</button></div>
+              <div class="inline-actions"><button class="btn btn-primary btn-small" type="submit">Save company</button><button class="btn btn-small" type="button" data-cancel-edit>Cancel</button></div>
+            </form>
+            <form class="company-create" method="post" action="{% url 'crm_contact_update' lead.pk %}">{% csrf_token %}
+              <input type="hidden" name="field" value="company">
+              <input type="hidden" name="create_company" value="1">
+              <div class="field"><label for="inline-company-name">Or create company</label><input id="inline-company-name" name="company_name" maxlength="255" placeholder="New company name"></div>
+              <div class="inline-actions"><button class="btn btn-small" type="submit">Create and link</button></div>
             </form>
           </details>
           {% if lead.company %}<a class="company-link" href="{% url 'crm_company_detail' lead.company.pk %}">View company →</a>{% endif %}
@@ -133,101 +168,184 @@
         <div class="property"><dt>Came from</dt><dd>{% if lead.came_from_free_resources_modal %}Submitted the free resources modal on /resources/{% else %}{{ lead.metadata.source_path|default:"Website" }}{% endif %}</dd></div>
         <div class="property"><dt>First seen</dt><dd>{{ lead.created_at|date:"M j, Y, g:i A" }}</dd></div>
         <div class="property"><dt>Linked account</dt><dd>{% if lead.linked_user %}{{ lead.linked_user.get_full_name|default:lead.linked_user.email }}{% else %}No account yet{% endif %}</dd></div>
+        {% if lead.notes %}<div class="property"><dt>Inquiry notes</dt><dd>{{ lead.notes|linebreaksbr }}</dd></div>{% endif %}
       </dl>
+      {% if request.user.can_manage_crm_users %}
+      <div class="danger-zone">
+        <button class="btn btn-small btn-danger" type="button" onclick="document.getElementById('delete-contact-dialog').showModal()">Delete contact</button>
+        <dialog class="delete-dialog" id="delete-contact-dialog" aria-labelledby="delete-contact-title" aria-describedby="delete-contact-description">
+          <h2 id="delete-contact-title">Delete this CRM contact?</h2>
+          <p id="delete-contact-description">Delete <strong>{{ lead.contact_name }}</strong>{% if lead.contact_email %} ({{ lead.contact_email }}){% endif %} from the CRM? The contact will be hidden from active contacts. Its history will be retained so it can be recovered later with backend assistance. Linked deals are kept.</p>
+          <form method="post" action="{% url 'crm_contact_delete' lead.pk %}">
+            {% csrf_token %}
+            <button class="btn" type="button" autofocus onclick="document.getElementById('delete-contact-dialog').close()">Cancel</button>
+            <button class="btn btn-danger" type="submit" name="confirm" value="delete">Delete from CRM</button>
+          </form>
+        </dialog>
+      </div>
+      {% endif %}
     </aside>
 
-    <section id="activity">
-      <div class="card" style="padding:20px;margin-bottom:20px">
-        <h2>Assessments</h2>
-        <p><a class="btn btn-primary" href="{% url 'inventory_send' lead.pk %}">Send assessment</a></p>
+    <div class="record-work">
+      <nav class="section-nav" aria-label="On this contact">
+        <a href="#assessments">Assessments <span class="section-count">{{ assessment_count }}</span></a>
+        <a href="#deals">Deals <span class="section-count">{{ deals|length }}</span></a>
+        <a href="#tasks">Tasks <span class="section-count">{{ open_tasks|length }}</span></a>
+        <a href="#activity">Activity <span class="section-count">{{ timeline|length }}</span></a>
+      </nav>
+
+      <section class="card record-card record-section" id="assessments">
+        <div class="section-head">
+          <div>
+            <h2>Assessments</h2>
+            <p class="subtle">Open an invitation for progress, results, reminders, and a consultation booked from that inventory.</p>
+          </div>
+          <a class="btn btn-primary" href="{% url 'inventory_send' lead.pk %}">Send assessment</a>
+        </div>
         {% for child in lead.inventory_children.all %}
           {% for invitation in child.invitations.all %}
             <div class="assessment-entry">
               <p class="assessment-name" id="assessment-name-{{ invitation.pk }}">Parent Reading Inventory · {{ child.name }}</p>
+              <p class="subtle">{{ child.grade_label }} · Sent to {{ invitation.recipient }}</p>
               <a class="btn assessment-action {% if invitation.completed_at %}assessment-action--finished{% elif invitation.started_at %}assessment-action--started{% else %}assessment-action--pending{% endif %}"
                  href="{% url 'inventory_detail' invitation.pk %}"
                  aria-labelledby="assessment-action-{{ invitation.pk }} assessment-name-{{ invitation.pk }}">
                 <span id="assessment-action-{{ invitation.pk }}">{% if invitation.completed_at %}Finished · View results{% elif invitation.started_at %}Started · View progress{% else %}Not started · View assessment{% endif %}</span>
                 <span aria-hidden="true">→</span>
               </a>
-              <p class="assessment-meta"><span class="badge">{{ invitation.status }}</span> <small>{{ invitation.created_at|date:"M j, Y" }}</small></p>
+              <p class="assessment-meta"><span class="badge">{{ invitation.status }}</span> <small>{{ invitation.created_at|date:"M j, Y" }}</small>{% if invitation.booking %} · Consultation booked {{ invitation.booking.slot.starts_at|date:"M j, Y, g:i A" }}{% endif %}</p>
             </div>
           {% endfor %}
-        {% empty %}<p>No assessments yet. Send an invitation to get started.</p>{% endfor %}
-      </div>
-      <div class="card composer">
-        <h2>Log activity</h2>
-        <div class="composer-grid">
-          <form method="post" action="{% url 'crm_note_create' lead.pk %}">{% csrf_token %}<div class="field"><label for="note-body">Note</label><textarea id="note-body" name="body" required placeholder="Add context from a call, email, or internal review"></textarea></div><button class="btn btn-primary" type="submit">Save note</button></form>
-          <form method="post" action="{% url 'crm_task_create' lead.pk %}">{% csrf_token %}<div class="field"><label for="task-subject">Task</label><input id="task-subject" name="subject" required placeholder="Follow up with this contact"></div><div class="field"><label for="task-due">Due</label><input id="task-due" type="datetime-local" name="due_at" required></div><div class="field"><label for="task-owner">Assigned to</label><select id="task-owner" name="assigned_to">{% for owner in owners %}<option value="{{ owner.pk }}" {% if owner.pk == request.user.pk %}selected{% endif %}>{{ owner.get_full_name|default:owner.email }}</option>{% endfor %}</select></div><button class="btn btn-primary" type="submit">Create task</button></form>
-        </div>
-      </div>
-      <section class="card panel" style="margin-top:18px">
-        <h2>Deals</h2>
-        {% for deal in deals %}
-          <div class="deal-row"><div><strong><a href="{% url 'crm_deal_detail' deal.pk %}">{{ deal.name }}</a></strong><div class="event-meta">{{ deal.get_pipeline_display }} · {{ deal.deal_label }} · {{ deal.get_stage_display }}{% if deal.needs_naming_review %} · naming review required{% endif %}{% if deal.related_deals.count %} · linked to {{ deal.related_deals.count }} other deal{{ deal.related_deals.count|pluralize }}{% endif %}</div></div><a class="btn btn-small" href="{% url 'crm_deal_detail' deal.pk %}">Edit details</a></div>
-        {% empty %}<p class="subtle">No deals are attached to this contact yet.</p>{% endfor %}
-        <p style="margin-top:16px"><a class="btn btn-primary" href="{% url 'crm_deal_create' lead.pk %}">Create deal for this contact</a></p>
+        {% empty %}
+          {% if not consultations %}<p>No assessments yet. Send an invitation to get started.</p>{% endif %}
+        {% endfor %}
+        {% if consultations %}
+          <h3>Calendar consultations</h3>
+          <p class="subtle">Booked from the public calendar. The matching enrollment deal is listed under Deals.</p>
+          {% for booking in consultations %}
+            <div class="consult-row">
+              <div>
+                <strong>{{ booking.slot.starts_at|date:"M j, Y, g:i A" }}</strong>
+                <div class="event-meta">Host {% if booking.slot.host %}{{ booking.slot.host.get_full_name|default:booking.slot.host.email }}{% else %}Unassigned{% endif %}{% if booking.child_age_grade %} · {{ booking.child_age_grade }}{% endif %}{% if booking.phone %} · {{ booking.phone }}{% endif %}</div>
+                {% if booking.notes %}<p>{{ booking.notes|linebreaksbr }}</p>{% endif %}
+              </div>
+            </div>
+          {% endfor %}
+        {% endif %}
       </section>
-      <div class="timeline-title"><h2>Activity</h2><span class="subtle">Newest first</span></div>
-      <div class="timeline">
-        {% for event in timeline %}
-          <article class="card event {{ event.kind }}">
-            <span class="event-icon">{% if event.kind == 'submission' %}F{% elif event.kind == 'task' %}T{% else %}N{% endif %}</span>
-            <div class="event-meta">{{ event.created_at|date:"M j, Y, g:i A" }}</div>
-            {% if event.kind == 'submission' %}
-              <h3>{{ event.item.get_form_type_display }} submitted</h3><p class="subtle">Source: {{ event.item.source_path|default:"Unknown page" }}</p>
-              {% if event.item.form_type == "survey" %}
-                {% include "crm/_survey_response.html" with submitted_data=event.item.submitted_data only %}
-              {% else %}
-                <dl class="submission-data">{% for key,value in event.item.submitted_data.items %}<dt>{{ key|crm_field_label }}</dt><dd>{{ value|crm_field_value|default:"—" }}</dd>{% endfor %}</dl>
-              {% endif %}
-            {% elif event.kind == 'task' %}
-              <h3>{{ event.item.subject }} {% if event.item.completed_at %}<span class="badge">Completed</span>{% else %}<span class="badge badge-warn">Open task</span>{% endif %}</h3>
-              {% if event.item.body %}<p>{{ event.item.body|linebreaksbr }}</p>{% endif %}<p class="event-meta">Due {{ event.item.due_at|date:"M j, Y, g:i A" }} · Assigned to {% if event.item.assigned_to %}{{ event.item.assigned_to.get_full_name|default:event.item.assigned_to.email }}{% else %}Unassigned{% endif %}</p>
-            {% else %}
-              <h3>Note by {% if event.item.created_by %}{{ event.item.created_by.get_full_name|default:event.item.created_by.email }}{% else %}Former user{% endif %}</h3><p>{{ event.item.body|linebreaksbr }}</p>
-            {% endif %}
-          </article>
-        {% empty %}<div class="card empty">No activity has been recorded for this contact.</div>{% endfor %}
-      </div>
-    </section>
 
-    <aside class="record-side">
-      <section class="card panel">
-        <h2 class="side-title">About this contact</h2>
-        <form class="property-form" method="post" action="{% url 'crm_contact_update' lead.pk %}">{% csrf_token %}
-          <div class="field"><label for="detail-status">Lead status</label><select id="detail-status" name="status">{% for value,label in status_choices %}<option value="{{ value }}" {% if lead.status == value %}selected{% endif %}>{{ label }}</option>{% endfor %}</select></div>
-          <div class="field"><label for="detail-audience">Pipeline category</label><select id="detail-audience" name="audience">{% for value,label in audience_choices %}<option value="{{ value }}" {% if lead.audience == value %}selected{% endif %}>{{ label }}</option>{% endfor %}</select></div>
-          <div class="field"><label for="detail-owner">Contact owner</label><select id="detail-owner" name="assigned_to"><option value="">Unassigned</option>{% for owner in owners %}<option value="{{ owner.pk }}" {% if lead.assigned_to_id == owner.pk %}selected{% endif %}>{{ owner.get_full_name|default:owner.email }}</option>{% endfor %}</select></div>
-          <div class="field"><label for="detail-company">Company</label><select id="detail-company" name="company"><option value="">No company</option>{% for company in companies %}<option value="{{ company.pk }}" {% if lead.company_id == company.pk %}selected{% endif %}>{{ company.name }}</option>{% endfor %}</select></div>
-          <div class="field"><label for="detail-company-name">Or create company</label><input id="detail-company-name" name="company_name" placeholder="Company name"></div>
-          <button class="btn" type="submit">Save properties</button>
+      <section class="card record-card record-section" id="deals" style="margin-top:18px">
+        <div class="section-head">
+          <div>
+            <h2>Deals</h2>
+            <p class="subtle">Each deal opens its pipeline record. A contact can have more than one.</p>
+          </div>
+          <a class="btn btn-primary" href="{% url 'crm_deal_create' lead.pk %}">Create deal</a>
+        </div>
+        {% for deal in deals %}
+          <div class="deal-row">
+            <div>
+              <strong><a href="{% url 'crm_deal_detail' deal.pk %}">{{ deal.name }}</a></strong>
+              <div class="event-meta">{{ deal.get_pipeline_display }} · {{ deal.deal_label }} · {{ deal.get_stage_display }}{% if deal.needs_naming_review %} · naming review required{% endif %}{% if deal.related_deals.count %} · linked to {{ deal.related_deals.count }} other deal{{ deal.related_deals.count|pluralize }}{% endif %}{% if deal.company %} · <a href="{% url 'crm_company_detail' deal.company.pk %}">{{ deal.company.name }}</a>{% endif %}</div>
+            </div>
+            <a class="btn btn-small" href="{% url 'crm_deal_detail' deal.pk %}">Open deal</a>
+          </div>
+        {% empty %}<p class="subtle">No deals are attached to this contact yet.</p>{% endfor %}
+      </section>
+
+      <section class="card record-card record-section" id="tasks" style="margin-top:18px">
+        <div class="section-head">
+          <div>
+            <h2>Open tasks <span class="badge badge-neutral">{{ open_tasks|length }}</span></h2>
+            <p class="subtle">Completing a task updates the dashboard follow-up list.</p>
+          </div>
+        </div>
+        {% for task in open_tasks %}
+          <div class="task-row">
+            <div>
+              <strong>{{ task.subject }}</strong>
+              <div class="event-meta">Due {{ task.due_at|date:"M j, g:i A" }} · {% if task.assigned_to %}{{ task.assigned_to.get_full_name|default:task.assigned_to.email }}{% else %}Unassigned{% endif %}</div>
+            </div>
+            <form method="post" action="{% url 'crm_task_complete' lead.pk task.pk %}">{% csrf_token %}<button class="btn btn-small" type="submit">✓ Mark complete</button></form>
+          </div>
+        {% empty %}<p class="subtle">No open follow-up tasks.</p>{% endfor %}
+        <form class="task-form" method="post" action="{% url 'crm_task_create' lead.pk %}">{% csrf_token %}
+          <div class="field"><label for="task-subject">New task</label><input id="task-subject" name="subject" required placeholder="Follow up with this contact"></div>
+          <div class="field"><label for="task-due">Due</label><input id="task-due" type="datetime-local" name="due_at" required></div>
+          <div class="field"><label for="task-owner">Assigned to</label><select id="task-owner" name="assigned_to">{% for owner in owners %}<option value="{{ owner.pk }}" {% if owner.pk == request.user.pk %}selected{% endif %}>{{ owner.get_full_name|default:owner.email }}</option>{% endfor %}</select></div>
+          <div><button class="btn btn-primary" type="submit">Create task</button></div>
         </form>
       </section>
-      <section class="card panel" style="margin-top:18px">
-        <h2 class="side-title">Open tasks <span class="badge badge-neutral">{{ open_tasks|length }}</span></h2>
-        {% for task in open_tasks %}<div class="task-row"><strong>{{ task.subject }}</strong><div class="event-meta">Due {{ task.due_at|date:"M j, g:i A" }}</div><form method="post" action="{% url 'crm_task_complete' lead.pk task.pk %}">{% csrf_token %}<button class="btn btn-small" type="submit">✓ Mark complete</button></form></div>{% empty %}<p class="subtle">No open follow-up tasks.</p>{% endfor %}
+
+      <section class="record-section" id="activity" style="margin-top:18px">
+        <div class="card record-card">
+          <div class="timeline-title"><h2>Activity</h2><span class="subtle">Newest first</span></div>
+          <form class="note-form" method="post" action="{% url 'crm_note_create' lead.pk %}">{% csrf_token %}
+            <div class="field"><label for="note-body">Note</label><textarea id="note-body" name="body" required placeholder="Add context from a call, email, or internal review"></textarea></div>
+            <div><button class="btn btn-primary" type="submit">Save note</button></div>
+          </form>
+        </div>
+        <div class="timeline" style="margin-top:12px">
+          {% for event in timeline %}
+            <article class="card event {{ event.kind }}">
+              <span class="event-icon">{% if event.kind == 'submission' %}F{% elif event.kind == 'task' %}T{% else %}N{% endif %}</span>
+              <div class="event-meta">{{ event.created_at|date:"M j, Y, g:i A" }}</div>
+              {% if event.kind == 'submission' %}
+                <h3>{{ event.item.get_form_type_display }} submitted</h3><p class="subtle">Source: {{ event.item.source_path|default:"Unknown page" }}</p>
+                {% if event.item.form_type == "survey" %}
+                  {% include "crm/_survey_response.html" with submitted_data=event.item.submitted_data only %}
+                {% else %}
+                  <dl class="submission-data">{% for key,value in event.item.submitted_data.items %}<dt>{{ key|crm_field_label }}</dt><dd>{{ value|crm_field_value|default:"—" }}</dd>{% endfor %}</dl>
+                {% endif %}
+              {% elif event.kind == 'task' %}
+                <h3>{{ event.item.subject }} {% if event.item.completed_at %}<span class="badge">Completed</span>{% else %}<span class="badge badge-warn">Open task</span>{% endif %}</h3>
+                {% if event.item.body %}<p>{{ event.item.body|linebreaksbr }}</p>{% endif %}<p class="event-meta">Due {{ event.item.due_at|date:"M j, Y, g:i A" }} · Assigned to {% if event.item.assigned_to %}{{ event.item.assigned_to.get_full_name|default:event.item.assigned_to.email }}{% else %}Unassigned{% endif %}</p>
+                {% if not event.item.completed_at %}<form method="post" action="{% url 'crm_task_complete' lead.pk event.item.pk %}">{% csrf_token %}<button class="btn btn-small" type="submit">✓ Mark complete</button></form>{% endif %}
+              {% else %}
+                <h3>Note by {% if event.item.created_by %}{{ event.item.created_by.get_full_name|default:event.item.created_by.email }}{% else %}Former user{% endif %}</h3><p>{{ event.item.body|linebreaksbr }}</p>
+              {% endif %}
+            </article>
+          {% empty %}<div class="card empty">No activity has been recorded for this contact.</div>{% endfor %}
+        </div>
       </section>
-      {% if pending_triage_count %}<section class="card panel" style="margin-top:18px"><h2 class="side-title">Needs routing</h2><p><span class="badge badge-warn">{{ pending_triage_count }} need{{ pending_triage_count|pluralize:"s," }} a decision</span></p><a class="btn btn-small" href="{% url 'crm_triage_list' %}">Make routing decision</a></section>{% endif %}
-      {% if lead.notes %}<section class="card panel" style="margin-top:18px"><h2 class="side-title">Latest inquiry notes</h2><p>{{ lead.notes|linebreaksbr }}</p></section>{% endif %}
-    </aside>
+    </div>
   </div>
 <script>
   document.querySelectorAll('.inline-property').forEach((editor) => {
     const cancel = () => {
-      editor.querySelector('form').reset();
+      editor.querySelectorAll('form').forEach((form) => form.reset());
       editor.open = false;
       editor.querySelector('summary').focus();
     };
-    editor.querySelector('[data-cancel-edit]').addEventListener('click', cancel);
+    const cancelButton = editor.querySelector('[data-cancel-edit]');
+    if (cancelButton) cancelButton.addEventListener('click', cancel);
     editor.addEventListener('keydown', (event) => {
       if (event.key === 'Escape') { event.preventDefault(); cancel(); }
     });
     editor.addEventListener('toggle', () => {
-      if (editor.open) editor.querySelector('select').focus();
-      else editor.querySelector('form').reset();
+      if (editor.open) {
+        const select = editor.querySelector('select');
+        if (select) select.focus();
+      } else {
+        editor.querySelectorAll('form').forEach((form) => form.reset());
+      }
     });
   });
+  const sectionLinks = [...document.querySelectorAll('.section-nav a')];
+  const sections = sectionLinks.map((link) => document.querySelector(link.getAttribute('href'))).filter(Boolean);
+  if (sections.length && 'IntersectionObserver' in window) {
+    const mark = (id) => {
+      sectionLinks.forEach((link) => {
+        const current = link.getAttribute('href') === `#${id}`;
+        link.classList.toggle('is-current', current);
+        if (current) link.setAttribute('aria-current', 'true');
+        else link.removeAttribute('aria-current');
+      });
+    };
+    const observer = new IntersectionObserver((entries) => {
+      entries.forEach((entry) => { if (entry.isIntersecting) mark(entry.target.id); });
+    }, { rootMargin: '-20% 0px -65% 0px', threshold: 0.01 });
+    sections.forEach((section) => observer.observe(section));
+  }
 </script>
 {% endblock %}

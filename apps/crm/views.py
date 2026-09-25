@@ -1550,7 +1550,13 @@ class CrmContactDetailView(CrmAccessMixin, TemplateView):
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         lead = get_object_or_404(
-            Lead.objects.filter(is_deleted=False).select_related("assigned_to", "linked_user", "company").prefetch_related("inventory_children__invitations"),
+            Lead.objects.filter(is_deleted=False)
+            .select_related("assigned_to", "linked_user", "company")
+            .prefetch_related(
+                "inventory_children__invitations__booking__slot__host",
+                "consultation_bookings__slot__host",
+                "hiring",
+            ),
             pk=kwargs["pk"],
         )
         submissions = list(lead.form_submissions.all())
@@ -1583,6 +1589,11 @@ class CrmContactDetailView(CrmAccessMixin, TemplateView):
                 "pending_triage_count": lead.triage_items.filter(status=IntakeTriage.Status.PENDING).count(),
                 "status_choices": Lead.Status.choices,
                 "audience_choices": Lead.PipelineCategory.choices,
+                "assessment_count": sum(
+                    len(child.invitations.all()) for child in lead.inventory_children.all()
+                ),
+                "consultations": list(lead.consultation_bookings.all()),
+                "hiring_candidate": getattr(lead, "hiring", None),
             }
         )
         return context
@@ -1606,7 +1617,8 @@ class CrmContactUpdateView(CrmAccessMixin, View):
         lead = get_object_or_404(Lead, pk=pk, is_deleted=False)
         field = request.POST.get("field")
         editable_fields = {"status", "audience", "assigned_to", "company"}
-        if field is not None and (field not in editable_fields or field not in request.POST):
+        creating_company = field == "company" and request.POST.get("create_company") == "1"
+        if field is not None and (field not in editable_fields or (field not in request.POST and not creating_company)):
             messages.error(request, "Choose a valid contact property.")
             return redirect("crm_contact_detail", pk=lead.pk)
         data = request.POST.copy()
@@ -1617,8 +1629,15 @@ class CrmContactUpdateView(CrmAccessMixin, View):
                 "audience": lead.audience,
                 "assigned_to": lead.assigned_to_id or "",
                 "company": lead.company_id or "",
-                field: request.POST[field],
+                field: request.POST.get(field, ""),
             }
+            if field == "company" and request.POST.get("create_company") == "1":
+                created_name = request.POST.get("company_name", "").strip()[:255]
+                if not created_name:
+                    messages.error(request, "Enter a company name to create.")
+                    return redirect("crm_contact_detail", pk=lead.pk)
+                data["company"] = ""
+                data["company_name"] = created_name
         status_value = data.get("status", "")
         audience = data.get("audience", "")
         owner_value = data.get("assigned_to", "")
@@ -1731,7 +1750,7 @@ class CrmTaskCreateView(CrmAccessMixin, View):
         activity.full_clean()
         activity.save()
         messages.success(request, "Follow-up task created.")
-        return redirect(f"{reverse('crm_contact_detail', args=[lead.pk])}#activity")
+        return redirect(f"{reverse('crm_contact_detail', args=[lead.pk])}#tasks")
 
 
 class CrmTaskCompleteView(CrmAccessMixin, View):
@@ -1746,4 +1765,4 @@ class CrmTaskCompleteView(CrmAccessMixin, View):
             activity.completed_at = timezone.now()
             activity.save(update_fields=["completed_at", "updated_at"])
         messages.success(request, "Task marked complete.")
-        return redirect(f"{reverse('crm_contact_detail', args=[pk])}#activity")
+        return redirect(f"{reverse('crm_contact_detail', args=[pk])}#tasks")

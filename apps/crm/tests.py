@@ -1635,14 +1635,38 @@ class CrmWorkspaceTests(TestCase):
             self.assertEqual(self.lead.status, initial_status)
             self.assertIsNone(self.lead.company_id)
 
-    def test_contact_detail_has_inline_and_sidebar_editors(self):
+    def test_contact_detail_has_one_property_editor(self):
         self.client.force_login(self.admin_user)
         response = self.client.get(reverse("crm_contact_detail", args=[self.lead.pk]))
         for field in ("status", "audience", "company", "assigned_to"):
             self.assertContains(response, f'id="inline-{field}"')
             self.assertContains(response, f'name="field" value="{field}"')
-        self.assertContains(response, 'id="detail-status"')
-        self.assertContains(response, "Save properties")
+        self.assertContains(response, 'id="inline-company-name"')
+        self.assertContains(response, 'name="create_company" value="1"')
+        self.assertContains(response, 'aria-label="On this contact"')
+        self.assertContains(response, 'href="#assessments"')
+        self.assertContains(response, 'href="#deals"')
+        self.assertContains(response, 'href="#tasks"')
+        self.assertNotContains(response, 'id="detail-status"')
+        self.assertNotContains(response, "Save properties")
+        self.assertNotContains(response, "About this contact")
+
+    def test_contact_company_can_be_created_from_the_property_editor(self):
+        self.client.force_login(self.admin_user)
+        response = self.client.post(
+            reverse("crm_contact_update", args=[self.lead.pk]),
+            {"field": "company", "create_company": "1", "company_name": " North Reading "},
+        )
+        self.assertRedirects(response, reverse("crm_contact_detail", args=[self.lead.pk]), fetch_redirect_response=False)
+        self.lead.refresh_from_db()
+        self.assertEqual(self.lead.company.name, "North Reading")
+        blank = self.client.post(
+            reverse("crm_contact_update", args=[self.lead.pk]),
+            {"field": "company", "create_company": "1", "company_name": "  "},
+        )
+        self.assertEqual(blank.status_code, 302)
+        self.lead.refresh_from_db()
+        self.assertEqual(self.lead.company.name, "North Reading")
 
     def test_contact_properties_notes_and_tasks_are_manageable(self):
         self.client.force_login(self.admin_user)
