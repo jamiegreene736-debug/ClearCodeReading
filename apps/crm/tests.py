@@ -1110,7 +1110,9 @@ class CrmWorkspaceTests(TestCase):
         self.assertEqual(response.status_code, 200)
         self.assertContains(response, 'data-testid="business-menu-button"')
         self.assertContains(response, 'data-testid="crm-header-link"')
-        self.assertContains(response, 'aria-label="Workspace sections"')
+        self.assertContains(response, 'aria-label="Program status"')
+        self.assertNotContains(response, 'aria-label="Workspace sections"')
+        self.assertContains(response, "What needs you")
         self.assertContains(response, f'href="{reverse("crm_dashboard")}"')
 
     def test_crm_opens_on_an_actionable_overview(self):
