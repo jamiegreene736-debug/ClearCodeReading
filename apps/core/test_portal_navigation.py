@@ -49,7 +49,11 @@ class PortalNavigationTests(SimpleTestCase):
 
         self.assertIn('data-testid="teaching-menu-button"', content)
         self.assertIn('href="/portal/sessions/rapid-log/"', content)
+        self.assertIn('href="/portal/readers/"', content)
+        self.assertIn('href="/portal/sessions/"', content)
+        self.assertIn('href="/portal/results/"', content)
         self.assertIn('href="/dashboard/#assessment-review"', content)
+        self.assertNotIn('href="/dashboard/#latest-kpis"', content)
         self.assertNotIn('data-testid="business-menu-button"', content)
         self.assertNotIn('data-testid="crm-header-link"', content)
 
@@ -59,6 +63,7 @@ class PortalNavigationTests(SimpleTestCase):
         self.assertIn('data-testid="family-menu-button"', content)
         self.assertIn('href="/dashboard/#progress-overview"', content)
         self.assertIn('href="/dashboard/#teacher-plan"', content)
+        self.assertIn('href="/portal/results/"', content)
         self.assertNotIn('data-testid="teaching-menu-button"', content)
         self.assertNotIn("Django admin", content)
 
@@ -95,14 +100,14 @@ class PortalNavigationTests(SimpleTestCase):
 
         for destination in (
             "progress-overview",
-            "session-launchpad",
-            "placement-review",
+            "program-workspaces",
             "lesson-planning",
             "assessment-review",
             "teacher-plan",
-            "latest-kpis",
         ):
             self.assertIn(f'id="{destination}"', portal_markup)
+        for removed in ("session-launchpad", "placement-review", "latest-kpis"):
+            self.assertNotIn(f'id="{removed}"', portal_markup)
         self.assertIn('id="admin-actions"', teacher_assignments)
         self.assertIn('id="lesson-library"', lesson_library)
         self.assertIn("{% url 'portal_teacher_assignments' %}", admin_workspace)

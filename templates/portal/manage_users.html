@@ -26,34 +26,5 @@ Add user
 </p>
 {% endif %}
 
-<section class="card" id="recent-invitations">
-<h2>Recent invitations</h2>
-<p class="subtle">“Sent” means the email provider accepted the message. Ask the recipient to check spam if it has not arrived.</p>
-{% for item in invitations %}
-<article class="receipt">
-<strong>{{ item.user.get_full_name|default:item.user.email }}</strong> · {{ item.user.email }}<br>{{ item.user.get_role_display }} ·
-{% if item.accepted_at %}
-Setup complete — {{ item.accepted_at|date:"M j, Y, g:i A T" }}
-{% else %}
-{{ item.status|title }}
-{% endif %}
-
-{% if item.sent_at %}
-<p>Sent {{ item.sent_at|date:"M j, Y, g:i A T" }}</p>
-{% endif %}
-
-{% if item.error %}
-<p role="alert">{{ item.error }}</p>
-{% endif %}
-
-{% if not item.accepted_at and item.user.is_active %}
-<form method="post" action="{% url 'resend_user_invitation' item.pk %}">{% csrf_token %}<button type="submit" class="secondary">Send a new invitation</button>
-<p class="subtle">Replaces any previous setup link.</p>
-</form>
-{% endif %}
-</article>
-{% empty %}
-<p>No invitations yet.</p>
-{% endfor %}
-</section>
+<p><a href="{% url 'portal_invitations' %}">Open the invitation queue</a> to filter delivery status and resend a setup link.</p>
 {% endblock %}

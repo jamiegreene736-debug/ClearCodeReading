@@ -28,9 +28,10 @@
           <div id="program-navigation-panel" class="absolute left-4 right-4 top-[calc(100%+.65rem)] z-50 hidden max-h-[70vh] overflow-y-auto rounded-3xl bg-white p-3 shadow-2xl shadow-ink/20 ring-1 ring-ink/10 lg:left-0 lg:right-auto lg:w-[21rem]" aria-labelledby="program-navigation-button">
             <p class="px-3 pb-2 text-xs font-black uppercase tracking-[0.16em] text-mediumTeal">Program workspace</p>
             <ul class="grid gap-1">
-              <li><a href="{% url 'portal_dashboard' %}#session-launchpad" class="focus-ring block rounded-2xl px-3 py-3 hover:bg-linen"><span class="block font-black">Readers &amp; sessions</span><span class="mt-1 block text-xs text-ink/60">Current instruction and upcoming work</span></a></li>
-              <li><a href="{% url 'portal_dashboard' %}#placement-review" class="focus-ring block rounded-2xl px-3 py-3 hover:bg-linen"><span class="block font-black">Placement review</span><span class="mt-1 block text-xs text-ink/60">Confirm or adjust recommendations</span></a></li>
-              <li><a href="{% url 'portal_dashboard' %}#latest-kpis" class="focus-ring block rounded-2xl px-3 py-3 hover:bg-linen"><span class="block font-black">Reading results</span><span class="mt-1 block text-xs text-ink/60">Latest KPI snapshots</span></a></li>
+              <li><a data-testid="readers-nav-link" href="{% url 'portal_readers' %}" class="focus-ring block rounded-2xl px-3 py-3 hover:bg-linen"><span class="block font-black">Readers</span><span class="mt-1 block text-xs text-ink/60">Roster, placement, and latest session</span></a></li>
+              <li><a data-testid="sessions-nav-link" href="{% url 'portal_sessions' %}" class="focus-ring block rounded-2xl px-3 py-3 hover:bg-linen"><span class="block font-black">Sessions</span><span class="mt-1 block text-xs text-ink/60">Upcoming work and completed logs</span></a></li>
+              <li><a data-testid="placements-nav-link" href="{% url 'portal_placements' %}" class="focus-ring block rounded-2xl px-3 py-3 hover:bg-linen"><span class="block font-black">Placement review</span><span class="mt-1 block text-xs text-ink/60">Confirm or adjust recommendations</span></a></li>
+              <li><a data-testid="results-nav-link" href="{% url 'portal_results' %}" class="focus-ring block rounded-2xl px-3 py-3 hover:bg-linen"><span class="block font-black">Reading results</span><span class="mt-1 block text-xs text-ink/60">KPI snapshots and skill scores</span></a></li>
             </ul>
           </div>
         </li>
@@ -46,7 +47,7 @@
               <li><a data-testid="add-user-menu-link" href="{% url 'manage_users' %}" class="focus-ring block rounded-2xl px-3 py-3 hover:bg-linen"><span class="block font-black">Add user</span><span class="mt-1 block text-xs text-ink/60">Invite an employee, teacher or parent</span></a></li>
               <li><a data-testid="teacher-assignments-menu-link" href="{% url 'portal_teacher_assignments' %}" {% if request.resolver_match.url_name == 'portal_teacher_assignments' %}aria-current="page"{% endif %} class="focus-ring block rounded-2xl px-3 py-3 hover:bg-linen"><span class="block font-black">Teacher assignments</span><span class="mt-1 block text-xs text-ink/60">Pair each reader with the teacher who leads their instruction</span></a></li>
               <li><a data-testid="lesson-library-menu-link" href="{% url 'portal_lesson_library' %}" {% if request.resolver_match.url_name == 'portal_lesson_library' %}aria-current="page"{% endif %} class="focus-ring block rounded-2xl px-3 py-3 hover:bg-linen"><span class="block font-black">Lesson library</span><span class="mt-1 block text-xs text-ink/60">Create lessons and share them with the teachers who will use them</span></a></li>
-              <li><a href="{% url 'manage_users' %}#recent-invitations" class="focus-ring block rounded-2xl px-3 py-3 font-black hover:bg-linen">User invitations</a></li>
+              <li><a data-testid="invitations-nav-link" href="{% url 'portal_invitations' %}" class="focus-ring block rounded-2xl px-3 py-3 font-black hover:bg-linen">User invitations</a></li>
             </ul>
             {% if request.user.can_manage_blog or request.user.has_resource_access %}
               <p class="mt-3 border-t border-ink/10 px-3 pb-2 pt-4 text-xs font-black uppercase tracking-[0.16em] text-mediumTeal">Website content</p>
@@ -81,11 +82,13 @@
           <div id="teaching-navigation-panel" class="absolute left-4 right-4 top-[calc(100%+.65rem)] z-50 hidden max-h-[70vh] overflow-y-auto rounded-3xl bg-white p-3 shadow-2xl shadow-ink/20 ring-1 ring-ink/10 lg:left-0 lg:right-auto lg:w-[22rem]" aria-labelledby="teaching-navigation-button">
             <p class="px-3 pb-2 text-xs font-black uppercase tracking-[0.16em] text-mediumTeal">Teacher workspace</p>
             <ul class="grid gap-1">
-              <li><a href="{% url 'portal_dashboard' %}#session-launchpad" class="focus-ring block rounded-2xl px-3 py-3 hover:bg-linen"><span class="block font-black">Learners &amp; sessions</span><span class="mt-1 block text-xs text-ink/60">Current instruction and schedule</span></a></li>
+              <li><a href="{% url 'portal_readers' %}" class="focus-ring block rounded-2xl px-3 py-3 hover:bg-linen"><span class="block font-black">Readers</span><span class="mt-1 block text-xs text-ink/60">Your assigned readers</span></a></li>
+              <li><a href="{% url 'portal_sessions' %}" class="focus-ring block rounded-2xl px-3 py-3 hover:bg-linen"><span class="block font-black">Sessions</span><span class="mt-1 block text-xs text-ink/60">Schedule and completed logs</span></a></li>
               <li><a href="{% url 'rapid_session_log' %}" class="focus-ring block rounded-2xl px-3 py-3 hover:bg-linen"><span class="block font-black">Rapid session log</span><span class="mt-1 block text-xs text-ink/60">Record a completed lesson</span></a></li>
               <li><a href="{% url 'portal_dashboard' %}#lesson-planning" class="focus-ring block rounded-2xl px-3 py-3 font-black hover:bg-linen">Lesson planning</a></li>
+              <li><a href="{% url 'portal_placements' %}" class="focus-ring block rounded-2xl px-3 py-3 font-black hover:bg-linen">Placement review</a></li>
               <li><a href="{% url 'portal_dashboard' %}#assessment-review" class="focus-ring block rounded-2xl px-3 py-3 font-black hover:bg-linen">Assessment review</a></li>
-              <li><a href="{% url 'portal_dashboard' %}#latest-kpis" class="focus-ring block rounded-2xl px-3 py-3 font-black hover:bg-linen">Reading results</a></li>
+              <li><a href="{% url 'portal_results' %}" class="focus-ring block rounded-2xl px-3 py-3 font-black hover:bg-linen">Reading results</a></li>
             </ul>
           </div>
         </li>
@@ -100,7 +103,7 @@
             <ul class="grid gap-1">
               <li><a href="{% url 'portal_dashboard' %}#progress-overview" class="focus-ring block rounded-2xl px-3 py-3 hover:bg-linen"><span class="block font-black">Weekly progress</span><span class="mt-1 block text-xs text-ink/60">Growth, fluency, and specialist notes</span></a></li>
               <li><a href="{% url 'portal_dashboard' %}#teacher-plan" class="focus-ring block rounded-2xl px-3 py-3 font-black hover:bg-linen">Teacher plan</a></li>
-              <li><a href="{% url 'portal_dashboard' %}#latest-kpis" class="focus-ring block rounded-2xl px-3 py-3 font-black hover:bg-linen">Reading results</a></li>
+              <li><a href="{% url 'portal_results' %}" class="focus-ring block rounded-2xl px-3 py-3 font-black hover:bg-linen">Reading results</a></li>
               <li><a href="/assessment/" class="focus-ring block rounded-2xl px-3 py-3 font-black hover:bg-linen">Start an assessment</a></li>
             </ul>
           </div>
@@ -114,7 +117,7 @@
           <div id="learning-navigation-panel" class="absolute left-4 right-4 top-[calc(100%+.65rem)] z-50 hidden max-h-[70vh] overflow-y-auto rounded-3xl bg-white p-3 shadow-2xl shadow-ink/20 ring-1 ring-ink/10 lg:left-0 lg:right-auto lg:w-80" aria-labelledby="learning-navigation-button">
             <ul class="grid gap-1">
               <li><a href="{% url 'portal_dashboard' %}#teacher-plan" class="focus-ring block rounded-2xl px-3 py-3 font-black hover:bg-linen">My teacher plan</a></li>
-              <li><a href="{% url 'portal_dashboard' %}#latest-kpis" class="focus-ring block rounded-2xl px-3 py-3 font-black hover:bg-linen">My reading results</a></li>
+              <li><a href="{% url 'portal_results' %}" class="focus-ring block rounded-2xl px-3 py-3 font-black hover:bg-linen">My reading results</a></li>
             </ul>
           </div>
         </li>

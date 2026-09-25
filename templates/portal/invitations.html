@@ -1,0 +1,52 @@
+{% extends "portal/page.html" %}
+{% block title %}User invitations{% endblock %}
+{% block content %}
+  <section data-testid="invitations-page" class="rounded-[2rem] bg-white p-6 shadow-xl ring-1 ring-ink/10 sm:p-8">
+    <div class="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
+      <div>
+        <p class="text-sm font-black uppercase tracking-[0.18em] text-mediumTeal">People</p>
+        <h1 class="mt-2 text-3xl font-black sm:text-5xl">User invitations</h1>
+        <p class="mt-3 max-w-2xl text-lg leading-8 text-ink/70">See who still needs to finish setup, who is in, and which emails need another try. Creating an account stays on Add user.</p>
+      </div>
+      <a class="focus-ring inline-flex rounded-full bg-deepTeal px-5 py-3 font-black text-white" href="{% url 'manage_users' %}">Add user</a>
+    </div>
+    <form class="mt-6 flex flex-col gap-3 sm:flex-row" method="get">
+      {% if status != "all" %}<input type="hidden" name="status" value="{{ status }}">{% endif %}
+      <input class="w-full rounded-2xl border border-ink/15 px-4 py-3 font-bold" type="search" name="q" value="{{ query }}" placeholder="Search name or email">
+      <button class="rounded-full bg-ink px-5 py-3 font-black text-white" type="submit">Search</button>
+    </form>
+    <div class="mt-4 flex flex-wrap gap-2">
+      <a class="rounded-full px-4 py-2 text-sm font-black {% if status == 'all' %}bg-ink text-white{% else %}bg-linen{% endif %}" href="{{ filter_all }}">All {{ counts.all }}</a>
+      <a class="rounded-full px-4 py-2 text-sm font-black {% if status == 'pending' %}bg-ink text-white{% else %}bg-linen{% endif %}" href="{{ filter_pending }}">Sending {{ counts.pending }}</a>
+      <a class="rounded-full px-4 py-2 text-sm font-black {% if status == 'sent' %}bg-ink text-white{% else %}bg-linen{% endif %}" href="{{ filter_sent }}">Sent {{ counts.sent }}</a>
+      <a class="rounded-full px-4 py-2 text-sm font-black {% if status == 'accepted' %}bg-ink text-white{% else %}bg-linen{% endif %}" href="{{ filter_accepted }}">Finished setup {{ counts.accepted }}</a>
+      <a class="rounded-full px-4 py-2 text-sm font-black {% if status == 'needs_attention' %}bg-ink text-white{% else %}bg-sand{% endif %}" href="{{ filter_attention }}">Needs attention {{ counts.needs_attention }}</a>
+    </div>
+    <div class="mt-6 grid gap-3">
+      {% for item in invitations %}
+        <article class="rounded-3xl bg-linen p-5">
+          <div class="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+            <div>
+              <h2 class="text-xl font-black">{{ item.user.get_full_name|default:item.user.email }}</h2>
+              <p class="mt-1 text-sm font-bold text-ink/65">{{ item.user.email }} · {{ item.user.get_role_display }}</p>
+              <p class="mt-2 text-sm">
+                {% if item.accepted_at %}Setup complete {{ item.accepted_at|date:"M j, Y, g:i A T" }}
+                {% else %}{{ item.status|title }}{% if item.sent_at %} · sent {{ item.sent_at|date:"M j, Y, g:i A T" }}{% endif %}
+                {% endif %}
+              </p>
+              {% if item.error %}<p class="mt-2 text-sm text-red-800" role="alert">{{ item.error }}</p>{% endif %}
+            </div>
+            {% if not item.accepted_at and item.user.is_active %}
+              <form method="post" action="{% url 'resend_user_invitation' item.pk %}">
+                {% csrf_token %}
+                <button class="rounded-full bg-white px-4 py-2 text-sm font-black text-deepTeal ring-1 ring-deepTeal/20" type="submit">Send a new invitation</button>
+              </form>
+            {% endif %}
+          </div>
+        </article>
+      {% empty %}
+        <p class="rounded-3xl bg-seafoam p-5 font-bold text-ink/70">No invitations match this view.</p>
+      {% endfor %}
+    </div>
+  </section>
+{% endblock %}

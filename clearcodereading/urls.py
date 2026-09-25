@@ -57,6 +57,13 @@ from apps.users.portal_views import (
     PortalLoginView,
     TeacherAssignmentsView,
 )
+from apps.users.program_views import (
+    PortalInvitationsView,
+    PortalPlacementsView,
+    PortalReadersView,
+    PortalResultsView,
+    PortalSessionsView,
+)
 
 from apps.crm.calendar_views import CalendarSettingsView, GoogleCalendarConnectView, calendar_feed
 from apps.crm.consultation_booking import ConsultationBookingView
@@ -129,6 +136,11 @@ urlpatterns = [
     path("logout/", LogoutView.as_view(next_page="/"), name="logout"),
     path("account/", AccountProfileView.as_view(), name="account_profile"),
     path("dashboard/", PortalDashboardView.as_view(), name="portal_dashboard"),
+    path("portal/readers/", PortalReadersView.as_view(), name="portal_readers"),
+    path("portal/sessions/", PortalSessionsView.as_view(), name="portal_sessions"),
+    path("portal/placements/", PortalPlacementsView.as_view(), name="portal_placements"),
+    path("portal/results/", PortalResultsView.as_view(), name="portal_results"),
+    path("portal/invitations/", PortalInvitationsView.as_view(), name="portal_invitations"),
     path("portal/sessions/rapid-log/", RapidSessionLogView.as_view(), name="rapid_session_log"),
     path("crm/hiring/", HiringWorkspaceView.as_view(), name="crm_hiring"),
     path("crm/hiring/<int:pk>/update/", HiringUpdateView.as_view(), name="crm_hiring_update"),

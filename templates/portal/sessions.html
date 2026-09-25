@@ -1,0 +1,57 @@
+{% extends "portal/page.html" %}
+{% block title %}Sessions{% endblock %}
+{% block content %}
+  {% include "portal/_program_nav.html" %}
+  <section data-testid="sessions-page" class="rounded-[2rem] bg-white p-6 shadow-xl ring-1 ring-deepTeal/10 sm:p-8">
+    <div class="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
+      <div>
+        <p class="text-sm font-black uppercase tracking-[0.18em] text-deepTeal">Program · sessions</p>
+        <h1 class="mt-2 text-3xl font-black sm:text-5xl">Sessions</h1>
+        <p class="mt-3 max-w-2xl text-lg leading-8 text-ink/70">See what is coming up, review what was logged, and open the rapid log for one reader.</p>
+      </div>
+      <a class="focus-ring inline-flex rounded-full bg-ink px-5 py-3 font-black text-white" href="{{ log_url }}">Log a session</a>
+    </div>
+
+    <form class="mt-6 flex flex-col gap-3 sm:flex-row" method="get">
+      <input type="hidden" name="status" value="{{ status }}">
+      <label class="min-w-0 flex-1">
+        <span class="sr-only">Reader</span>
+        <select class="w-full rounded-2xl border border-ink/15 px-4 py-3 font-bold" name="child" onchange="this.form.requestSubmit()">
+          <option value="">All readers</option>
+          {% for child in children %}
+            <option value="{{ child.id }}" {% if selected_child and selected_child.id == child.id %}selected{% endif %}>{{ child }}</option>
+          {% endfor %}
+        </select>
+      </label>
+    </form>
+    <div class="mt-4 flex flex-wrap gap-2">
+      <a class="rounded-full px-4 py-2 text-sm font-black {% if status == 'upcoming' %}bg-ink text-white{% else %}bg-linen text-deepTeal{% endif %}" href="{{ filter_upcoming }}">Upcoming</a>
+      <a class="rounded-full px-4 py-2 text-sm font-black {% if status == 'completed' %}bg-ink text-white{% else %}bg-linen text-deepTeal{% endif %}" href="{{ filter_completed }}">Completed</a>
+      <a class="rounded-full px-4 py-2 text-sm font-black {% if status == 'all' %}bg-ink text-white{% else %}bg-linen text-deepTeal{% endif %}" href="{{ filter_all }}">All</a>
+    </div>
+
+    <div class="mt-6 grid gap-3">
+      {% for session in sessions %}
+        <article class="rounded-3xl bg-linen p-5">
+          <div class="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+            <div>
+              <h2 class="text-xl font-black">{{ session.child }}</h2>
+              <p class="mt-1 text-sm font-bold text-deepTeal">{{ session.scheduled_start|date:"M j, Y, g:i a" }} · {{ session.get_status_display }} · {{ session.curriculum_position.code }}</p>
+              <p class="mt-2 text-sm text-ink/70">{{ session.get_intervention_part_display }}{% if session.specialist %} · {{ session.specialist.get_full_name|default:session.specialist.email }}{% endif %}</p>
+              {% if session.accuracy_rate != None %}<p class="mt-2 text-sm"><strong>Accuracy:</strong> {{ session.accuracy_rate }}%</p>{% endif %}
+              {% if session.error_patterns %}<p class="mt-2 text-sm"><strong>Error patterns:</strong> {{ session.error_patterns|join:", " }}</p>{% endif %}
+              {% if session.next_session_direction %}<p class="mt-2 text-sm leading-6">{{ session.next_session_direction }}</p>{% endif %}
+            </div>
+            {% if session.status == 'scheduled' or session.status == 'in_progress' %}
+              <a class="shrink-0 rounded-full bg-ink px-4 py-2 text-sm font-black text-white" href="{% url 'rapid_session_log' %}?session={{ session.id }}">Open log</a>
+            {% else %}
+              <a class="shrink-0 rounded-full bg-white px-4 py-2 text-sm font-black text-deepTeal ring-1 ring-deepTeal/15" href="{% url 'portal_readers' %}#reader-{{ session.child_id }}">Reader</a>
+            {% endif %}
+          </div>
+        </article>
+      {% empty %}
+        <p class="rounded-3xl bg-seafoam p-5 font-bold text-ink/70">No sessions in this view.</p>
+      {% endfor %}
+    </div>
+  </section>
+{% endblock %}

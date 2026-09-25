@@ -20,7 +20,7 @@
       <p class="mt-2 text-4xl font-black">{{ unassigned_count }}</p>
       <p class="mt-1 text-xs font-bold text-ink/50">Open teacher assignments</p>
     </a>
-    <a class="focus-ring rounded-3xl bg-white p-5 shadow-lg ring-1 ring-deepTeal/10 transition hover:-translate-y-0.5" href="#placement-review">
+    <a class="focus-ring rounded-3xl bg-white p-5 shadow-lg ring-1 ring-deepTeal/10 transition hover:-translate-y-0.5" href="{% url 'portal_placements' %}">
       <p class="text-sm font-black text-mediumTeal">Placements to confirm</p>
       <p class="mt-2 text-4xl font-black">{{ placement_pending_count }}</p>
       <p class="mt-1 text-xs font-bold text-ink/50">Recommendations stay advisory until you decide</p>
@@ -82,89 +82,12 @@
     </section>
   {% endif %}
 
-  <section id="session-launchpad" class="scroll-mt-36 rounded-[2rem] bg-white p-6 shadow-xl ring-1 ring-deepTeal/10">
-    <div class="flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
-      <div>
-        <p class="text-sm font-black uppercase tracking-[0.18em] text-deepTeal">Readers</p>
-        <h2 class="mt-2 text-3xl font-black">Who is teaching whom</h2>
-      </div>
-      <a class="focus-ring inline-flex min-h-11 items-center justify-center rounded-full bg-deepTeal px-5 py-3 text-sm font-black text-white" href="{% url 'portal_teacher_assignments' %}">Assign a teacher</a>
-    </div>
 
-    <div class="mt-4 grid gap-3">
-      {% for snapshot in student_snapshots %}
-        <article id="reader-{{ snapshot.child.id }}" class="rounded-3xl px-5 py-4 {% if snapshot.unassigned %}bg-sand{% else %}bg-seafoam{% endif %}">
-          <div class="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
-            <div class="min-w-0">
-              <h3 class="text-xl font-black">{{ snapshot.child }}</h3>
-              <p class="mt-1 text-sm font-bold text-deepTeal">
-                {% if snapshot.placement %}{{ snapshot.placement.curriculum.get_code_display }} · {{ snapshot.placement.current_position.code }}{% else %}Placement pending{% endif %}
-              </p>
-            </div>
-            <div class="flex flex-wrap items-center gap-2 text-sm font-black">
-              {% if snapshot.unassigned %}
-                <span class="rounded-full bg-white px-3 py-2 text-mediumTeal">No teacher</span>
-              {% else %}
-                <span class="rounded-full bg-white px-3 py-2 text-deepTeal">{{ snapshot.teacher_name }}</span>
-              {% endif %}
-              {% if snapshot.next_session %}
-                <a class="focus-ring rounded-full bg-ink px-3 py-2 text-white" href="{% url 'rapid_session_log' %}?session={{ snapshot.next_session.id }}">{{ snapshot.next_session.scheduled_start|date:"M j, g:i a" }}</a>
-              {% else %}
-                <span class="rounded-full bg-white/80 px-3 py-2 text-ink/55">No session scheduled</span>
-              {% endif %}
-              {% if snapshot.latest_session and snapshot.latest_session.accuracy_rate != None %}
-                <span class="rounded-full bg-white/80 px-3 py-2 text-ink/70">{{ snapshot.latest_session.accuracy_rate }}% recent accuracy</span>
-              {% endif %}
-            </div>
-          </div>
-        </article>
-      {% empty %}
-        <p class="rounded-3xl bg-linen p-5 font-bold text-ink/70">No readers are on this workspace yet.</p>
-      {% endfor %}
-    </div>
-  </section>
-
-  <section id="placement-review" class="scroll-mt-36 rounded-[2rem] bg-white p-6 shadow-xl ring-1 ring-deepTeal/10">
-    <p class="text-sm font-black uppercase tracking-[0.18em] text-deepTeal">Placements</p>
-    <h2 class="mt-2 text-3xl font-black">Confirm where each reader starts</h2>
-    <div class="mt-5 grid gap-4">
-      {% for recommendation in placement_recommendations %}
-        <article class="rounded-3xl bg-seafoam p-5">
-          <div class="flex flex-wrap items-start justify-between gap-3">
-            <div>
-              <h3 class="text-xl font-black">{{ recommendation.evidence.child }}</h3>
-              <p class="mt-1 font-bold text-deepTeal">{{ recommendation.recommended_curriculum.get_code_display }}</p>
-              <p class="mt-2 text-sm leading-6 text-ink/70">{{ recommendation.rationale }}</p>
-            </div>
-            <span class="rounded-full bg-white px-3 py-1 text-xs font-black">{{ recommendation.get_decision_display }}</span>
-          </div>
-          <ol class="mt-4 grid gap-2 sm:grid-cols-2">
-            {% for step in recommendation.recommended_sequence.all %}
-              <li class="rounded-2xl bg-white px-4 py-3 text-sm"><strong>{{ step.priority }}. {{ step.position.code }}</strong> · {{ step.position.title }}</li>
-            {% endfor %}
-          </ol>
-          <form class="mt-4 grid gap-3 md:grid-cols-[1fr_2fr_auto]" method="post" action="{% url 'portal_confirm_placement' %}">
-            {% csrf_token %}
-            <input type="hidden" name="recommendation_id" value="{{ recommendation.id }}">
-            <label>
-              <span class="text-xs font-black text-ink/60">Final position</span>
-              <select class="mt-1 w-full rounded-2xl border border-ink/15 px-3 py-2 font-bold" name="final_position_id" required>
-                {% for step in recommendation.recommended_sequence.all %}
-                  <option value="{{ step.position.id }}" {% if step.position_id == recommendation.recommended_position_id %}selected{% endif %}>{{ step.position.code }}</option>
-                {% endfor %}
-              </select>
-            </label>
-            <label>
-              <span class="text-xs font-black text-ink/60">Override rationale, if you change the start</span>
-              <input class="mt-1 w-full rounded-2xl border border-ink/15 px-3 py-2" name="override_rationale" placeholder="Why a different start is the better fit">
-            </label>
-            <button class="focus-ring self-end rounded-full bg-deepTeal px-5 py-3 font-black text-white" type="submit">Save decision</button>
-          </form>
-        </article>
-      {% empty %}
-        <p class="rounded-3xl bg-linen p-5 font-bold text-ink/70">No placement recommendations are waiting.</p>
-      {% endfor %}
-    </div>
+  <section class="grid gap-3 sm:grid-cols-2">
+    <a class="rounded-3xl bg-white p-5 shadow-lg ring-1 ring-deepTeal/10" href="{% url 'portal_readers' %}"><p class="text-sm font-black text-deepTeal">Readers</p><p class="mt-2 text-sm text-ink/70">Open the roster</p></a>
+    <a class="rounded-3xl bg-white p-5 shadow-lg ring-1 ring-deepTeal/10" href="{% url 'portal_sessions' %}"><p class="text-sm font-black text-deepTeal">Sessions</p><p class="mt-2 text-sm text-ink/70">Upcoming and completed logs</p></a>
+    <a class="rounded-3xl bg-white p-5 shadow-lg ring-1 ring-deepTeal/10" href="{% url 'portal_placements' %}"><p class="text-sm font-black text-deepTeal">Placement review</p><p class="mt-2 text-sm text-ink/70">Confirm or adjust a start</p></a>
+    <a class="rounded-3xl bg-white p-5 shadow-lg ring-1 ring-deepTeal/10" href="{% url 'portal_results' %}"><p class="text-sm font-black text-deepTeal">Reading results</p><p class="mt-2 text-sm text-ink/70">Skill scores and snapshots</p></a>
   </section>
 
   <section id="assessment-review" class="scroll-mt-36 rounded-[2rem] bg-white p-6 shadow-xl ring-1 ring-ink/10">
@@ -201,24 +124,3 @@
     </div>
   </section>
 
-  <section id="latest-kpis" class="scroll-mt-36 rounded-[2rem] bg-white p-6 shadow-xl ring-1 ring-ink/10">
-    <p class="text-sm font-black uppercase tracking-[0.18em] text-deepTeal">Reading results</p>
-    <h2 class="mt-2 text-3xl font-black">Latest snapshots</h2>
-    <div class="mt-5 grid gap-3">
-      {% for result in latest_results %}
-        <article class="flex flex-col gap-3 rounded-3xl bg-linen p-5 sm:flex-row sm:items-center sm:justify-between">
-          <div>
-            <h3 class="text-xl font-black">{{ result.assessment.child }}</h3>
-            <p class="mt-1 text-sm font-bold text-ink/60">{{ result.grade_equivalent }} · {{ result.strengths|join:", "|truncatewords:12 }}</p>
-          </div>
-          <div class="rounded-2xl bg-seafoam px-4 py-3 text-center">
-            <p class="text-xs font-black uppercase tracking-[0.14em] text-deepTeal">Reading age</p>
-            <p class="text-3xl font-black">{{ result.reading_age }}</p>
-          </div>
-        </article>
-      {% empty %}
-        <p class="rounded-3xl bg-linen p-5 font-bold text-ink/70">No reading results yet.</p>
-      {% endfor %}
-    </div>
-  </section>
-</div>

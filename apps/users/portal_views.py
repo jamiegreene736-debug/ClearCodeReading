@@ -344,6 +344,8 @@ class PortalDashboardView(PortalAuthMixin, TemplateView):
                 "child_count": len(children),
                 "unassigned_count": len(unassigned_readers),
                 "placement_pending_count": placement_pending_count,
+                "result_count": latest_results.count(),
+                "upcoming_session_count": upcoming_sessions.count(),
                 "attention_count": len(unassigned_readers) + placement_pending_count + pending_reviews.count(),
                 "kpi_count": self._kpi_count(latest_results.first()),
                 "teachers": teachers,
@@ -389,10 +391,10 @@ class ConfirmPlacementRecommendationView(PortalAuthMixin, View):
         )
         if recommendation is None:
             messages.error(request, "That placement recommendation is no longer pending.")
-            return redirect("portal_dashboard")
+            return redirect("portal_placements")
         if not user_can_evaluate_child(request.user, recommendation.evidence.child):
             messages.error(request, "You are not assigned to this reader's center.")
-            return redirect("portal_dashboard")
+            return redirect("portal_placements")
 
         final_position = recommendation.recommended_position
         final_position_id = request.POST.get("final_position_id")
@@ -404,7 +406,7 @@ class ConfirmPlacementRecommendationView(PortalAuthMixin, View):
             ).first()
         if final_position is None:
             messages.error(request, "Choose a valid final sequence position.")
-            return redirect("portal_dashboard")
+            return redirect("portal_placements")
         try:
             confirm_recommendation(
                 recommendation,
@@ -415,9 +417,9 @@ class ConfirmPlacementRecommendationView(PortalAuthMixin, View):
             )
         except ValidationError as error:
             messages.error(request, "; ".join(getattr(error, "messages", [str(error)])))
-            return redirect("portal_dashboard")
+            return redirect("portal_placements")
         messages.success(request, "Placement decision saved with its audit record.")
-        return redirect("portal_dashboard")
+        return redirect("portal_placements")
 
 
 class TeacherAssignmentsView(PortalAuthMixin, TemplateView):
