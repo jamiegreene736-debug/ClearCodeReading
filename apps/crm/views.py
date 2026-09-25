@@ -46,7 +46,13 @@ from apps.crm.models import (
     Opportunity,
     pipeline_category_for,
 )
-from apps.crm.newsletters import resolve_unsubscribe_token
+from apps.crm.newsletters import (
+    link_subscription_to_contact,
+    resolve_unsubscribe_token,
+    subscribe_contact,
+    subscription_for_email,
+    unsubscribe_subscription,
+)
 from apps.crm.assessment_queue import assessment_summary, review_preview, waiting_preview
 from apps.crm.routing import pending_routing_people_count, pending_routing_queryset, routing_queue
 from apps.crm.serializers import CompanySerializer, LeadSerializer, OpportunitySerializer
@@ -421,7 +427,7 @@ class NewsletterSignupView(View):
             NewsletterSubscription.objects.filter(email=email).values_list("name", flat=True).first()
         )
         with transaction.atomic():
-            NewsletterSubscription.objects.update_or_create(
+            subscription, _created = NewsletterSubscription.objects.update_or_create(
                 email=email,
                 defaults={
                     "name": submitted_name or existing_name or "",
@@ -431,6 +437,7 @@ class NewsletterSignupView(View):
                     "source_path": redirect_path,
                 },
             )
+            link_subscription_to_contact(subscription)
             record_form_submission(
                 intake=LeadIntake(
                     contact_email=email,
@@ -1707,9 +1714,52 @@ class CrmContactDetailView(CrmAccessMixin, TemplateView):
                 "consultations": list(lead.consultation_bookings.all()),
                 "hiring_candidate": getattr(lead, "hiring", None),
                 "list_return_url": safe_contact_list_url(self.request),
+                "newsletter_subscription": subscription_for_email(lead.contact_email),
             }
         )
         return context
+
+
+class CrmContactNewsletterView(CrmAccessMixin, View):
+    """Add or remove the open contact from the newsletter list."""
+
+    def post(self, request, pk):
+        lead = get_object_or_404(Lead, pk=pk, is_deleted=False)
+        action = request.POST.get("action")
+        if action == "subscribe":
+            try:
+                subscription = subscribe_contact(lead, consented=request.POST.get("consent") == "yes")
+            except ValidationError as exc:
+                messages.error(request, " ".join(exc.messages))
+                return redirect("crm_contact_detail", pk=lead.pk)
+            AuditLog.objects.create(
+                actor=request.user,
+                action="crm.newsletter.contact_subscribed",
+                entity_type="crm.NewsletterSubscription",
+                entity_id=str(subscription.pk),
+                after={"email": subscription.email, "lead_id": lead.pk},
+            )
+            messages.success(request, f"{lead.contact_name} is on the newsletter.")
+        elif action == "unsubscribe":
+            subscription = subscription_for_email(lead.contact_email)
+            if subscription is None:
+                messages.error(request, "This contact is not on the newsletter.")
+                return redirect("crm_contact_detail", pk=lead.pk)
+            if subscription.lead_id is None:
+                subscription.lead = lead
+                subscription.save(update_fields=["lead", "updated_at"])
+            unsubscribe_subscription(subscription)
+            AuditLog.objects.create(
+                actor=request.user,
+                action="crm.newsletter.contact_unsubscribed",
+                entity_type="crm.NewsletterSubscription",
+                entity_id=str(subscription.pk),
+                after={"email": subscription.email, "lead_id": lead.pk},
+            )
+            messages.success(request, f"{lead.contact_name} will no longer receive the newsletter.")
+        else:
+            messages.error(request, "Choose whether to add or remove this contact.")
+        return redirect("crm_contact_detail", pk=lead.pk)
 
 
 class CrmContactDeleteView(CrmAccessMixin, View):

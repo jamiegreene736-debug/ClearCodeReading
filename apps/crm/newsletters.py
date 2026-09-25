@@ -1,16 +1,19 @@
 from datetime import timedelta
+from email.utils import parseaddr
 from urllib.parse import urljoin, urlparse
 
 from django.conf import settings
 from django.core import signing
+from django.core.exceptions import ValidationError
 from django.core.mail import EmailMultiAlternatives, get_connection
+from django.core.validators import validate_email
 from django.db import transaction
 from django.db.models import Count, Q
 from django.template.loader import render_to_string
 from django.urls import reverse
 from django.utils import timezone
 
-from apps.crm.models import NewsletterCampaign, NewsletterDelivery, NewsletterSubscription
+from apps.crm.models import Lead, NewsletterCampaign, NewsletterDelivery, NewsletterSubscription
 
 
 UNSUBSCRIBE_SIGNING_SALT = "apps.crm.newsletter.unsubscribe"
@@ -36,6 +39,88 @@ class NoActiveNewsletterSubscribers(NewsletterSendError):
 
 class NewsletterEmailDeliveryNotConfigured(NewsletterSendError):
     pass
+
+
+def newsletter_from_email() -> str:
+    """Visible From for every campaign and test. Independent of system no-reply mail."""
+    configured = getattr(settings, "NEWSLETTER_FROM_EMAIL", "").strip()
+    return configured or "ClearCode Reading <hello@clearcodereading.com>"
+
+
+def newsletter_reply_to() -> str:
+    _name, address = parseaddr(newsletter_from_email())
+    return address or "hello@clearcodereading.com"
+
+
+def subscription_for_email(email: str) -> NewsletterSubscription | None:
+    normalized = (email or "").strip().lower()
+    if not normalized:
+        return None
+    return NewsletterSubscription.objects.filter(email=normalized).first()
+
+
+def link_subscription_to_contact(subscription: NewsletterSubscription, lead: Lead | None = None) -> None:
+    """Attach the subscription to the contact it belongs to, when one is known."""
+    if lead is None:
+        matches = list(
+            Lead.objects.filter(is_deleted=False, contact_email__iexact=subscription.email).order_by("-updated_at")[:2]
+        )
+        lead = matches[0] if len(matches) == 1 else None
+    if lead is None or subscription.lead_id == lead.pk:
+        return
+    subscription.lead = lead
+    subscription.save(update_fields=["lead", "updated_at"])
+
+
+def subscribe_contact(lead: Lead, *, consented: bool) -> NewsletterSubscription:
+    """Add a CRM contact after staff record that the person agreed to the newsletter."""
+    if not consented:
+        raise ValidationError("Confirm that this person agreed to receive the newsletter.")
+    email = (lead.contact_email or "").strip().lower()
+    if len(email) > 254:
+        raise ValidationError("This contact’s email address is too long.")
+    try:
+        validate_email(email)
+    except ValidationError as exc:
+        raise ValidationError("Add a valid email address on the contact before subscribing them.") from exc
+    now = timezone.now()
+    existing_name = NewsletterSubscription.objects.filter(email=email).values_list("name", flat=True).first()
+    subscription, _created = NewsletterSubscription.objects.update_or_create(
+        email=email,
+        defaults={
+            "name": (lead.contact_name or existing_name or "")[:255],
+            "lead": lead,
+            "status": NewsletterSubscription.Status.ACTIVE,
+            "consented_at": now,
+            "unsubscribed_at": None,
+            "source_path": f"/crm/contacts/{lead.pk}/",
+        },
+    )
+    return subscription
+
+
+def unsubscribe_subscription(subscription: NewsletterSubscription) -> NewsletterSubscription:
+    if subscription.status != NewsletterSubscription.Status.UNSUBSCRIBED:
+        subscription.status = NewsletterSubscription.Status.UNSUBSCRIBED
+        subscription.unsubscribed_at = timezone.now()
+        subscription.save(update_fields=["status", "unsubscribed_at", "updated_at"])
+    return subscription
+
+
+def duplicate_campaign(campaign: NewsletterCampaign, *, created_by) -> NewsletterCampaign:
+    subject = campaign.subject
+    if not subject.lower().startswith("copy of "):
+        subject = f"Copy of {subject}"[:255]
+    copy = NewsletterCampaign(
+        subject=subject,
+        preview_text=campaign.preview_text,
+        body=campaign.body,
+        body_html=campaign.body_html,
+        created_by=created_by,
+    )
+    copy.full_clean()
+    copy.save()
+    return copy
 
 
 def newsletter_delivery_configuration_errors() -> tuple[str, ...]:
@@ -103,8 +188,9 @@ def _delivery_message(campaign, delivery, connection):
     message = EmailMultiAlternatives(
         subject=campaign.subject,
         body=text_body,
-        from_email=settings.DEFAULT_FROM_EMAIL,
+        from_email=newsletter_from_email(),
         to=[delivery.recipient_email],
+        reply_to=[newsletter_reply_to()],
         connection=connection,
         headers={
             "List-Unsubscribe": f"<{unsubscribe_url}>",
@@ -119,7 +205,7 @@ def send_newsletter_test(campaign: NewsletterCampaign, recipient_email: str) -> 
     """Send one copy of the campaign to a team member; no delivery is recorded."""
     text_body = (
         f"[TEST] {campaign_text(campaign)}\n\n"
-        "---\nThis is a test copy sent from CRM email settings. "
+        "---\nThis is a test copy sent from the CRM newsletter. "
         "Subscribers see an unsubscribe link here."
     )
     html_body = render_to_string(
@@ -129,8 +215,9 @@ def send_newsletter_test(campaign: NewsletterCampaign, recipient_email: str) -> 
     message = EmailMultiAlternatives(
         subject=f"[TEST] {campaign.subject}",
         body=text_body,
-        from_email=settings.DEFAULT_FROM_EMAIL,
+        from_email=newsletter_from_email(),
         to=[recipient_email],
+        reply_to=[newsletter_reply_to()],
     )
     message.attach_alternative(html_body, "text/html")
     return message.send(fail_silently=False)

@@ -567,6 +567,10 @@ class NewsletterCmsTests(TestCase):
         self.assertEqual(campaign.delivered_count, 2)
         self.assertEqual(len(mail.outbox), 3)
         html = html_part(mail.outbox[-1])
+        self.assertEqual(
+            mail.outbox[-1].from_email, "ClearCode Reading <hello@clearcodereading.com>"
+        )
+        self.assertEqual(mail.outbox[-1].reply_to, ["hello@clearcodereading.com"])
         self.assertIn("Rich <i>body</i>", html)
         self.assertIn("/newsletter/unsubscribe/", html)
         self.assertIn("Rich body", str(mail.outbox[-1].body))
@@ -596,3 +600,61 @@ class NewsletterCmsTests(TestCase):
         self.assertNotContains(response, "New newsletter")
         for name in ("crm_newsletter_new", "crm_newsletter_list"):
             self.assertEqual(self.client.get(reverse(name)).status_code, 403)
+
+    def test_workspace_nav_lists_subscribers_and_contact_card_adds_them(self) -> None:
+        response = self.client.get(reverse("crm_newsletter_list"))
+        self.assertContains(response, ">Newsletter</a>")
+        self.assertContains(response, "Campaigns")
+        self.assertContains(response, "Subscribers")
+        lead = Lead.objects.create(
+            contact_name="Avery Reader",
+            contact_email="avery@example.com",
+            school_name="Home",
+        )
+        detail = self.client.get(reverse("crm_contact_detail", args=[lead.pk]))
+        self.assertContains(detail, "Add to newsletter")
+        denied = self.client.post(
+            reverse("crm_contact_newsletter", args=[lead.pk]),
+            {"action": "subscribe"},
+        )
+        self.assertRedirects(denied, reverse("crm_contact_detail", args=[lead.pk]))
+        self.assertFalse(
+            NewsletterSubscription.objects.filter(email="avery@example.com").exists()
+        )
+        added = self.client.post(
+            reverse("crm_contact_newsletter", args=[lead.pk]),
+            {"action": "subscribe", "consent": "yes"},
+        )
+        self.assertRedirects(added, reverse("crm_contact_detail", args=[lead.pk]))
+        subscription = NewsletterSubscription.objects.get(email="avery@example.com")
+        self.assertEqual(subscription.lead, lead)
+        self.assertEqual(subscription.status, NewsletterSubscription.Status.ACTIVE)
+        listed = self.client.get(reverse("crm_newsletter_list") + "?tab=subscribers")
+        self.assertContains(listed, "avery@example.com")
+        self.assertContains(listed, "Avery Reader")
+        removed = self.client.post(
+            reverse("crm_contact_newsletter", args=[lead.pk]),
+            {"action": "unsubscribe"},
+        )
+        self.assertRedirects(removed, reverse("crm_contact_detail", args=[lead.pk]))
+        subscription.refresh_from_db()
+        self.assertEqual(
+            subscription.status, NewsletterSubscription.Status.UNSUBSCRIBED
+        )
+
+    def test_duplicate_starts_a_new_draft(self) -> None:
+        campaign = NewsletterCampaign.objects.create(
+            subject="March notes",
+            body="Hello",
+            body_html="<p>Hello</p>",
+            status=NewsletterCampaign.Status.SENT,
+            created_by=self.admin,
+        )
+        response = self.client.post(
+            reverse("crm_newsletter_duplicate", args=[campaign.pk])
+        )
+        copy = NewsletterCampaign.objects.exclude(pk=campaign.pk).get()
+        self.assertRedirects(response, reverse("crm_newsletter", args=[copy.pk]))
+        self.assertEqual(copy.subject, "Copy of March notes")
+        self.assertEqual(copy.status, NewsletterCampaign.Status.DRAFT)
+        self.assertEqual(copy.body_html, "<p>Hello</p>")
