@@ -2,123 +2,214 @@
 {% block title %}Contacts{% endblock %}
 {% block extra_style %}
   .page-head { display:flex; align-items:flex-end; justify-content:space-between; gap:18px; }
-  .filters { display:grid; grid-template-columns:minmax(220px,1.6fr) repeat(5,minmax(130px,1fr)) auto; gap:10px; padding:16px; border-bottom:1px solid var(--line); }
+  .queues { display:flex; gap:8px; margin-top:22px; overflow:auto; padding-bottom:2px; }
+  .queue { display:inline-flex; align-items:center; gap:8px; min-height:44px; padding:8px 12px; border:1px solid var(--line); border-radius:999px; background:white; color:var(--ink); font-weight:700; text-decoration:none; white-space:nowrap; }
+  .queue:hover { border-color:#8ca5b7; }
+  .queue.active { color:white; border-color:var(--teal); background:var(--teal); }
+  .queue-count { min-width:20px; padding:1px 7px; border-radius:999px; background:#edf2f5; color:var(--navy); font-size:11px; text-align:center; }
+  .queue.active .queue-count { color:#0f5c5c; background:white; }
+  .queue-overdue:not(.active) { color:#7b1f1f; }
+  .list-shell { margin-top:14px; overflow:hidden; }
+  .filters { display:grid; grid-template-columns:minmax(200px,1.4fr) repeat(4,minmax(120px,1fr)) auto; gap:10px; align-items:end; padding:16px; border-bottom:1px solid var(--line); }
+  .filter-actions { display:flex; align-items:end; gap:8px; }
+  .chips { display:flex; flex-wrap:wrap; align-items:center; gap:8px; padding:0 16px 14px; }
+  .chip { display:inline-flex; align-items:center; gap:6px; min-height:32px; padding:4px 10px; border-radius:999px; background:var(--teal-soft); color:#0f5c5c; font-size:12px; font-weight:700; text-decoration:none; }
+  .chip:hover { background:#d3eeea; }
+  .result-line { margin-left:auto; color:var(--muted); font-size:12px; font-weight:700; }
   .table-wrap { overflow:auto; }
   table { width:100%; border-collapse:collapse; }
   th { padding:11px 14px; color:var(--muted); background:#f5f8fa; border-bottom:1px solid var(--line); font-size:11px; letter-spacing:.04em; text-align:left; text-transform:uppercase; white-space:nowrap; }
   td { padding:14px; border-bottom:1px solid #e7edf1; vertical-align:middle; }
   tr:hover td { background:#fbfdfe; }
-  .contact-cell { display:flex; align-items:center; gap:11px; min-width:210px; }
-  .contact-name { color:#006b7a; font-weight:700; text-decoration:none; }
+  tr.is-selected td { background:#f3fbfa; }
+  .contact-cell { display:flex; align-items:center; gap:11px; min-width:220px; }
+  .contact-name { color:#006b7a; font-weight:800; text-decoration:none; }
   .contact-name:hover { text-decoration:underline; }
-  .contact-email { color:var(--muted); font-size:12px; }
+  .contact-meta { color:var(--muted); font-size:12px; }
   .deal-link { color:#006b7a; font-weight:600; text-decoration:none; }
   .deal-link:hover { text-decoration:underline; }
   .th-sort { color:inherit; text-decoration:none; }
   .th-sort:hover, .th-sort.active { color:var(--teal); }
-  .tabs { display:flex; gap:18px; margin-top:24px; border-bottom:1px solid var(--line); }
-  .tab { padding:10px 2px; color:var(--muted); border-bottom:3px solid transparent; font-weight:600; text-decoration:none; }
-  .tab.active { color:var(--teal); border-color:var(--teal); }
+  .owner-missing { color:#754f00; font-weight:700; }
   .pagination { display:flex; align-items:center; justify-content:center; gap:10px; padding:16px; }
   .contact-cards { display:none; }
-  .bulk-assign { display:flex; flex-wrap:wrap; align-items:end; gap:10px; padding:16px 18px; border-bottom:1px solid var(--line); background:#f9fbfc; }
-  .bulk-assign .field { min-width:220px; }
+  .assign-bar { display:flex; flex-wrap:wrap; align-items:end; gap:10px; padding:12px 16px; border-top:1px solid var(--line); background:#f9fbfc; }
+  .assign-bar.is-active { background:#e5f5f3; border-top-color:#b7ddd8; }
+  .assign-bar .field { min-width:220px; }
+  .assign-status { min-height:44px; display:flex; align-items:center; margin-right:auto; color:var(--muted); font-weight:700; }
+  .assign-bar.is-active .assign-status { color:#0f5c5c; }
   .select-contact { width:18px; min-height:18px; accent-color:var(--teal); }
   .mobile-select { display:flex; align-items:center; gap:8px; margin-bottom:12px; font-size:12px; font-weight:700; }
-  @media (max-width:1100px) { .filters { grid-template-columns:1fr 1fr 1fr; } }
+  .select-page { display:flex; align-items:center; gap:8px; }
+  @media (max-width:1100px) { .filters { grid-template-columns:1fr 1fr; } }
   @media (max-width:650px) {
     .page-head { align-items:stretch; flex-direction:column; }
     .filters { grid-template-columns:1fr; }
-    .tabs { gap:6px; overflow-x:auto; }
-    .tab { min-height:44px; display:inline-flex; align-items:center; padding:10px 8px; white-space:nowrap; }
+    .filter-actions { align-items:stretch; }
+    .filter-actions .btn { width:100%; }
+    .result-line { margin-left:0; width:100%; }
     .table-wrap { display:none; }
     .contact-cards { display:grid; gap:12px; padding:12px; }
     .contact-card { padding:16px; }
     .contact-card dl { display:grid; grid-template-columns:minmax(0,1fr) minmax(0,1fr); gap:12px; margin:16px 0 0; }
     .contact-card dt { color:var(--muted); font-size:11px; font-weight:700; letter-spacing:.04em; text-transform:uppercase; }
     .contact-card dd { margin:3px 0 0; overflow-wrap:anywhere; }
-    .bulk-assign { align-items:stretch; }
-    .bulk-assign .field,.bulk-assign .btn { width:100%; }
+    .assign-bar { align-items:stretch; }
+    .assign-bar .field,.assign-bar .btn,.assign-status { width:100%; }
   }
   @media (max-width:420px) { .contact-card dl { grid-template-columns:1fr; } }
 {% endblock %}
 {% block content %}
   <div class="page-head">
-    <div><p class="eyebrow">Customer relationship management</p><h1>Contacts</h1><p class="subtle">Every valid website submission becomes a contact activity, without losing repeat inquiries.</p></div>
+    <div>
+      <p class="eyebrow">People</p>
+      <h1>Contacts</h1>
+      <p class="subtle">{{ queue_intro }}</p>
+    </div>
     <a class="btn btn-primary" href="{% url 'crm_contact_create' %}">+ Add contact</a>
   </div>
 
-  <section class="stats" aria-label="CRM summary">
-    <div class="card stat"><div class="stat-label">Total contacts</div><div class="stat-value">{{ total_contacts }}</div></div>
-    <div class="card stat"><div class="stat-label">New contacts</div><div class="stat-value">{{ new_contacts }}</div></div>
-    <div class="card stat"><div class="stat-label">Unassigned</div><div class="stat-value">{{ unassigned_contacts }}</div></div>
-    <div class="card stat"><div class="stat-label">Submissions · 30 days</div><div class="stat-value">{{ recent_submissions }}</div></div>
-    <div class="card stat"><div class="stat-label">Overdue tasks</div><div class="stat-value">{{ overdue_tasks }}</div></div>
-    <div class="card stat"><div class="stat-label">People waiting</div><div class="stat-value">{{ pending_triage }}</div></div>
-  </section>
-
-  <nav class="tabs" aria-label="Contact views">
-    <a class="tab {% if not active_filters.status and not active_filters.owner %}active{% endif %}" href="{% url 'crm_contact_list' %}">All contacts</a>
-    <a class="tab {% if active_filters.owner == request.user.pk|stringformat:'s' %}active{% endif %}" href="?owner={{ request.user.pk }}">My contacts</a>
-    <a class="tab {% if active_filters.status == 'new' %}active{% endif %}" href="?status=new">New</a>
-    <a class="tab {% if active_filters.owner == 'unassigned' %}active{% endif %}" href="?owner=unassigned">Unassigned</a>
+  <nav class="queues" aria-label="Contact queues">
+    <a class="queue {% if active_queue == 'all' %}active{% endif %}" href="{{ queue_links.all }}" {% if active_queue == 'all' %}aria-current="page"{% endif %}>All <span class="queue-count">{{ total_contacts }}</span></a>
+    <a class="queue {% if active_queue == 'mine' %}active{% endif %}" href="{{ queue_links.mine }}" {% if active_queue == 'mine' %}aria-current="page"{% endif %}>My contacts <span class="queue-count">{{ my_contacts }}</span></a>
+    <a class="queue {% if active_queue == 'new' %}active{% endif %}" href="{{ queue_links.new }}" {% if active_queue == 'new' %}aria-current="page"{% endif %}>New <span class="queue-count">{{ new_contacts }}</span></a>
+    <a class="queue {% if active_queue == 'unassigned' %}active{% endif %}" href="{{ queue_links.unassigned }}" {% if active_queue == 'unassigned' %}aria-current="page"{% endif %}>Unassigned <span class="queue-count">{{ unassigned_contacts }}</span></a>
+    <a class="queue queue-overdue {% if active_queue == 'overdue' %}active{% endif %}" href="{{ queue_links.overdue }}" {% if active_queue == 'overdue' %}aria-current="page"{% endif %}>Overdue <span class="queue-count">{{ overdue_contacts }}</span></a>
   </nav>
-  <section class="card" aria-label="Contacts table">
+
+  <section class="card list-shell" aria-label="Contacts">
     <form class="filters" method="get">
+      {% if active_filters.queue %}<input type="hidden" name="queue" value="{{ active_filters.queue }}">{% endif %}
+      {% if active_filters.sort and active_filters.sort != 'recent' %}<input type="hidden" name="sort" value="{{ active_filters.sort }}">{% endif %}
       <div class="field"><label for="crm-search">Search contacts</label><input id="crm-search" name="q" type="search" value="{{ active_filters.q }}" placeholder="Name, email, phone, or organization"></div>
-      <div class="field"><label for="crm-status">Lead status</label><select id="crm-status" name="status"><option value="">All statuses</option>{% for value,label in status_choices %}<option value="{{ value }}" {% if active_filters.status == value %}selected{% endif %}>{{ label }}</option>{% endfor %}</select></div>
-      <div class="field"><label for="crm-audience">Pipeline category</label><select id="crm-audience" name="audience"><option value="">All pipeline categories</option>{% for value,label in audience_choices %}<option value="{{ value }}" {% if active_filters.audience == value %}selected{% endif %}>{{ label }}</option>{% endfor %}</select></div>
-      <div class="field"><label for="crm-relationship-interest">Relationship interest</label><select id="crm-relationship-interest" name="relationship_interest"><option value="">All interests</option>{% for value,label in relationship_interest_choices %}<option value="{{ value }}" {% if active_filters.relationship_interest == value %}selected{% endif %}>{{ label }}</option>{% endfor %}</select></div>
-      <div class="field"><label for="crm-owner">Contact owner</label><select id="crm-owner" name="owner"><option value="">All owners</option><option value="unassigned" {% if active_filters.owner == 'unassigned' %}selected{% endif %}>Unassigned</option>{% for owner in owners %}<option value="{{ owner.pk }}" {% if active_filters.owner == owner.pk|stringformat:'s' %}selected{% endif %}>{{ owner.get_full_name|default:owner.email }}</option>{% endfor %}</select></div>
-      <div class="field"><label for="crm-sort">Sort</label><select id="crm-sort" name="sort"><option value="recent" {% if active_filters.sort == 'recent' %}selected{% endif %}>Recent activity</option><option value="name" {% if active_filters.sort == 'name' %}selected{% endif %}>Contact name</option><option value="oldest" {% if active_filters.sort == 'oldest' %}selected{% endif %}>Oldest first</option><option value="deal" {% if active_filters.sort == 'deal' %}selected{% endif %}>Deal (A–Z)</option><option value="deal_desc" {% if active_filters.sort == 'deal_desc' %}selected{% endif %}>Deal (Z–A)</option></select></div>
-      <div class="field"><span class="field-label">&nbsp;</span><button class="btn btn-primary" type="submit">Apply filters</button></div>
+      <div class="field"><label for="crm-status">Lead status</label><select id="crm-status" name="status" onchange="this.form.requestSubmit()"><option value="">All statuses</option>{% for value,label in status_choices %}<option value="{{ value }}" {% if active_filters.status == value %}selected{% endif %}>{{ label }}</option>{% endfor %}</select></div>
+      <div class="field"><label for="crm-audience">Pipeline category</label><select id="crm-audience" name="audience" onchange="this.form.requestSubmit()"><option value="">All pipeline categories</option>{% for value,label in audience_choices %}<option value="{{ value }}" {% if active_filters.audience == value %}selected{% endif %}>{{ label }}</option>{% endfor %}</select></div>
+      <div class="field"><label for="crm-relationship-interest">Relationship interest</label><select id="crm-relationship-interest" name="relationship_interest" onchange="this.form.requestSubmit()"><option value="">All interests</option>{% for value,label in relationship_interest_choices %}<option value="{{ value }}" {% if active_filters.relationship_interest == value %}selected{% endif %}>{{ label }}</option>{% endfor %}</select></div>
+      <div class="field"><label for="crm-owner">Contact owner</label><select id="crm-owner" name="owner" onchange="this.form.requestSubmit()"><option value="">All owners</option><option value="unassigned" {% if active_filters.owner == 'unassigned' %}selected{% endif %}>Unassigned</option>{% for owner in owners %}<option value="{{ owner.pk }}" {% if active_filters.owner == owner.pk|stringformat:'s' %}selected{% endif %}>{{ owner.get_full_name|default:owner.email }}</option>{% endfor %}</select></div>
+      <div class="filter-actions">
+        <button class="btn btn-primary" type="submit">Search</button>
+        {% if filter_chips %}<a class="btn" href="{% url 'crm_contact_list' %}">Clear</a>{% endif %}
+      </div>
     </form>
-    <form method="post" action="{% url 'crm_contact_bulk_assign' %}">
+    {% if filter_chips or result_count %}
+      <div class="chips" aria-label="Active filters">
+        {% for chip in filter_chips %}<a class="chip" href="{{ chip.href }}" aria-label="Remove {{ chip.label }}">{{ chip.label }} <span aria-hidden="true">×</span></a>{% endfor %}
+        <span class="result-line">{% if result_count == total_contacts %}{{ result_count }} contact{{ result_count|pluralize }}{% else %}{{ result_count }} of {{ total_contacts }} contact{{ total_contacts|pluralize }}{% endif %}</span>
+      </div>
+    {% endif %}
+
+    <form method="post" action="{% url 'crm_contact_bulk_assign' %}" data-assign-form>
       {% csrf_token %}
-      <div class="bulk-assign" aria-label="Assign selected contacts">
+      <input type="hidden" name="next" value="{{ list_path }}">
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th><label class="select-page"><input class="select-contact" type="checkbox" data-select-page aria-label="Select all contacts on this page"></label></th>
+              <th><a class="th-sort {% if active_filters.sort == 'name' %}active{% endif %}" href="?{% if sort_base_query %}{{ sort_base_query }}&{% endif %}sort=name">Contact{% if active_filters.sort == 'name' %} ▲{% endif %}</a></th>
+              <th>Lead status</th>
+              <th>Pipeline category</th>
+              <th>Relationship interests</th>
+              <th>Organization</th>
+              <th>Contact owner</th>
+              <th><a class="th-sort {% if active_filters.sort == 'deal' or active_filters.sort == 'deal_desc' %}active{% endif %}" href="?{% if sort_base_query %}{{ sort_base_query }}&{% endif %}sort={% if active_filters.sort == 'deal' %}deal_desc{% else %}deal{% endif %}">Deal{% if active_filters.sort == 'deal' %} ▲{% elif active_filters.sort == 'deal_desc' %} ▼{% endif %}</a></th>
+              <th><a class="th-sort {% if active_filters.sort == 'recent' or active_filters.sort == 'oldest' %}active{% endif %}" href="?{% if sort_base_query %}{{ sort_base_query }}&{% endif %}sort={% if active_filters.sort == 'oldest' %}recent{% else %}oldest{% endif %}">Last activity{% if active_filters.sort == 'oldest' %} ▲{% else %} ▼{% endif %}</a></th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for contact in contacts %}
+              <tr data-contact-row>
+                <td><input class="select-contact" type="checkbox" name="lead_ids" value="{{ contact.pk }}" aria-label="Select {{ contact.contact_name }}"></td>
+                <td>
+                  <div class="contact-cell">
+                    <span class="avatar">{{ contact.contact_name|slice:":1" }}</span>
+                    <div>
+                      <a class="contact-name" href="{% url 'crm_contact_detail' contact.pk %}?next={{ list_path|urlencode }}">{{ contact.contact_name }}</a>
+                      {% for label in contact.origin_labels %} <span class="badge badge-origin" data-testid="contact-origin">{{ label }}</span>{% endfor %}
+                      <div class="contact-meta">{{ contact.contact_email }}{% if contact.submission_count %} · {{ contact.submission_count }} submission{{ contact.submission_count|pluralize }}{% endif %}</div>
+                    </div>
+                  </div>
+                </td>
+                <td><span class="badge {% if contact.status == 'new' %}badge-warn{% endif %}">{{ contact.get_status_display }}</span></td>
+                <td>{{ contact.get_audience_display }}</td>
+                <td>{% for label in contact.relationship_interest_labels %}<span class="badge">{{ label }}</span>{% empty %}<span class="subtle">—</span>{% endfor %}</td>
+                <td>{{ contact.organization_name|default:contact.school_name }}</td>
+                <td>{% if contact.assigned_to %}{{ contact.assigned_to.get_full_name|default:contact.assigned_to.email }}{% else %}<span class="owner-missing">Unassigned</span>{% endif %}</td>
+                <td>{% for deal in contact.active_deals %}<a class="deal-link" href="{% url 'crm_deal_detail' deal.pk %}">{{ deal.name }}</a>{% if not forloop.last %}<br>{% endif %}{% empty %}<span class="subtle">—</span>{% endfor %}</td>
+                <td>{% if contact.last_submission_at %}{{ contact.last_submission_at|date:"M j, Y, g:i A T" }}{% else %}<span class="subtle">No captured form</span>{% endif %}</td>
+              </tr>
+            {% empty %}
+              <tr><td class="empty" colspan="9"><strong>No contacts match this view.</strong><br>{% if filter_chips %}<a href="{% url 'crm_contact_list' %}">Clear filters</a>{% else %}Add a contact, or wait for the next website submission.{% endif %}</td></tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+      <div class="contact-cards" aria-label="Contacts">
+        {% for contact in contacts %}
+          <article class="card contact-card" data-contact-row>
+            <label class="mobile-select"><input class="select-contact" type="checkbox" name="lead_ids" value="{{ contact.pk }}"> Select {{ contact.contact_name }}</label>
+            <div class="contact-cell">
+              <span class="avatar">{{ contact.contact_name|slice:":1" }}</span>
+              <div>
+                <a class="contact-name" href="{% url 'crm_contact_detail' contact.pk %}?next={{ list_path|urlencode }}">{{ contact.contact_name }}</a>
+                {% for label in contact.origin_labels %} <span class="badge badge-origin" data-testid="contact-origin">{{ label }}</span>{% endfor %}
+                <div class="contact-meta">{{ contact.contact_email }}{% if contact.submission_count %} · {{ contact.submission_count }} submission{{ contact.submission_count|pluralize }}{% endif %}</div>
+              </div>
+            </div>
+            <dl>
+              <div><dt>Status</dt><dd><span class="badge {% if contact.status == 'new' %}badge-warn{% endif %}">{{ contact.get_status_display }}</span></dd></div>
+              <div><dt>Pipeline category</dt><dd>{{ contact.get_audience_display }}</dd></div>
+              <div><dt>Organization</dt><dd>{{ contact.organization_name|default:contact.school_name|default:"—" }}</dd></div>
+              <div><dt>Owner</dt><dd>{% if contact.assigned_to %}{{ contact.assigned_to.get_full_name|default:contact.assigned_to.email }}{% else %}<span class="owner-missing">Unassigned</span>{% endif %}</dd></div>
+              <div><dt>Deal</dt><dd>{% for deal in contact.active_deals %}<a class="deal-link" href="{% url 'crm_deal_detail' deal.pk %}">{{ deal.name }}</a>{% if not forloop.last %}<br>{% endif %}{% empty %}—{% endfor %}</dd></div>
+              <div><dt>Last activity</dt><dd>{% if contact.last_submission_at %}{{ contact.last_submission_at|date:"M j, Y, g:i A T" }}{% else %}No captured form{% endif %}</dd></div>
+            </dl>
+          </article>
+        {% empty %}<div class="empty"><strong>No contacts match this view.</strong><br>{% if filter_chips %}<a href="{% url 'crm_contact_list' %}">Clear filters</a>{% else %}Add a contact, or wait for the next website submission.{% endif %}</div>{% endfor %}
+      </div>
+      <div class="assign-bar" data-assign-bar aria-label="Assign selected contacts">
+        <p class="assign-status" data-assign-status aria-live="polite">Select contacts to assign an owner.</p>
         <div class="field"><label for="bulk-owner">Assign selected contacts to</label><select id="bulk-owner" name="assigned_to" required><option value="">Choose a CRM user</option><option value="unassigned">Unassigned</option>{% for owner in owners %}<option value="{{ owner.pk }}">{{ owner.get_full_name|default:owner.email }}</option>{% endfor %}</select></div>
         <button class="btn btn-primary" type="submit">Assign selected</button>
-        <a class="btn" href="{% url 'crm_team' %}">Manage team</a>
-      </div>
-      <div class="table-wrap">
-      <table>
-        <thead><tr><th><span class="subtle">Select</span></th><th>Contact</th><th>Lead status</th><th>Pipeline category</th><th>Relationship interests</th><th>Organization</th><th>Contact owner</th><th><a class="th-sort {% if active_filters.sort == 'deal' or active_filters.sort == 'deal_desc' %}active{% endif %}" href="?{% if sort_base_query %}{{ sort_base_query }}&{% endif %}sort={% if active_filters.sort == 'deal' %}deal_desc{% else %}deal{% endif %}" aria-label="Sort by deal">Deal{% if active_filters.sort == 'deal' %} ▲{% elif active_filters.sort == 'deal_desc' %} ▼{% endif %}</a></th><th>Form submissions</th><th>Last submission</th></tr></thead>
-        <tbody>
-          {% for contact in contacts %}
-            <tr>
-              <td><input class="select-contact" type="checkbox" name="lead_ids" value="{{ contact.pk }}" aria-label="Select {{ contact.contact_name }}"></td>
-              <td><div class="contact-cell"><span class="avatar">{{ contact.contact_name|slice:":1" }}</span><div><a class="contact-name" href="{% url 'crm_contact_detail' contact.pk %}">{{ contact.contact_name }}</a>{% for label in contact.origin_labels %} <span class="badge badge-origin" data-testid="contact-origin">{{ label }}</span>{% endfor %}<div class="contact-email">{{ contact.contact_email }}</div></div></div></td>
-              <td><span class="badge {% if contact.status == 'new' %}badge-warn{% endif %}">{{ contact.get_status_display }}</span></td>
-              <td>{{ contact.get_audience_display }}</td>
-              <td>{% for label in contact.relationship_interest_labels %}<span class="badge">{{ label }}</span>{% empty %}<span class="subtle">—</span>{% endfor %}</td>
-              <td>{{ contact.organization_name|default:contact.school_name }}</td>
-              <td>{% if contact.assigned_to %}{{ contact.assigned_to.get_full_name|default:contact.assigned_to.email }}{% else %}<span class="subtle">Unassigned</span>{% endif %}</td>
-              <td>{% for deal in contact.active_deals %}<a class="deal-link" href="{% url 'crm_deal_detail' deal.pk %}">{{ deal.name }}</a>{% if not forloop.last %}<br>{% endif %}{% empty %}<span class="subtle">—</span>{% endfor %}</td>
-              <td>{{ contact.submission_count }}</td>
-              <td>{% if contact.last_submission_at %}{{ contact.last_submission_at|date:"M j, Y, g:i A T" }}{% else %}<span class="subtle">No captured form</span>{% endif %}</td>
-            </tr>
-          {% empty %}<tr><td class="empty" colspan="10"><strong>No contacts match this view.</strong><br>Try removing a filter or wait for the next website submission.</td></tr>{% endfor %}
-        </tbody>
-      </table>
-    </div>
-    <div class="contact-cards" aria-label="Contacts">
-      {% for contact in contacts %}
-        <article class="card contact-card">
-          <label class="mobile-select"><input class="select-contact" type="checkbox" name="lead_ids" value="{{ contact.pk }}"> Select {{ contact.contact_name }}</label>
-          <div class="contact-cell"><span class="avatar">{{ contact.contact_name|slice:":1" }}</span><div><a class="contact-name" href="{% url 'crm_contact_detail' contact.pk %}">{{ contact.contact_name }}</a>{% for label in contact.origin_labels %} <span class="badge badge-origin" data-testid="contact-origin">{{ label }}</span>{% endfor %}<div class="contact-email">{{ contact.contact_email }}</div></div></div>
-          <dl>
-            <div><dt>Status</dt><dd><span class="badge {% if contact.status == 'new' %}badge-warn{% endif %}">{{ contact.get_status_display }}</span></dd></div>
-            <div><dt>Pipeline category</dt><dd>{{ contact.get_audience_display }}</dd></div>
-            <div><dt>Organization</dt><dd>{{ contact.organization_name|default:contact.school_name|default:"—" }}</dd></div>
-            <div><dt>Owner</dt><dd>{% if contact.assigned_to %}{{ contact.assigned_to.get_full_name|default:contact.assigned_to.email }}{% else %}Unassigned{% endif %}</dd></div>
-            <div><dt>Deal</dt><dd>{% for deal in contact.active_deals %}<a class="deal-link" href="{% url 'crm_deal_detail' deal.pk %}">{{ deal.name }}</a>{% if not forloop.last %}<br>{% endif %}{% empty %}—{% endfor %}</dd></div>
-            <div><dt>Submissions</dt><dd>{{ contact.submission_count }}</dd></div>
-            <div><dt>Last submission</dt><dd>{% if contact.last_submission_at %}{{ contact.last_submission_at|date:"M j, Y, g:i A T" }}{% else %}No captured form{% endif %}</dd></div>
-          </dl>
-        </article>
-      {% empty %}<div class="empty"><strong>No contacts match this view.</strong><br>Try removing a filter or wait for the next website submission.</div>{% endfor %}
       </div>
     </form>
     {% if page_obj.paginator.num_pages > 1 %}<nav class="pagination" aria-label="Pagination">{% if page_obj.has_previous %}<a class="btn btn-small" href="?{% if filter_query %}{{ filter_query }}&{% endif %}page={{ page_obj.previous_page_number }}">Previous</a>{% endif %}<span>Page {{ page_obj.number }} of {{ page_obj.paginator.num_pages }}</span>{% if page_obj.has_next %}<a class="btn btn-small" href="?{% if filter_query %}{{ filter_query }}&{% endif %}page={{ page_obj.next_page_number }}">Next</a>{% endif %}</nav>{% endif %}
   </section>
+  <script>
+    (() => {
+      const form = document.querySelector("[data-assign-form]");
+      if (!form) return;
+      const bar = form.querySelector("[data-assign-bar]");
+      const status = form.querySelector("[data-assign-status]");
+      const pageToggles = form.querySelectorAll("[data-select-page]");
+      const rowBoxes = () => [...form.querySelectorAll('input[name="lead_ids"]')];
+      const selectedIds = () => [...new Set(rowBoxes().filter((box) => box.checked).map((box) => box.value))];
+      const sync = () => {
+        const ids = selectedIds();
+        form.querySelectorAll("[data-contact-row]").forEach((row) => {
+          const box = row.querySelector('input[name="lead_ids"]');
+          row.classList.toggle("is-selected", Boolean(box && ids.includes(box.value)));
+        });
+        const allChecked = rowBoxes().length > 0 && rowBoxes().every((box) => ids.includes(box.value));
+        const someChecked = ids.length > 0 && !allChecked;
+        pageToggles.forEach((toggle) => {
+          toggle.checked = allChecked;
+          toggle.indeterminate = someChecked;
+        });
+        bar.classList.toggle("is-active", ids.length > 0);
+        status.textContent = ids.length ? `${ids.length} selected` : "Select contacts to assign an owner.";
+      };
+      pageToggles.forEach((toggle) => toggle.addEventListener("change", () => {
+        const checked = toggle.checked;
+        rowBoxes().forEach((box) => { box.checked = checked; });
+        sync();
+      }));
+      form.addEventListener("change", (event) => {
+        if (event.target.name !== "lead_ids") return;
+        rowBoxes().filter((box) => box.value === event.target.value).forEach((box) => { box.checked = event.target.checked; });
+        sync();
+      });
+      sync();
+    })();
+  </script>
 {% endblock %}

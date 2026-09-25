@@ -1516,9 +1516,68 @@ class CrmWorkspaceTests(TestCase):
 
         self.assertEqual(response.status_code, 200)
         self.assertContains(response, "Alex Reader")
-        self.assertContains(response, "Every valid website submission")
+        self.assertContains(response, "Repeat website inquiries stay on the same contact.")
         self.assertEqual(list(response.context["contacts"]), [self.lead])
         self.assertEqual(response.context["contacts"][0].submission_count, 1)
+
+    def test_overdue_queue_lists_only_contacts_with_past_due_tasks(self):
+        other = Lead.objects.create(
+            school_name="On time",
+            contact_name="On Time",
+            contact_email="ontime@example.com",
+            audience=Lead.PipelineCategory.OTHER,
+        )
+        CrmActivity.objects.create(
+            lead=self.lead,
+            activity_type=CrmActivity.ActivityType.TASK,
+            subject="Call back",
+            due_at=timezone.now() - timezone.timedelta(days=1),
+        )
+        CrmActivity.objects.create(
+            lead=other,
+            activity_type=CrmActivity.ActivityType.TASK,
+            subject="Later",
+            due_at=timezone.now() + timezone.timedelta(days=2),
+        )
+        self.client.force_login(self.admin_user)
+
+        response = self.client.get(reverse("crm_contact_list"), {"queue": "overdue"})
+
+        self.assertEqual(list(response.context["contacts"]), [self.lead])
+        self.assertEqual(response.context["overdue_contacts"], 1)
+        self.assertContains(response, "past due")
+
+    def test_contact_detail_returns_to_the_filtered_list(self):
+        self.client.force_login(self.admin_user)
+        listing = self.client.get(reverse("crm_contact_list"), {"status": "new"})
+        detail = self.client.get(
+            reverse("crm_contact_detail", args=[self.lead.pk]),
+            {"next": "/crm/contacts/?status=new"},
+        )
+        blocked = self.client.get(
+            reverse("crm_contact_detail", args=[self.lead.pk]),
+            {"next": "https://evil.example/crm/contacts/"},
+        )
+
+        self.assertContains(listing, "next=/crm/contacts/%3Fstatus%3Dnew")
+        self.assertContains(detail, 'class="crumb" href="/crm/contacts/?status=new"')
+        self.assertContains(blocked, 'class="crumb" href="/crm/contacts/"')
+
+    def test_bulk_assign_returns_to_the_filtered_list(self):
+        self.client.force_login(self.admin_user)
+        response = self.client.post(
+            reverse("crm_contact_bulk_assign"),
+            {
+                "lead_ids": [self.lead.pk],
+                "assigned_to": self.admin_user.pk,
+                "next": "/crm/contacts/?owner=unassigned",
+            },
+        )
+        self.assertRedirects(
+            response,
+            "/crm/contacts/?owner=unassigned",
+            fetch_redirect_response=False,
+        )
 
     def test_recent_sort_places_captured_submissions_before_uncaptured_contacts(self):
         Lead.objects.create(
