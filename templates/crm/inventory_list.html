@@ -1,17 +1,126 @@
-{% extends "crm/base.html" %}{% block title %}Assessments{% endblock %}{% block content %}
-<h1>Assessments</h1>
-<p>Track parent invitations, reading responses, and the next conversation.</p>
-<p><a class="btn"
-   href="{% url 'inventory_preview' %}">Preview / test inventory</a> <a class="btn" href="{% url 'inventory_slots' %}">Consultation availability</a></p>
-<form method="get"
-      class="card"
-      style="padding:16px;
-             margin:20px 0;
-             display:flex;
-             gap:12px;
-             flex-wrap:wrap"><label for="status">Show</label><select id="status" name="status" style="width:auto"><option value="">All assessments</option value="pending" {% if status == 'pending' %}selected{% endif %}>Awaiting completion</option><option value="completed" {% if status == 'completed' %}selected{% endif %}>Completed</option><option value="review" {% if status == 'review' %}selected{% endif %}>Needs review</option><option value="booked" {% if status == 'booked' %}selected{% endif %}>Consultation booked</option><option value="failed" {% if status == 'failed' %}selected{% endif %}>Email needs attention</option></select><button class="btn">Apply</button></form>
-{% for item in page %}<article class="card" style="padding:20px;margin-bottom:12px"><span class="badge">{{ item.status }}</span><h2 style="margin:10px 0;font-size:18px"><a href="{% url 'inventory_detail' item.pk %}">Parent Reading Inventory · {{ item.child.name }}</a></h2><p>{{ item.child.parent.contact_name }} · {{ item.recipient }}<br>Created {{ item.created_at|date:"M j, Y" }} · Owner: {{ item.child.parent.assigned_to.get_full_name|default:'Unassigned' }}</p>{% for email in item.emails.all %}{% if email.status == "failed" or email.status == "sending" %}<p class="badge badge-warn">Email: {{ email.get_status_display }}</p>{% endif %}{% endfor %}</article>{% empty %}<div class="card empty">No assessments in this view. Open a contact and choose “Send assessment.”</div>{% endfor %}
-<p>{% if page.has_previous %}<a class="btn"
-   href="?status={{ status|urlencode }}&page={{ page.previous_page_number }}">Previous</a>{% endif %} Page {{ page.number }} of {{ page.paginator.num_pages }} {% if page.has_next %}<a class="btn"
-   href="?status={{ status|urlencode }}&page={{ page.next_page_number }}">Next</a>{% endif %}</p>
+{% extends "crm/base.html" %}
+{% block title %}Assessments{% endblock %}
+{% block extra_style %}
+  .page-head { display:flex; align-items:flex-end; justify-content:space-between; gap:18px; }
+  .page-actions { display:flex; flex-wrap:wrap; gap:8px; }
+  .assessment-flow { display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:8px; margin:18px 0 0; padding:0; list-style:none; }
+  .assessment-flow li { padding:12px; border:1px solid var(--line); border-radius:10px; background:white; }
+  .assessment-flow li.is-current { border-color:var(--teal); background:var(--teal-soft); }
+  .assessment-flow strong { display:block; color:var(--navy); }
+  .assessment-flow span { color:var(--muted); font-size:12px; }
+  .queue-tabs { display:flex; gap:8px; overflow:auto; margin:8px 0 16px; padding-bottom:4px; }
+  .queue-tab { white-space:nowrap; }
+  .queue-tab.active { color:white; border-color:var(--teal); background:var(--teal); }
+  .queue-count { margin-left:6px; padding:1px 7px; border-radius:999px; background:rgba(33,51,67,.08); font-size:11px; }
+  .queue-tab.active .queue-count { background:rgba(255,255,255,.22); }
+  .assessment-search { display:grid; grid-template-columns:minmax(0,1fr) auto; gap:10px; align-items:end; padding:16px; margin-bottom:16px; }
+  .assessment-list { display:grid; gap:12px; }
+  .assessment-card { padding:18px; }
+  .assessment-card-top { display:flex; align-items:flex-start; justify-content:space-between; gap:12px; }
+  .assessment-card h2 { margin:0; font-size:18px; }
+  .assessment-card h2 a { color:var(--navy); text-decoration:none; }
+  .assessment-card h2 a:hover { color:var(--teal); }
+  .assessment-who a { color:var(--teal); font-weight:700; text-decoration:none; }
+  .assessment-progress { margin:12px 0; padding:10px 12px; border-radius:8px; background:#f4f8f9; }
+  .assessment-chips { display:flex; flex-wrap:wrap; gap:6px; margin-bottom:8px; }
+  .assessment-actions { display:flex; flex-wrap:wrap; gap:8px; margin-top:12px; }
+  @media (max-width:760px) {
+    .page-head { align-items:stretch; flex-direction:column; }
+    .page-actions, .page-actions .btn { width:100%; }
+    .assessment-flow { grid-template-columns:1fr 1fr; }
+    .assessment-search { grid-template-columns:1fr; }
+    .assessment-card-top { flex-direction:column; }
+    .assessment-actions .btn { width:100%; }
+  }
+{% endblock %}
+{% block content %}
+  <div class="page-head">
+    <div>
+      <p class="eyebrow">Assessment work</p>
+      <h1>Assessments</h1>
+      <p class="subtle">{{ intro }}</p>
+    </div>
+    <div class="page-actions">
+      <a class="btn" href="{% url 'inventory_preview' %}">Preview / test inventory</a>
+      <a class="btn" href="{% url 'inventory_slots' %}">Consultation availability</a>
+    </div>
+  </div>
+
+  <ol class="assessment-flow" aria-label="Assessment flow">
+    <li {% if queue == "attention" %}class="is-current"{% endif %}><strong>1. Send</strong><span>From a contact record</span></li>
+    <li {% if queue == "waiting" or queue == "not_started" or queue == "in_progress" %}class="is-current"{% endif %}><strong>2. Parent finishes</strong><span>This is the waiting queue</span></li>
+    <li {% if queue == "review" %}class="is-current"{% endif %}><strong>3. Review</strong><span>Read the answers</span></li>
+    <li {% if queue == "booked" or queue == "finished" %}class="is-current"{% endif %}><strong>4. Next step</strong><span>Consultation or resources</span></li>
+  </ol>
+
+  <section class="stats" aria-label="Assessment summary">
+    <a class="card stat" href="?queue=waiting" style="text-decoration:none"><div class="stat-label">People waiting to finish</div><div class="stat-value">{{ summary.people_waiting }}</div></a>
+    <a class="card stat" href="?queue=waiting" style="text-decoration:none"><div class="stat-label">Assessments still open</div><div class="stat-value">{{ summary.assessments_open }}</div></a>
+    <a class="card stat" href="?queue=review" style="text-decoration:none"><div class="stat-label">Needs review</div><div class="stat-value">{{ summary.needs_review }}</div></a>
+    <a class="card stat" href="?queue=attention" style="text-decoration:none"><div class="stat-label">Email needs attention</div><div class="stat-value">{{ summary.email_attention }}</div></a>
+    <div class="card stat"><div class="stat-label">Oldest still open</div><div class="stat-value" style="font-size:22px">{{ summary.oldest_waiting|default:"—" }}</div></div>
+  </section>
+
+  <nav class="queue-tabs" aria-label="Assessment queues">
+    {% for tab in summary.tabs %}
+      <a class="btn queue-tab {% if queue == tab.key %}active{% endif %}" href="?queue={{ tab.key }}{% if query %}&q={{ query|urlencode }}{% endif %}" {% if queue == tab.key %}aria-current="page"{% endif %}>{{ tab.label }}<span class="queue-count">{{ tab.count }}</span></a>
+    {% endfor %}
+  </nav>
+
+  <form class="card assessment-search" method="get">
+    <input type="hidden" name="queue" value="{{ queue }}">
+    <div class="field">
+      <label for="assessment-search">Search this queue</label>
+      <input id="assessment-search" name="q" type="search" value="{{ query }}" placeholder="Parent, child, or email">
+    </div>
+    <button class="btn btn-primary" type="submit">Search</button>
+  </form>
+
+  <p class="subtle">{{ assessments_in_view }} assessment{{ assessments_in_view|pluralize }} · {{ people_in_view }} {{ people_in_view|pluralize:"person,people" }}</p>
+
+  <div class="assessment-list">
+    {% for card in cards %}
+      <article class="card assessment-card">
+        <div class="assessment-card-top">
+          <div>
+            <p class="eyebrow">Parent Reading Inventory</p>
+            <h2><a href="{% url 'inventory_detail' card.invitation.pk %}">{{ card.invitation.child.name }}</a></h2>
+            <p class="assessment-who">{{ card.invitation.child.grade_label }} · <a href="{% url 'crm_contact_detail' card.invitation.child.parent.pk %}">{{ card.invitation.child.parent.contact_name }}</a> · {{ card.invitation.recipient }}</p>
+          </div>
+          <span class="badge {{ card.badge }}">{{ card.label }}</span>
+        </div>
+        <p class="assessment-progress">{{ card.progress }}</p>
+        <p class="subtle">
+          {% if card.when_kind == "waiting" %}{{ card.waiting_label }}{% elif card.when_kind == "finished" %}Finished {{ card.when_at|date:"M j, Y" }}{% elif card.when_kind == "withdrawn" %}Withdrawn {{ card.when_at|date:"M j, Y" }}{% else %}Link expired {{ card.when_at|date:"M j, Y" }}{% endif %}
+          · Owner: {{ card.owner }}
+        </p>
+        <div class="assessment-chips">
+          {% if card.email_attention %}<span class="badge badge-warn">Email needs attention</span>{% endif %}
+          {% if card.booked %}<span class="badge">Consultation booked</span>{% endif %}
+          {% if card.family_open_count > 1 %}<span class="badge badge-neutral">{{ card.family_open_count }} open for this family</span>{% endif %}
+          {% if card.outcome_label %}<span class="badge badge-neutral">{{ card.outcome_label }}</span>{% endif %}
+        </div>
+        <div class="assessment-actions">
+          <a class="{{ card.action_class }}" href="{% url 'inventory_detail' card.invitation.pk %}">{{ card.action }}</a>
+          <a class="btn btn-small" href="{% url 'crm_contact_detail' card.invitation.child.parent.pk %}">Open contact</a>
+        </div>
+      </article>
+    {% empty %}
+      <div class="card empty">
+        {% if query %}
+          <strong>No assessments match that search.</strong><br>Try another name or email, or clear the search.
+        {% elif queue == "waiting" %}
+          <strong>0 people waiting to finish.</strong><br>Open a contact and choose “Send assessment” when a family is ready.
+        {% else %}
+          <strong>Nothing in this queue.</strong><br>Switch queues above, or send an assessment from a contact.
+        {% endif %}
+      </div>
+    {% endfor %}
+  </div>
+
+  <p>
+    {% if page.has_previous %}<a class="btn" href="?queue={{ queue }}&q={{ query|urlencode }}&page={{ page.previous_page_number }}">Previous</a>{% endif %}
+    Page {{ page.number }} of {{ page.paginator.num_pages }}
+    {% if page.has_next %}<a class="btn" href="?queue={{ queue }}&q={{ query|urlencode }}&page={{ page.next_page_number }}">Next</a>{% endif %}
+  </p>
 {% endblock %}

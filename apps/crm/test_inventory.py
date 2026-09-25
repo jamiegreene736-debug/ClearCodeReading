@@ -1164,3 +1164,112 @@ class ConsultationAvailabilityTests(TestCase):
         response = self.client.get(url, {"host": ""})
         self.assertEqual(list(response.context["slots"]), [self.slot])
         self.assertEqual(response.context["hosts"], [self.bethany])
+
+
+class AssessmentQueueTests(TestCase):
+    def setUp(self):
+        self.staff = get_user_model().objects.create_user(
+            username="queue-staff",
+            email="queue-staff@example.com",
+            password="testing-pass",
+            role="crm_user",
+        )
+        self.parent = Lead.objects.create(
+            contact_name="Parent Queue",
+            contact_email="queue-parent@example.com",
+            assigned_to=self.staff,
+        )
+        self.child = InventoryChild.objects.create(
+            parent=self.parent, name="Avery", grade="grade_3"
+        )
+        self.sibling = InventoryChild.objects.create(
+            parent=self.parent, name="Blake", grade="grade_1"
+        )
+        self.open_invite = InventoryInvitation.objects.create(
+            child=self.child,
+            recipient=self.parent.contact_email,
+            created_by=self.staff,
+            sent_at=timezone.now() - timedelta(days=2),
+            expires_at=timezone.now() + timedelta(days=30),
+        )
+        self.started = InventoryInvitation.objects.create(
+            child=self.sibling,
+            recipient=self.parent.contact_email,
+            created_by=self.staff,
+            sent_at=timezone.now() - timedelta(days=1),
+            started_at=timezone.now() - timedelta(hours=3),
+            current_group=1,
+            expires_at=timezone.now() + timedelta(days=30),
+        )
+        self.client.force_login(self.staff)
+
+    def test_waiting_queue_counts_people_separately_from_assessments(self):
+        response = self.client.get(reverse("inventory_list"))
+
+        self.assertContains(response, "People waiting to finish")
+        self.assertContains(response, "1 person waiting to finish an assessment")
+        self.assertContains(response, "2 open for this family")
+        self.assertContains(response, "Avery")
+        self.assertContains(response, "Blake")
+        self.assertContains(response, "Not started")
+        self.assertContains(response, "In progress")
+        self.assertContains(response, "sections saved")
+        self.assertEqual(response.context["summary"]["people_waiting"], 1)
+        self.assertEqual(response.context["summary"]["assessments_open"], 2)
+        self.assertEqual(response.context["people_in_view"], 1)
+        self.assertEqual(response.context["assessments_in_view"], 2)
+
+    def test_queues_split_started_finished_and_closed_invitations(self):
+        other = Lead.objects.create(contact_name="Finished Parent", contact_email="done@example.com")
+        finished_child = InventoryChild.objects.create(parent=other, name="Casey", grade="grade_3")
+        InventoryInvitation.objects.create(
+            child=finished_child,
+            recipient=other.contact_email,
+            completed_at=timezone.now(),
+            result={"outcome": "support", "yes_count": 2, "answered": 4, "total": 10},
+            expires_at=timezone.now() + timedelta(days=10),
+        )
+        expired_child = InventoryChild.objects.create(parent=other, name="Drew", grade="grade_3")
+        InventoryInvitation.objects.create(
+            child=expired_child,
+            recipient=other.contact_email,
+            expires_at=timezone.now() - timedelta(days=1),
+        )
+        deleted = Lead.objects.create(contact_name="Deleted Parent", is_deleted=True)
+        deleted_child = InventoryChild.objects.create(parent=deleted, name="Hidden", grade="grade_3")
+        InventoryInvitation.objects.create(
+            child=deleted_child,
+            recipient="hidden@example.com",
+            expires_at=timezone.now() + timedelta(days=10),
+        )
+
+        waiting = self.client.get(reverse("inventory_list"))
+        started = self.client.get(reverse("inventory_list"), {"queue": "in_progress"})
+        review = self.client.get(reverse("inventory_list"), {"queue": "review"})
+        legacy = self.client.get(reverse("inventory_list"), {"status": "pending"})
+        search = self.client.get(reverse("inventory_list"), {"queue": "all", "q": "Casey"})
+        dashboard = self.client.get(reverse("crm_dashboard"))
+
+        self.assertNotContains(waiting, "Casey")
+        self.assertNotContains(waiting, "Drew")
+        self.assertNotContains(waiting, "Hidden")
+        self.assertContains(started, "Blake")
+        self.assertNotContains(started, "Avery")
+        self.assertContains(review, "Casey")
+        self.assertContains(review, "Needs review")
+        self.assertEqual(legacy.context["queue"], "waiting")
+        self.assertContains(search, "Casey")
+        self.assertNotContains(search, "Avery")
+        self.assertContains(dashboard, "People to finish")
+        self.assertContains(dashboard, "Waiting to finish an assessment")
+        self.assertContains(dashboard, "Parent Queue")
+        self.assertEqual(dashboard.context["assessments_waiting"], 1)
+
+    def test_detail_shows_where_the_family_is_in_the_flow(self):
+        response = self.client.get(reverse("inventory_detail", args=[self.started.pk]))
+
+        self.assertContains(response, "Where this assessment is")
+        self.assertContains(response, "Parent finishes")
+        self.assertContains(response, "In progress")
+        self.assertContains(response, "Send reminder")
+        self.assertContains(response, "sections saved")

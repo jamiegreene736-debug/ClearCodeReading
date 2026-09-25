@@ -17,6 +17,16 @@ from django.views import View
 from django.views.decorators.cache import never_cache
 
 from apps.crm.access import crm_owner_queryset
+from apps.crm.assessment_queue import (
+    QUEUE_INTRO,
+    apply_search,
+    assessment_snapshot,
+    assessment_summary,
+    family_open_counts,
+    filter_queue,
+    selected_queue,
+    visible_invitations,
+)
 from apps.crm.calendars import MAX_DAYS, available_slots
 from apps.crm.consultations import (
     can_manage_team_availability,
@@ -55,28 +65,40 @@ from apps.users.models import AuditLog, CustomUser
 
 class InventoryListView(CrmAccessMixin, View):
     def get(self, request):
-        items = (
-            InventoryInvitation.objects.filter(child__parent__is_deleted=False)
-            .select_related("child__parent", "child__parent__assigned_to")
-            .prefetch_related("emails")
+        now = timezone.now()
+        queue = selected_queue(request.GET)
+        items, query = apply_search(
+            visible_invitations().select_related(
+                "child__parent", "child__parent__assigned_to", "booking"
+            ).prefetch_related("emails"),
+            request.GET.get("q", ""),
         )
-        status = request.GET.get("status", "")
-        if status == "pending":
-            items = items.filter(completed_at__isnull=True, revoked_at__isnull=True)
-        elif status == "completed":
-            items = items.filter(completed_at__isnull=False)
-        elif status == "review":
-            items = items.filter(completed_at__isnull=False, reviewed_at__isnull=True)
-        elif status == "booked":
-            items = items.filter(booking__isnull=False)
-        elif status == "failed":
-            items = items.filter(emails__status__in=["failed", "sending"]).distinct()
+        items = filter_queue(items, queue, now)
+        page = Paginator(items, 30).get_page(request.GET.get("page"))
+        parent_ids = [item.child.parent_id for item in page.object_list]
+        open_counts = family_open_counts(parent_ids, now)
+        cards = [
+            assessment_snapshot(
+                item,
+                now=now,
+                family_open_count=open_counts.get(item.child.parent_id, 0),
+            )
+            for item in page.object_list
+        ]
+        summary = assessment_summary(now)
         return render(
             request,
             "crm/inventory_list.html",
             {
-                "page": Paginator(items, 30).get_page(request.GET.get("page")),
-                "status": status,
+                "page": page,
+                "cards": cards,
+                "queue": queue,
+                "query": query,
+                "intro": QUEUE_INTRO[queue],
+                "summary": summary,
+                "shown_count": len(cards),
+                "people_in_view": items.values("child__parent_id").distinct().count(),
+                "assessments_in_view": items.count(),
             },
         )
 
@@ -175,6 +197,7 @@ class InventoryDetailView(CrmAccessMixin, View):
         )
         feedback = delivery_feedback(invitation)
         emails = list(invitation.emails.all())
+        snapshot = assessment_snapshot(invitation, emails=emails)
         receipts = [
             (str(mail.pk), mail.status, str(mail.sent_at), mail.error)
             for mail in emails
@@ -219,6 +242,7 @@ class InventoryDetailView(CrmAccessMixin, View):
                 "sections": sections,
                 "emails": emails,
                 "email_receipts": receipts,
+                "snapshot": snapshot,
             },
         )
 

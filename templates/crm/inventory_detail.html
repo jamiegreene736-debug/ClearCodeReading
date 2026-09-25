@@ -1,12 +1,81 @@
-{% extends "crm/base.html" %}{% block title %}Assessment responses{% endblock %}{% block extra_style %}{% include "crm/_inventory_delivery_style.html" %}{% endblock %}{% block content %}
-<p><a href="{% url 'crm_contact_detail' invitation.child.parent.pk %}">← {{ invitation.child.parent.contact_name }}</a> · <a href="{% url 'inventory_list' %}">All assessments</a></p><h1>Parent Reading Inventory</h1><p>{{ invitation.child.name }} · {{ invitation.child.grade_label }} · {{ invitation.recipient }}</p><p><span class="badge">{{ invitation.status }}</span> · Version {{ invitation.version }} · Link expires {{ invitation.expires_at|date:"M j, Y" }}</p>
+{% extends "crm/base.html" %}
+{% block title %}Assessment responses{% endblock %}
+{% block extra_style %}
+  {% include "crm/_inventory_delivery_style.html" %}
+  .crumbs { margin-bottom:8px; }
+  .crumbs a { color:var(--teal); font-weight:700; text-decoration:none; }
+  .detail-head { display:flex; align-items:flex-start; justify-content:space-between; gap:16px; }
+  .flow-steps { display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:8px; margin:18px 0; padding:0; list-style:none; }
+  .flow-steps li { padding:12px; border:1px solid var(--line); border-radius:10px; background:white; }
+  .flow-steps li.is-current { border-color:var(--teal); background:var(--teal-soft); }
+  .flow-steps li.is-done { border-color:#b7ddd4; }
+  .flow-steps li.is-stopped { border-color:#e7c2b8; background:#fff6f3; }
+  .flow-steps strong { display:block; color:var(--navy); }
+  .flow-steps span { color:var(--muted); font-size:12px; }
+  .next-actions { display:flex; flex-wrap:wrap; gap:8px; }
+  @media (max-width:760px) {
+    .detail-head { flex-direction:column; }
+    .flow-steps { grid-template-columns:1fr 1fr; }
+    .next-actions .btn { width:100%; }
+  }
+{% endblock %}
+{% block content %}
+<p class="crumbs"><a href="{% url 'inventory_list' %}?queue={{ snapshot.queue }}">← Assessments</a> · <a href="{% url 'crm_contact_detail' invitation.child.parent.pk %}">{{ invitation.child.parent.contact_name }}</a></p>
+<div class="detail-head">
+  <div>
+    <p class="eyebrow">Parent Reading Inventory</p>
+    <h1>{{ invitation.child.name }}</h1>
+    <p class="subtle">{{ invitation.child.grade_label }} · {{ invitation.recipient }} · Version {{ invitation.version }} · Link expires {{ invitation.expires_at|date:"M j, Y" }}</p>
+  </div>
+  <span class="badge {{ snapshot.badge }}">{{ snapshot.label }}</span>
+</div>
+<ol class="flow-steps" aria-label="Where this assessment is">
+  {% for step in snapshot.steps %}
+    <li class="is-{{ step.state }}"><strong>{{ forloop.counter }}. {{ step.label }}</strong><span>{{ step.detail }}</span></li>
+  {% endfor %}
+</ol>
 <div id="delivery-feedback" role="status" aria-live="polite" aria-atomic="true">{% include "crm/_inventory_delivery.html" %}</div>
 <div class="delivery-refresh"><a class="btn btn-small" id="refresh-delivery" href="{% url 'inventory_detail' invitation.pk %}">Refresh email status</a><span id="delivery-refresh-note">{% if feedback.refresh %}Checking automatically. You can leave this page; sending continues in the background.{% else %}Latest recorded email status.{% endif %}</span></div>
-<div class="card" style="padding:20px;margin:20px 0"><h2>Next step</h2>{% if invitation.completed_at %}<p>Outcome: <strong>{{ invitation.result.outcome|title }}</strong> · {{ invitation.result.yes_count }} Yes answers out of {{ invitation.result.answered }} answered ({{ invitation.result.total }} in full inventory).</p><p>Rule: {{ invitation.result.rule }}. Earlier submissions may have stopped before every question was answered.</p>{% if invitation.result.outcome == "review" %}<p>The source cutoff is ambiguous at this score. Review the responses before recommending resources or intervention.</p>{% endif %}{% if not invitation.reviewed_at %}<form method="post">{% csrf_token %}<button class="btn btn-primary" name="action" value="review">Mark reviewed</button></form>{% else %}<p>Reviewed {{ invitation.reviewed_at }} by {{ invitation.reviewed_by.get_full_name }}.</p>{% endif %}{% else %}<p>Awaiting the parent’s completed responses.</p><form method="post">{% csrf_token %}<button class="btn" name="action" value="resend">Send reminder</button> <button class="btn" name="action" value="revoke">Withdraw link</button></form>{% endif %}</div>
-{% if invitation.booking %}<div class="card" style="padding:20px;margin-bottom:20px"><h2>Consultation booked</h2><p>{{ invitation.booking.slot.starts_at }} — {{ invitation.booking.slot.ends_at }}<br>Host: {{ invitation.booking.slot.host.get_full_name }}<br>Call: {{ invitation.booking.phone }}<br>Parent time zone: {{ invitation.booking.timezone }}</p></div>{% endif %}
+<div class="card" style="padding:20px;margin:20px 0">
+  <h2>Next step</h2>
+  <p>{{ snapshot.progress }}</p>
+  {% if invitation.completed_at %}
+    <p>Outcome: <strong>{{ invitation.result.outcome|title }}</strong> · {{ invitation.result.yes_count }} Yes answers out of {{ invitation.result.answered }} answered ({{ invitation.result.total }} in full inventory).</p>
+    <p>Rule: {{ invitation.result.rule }}. Earlier submissions may have stopped before every question was answered.</p>
+    {% if invitation.result.outcome == "review" %}<p>The source cutoff is ambiguous at this score. Review the responses before recommending resources or intervention.</p>{% endif %}
+    {% if snapshot.outcome_label %}<p>{{ snapshot.outcome_label }}</p>{% endif %}
+    {% if not invitation.reviewed_at %}
+      <form method="post">{% csrf_token %}<button class="btn btn-primary" name="action" value="review">Mark reviewed</button></form>
+    {% else %}
+      <p>Reviewed {{ invitation.reviewed_at }} by {{ invitation.reviewed_by.get_full_name }}.</p>
+    {% endif %}
+  {% else %}
+    <p>Awaiting the parent’s completed responses.</p>
+    <form class="next-actions" method="post">{% csrf_token %}<button class="btn" name="action" value="resend">Send reminder</button> <button class="btn" name="action" value="revoke">Withdraw link</button></form>
+  {% endif %}
+</div>
+{% if invitation.booking %}
+  <div class="card" style="padding:20px;margin-bottom:20px">
+    <h2>Consultation booked</h2>
+    <p>{{ invitation.booking.slot.starts_at }} — {{ invitation.booking.slot.ends_at }}<br>Host: {{ invitation.booking.slot.host.get_full_name }}<br>Call: {{ invitation.booking.phone }}<br>Parent time zone: {{ invitation.booking.timezone }}</p>
+  </div>
+{% endif %}
 <div id="inventory-email-history">{% include "crm/_inventory_email_history.html" %}</div>
 {{ email_receipts|json_script:"email-receipts" }}
-<h2>Responses</h2><div class="survey-response">{% for section in sections %}<section class="survey-section"><h3 class="survey-section-title">{{ section.title }}</h3><div class="survey-answer-grid">{% for answer in section.answers %}<div class="survey-answer"><div class="survey-answer-label">{{ answer.prompt }}</div><div class="survey-answer-value">{{ answer.answer }}</div></div>{% endfor %}</div></section>{% endfor %}</div><script>
+<h2>Responses</h2>
+<div class="survey-response">
+  {% for section in sections %}
+    <section class="survey-section">
+      <h3 class="survey-section-title">{{ section.title }}</h3>
+      <div class="survey-answer-grid">
+        {% for answer in section.answers %}
+          <div class="survey-answer"><div class="survey-answer-label">{{ answer.prompt }}</div><div class="survey-answer-value">{{ answer.answer }}</div></div>
+        {% endfor %}
+      </div>
+    </section>
+  {% endfor %}
+</div>
+<script>
 (() => {
     const panel = document.getElementById('delivery-feedback');
     const button = document.getElementById('refresh-delivery');
