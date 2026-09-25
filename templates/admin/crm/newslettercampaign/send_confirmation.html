@@ -20,7 +20,7 @@
     {% elif retry_count %}
       <p><strong>{{ retry_count }}</strong> failed delivery{{ retry_count|pluralize }} will be retried. Previously successful deliveries will not be sent again.</p>
     {% else %}
-      <p>This will create a fixed recipient list from the <strong>{{ active_subscriber_count }}</strong> currently active subscriber{{ active_subscriber_count|pluralize }}. Every email is sent individually and includes an unsubscribe link.</p>
+      <p>This will create a fixed recipient list from the <strong>{{ active_subscriber_count }}</strong> currently active subscriber{{ active_subscriber_count|pluralize }}. Every email is sent individually from ClearCode Reading &lt;hello@clearcodereading.com&gt; and includes an unsubscribe link.</p>
     {% endif %}
     {% if not configuration_errors %}
       <p><strong>Sending is irreversible.</strong> Saving a draft does not send it; only the button below does.</p>

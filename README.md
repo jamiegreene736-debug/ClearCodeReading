@@ -469,9 +469,9 @@ The Careers form sends introductions to the dedicated recruiting communication q
 
 ### Newsletter workflow
 
-Every public marketing page includes an explicit-consent newsletter form. Subscribers can opt out through the signed link included in every newsletter. Staff can compose a draft under **Admin → CRM → Newsletter campaigns**, preview the final copy, and use **Review & send** to confirm delivery. Saving a campaign never sends it.
+Every public marketing page includes an explicit-consent newsletter form. Subscribers can opt out through the signed link included in every newsletter. Administrators compose and send from **CRM → Newsletter** (also linked under Email & notification settings). A contact can be added or removed from the list on the contact card after staff record that the person agreed. Saving a campaign never sends it. Messages are sent from `NEWSLETTER_FROM_EMAIL` (`ClearCode Reading <hello@clearcodereading.com>`).
 
-Campaigns snapshot the active subscriber list on first send, deliver one message per recipient, and retain per-recipient success or failure records. Retrying a partially failed campaign sends only pending or failed deliveries; it does not resend successful messages or include people who subscribed later. Configure a production email backend, `DEFAULT_FROM_EMAIL`, and the public HTTPS `PUBLIC_APP_URL` before sending. Production sends fail closed and the admin button stays disabled while a development-only email backend or local URL is configured. `NEWSLETTER_SEND_STALE_MINUTES` controls when an interrupted send may be resumed.
+Campaigns snapshot the active subscriber list on first send, deliver one message per recipient, and retain per-recipient success or failure records. Retrying a partially failed campaign sends only pending or failed deliveries; it does not resend successful messages or include people who subscribed later. Configure a production email backend and the public HTTPS `PUBLIC_APP_URL` before sending. Production sends fail closed and the send button stays disabled while a development-only email backend or local URL is configured. `NEWSLETTER_SEND_STALE_MINUTES` controls when an interrupted send may be resumed.
 
 See `docs/consent_records.md` for the formal IDEA/IEP consent model, backfill,
 center-scoped API, and enforcement behavior.

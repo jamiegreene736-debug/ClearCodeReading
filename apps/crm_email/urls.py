@@ -47,6 +47,16 @@ urlpatterns = [
         views.newsletter_send,
         name="crm_newsletter_send",
     ),
+    path(
+        "email/newsletters/<int:campaign_id>/duplicate/",
+        views.newsletter_duplicate,
+        name="crm_newsletter_duplicate",
+    ),
+    path(
+        "email/newsletters/subscribers/",
+        views.newsletter_subscriber,
+        name="crm_newsletter_subscriber",
+    ),
     path("email/templates/new/", views.template_view, name="crm_email_template_new"),
     path(
         "email/templates/<int:template_id>/",

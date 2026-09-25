@@ -16,6 +16,7 @@ from django.core.exceptions import PermissionDenied, ValidationError
 from django.core.paginator import Paginator
 from django.core.validators import validate_email
 from django.db import connection, transaction
+from django.db.models import Q
 from django.http import Http404, HttpRequest, HttpResponse, JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse
@@ -36,9 +37,14 @@ from apps.crm.models import (
 )
 from apps.crm.newsletters import (
     NewsletterSendError,
+    duplicate_campaign,
+    link_subscription_to_contact,
     newsletter_delivery_configuration_errors,
+    newsletter_from_email,
     send_newsletter_campaign,
     send_newsletter_test,
+    subscribe_contact,
+    unsubscribe_subscription,
 )
 from apps.crm_email import automated
 from apps.crm_email.automated import text_to_html
@@ -188,15 +194,34 @@ def notifications_view(request: EmailRequest) -> HttpResponse:
 @crm_view
 @require_GET
 def newsletter_list(request: EmailRequest) -> HttpResponse:
-    """Newsletter tab: campaigns, subscriber count and send history."""
+    """Newsletter workspace: campaigns and the subscriber list."""
     if not request.user.can_manage_crm_users:
         raise PermissionDenied
     campaigns = NewsletterCampaign.objects.select_related("sent_by", "created_by")
+    tab = request.GET.get("tab", "campaigns")
+    if tab not in {"campaigns", "subscribers"}:
+        tab = "campaigns"
+    status = request.GET.get("status", "")
+    if status not in {
+        "",
+        NewsletterSubscription.Status.ACTIVE,
+        NewsletterSubscription.Status.UNSUBSCRIBED,
+    }:
+        status = ""
+    query = request.GET.get("q", "").strip()[:120]
+    subscribers = NewsletterSubscription.objects.select_related("lead")
+    if status:
+        subscribers = subscribers.filter(status=status)
+    if query:
+        subscribers = subscribers.filter(
+            Q(email__icontains=query) | Q(name__icontains=query)
+        )
     return render(
         request,
         "crm/newsletter_list.html",
         {
             "active_tab": "newsletter",
+            "newsletter_tab": tab,
             "campaigns": campaigns[:50],
             "sent_count": campaigns.filter(
                 status=NewsletterCampaign.Status.SENT
@@ -207,6 +232,13 @@ def newsletter_list(request: EmailRequest) -> HttpResponse:
             "last_sent": campaigns.filter(sent_at__isnull=False)
             .order_by("-sent_at")
             .first(),
+            "subscriber_rows": subscribers[:200],
+            "subscriber_query": query,
+            "subscriber_status": status,
+            "unsubscribed_count": NewsletterSubscription.objects.filter(
+                status=NewsletterSubscription.Status.UNSUBSCRIBED
+            ).count(),
+            "from_email": newsletter_from_email(),
             **newsletter_context(),
             **hub_context(request),
         },
@@ -469,6 +501,7 @@ def newsletter_edit(
             "deliveries": campaign.deliveries.order_by("recipient_email")[:200]
             if campaign
             else [],
+            "from_email": newsletter_from_email(),
             **newsletter_context(),
         },
     )
@@ -535,11 +568,101 @@ def newsletter_send(request: EmailRequest, campaign_id: int) -> HttpResponse:
                 status=NewsletterDelivery.Status.FAILED
             ).count(),
             "preview_html": campaign.body_html or text_to_html(campaign.body),
+            "from_email": newsletter_from_email(),
+            "skipped_count": campaign.deliveries.filter(
+                status=NewsletterDelivery.Status.SKIPPED
+            ).count(),
             **newsletter_context(),
         },
     )
     response["Cache-Control"] = "private, no-store"
     return response
+
+
+@crm_view
+@require_POST
+def newsletter_duplicate(request: EmailRequest, campaign_id: int) -> HttpResponse:
+    if not request.user.can_manage_crm_users:
+        raise PermissionDenied
+    campaign = get_object_or_404(NewsletterCampaign, pk=campaign_id)
+    copy = duplicate_campaign(campaign, created_by=request.user)
+    AuditLog.objects.create(
+        actor=request.user,
+        action="crm.newsletter.duplicated",
+        entity_type="crm.NewsletterCampaign",
+        entity_id=str(copy.pk),
+        after={"source": campaign.pk, "subject": copy.subject},
+    )
+    messages.success(request, "A new draft was created from this newsletter.")
+    return redirect("crm_newsletter", copy.pk)
+
+
+@crm_view
+@require_POST
+def newsletter_subscriber(request: EmailRequest) -> HttpResponse:
+    """Add an address with recorded consent, or unsubscribe an existing one."""
+    if not request.user.can_manage_crm_users:
+        raise PermissionDenied
+    action = request.POST.get("action")
+    if action == "unsubscribe":
+        subscription = get_object_or_404(
+            NewsletterSubscription, pk=request.POST.get("subscription_id")
+        )
+        unsubscribe_subscription(subscription)
+        AuditLog.objects.create(
+            actor=request.user,
+            action="crm.newsletter.unsubscribed",
+            entity_type="crm.NewsletterSubscription",
+            entity_id=str(subscription.pk),
+            after={"email": subscription.email},
+        )
+        messages.success(request, f"{subscription.email} is unsubscribed.")
+        return redirect(f"{reverse('crm_newsletter_list')}?tab=subscribers")
+    if action != "subscribe":
+        messages.error(request, "Choose whether to add or remove a subscriber.")
+        return redirect(f"{reverse('crm_newsletter_list')}?tab=subscribers")
+    email = request.POST.get("email", "").strip().lower()
+    try:
+        if len(email) > 254:
+            raise ValidationError("Email address is too long.")
+        validate_email(email)
+    except ValidationError:
+        messages.error(request, "Enter a valid email address.")
+        return redirect(f"{reverse('crm_newsletter_list')}?tab=subscribers")
+    if request.POST.get("consent") != "yes":
+        messages.error(
+            request, "Confirm that this person agreed to receive the newsletter."
+        )
+        return redirect(f"{reverse('crm_newsletter_list')}?tab=subscribers")
+    lead = (
+        Lead.objects.filter(is_deleted=False, contact_email__iexact=email)
+        .order_by("-updated_at")
+        .first()
+    )
+    if lead is not None and lead.contact_email.strip().lower() == email:
+        subscription = subscribe_contact(lead, consented=True)
+    else:
+        name = request.POST.get("name", "").strip()[:255]
+        subscription, _created = NewsletterSubscription.objects.update_or_create(
+            email=email,
+            defaults={
+                "name": name,
+                "status": NewsletterSubscription.Status.ACTIVE,
+                "consented_at": timezone.now(),
+                "unsubscribed_at": None,
+                "source_path": "/crm/email/newsletters/",
+            },
+        )
+        link_subscription_to_contact(subscription)
+    AuditLog.objects.create(
+        actor=request.user,
+        action="crm.newsletter.subscribed",
+        entity_type="crm.NewsletterSubscription",
+        entity_id=str(subscription.pk),
+        after={"email": subscription.email, "lead_id": subscription.lead_id},
+    )
+    messages.success(request, f"{subscription.email} is on the newsletter.")
+    return redirect(f"{reverse('crm_newsletter_list')}?tab=subscribers")
 
 
 def redirect_settings(anchor: str) -> HttpResponse:

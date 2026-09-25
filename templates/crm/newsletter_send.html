@@ -10,9 +10,16 @@
 <h2>{{ campaign.subject }}</h2>
 {% if campaign.preview_text %}<p class="subtle">Preview text: {{ campaign.preview_text }}</p>{% endif %}
 {% if configuration_errors %}<p role="alert"><strong>Email delivery is not configured, so sending is disabled.</strong></p><ul>{% for error in configuration_errors %}<li>{{ error }}</li>{% endfor %}</ul>
-{% elif campaign.status == 'sent' %}<p>This newsletter has already been sent to {{ campaign.delivered_count }} recipient{{ campaign.delivered_count|pluralize }}.</p>
+{% elif campaign.status == 'sent' %}<p>This newsletter has already been sent to {{ campaign.delivered_count }} recipient{{ campaign.delivered_count|pluralize }}{% if skipped_count %} · {{ skipped_count }} skipped after unsubscribe{% endif %}.</p>
 {% elif retry_count %}<p><strong>{{ retry_count }}</strong> failed deliver{{ retry_count|pluralize:"y,ies" }} will be retried. Recipients who already received it will not get it again.</p>
 {% else %}<p>This will build a fixed recipient list from the <strong>{{ newsletter_subscribers }}</strong> active subscriber{{ newsletter_subscribers|pluralize }}. Every email is sent individually with its own unsubscribe link.</p>{% endif %}
+<dl class="kv">
+<dt>From</dt><dd>{{ from_email }}</dd>
+<dt>To</dt><dd><a href="{% url 'crm_newsletter_list' %}?tab=subscribers&amp;status=active">{{ newsletter_subscribers }} active subscriber{{ newsletter_subscribers|pluralize }}</a></dd>
+<dt>Subject</dt><dd>{{ campaign.subject }}</dd>
+{% if campaign.preview_text %}<dt>Preview</dt><dd>{{ campaign.preview_text }}</dd>{% endif %}
+<dt>Reply-To</dt><dd>hello@clearcodereading.com</dd>
+</dl>
 <form method="post" class="actions">{% csrf_token %}
 <button class="btn" name="action" value="test">Send a test to {{ request.user.email }}</button>
 {% if not configuration_errors and campaign.status != 'sent' and campaign.status != 'sending' %}<button class="btn btn-primary" name="action" value="send" onclick="return confirm('Send this newsletter to every active subscriber now? This cannot be undone.')">{% if retry_count %}Retry failed deliveries{% else %}Send to all subscribers now{% endif %}</button>{% endif %}
