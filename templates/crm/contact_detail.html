@@ -78,7 +78,7 @@
   }
 {% endblock %}
 {% block content %}
-  <a class="crumb" href="{% url 'crm_contact_list' %}">← Back to contacts</a>
+  <a class="crumb" href="{{ list_return_url }}">← Back to contacts</a>
   {% if request.user.has_hiring_access %}
     <section class="card hiring-banner">
       {% if hiring_candidate %}

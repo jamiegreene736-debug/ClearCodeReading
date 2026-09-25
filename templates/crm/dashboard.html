@@ -43,10 +43,10 @@
   </div>
 
   <section class="attention" aria-label="Work to do now">
-    <a class="card stat {% if overdue_tasks %}is-hot{% endif %}" href="#follow-ups">
+    <a class="card stat {% if overdue_tasks %}is-hot{% endif %}" href="{% url 'crm_contact_list' %}?queue=overdue">
       <div class="stat-label">Overdue follow-ups</div>
       <div class="stat-value">{{ overdue_tasks }}</div>
-      <div class="stat-hint">{% if overdue_tasks %}Do these first{% else %}None overdue{% endif %}</div>
+      <div class="stat-hint">{% if overdue_tasks %}Open the contact queue{% else %}None overdue{% endif %}</div>
     </a>
     <a class="card stat {% if pending_triage %}is-hot{% endif %}" href="#routing">
       <div class="stat-label">Needs routing</div>
