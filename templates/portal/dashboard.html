@@ -79,7 +79,6 @@
           {% if is_parent or is_child %}<a class="focus-ring min-h-11 shrink-0 rounded-xl bg-linen px-4 py-3 text-sm font-black text-deepTeal" href="#progress-overview">Progress</a>{% endif %}
           {% if is_teacher or is_admin %}<a class="focus-ring min-h-11 shrink-0 rounded-xl bg-linen px-4 py-3 text-sm font-black text-deepTeal" href="#session-launchpad">Sessions</a>{% endif %}
           {% if is_admin %}<a class="focus-ring min-h-11 shrink-0 rounded-xl bg-linen px-4 py-3 text-sm font-black text-deepTeal" href="#admin-actions">Admin actions</a>{% endif %}
-          <a class="focus-ring min-h-11 shrink-0 rounded-xl bg-linen px-4 py-3 text-sm font-black text-deepTeal" href="#support-thread">Inbox</a>
           <a class="focus-ring min-h-11 shrink-0 rounded-xl bg-linen px-4 py-3 text-sm font-black text-deepTeal" href="#latest-kpis">KPI snapshots</a>
         </nav>
         {% if is_parent %}
@@ -227,27 +226,6 @@
             </div>
           </section>
         {% endif %}
-
-        <section id="support-thread" class="scroll-mt-40 rounded-[2rem] bg-white p-6 shadow-xl shadow-ink/8 ring-1 ring-ink/10">
-          <div class="flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
-            <div>
-              <p class="text-sm font-black uppercase tracking-[0.18em] text-deepTeal">Family-teacher inbox</p>
-              <h2 class="mt-2 text-3xl font-black">Avery Reader support thread</h2>
-            </div>
-            <a href="/inbox/" class="focus-ring rounded-full bg-mediumTeal px-5 py-3 text-sm font-black text-white shadow-lg shadow-mediumTeal/20 transition hover:-translate-y-0.5">Open inbox</a>
-          </div>
-          <div class="mt-5 grid gap-3">
-            {% for message in inbox_messages %}
-              <article class="rounded-3xl {% if message.audience == request.user.role %}bg-seafoam{% else %}bg-linen{% endif %} p-5">
-                <div class="flex items-center justify-between gap-3">
-                  <p class="font-black">{{ message.sender }}</p>
-                  <p class="text-xs font-bold text-ink/50">{{ message.sent_at }}</p>
-                </div>
-                <p class="mt-2 text-sm leading-6 text-ink/70">{{ message.body }}</p>
-              </article>
-            {% endfor %}
-          </div>
-        </section>
 
         {% if is_teacher %}
           <section id="lesson-planning" class="scroll-mt-36 rounded-[2rem] bg-white p-6 shadow-xl shadow-ink/8 ring-1 ring-ink/10">

@@ -38,7 +38,7 @@ for (const viewport of viewports) {
       await page.getByRole('button', { name: 'Demo Administrator' }).click();
       await expect(page).toHaveURL(/\/dashboard\/$/);
 
-      for (const route of ['/dashboard/', '/inbox/', '/crm/', '/crm/contacts/', '/crm/companies/', '/crm/deals/', '/admin/']) {
+      for (const route of ['/dashboard/', '/crm/', '/crm/contacts/', '/crm/companies/', '/crm/deals/', '/admin/']) {
         await page.goto(route);
         await expectNoHorizontalOverflow(page, route);
       }

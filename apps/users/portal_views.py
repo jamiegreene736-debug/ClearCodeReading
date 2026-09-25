@@ -39,28 +39,6 @@ DEMO_LOGINS = {
     "teacher": "teacher@clearcodereading.com",
 }
 
-DEMO_INBOX_MESSAGES = [
-    {
-        "sender": "Demo Teacher",
-        "audience": "teacher",
-        "body": "Hi! Avery did a great job with beginning sounds. I recommend five minutes of repeated reading practice tonight.",
-        "sent_at": "Today, 9:15 AM",
-    },
-    {
-        "sender": "Demo Parent",
-        "audience": "guardian",
-        "body": "Thank you. Should we focus more on fluency or comprehension this week?",
-        "sent_at": "Today, 9:22 AM",
-    },
-    {
-        "sender": "Demo Teacher",
-        "audience": "teacher",
-        "body": "Fluency first. Short familiar passages will help Avery read smoothly and build confidence.",
-        "sent_at": "Today, 9:34 AM",
-    },
-]
-
-
 def user_can_manage_instruction(user) -> bool:
     return bool(
         getattr(user, "is_authenticated", False)
@@ -381,7 +359,6 @@ class PortalDashboardView(PortalAuthMixin, TemplateView):
                 "recent_leads": recent_leads,
                 "lead_count": lead_count,
                 "new_lead_count": new_lead_count,
-                "inbox_messages": self._inbox_messages()[-2:],
                 "lesson_templates": lesson_templates,
                 "available_lesson_templates": available_lesson_templates,
                 "teacher_template_assignments": teacher_template_assignments[:12],
@@ -411,22 +388,6 @@ class PortalDashboardView(PortalAuthMixin, TemplateView):
         if result is None:
             return 0
         return len(result.category_breakdown or {})
-
-    def _inbox_messages(self):
-        return self.request.session.get("demo_inbox_messages", DEMO_INBOX_MESSAGES)
-
-
-class PortalInboxView(PortalAuthMixin, TemplateView):
-    template_name = "portal/inbox.html"
-
-    def get_context_data(self, **kwargs):
-        context = super().get_context_data(**kwargs)
-        context["thread_title"] = "Avery Reader support thread"
-        context["thread_messages"] = self.request.session.get("demo_inbox_messages", DEMO_INBOX_MESSAGES)
-        context["is_teacher"] = self.request.user.role == CustomUser.Role.TEACHER
-        context["is_parent"] = self.request.user.role == CustomUser.Role.GUARDIAN
-        context["is_admin"] = self.request.user.role in {CustomUser.Role.SUPER_ADMIN, CustomUser.Role.SCHOOL_ADMIN}
-        return context
 
 
 class ConfirmPlacementRecommendationView(PortalAuthMixin, View):
@@ -469,26 +430,6 @@ class ConfirmPlacementRecommendationView(PortalAuthMixin, View):
             return redirect("portal_dashboard")
         messages.success(request, "Placement decision saved with its audit record.")
         return redirect("portal_dashboard")
-
-    def post(self, request, *args, **kwargs):
-        body = request.POST.get("message", "").strip()
-        if not body:
-            messages.error(request, "Write a message before sending.")
-            return redirect("portal_inbox")
-
-        sender = request.user.get_full_name() or request.user.email
-        inbox_messages = list(request.session.get("demo_inbox_messages", DEMO_INBOX_MESSAGES))
-        inbox_messages.append(
-            {
-                "sender": sender,
-                "audience": request.user.role,
-                "body": body,
-                "sent_at": timezone.localtime().strftime("%b %d, %I:%M %p"),
-            }
-        )
-        request.session["demo_inbox_messages"] = inbox_messages
-        messages.success(request, "Message added to the demo thread.")
-        return redirect("portal_inbox")
 
 
 class TeacherAssignmentsView(PortalAuthMixin, TemplateView):

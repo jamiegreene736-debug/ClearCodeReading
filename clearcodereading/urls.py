@@ -53,7 +53,6 @@ from apps.users.portal_views import (
     ConfirmPlacementRecommendationView,
     DemoLoginView,
     PortalDashboardView,
-    PortalInboxView,
     PortalLoginView,
     TeacherAssignmentsView,
 )
@@ -128,7 +127,6 @@ urlpatterns = [
     path("login/", PortalLoginView.as_view(), name="login"),
     path("logout/", LogoutView.as_view(next_page="/"), name="logout"),
     path("dashboard/", PortalDashboardView.as_view(), name="portal_dashboard"),
-    path("inbox/", PortalInboxView.as_view(), name="portal_inbox"),
     path("portal/sessions/rapid-log/", RapidSessionLogView.as_view(), name="rapid_session_log"),
     path("crm/hiring/", HiringWorkspaceView.as_view(), name="crm_hiring"),
     path("crm/hiring/<int:pk>/update/", HiringUpdateView.as_view(), name="crm_hiring_update"),
