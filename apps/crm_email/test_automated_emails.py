@@ -491,10 +491,23 @@ class RichAutomatedEmailTests(TestCase):
         message.save(update_fields=["to"])
         self.assertFalse(stage_send_allowed(message))
 
-        # "Interested for the future or on behalf of another family" is a parent answer.
+        # The other struggling-reader answers also get the family introduction.
+        for situation in (
+            "grade_3_5_struggling",
+            "grade_6_8_struggling",
+            "multiple_grade_bands",
+        ):
+            deliveries = submit(situation, ["consultation"])
+            self.assertEqual(
+                [d.template_key for d in deliveries], ["survey_family_enrollment"]
+            )
+
+        # "Interested for the future or on behalf of another family" gets the
+        # general introduction, even though it still routes to Families & Enrollment.
         deliveries = submit("older_than_grade_8", ["donor"])
+        self.assertEqual([d.template_key for d in deliveries], ["survey_general"])
         self.assertEqual(
-            [d.template_key for d in deliveries], ["survey_family_enrollment"]
+            deliveries[0].lead.audience, Lead.PipelineCategory.FAMILY_ENROLLMENT
         )
 
         # The community answer gets the general introduction even when the

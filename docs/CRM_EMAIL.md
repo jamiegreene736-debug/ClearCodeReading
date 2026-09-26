@@ -221,10 +221,11 @@ restore, and "Restore default" deletes the override. Covered emails:
   Families & Enrollment first-stage email) and `survey_general` (the approved
   "Thanks for connecting with ClearCode" wording). The early interest survey's
   "Which best describes your situation?" answer alone decides which one a respondent
-  gets: every parent answer, including "interested for the future or on behalf of
-  another family", gets the family introduction and the "educator, specialist, local
-  parent, donor, supporter, or other" answer gets the general one. The engagement
-  checkboxes only route deals. `route_survey_deliveries` in `stage_signals.py` creates
+  gets: the four struggling-reader answers (Pre-K–2, 3–5, 6–8, more than one child)
+  get the family introduction; "interested for the future or on behalf of another
+  family" and the "educator, specialist, local parent, donor, supporter, or other"
+  answer get the general one. The engagement checkboxes only route deals, and the
+  "interested for the future" answer still creates its Families & Enrollment deal. `route_survey_deliveries` in `stage_signals.py` creates
   one contact-level `StageEmailDelivery` (no deal) per survey contact and cancels the
   first-stage deliveries of any deals the survey created, so a respondent never gets a
   pipeline email on top of the introduction and a family that joins the waitlist
