@@ -164,7 +164,7 @@ Bethany's signature block (`BETHANY_SIGNATURE` in `models.py`, editable per pilo
 is name and credential, title, email address, website and blog. Wherever the
 `{{Bethany’s email signature}}` placeholder is rendered to HTML (`token_html` in
 `automated.py`), the ClearCode Reading logo from `marketing-website/assets/logo/`
-is placed above her name, loaded from `PUBLIC_APP_URL` + `/assets/logo/…`; it is
+is placed at the bottom of the block, below the blog link, loaded from `PUBLIC_APP_URL` + `/assets/logo/…`; it is
 left out when that setting is not HTTPS, and the plain-text part never has it.
 Her own compose signature stays formatted text because the compose sanitizer
 does not keep images.

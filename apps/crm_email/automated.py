@@ -116,7 +116,7 @@ def html_value(value: str) -> str:
 
 
 def signature_logo_html() -> str:
-    """The ClearCode Reading logo shown above Bethany's name in HTML emails.
+    """The ClearCode Reading logo shown at the bottom of Bethany's signature in HTML emails.
 
     Mail clients load the image from the public site, so the logo is only
     included when ``PUBLIC_APP_URL`` is an HTTPS address.
@@ -125,17 +125,17 @@ def signature_logo_html() -> str:
     if not public.startswith("https://"):
         return ""
     return (
-        f'<img src="{escape(public + BETHANY_SIGNATURE_LOGO)}" alt="ClearCode Reading" '
+        f'<br><img src="{escape(public + BETHANY_SIGNATURE_LOGO)}" alt="ClearCode Reading" '
         'width="220" height="65" '
-        'style="display:block;width:220px;max-width:100%;height:auto;margin:0 0 8px"><br>'
+        'style="display:block;width:220px;max-width:100%;height:auto;margin:8px 0 0">'
     )
 
 
 def token_html(token: str, value: str) -> str:
-    """HTML for one substituted placeholder; the signature gets the logo above it."""
+    """HTML for one substituted placeholder; the signature gets the logo below it."""
     html = html_value(value)
     if token == SIGNATURE_TOKEN and value.strip():
-        return signature_logo_html() + html
+        return html + signature_logo_html()
     return html
 
 

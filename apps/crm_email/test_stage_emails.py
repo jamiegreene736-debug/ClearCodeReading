@@ -179,13 +179,16 @@ class StageEmailTests(TestCase):
         self.assertIn("Blog: https://clearcodereading.com/blog/", family.body)
         self.assertNotIn("<img", family.body)
         logo = (
-            '<img src="https://clearcodereading.com/assets/logo/clear-code-reading-logo.png" '
+            'Blog: <a href="https://clearcodereading.com/blog/">https://clearcodereading.com/blog/</a>'
+            '<br><img src="https://clearcodereading.com/assets/logo/clear-code-reading-logo.png" '
             'alt="ClearCode Reading" width="220" height="65" '
-            'style="display:block;width:220px;max-width:100%;height:auto;margin:0 0 8px">'
-            "<br>Bethany Fleming, M.Ed.<br>Founder &amp; CEO<br>bethany@clearcodereading.com<br>"
+            'style="display:block;width:220px;max-width:100%;height:auto;margin:8px 0 0"></p>'
         )
         self.assertIn(logo, family.body_html)
-        self.assertLess(family.body_html.index("Warmly,"), family.body_html.index(logo))
+        self.assertLess(
+            family.body_html.index("Bethany Fleming, M.Ed.<br>Founder &amp; CEO"),
+            family.body_html.index("<img"),
+        )
         self.assertIn(
             'Website: <a href="https://clearcodereading.com">https://clearcodereading.com</a>',
             family.body_html,
