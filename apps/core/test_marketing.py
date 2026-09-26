@@ -337,6 +337,24 @@ class MarketingPageTests(SimpleTestCase):
                 content.index('data-testid="mobile-resources-link"'),
             )
 
+    def test_mobile_menu_matches_desktop_navigation(self):
+        content = self._render("marketing_home")
+        nav_start = content.index('aria-label="Main navigation"')
+        nav_end = content.index("</nav>", nav_start)
+        header_nav = content[nav_start:nav_end]
+
+        desktop_start = header_nav.index('href="/about/"')
+        desktop_end = header_nav.index("<details")
+        mobile_start = header_nav.index("<details")
+        mobile_end = header_nav.index("</details>")
+        desktop_links = re.findall(r'href="([^"]+)"', header_nav[desktop_start:desktop_end])
+        mobile_links = re.findall(r'href="([^"]+)"', header_nav[mobile_start:mobile_end])
+
+        self.assertEqual(mobile_links, desktop_links)
+        for link in ["/foundation/", "/careers/", "/privacy/", "/support/", '"/contact/"']:
+            with self.subTest(link=link):
+                self.assertNotIn(link, header_nav)
+
     def test_legacy_approach_route_redirects_to_combined_page(self):
         route = resolve(reverse("marketing_approach"))
         response = route.func(RequestFactory().get("/approach/"))
