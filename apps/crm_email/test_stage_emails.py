@@ -164,13 +164,28 @@ class StageEmailTests(TestCase):
         self.assertIn("other community focused literacy initiatives", copy.body)
         self.assertIn("Bethany Fleming, ClearCode Foundation", copy.body)
         self.assertIn("4. Foundation Grants", copy.source)
-        family = render_copy(sample_deal("family_enrollment", self.pilot), self.pilot)
+        with override_settings(PUBLIC_APP_URL="https://clearcodereading.com"):
+            family = render_copy(
+                sample_deal("family_enrollment", self.pilot), self.pilot
+            )
         self.assertIn("K–8 students", family.body)
         self.assertIn(
-            "Bethany Fleming, M.Ed.\nFounder & CEO\nc: (256) 762-8094", family.body
+            "Warmly,\n\nBethany Fleming, M.Ed.\nFounder & CEO\n"
+            "bethany@clearcodereading.com\n",
+            family.body,
         )
+        self.assertNotIn("762-8094", family.body)
         self.assertIn("Website: https://clearcodereading.com", family.body)
         self.assertIn("Blog: https://clearcodereading.com/blog/", family.body)
+        self.assertNotIn("<img", family.body)
+        logo = (
+            '<img src="https://clearcodereading.com/assets/logo/clear-code-reading-logo.png" '
+            'alt="ClearCode Reading" width="220" height="65" '
+            'style="display:block;width:220px;max-width:100%;height:auto;margin:0 0 8px">'
+            "<br>Bethany Fleming, M.Ed.<br>Founder &amp; CEO<br>bethany@clearcodereading.com<br>"
+        )
+        self.assertIn(logo, family.body_html)
+        self.assertLess(family.body_html.index("Warmly,"), family.body_html.index(logo))
         self.assertIn(
             'Website: <a href="https://clearcodereading.com">https://clearcodereading.com</a>',
             family.body_html,
@@ -179,6 +194,22 @@ class StageEmailTests(TestCase):
             'Blog: <a href="https://clearcodereading.com/blog/">https://clearcodereading.com/blog/</a>',
             family.body_html,
         )
+
+    def test_logo_needs_a_public_https_address_and_a_signature(self) -> None:
+        with override_settings(PUBLIC_APP_URL="http://localhost:8000"):
+            family = render_copy(
+                sample_deal("family_enrollment", self.pilot), self.pilot
+            )
+        self.assertNotIn("<img", family.body_html)
+        self.assertIn("Bethany Fleming, M.Ed.<br>", family.body_html)
+        self.pilot.bethany_signature = ""
+        with override_settings(PUBLIC_APP_URL="https://clearcodereading.com"):
+            family = render_copy(
+                sample_deal("family_enrollment", self.pilot), self.pilot
+            )
+        self.assertNotIn("<img", family.body_html)
+        self.assertIn("[Missing: Bethany’s email signature]", family.body_html)
+        self.assertIn("Bethany’s email signature", family.missing)
 
     def test_queued_recipient_changes_are_blocked(self) -> None:
         self.make_deal()

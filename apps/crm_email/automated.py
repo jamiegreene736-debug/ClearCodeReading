@@ -14,9 +14,14 @@ from functools import lru_cache
 from pathlib import Path
 from typing import cast
 
+from django.conf import settings
 from django.utils.html import escape
 
-from apps.crm_email.models import BETHANY_SIGNATURE, AutomatedEmail
+from apps.crm_email.models import (
+    BETHANY_SIGNATURE,
+    BETHANY_SIGNATURE_LOGO,
+    AutomatedEmail,
+)
 from apps.crm_email.security import plain_text
 
 FIELD_LABELS: Mapping[str, str] = {
@@ -31,6 +36,8 @@ OPTIONAL_FIELDS = frozenset({"next_step", "action_label", "action_url"})
 # Fields edited with the rich (HTML) editor; every other field is one line of text.
 RICH_FIELDS = frozenset({"body", "next_step"})
 TOKEN = re.compile(r"{{\s*([^{}]+?)\s*}}")
+# The placeholder whose HTML rendering carries the ClearCode Reading logo.
+SIGNATURE_TOKEN = "Bethany’s email signature"
 
 
 @dataclass(frozen=True)
@@ -108,10 +115,37 @@ def html_value(value: str) -> str:
     return "<br>".join(lines)
 
 
+def signature_logo_html() -> str:
+    """The ClearCode Reading logo shown above Bethany's name in HTML emails.
+
+    Mail clients load the image from the public site, so the logo is only
+    included when ``PUBLIC_APP_URL`` is an HTTPS address.
+    """
+    public = settings.PUBLIC_APP_URL.rstrip("/")
+    if not public.startswith("https://"):
+        return ""
+    return (
+        f'<img src="{escape(public + BETHANY_SIGNATURE_LOGO)}" alt="ClearCode Reading" '
+        'width="220" height="65" '
+        'style="display:block;width:220px;max-width:100%;height:auto;margin:0 0 8px"><br>'
+    )
+
+
+def token_html(token: str, value: str) -> str:
+    """HTML for one substituted placeholder; the signature gets the logo above it."""
+    html = html_value(value)
+    if token == SIGNATURE_TOKEN and value.strip():
+        return signature_logo_html() + html
+    return html
+
+
 def fill_html(html: str, values: Mapping[str, str]) -> str:
     """Replace placeholders inside HTML; values are escaped, never interpreted."""
     return TOKEN.sub(
-        lambda match: html_value(values.get(match.group(1).strip(), "")), html
+        lambda match: token_html(
+            match.group(1).strip(), values.get(match.group(1).strip(), "")
+        ),
+        html,
     )
 
 
@@ -211,7 +245,7 @@ _STAGE_PLACEHOLDERS = {
     "contact.firstname": "Contact first name",
     "company.name": "Company name",
     "scheduling_link": "Bethany’s scheduling link",
-    "Bethany’s email signature": "Bethany’s email signature",
+    SIGNATURE_TOKEN: "Bethany’s email signature",
     "investment_category": "Investment category",
     "foundation_name": "Foundation sender name",
     "gmail_signature": "Equity sender signature",
@@ -220,7 +254,7 @@ _STAGE_SAMPLE = {
     "contact.firstname": "Jordan",
     "company.name": "Example Organization",
     "scheduling_link": "https://clearcodereading.com/book/",
-    "Bethany’s email signature": BETHANY_SIGNATURE,
+    SIGNATURE_TOKEN: BETHANY_SIGNATURE,
     "investment_category": "education",
     "foundation_name": "Bethany Fleming",
     "gmail_signature": "ClearCode, Inc.",

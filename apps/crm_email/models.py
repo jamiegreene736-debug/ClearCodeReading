@@ -4,14 +4,17 @@ from typing import ClassVar
 from django.conf import settings
 from django.db import models
 
-# Bethany's signature on every automated email sent in her name.
+# Bethany's signature on every automated email sent in her name. The HTML part
+# shows the ClearCode Reading logo (BETHANY_SIGNATURE_LOGO) above these lines.
 BETHANY_SIGNATURE = (
     "Bethany Fleming, M.Ed.\n"
     "Founder & CEO\n"
-    "c: (256) 762-8094\n"
+    "bethany@clearcodereading.com\n"
     "Website: https://clearcodereading.com\n"
     "Blog: https://clearcodereading.com/blog/"
 )
+# Path of the logo on the public site (marketing-website/assets/logo).
+BETHANY_SIGNATURE_LOGO = "/assets/logo/clear-code-reading-logo.png"
 
 
 class Mailbox(models.Model):

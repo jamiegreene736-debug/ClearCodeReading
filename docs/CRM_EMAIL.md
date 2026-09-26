@@ -160,6 +160,15 @@ The equity signature can be supplied in pilot settings or taken from that sender
 saved CRM signature; Gmail API sending does not automatically insert a Gmail UI
 signature. Mailbox credentials and normal user-owned drafts remain private.
 
+Bethany's signature block (`BETHANY_SIGNATURE` in `models.py`, editable per pilot)
+is name and credential, title, email address, website and blog. Wherever the
+`{{Bethany’s email signature}}` placeholder is rendered to HTML (`token_html` in
+`automated.py`), the ClearCode Reading logo from `marketing-website/assets/logo/`
+is placed above her name, loaded from `PUBLIC_APP_URL` + `/assets/logo/…`; it is
+left out when that setting is not HTTPS, and the plain-text part never has it.
+Her own compose signature stays formatted text because the compose sanitizer
+does not keep images.
+
 The example buttons create clearly named test deals and contacts and exercise the
 same entry signal as ordinary UI/API deal creation. A signed request token and a
 locked pilot row make repeated submission of one example request idempotent.

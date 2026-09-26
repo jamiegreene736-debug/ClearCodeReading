@@ -9,7 +9,14 @@ from django.db import transaction
 
 from apps.crm.consultation_booking import consultation_booking_url
 from apps.crm.models import Lead, Opportunity
-from apps.crm_email.automated import TOKEN, copy_for, first_stage_source, html_value
+from apps.crm_email.automated import (
+    SIGNATURE_TOKEN,
+    TOKEN,
+    copy_for,
+    first_stage_source,
+    html_value,
+    token_html,
+)
 from apps.crm_email.models import Mailbox, Message, StageEmailDelivery, StageEmailPilot
 from apps.crm_email.security import (
     EmailError,
@@ -97,7 +104,7 @@ def render_copy(
         "contact.firstname": name,
         "company.name": company,
         "scheduling_link": pilot.scheduling_link or consultation_booking_url(),
-        "Bethany’s email signature": pilot.bethany_signature,
+        SIGNATURE_TOKEN: pilot.bethany_signature,
         "investment_category": deal.investment_category if deal else "",
         "foundation_name": pilot.foundation_name,
         "gmail_signature": pilot.equity_signature
@@ -107,27 +114,38 @@ def render_copy(
         "contact.firstname": "Contact first name",
         "company.name": "Company name",
         "scheduling_link": "Bethany’s scheduling link",
-        "Bethany’s email signature": "Bethany’s email signature",
+        SIGNATURE_TOKEN: "Bethany’s email signature",
         "investment_category": "Investment category",
         "foundation_name": "Foundation sender name",
         "gmail_signature": "Equity sender signature",
     }
     missing: list[str] = []
 
-    def resolve(token: str) -> str:
+    def resolved(token: str) -> str | None:
+        """The value for a token, or None (recorded as missing) when it is unusable."""
         value = values.get(token, "").strip()
         if not value or "{{" in value or "}}" in value or "[Name]" in value:
             label = labels.get(token, token)
             if label not in missing:
                 missing.append(label)
-            return f"[Missing: {label}]"
+            return None
+        return value
+
+    def resolve(token: str) -> str:
+        value = resolved(token)
+        if value is None:
+            return f"[Missing: {labels.get(token, token)}]"
         return value
 
     def substitute(match: re.Match[str]) -> str:
         return resolve(match.group(1).strip())
 
     def substitute_html(match: re.Match[str]) -> str:
-        return html_value(resolve(match.group(1).strip()))
+        token = match.group(1).strip()
+        value = resolved(token)
+        if value is None:
+            return html_value(resolve(token))
+        return token_html(token, value)
 
     body = TOKEN.sub(substitute, copy.text("body"))
     body_html = TOKEN.sub(substitute_html, copy.html("body"))
