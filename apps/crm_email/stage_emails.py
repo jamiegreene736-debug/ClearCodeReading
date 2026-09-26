@@ -21,6 +21,23 @@ from apps.crm_email.services import active_mailbox
 
 TEST_RECIPIENT = "info@clearcodereading.com"
 
+# Survey introductions are the one live customer delivery: they go to the
+# respondent. Every other stage delivery is a prelaunch test to TEST_RECIPIENT.
+SURVEY_FAMILY_KEY = "survey_family_enrollment"
+SURVEY_GENERAL_KEY = "survey_general"
+SURVEY_KEYS = (SURVEY_FAMILY_KEY, SURVEY_GENERAL_KEY)
+
+
+def is_survey_delivery(delivery: StageEmailDelivery) -> bool:
+    return delivery.deal_id is None and delivery.template_key in SURVEY_KEYS
+
+
+def delivery_recipient(delivery: StageEmailDelivery) -> str:
+    """Lower-cased address a delivery may go to; blank means it may not be sent."""
+    if is_survey_delivery(delivery):
+        return delivery.lead.contact_email.strip().lower()
+    return TEST_RECIPIENT
+
 
 @dataclass(frozen=True)
 class StageCopy:
@@ -127,6 +144,7 @@ def render_copy(
 def pilot_allowed(delivery: StageEmailDelivery) -> bool:
     deal, lead, pilot = delivery.deal, delivery.lead, delivery.pilot
     mailbox = sending_mailbox(delivery.pipeline, pilot)
+    recipient = delivery_recipient(delivery)
     deal_allowed = deal is None or bool(
         not deal.is_deleted
         and deal.lead_id == lead.pk
@@ -143,7 +161,8 @@ def pilot_allowed(delivery: StageEmailDelivery) -> bool:
         and mailbox.email
         and mailbox.email.lower() == mailbox.user.email.lower()
         and not lead.is_deleted
-        and lead.contact_email.strip().lower() == TEST_RECIPIENT
+        and recipient
+        and lead.contact_email.strip().lower() == recipient
         and deal_allowed
     )
 
@@ -161,10 +180,10 @@ def stage_send_allowed(message: Message) -> bool:
     return bool(
         pilot_allowed(delivery)
         and message.mailbox_id == sending_mailbox(delivery.pipeline, delivery.pilot).pk
-        and message.to == [TEST_RECIPIENT]
+        and message.to == [delivery_recipient(delivery)]
         and not message.cc
         and not message.bcc
-        and message.subject.startswith("[TEST] ")
+        and (is_survey_delivery(delivery) or message.subject.startswith("[TEST] "))
     )
 
 
@@ -190,7 +209,11 @@ def enqueue_delivery(pk: int) -> None:
                 return
             if not pilot_allowed(delivery):
                 delivery.cancelled = True
-                delivery.error = "Test paused, recipient changed, or deal left its first stage. Create a new test deal to try again."
+                delivery.error = (
+                    "Automated emails paused, or the contact email changed."
+                    if is_survey_delivery(delivery)
+                    else "Test paused, recipient changed, or deal left its first stage. Create a new test deal to try again."
+                )
                 delivery.save(update_fields=["cancelled", "error"])
                 return
             pilot = delivery.pilot
@@ -207,8 +230,10 @@ def enqueue_delivery(pk: int) -> None:
                 mailbox=mailbox,
                 lead=delivery.lead,
                 sender=mailbox.email,
-                to=[TEST_RECIPIENT],
-                subject="[TEST] " + copy.subject,
+                to=[delivery_recipient(delivery)],
+                subject=copy.subject
+                if is_survey_delivery(delivery)
+                else "[TEST] " + copy.subject,
                 body_text=copy.body,
                 body_html=copy.body_html,
                 status=Message.Status.QUEUED,

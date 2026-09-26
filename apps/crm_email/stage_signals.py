@@ -8,11 +8,12 @@ from django.dispatch import receiver
 
 from apps.crm.models import Lead, Opportunity
 from apps.crm_email.models import StageEmailDelivery, StageEmailPilot
-from apps.crm_email.stage_emails import TEST_RECIPIENT
-
-SURVEY_FAMILY_KEY = "survey_family_enrollment"
-SURVEY_GENERAL_KEY = "survey_general"
-SURVEY_KEYS = (SURVEY_FAMILY_KEY, SURVEY_GENERAL_KEY)
+from apps.crm_email.stage_emails import (
+    SURVEY_FAMILY_KEY,
+    SURVEY_GENERAL_KEY,
+    SURVEY_KEYS,
+    TEST_RECIPIENT,
+)
 
 
 def active_pilot() -> StageEmailPilot | None:
@@ -81,13 +82,17 @@ def route_survey_deliveries(
     captured are cancelled here before anything is queued. The introduction
     belongs to the contact, not a deal, so it still goes out when the answers
     create no deal and when a family joins the waitlist straight away.
+
+    Unlike the first-stage deal emails, which stay internal tests, the
+    introduction is delivered to the respondent's own address whenever the
+    automated-email settings are enabled.
     """
     key = SURVEY_FAMILY_KEY if family else SURVEY_GENERAL_KEY
     for deal in deals:
         StageEmailDelivery.objects.filter(
             deal=deal, message__isnull=True, cancelled=False
         ).update(cancelled=True, error="Covered by the survey introduction email.")
-    if lead.is_deleted or lead.contact_email.strip().lower() != TEST_RECIPIENT:
+    if lead.is_deleted or not lead.contact_email.strip():
         return
     pilot = active_pilot()
     if pilot is None:
