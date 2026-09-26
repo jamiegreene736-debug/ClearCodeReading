@@ -76,8 +76,9 @@ def route_survey_deliveries(
     """Queue the one survey introduction email and drop the deal emails.
 
     The survey's "which best describes your situation" answer decides the
-    wording: every parent answer gets the Families & Enrollment introduction
-    and the community answer gets the general introduction. The engagement
+    wording: the four struggling-reader answers get the Families & Enrollment
+    introduction; "interested for the future or on behalf of another family"
+    and the community answer get the general introduction. The engagement
     checkboxes only route deals, so any first-stage emails those deals
     captured are cancelled here before anything is queued. The introduction
     belongs to the contact, not a deal, so it still goes out when the answers

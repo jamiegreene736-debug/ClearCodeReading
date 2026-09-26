@@ -263,11 +263,10 @@ def _survey_family() -> AutomatedEmailSpec:
         group="Pipeline introduction emails",
         name="Families & Enrollment introduction",
         trigger=(
-            "Bethany’s introduction to a survey respondent who chose any parent "
-            "answer to “Which best describes your situation?” (a struggling reader "
-            "at home, more than one child, or interest for the future or another "
-            "family). Not a confirmation; currently delivered only to the internal "
-            "test inbox"
+            "Bethany’s introduction to a survey respondent who chose a struggling-"
+            "reader answer to “Which best describes your situation?” (a child in "
+            "Pre-K–2, 3–5 or 6–8, or more than one child in different grade bands). "
+            "Not a confirmation; currently delivered only to the internal test inbox"
         ),
         recipient="The family (the survey contact)",
         defaults=base.defaults,
@@ -474,8 +473,9 @@ def _build_specs() -> tuple[AutomatedEmailSpec, ...]:
             group="Pipeline introduction emails",
             name="Community introduction",
             trigger=(
-                "Bethany’s introduction to a survey respondent who chose “I am an "
-                "educator, reading specialist, local parent, potential donor or "
+                "Bethany’s introduction to a survey respondent who chose “I am "
+                "interested for the future or on behalf of another family” or “I am "
+                "an educator, reading specialist, local parent, potential donor or "
                 "supporter, or other” for “Which best describes your situation?”; "
                 "one email regardless of the engagement boxes ticked. Not a "
                 "confirmation; currently delivered only to the internal test inbox"

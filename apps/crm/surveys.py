@@ -404,11 +404,12 @@ def record_early_interest_survey(*, answers: EarlyInterestSurveyAnswers, source:
                 triage.resolved_at = None
                 triage.save(update_fields=["status", "resolved_at", "updated_at"])
 
-    # One introduction email per survey, chosen by the situation answer alone.
+    # One introduction email per survey, chosen by the situation answer alone:
+    # the four struggling-reader answers get the family introduction; "interested
+    # for the future or on behalf of another family" and the community answer get
+    # the general one (the deal and audience routing above are unchanged).
     route_survey_deliveries(
-        lead,
-        family=answers.audience == Lead.PipelineCategory.FAMILY_ENROLLMENT,
-        deals=survey_deals,
+        lead, family=answers.uses_parent_branch, deals=survey_deals
     )
 
     if "opening_updates" in answers.engagement_interests:
