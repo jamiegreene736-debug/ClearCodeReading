@@ -606,6 +606,14 @@ class MarketingPageTests(SimpleTestCase):
         self.assertIn('name="engagement_interests"', content)
         self.assertIn("We will never sell your information", content)
 
+    def test_family_enrollment_choices_stay_unavailable_outside_the_parent_branch(self):
+        content = self._render("early_interest_survey")
+
+        self.assertIn(".survey-choice[hidden] { display: none; }", content)
+        self.assertIn("input.disabled = !parentBranch", content)
+        self.assertIn("if (!parentBranch) input.checked = false", content)
+        self.assertIn("syncFamilyEngagements()", content)
+
     def test_survey_uses_approved_september_copy_and_choices(self):
         content = self._render("early_interest_survey")
         for text in ("in Orlando in 2027", "We serve K through 8th", "Yes, I have time!",

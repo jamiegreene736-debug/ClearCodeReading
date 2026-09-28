@@ -182,6 +182,8 @@
     .survey-success p { margin:1.5rem auto; max-width:36rem; font-size:1.15rem; line-height:1.7; }
     .survey-success a { display:inline-block; background:#F5AD21; color:#102F38; padding:1rem 1.5rem; border-radius:2rem; font-weight:800; }
     .survey-choice { display:flex; align-items:flex-start; gap:.75rem; border:1px solid rgba(15,43,53,.12); border-radius:1rem; padding:.8rem 1rem; font-size:.875rem; font-weight:700; line-height:1.45; color:rgba(15,43,53,.78); cursor:pointer; }
+    /* display:flex above beats the zero-specificity [hidden] rule, which left family-only choices visible. */
+    .survey-choice[hidden] { display: none; }
     .survey-choice:hover { border-color:rgba(26,122,122,.55); background:rgba(168,207,196,.2); }
     .survey-choice input { width:1.15rem; height:1.15rem; margin-top:.08rem; flex:0 0 auto; accent-color:#1A7A7A; }
   </style>
@@ -227,10 +229,16 @@
         progressLabel.textContent = `Question ${currentQuestion} of 10`;
         progressBar.style.width = `${currentQuestion * 10}%`;
         timeLabel.textContent = isParentBranch() || currentQuestion < 4 ? 'About 2 minutes' : 'Under 1 minute';
+        syncFamilyEngagements();
+      }
+
+      function syncFamilyEngagements() {
         const parentBranch = isParentBranch();
         form.querySelectorAll('[data-family-engagement]').forEach((label) => {
+          const input = label.querySelector('input');
           label.hidden = !parentBranch;
-          if (!parentBranch) label.querySelector('input').checked = false;
+          input.disabled = !parentBranch;
+          if (!parentBranch) input.checked = false;
         });
       }
 
@@ -286,11 +294,13 @@
         if (!isParentBranch()) {
           steps.filter(step => [5,6,7,8,9].includes(Number(step.dataset.surveyStep)))
             .forEach(step => step.querySelectorAll('input').forEach(input => { input.disabled = true; }));
+          syncFamilyEngagements();
         }
         submit.disabled = true;
         submit.textContent = 'Submitting your survey…';
       });
       render();
+      window.addEventListener('pageshow', render);
     })();
   </script>
 </section>
