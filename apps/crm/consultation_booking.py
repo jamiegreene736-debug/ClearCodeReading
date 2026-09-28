@@ -25,6 +25,7 @@ from apps.crm.inventory_models import (
     InventoryBooking,
 )
 from apps.crm.models import CrmActivity, FormSubmission, Opportunity
+from apps.crm.open_hours import ensure_published_hours, materialize_open_slots
 from apps.crm.services import (
     LeadIntake,
     ensure_family_enrollment_deal,
@@ -78,8 +79,10 @@ class ConsultationBookingForm(forms.Form):
 
 
 def open_slots(host: CustomUser | None) -> list[ConsultationSlot]:
+    ensure_published_hours()
     if host is None:
         return []
+    materialize_open_slots(host)
     now = timezone.now()
     slots = ConsultationSlot.objects.filter(
         host=host,
@@ -91,11 +94,45 @@ def open_slots(host: CustomUser | None) -> list[ConsultationSlot]:
         host__is_active=True,
         host__is_deleted=False,
     ).select_related("host")
-    return available_slots(slots[:100])
+    return available_slots(slots.order_by("starts_at")[:400])
 
 
 def slot_label(slot: ConsultationSlot) -> str:
-    return timezone.localtime(slot.starts_at).strftime("%A, %B %d · %I:%M %p %Z")
+    start = timezone.localtime(slot.starts_at)
+    end = timezone.localtime(slot.ends_at)
+    return (
+        f"{start.strftime('%A, %B')} {start.day} · "
+        f"{start.strftime('%I:%M').lstrip('0')}–{end.strftime('%I:%M %p %Z').lstrip('0')}"
+    )
+
+
+def slot_days(slots: list[ConsultationSlot]) -> list[dict[str, object]]:
+    """Group bookable times under the Eastern calendar day families see."""
+    days: list[dict[str, object]] = []
+    index: dict[str, dict[str, object]] = {}
+    for slot in slots:
+        start = timezone.localtime(slot.starts_at)
+        end = timezone.localtime(slot.ends_at)
+        key = start.date().isoformat()
+        if key not in index:
+            group: dict[str, object] = {
+                "label": f"{start.strftime('%A, %B')} {start.day}",
+                "slots": [],
+            }
+            index[key] = group
+            days.append(group)
+        choices = index[key]["slots"]
+        assert isinstance(choices, list)
+        choices.append(
+            {
+                "pk": slot.pk,
+                "label": (
+                    f"{start.strftime('%I:%M').lstrip('0')}–"
+                    f"{end.strftime('%I:%M %p').lstrip('0')}"
+                ),
+            }
+        )
+    return days
 
 
 def client_key(request: HttpRequest) -> str:
@@ -127,6 +164,7 @@ class ConsultationBookingView(View):
             {
                 "form": form,
                 "slots": slots,
+                "slot_days": slot_days(slots),
                 "host": host,
                 "host_name": (host.get_full_name() if host else "") or "our team",
                 "booking": booking,
@@ -162,6 +200,9 @@ class ConsultationBookingView(View):
         cache.set(key, attempts + 1, RATE_WINDOW_SECONDS)
 
         host = default_consultation_host()
+        ensure_published_hours()
+        if host is not None:
+            materialize_open_slots(host)
         form = ConsultationBookingForm(request.POST)
         form.fields["slot"].choices = [
             (str(pk), str(pk))

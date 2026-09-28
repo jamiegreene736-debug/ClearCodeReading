@@ -551,7 +551,7 @@ class RichAutomatedEmailTests(TestCase):
         self.assertEqual(sent[0].to, [TEST_RECIPIENT])
         self.assertEqual(sent[0].subject, "Welcome partner Survey")
         self.assertIn(
-            '<a href="https://example.com/book">https://example.com/book</a>',
+            '<a href="https://example.com/book">Sign up for a time</a>',
             sent[0].body_html,
         )
         self.assertIn("https://example.com/book", sent[0].body_text)
