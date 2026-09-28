@@ -177,6 +177,12 @@ class StageEmailTests(TestCase):
         self.assertNotIn("762-8094", family.body)
         self.assertIn("Website: https://clearcodereading.com", family.body)
         self.assertIn("Blog: https://clearcodereading.com/blog/", family.body)
+        self.assertIn("https://clearcodereading.com/book/", family.body)
+        self.assertNotIn("https://example.com/book", family.body)
+        self.assertIn(
+            '<a href="https://clearcodereading.com/book/">Sign up for a time</a>',
+            family.body_html,
+        )
         self.assertNotIn("<img", family.body)
         logo = (
             'Blog: <a href="https://clearcodereading.com/blog/">https://clearcodereading.com/blog/</a>'

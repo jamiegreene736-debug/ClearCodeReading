@@ -28,6 +28,7 @@ from apps.crm.assessment_queue import (
     visible_invitations,
 )
 from apps.crm.calendars import MAX_DAYS, available_slots
+from apps.crm.consultation_booking import open_slots
 from apps.crm.consultations import (
     can_manage_team_availability,
     default_consultation_host,
@@ -47,11 +48,16 @@ from apps.crm.inventory import (
     resolve_token,
 )
 from apps.crm.inventory_feedback import delivery_feedback
-from apps.crm.inventory_forms import BookingForm, InvitationForm, SectionForm, SlotForm
-from apps.crm_email.automated import copy_for as automated_copy
-from apps.crm_email.automated import fill, fill_html
+from apps.crm.inventory_forms import (
+    BookingForm,
+    InvitationForm,
+    OpenWindowForm,
+    SectionForm,
+    SlotForm,
+)
 from apps.crm.inventory_models import (
     ConsultationBooking,
+    ConsultationOpenWindow,
     ConsultationSlot,
     InventoryBooking,
     InventoryChild,
@@ -59,7 +65,10 @@ from apps.crm.inventory_models import (
     InventoryMail,
 )
 from apps.crm.models import CrmActivity, Lead
+from apps.crm.open_hours import ensure_published_hours, materialize_open_slots
 from apps.crm.views import CrmAccessMixin
+from apps.crm_email.automated import copy_for as automated_copy
+from apps.crm_email.automated import fill, fill_html
 from apps.users.models import AuditLog, CustomUser
 
 
@@ -68,9 +77,9 @@ class InventoryListView(CrmAccessMixin, View):
         now = timezone.now()
         queue = selected_queue(request.GET)
         items, query = apply_search(
-            visible_invitations().select_related(
-                "child__parent", "child__parent__assigned_to", "booking"
-            ).prefetch_related("emails"),
+            visible_invitations()
+            .select_related("child__parent", "child__parent__assigned_to", "booking")
+            .prefetch_related("emails"),
             request.GET.get("q", ""),
         )
         items = filter_queue(items, queue, now)
@@ -473,24 +482,45 @@ class InventoryPublicView(View):
         )
 
 
+def slot_groups(slots):
+    groups = []
+    for slot in slots:
+        local = timezone.localtime(slot.starts_at)
+        label = f"{local.strftime('%A, %B')} {local.day}"
+        if not groups or groups[-1]["label"] != label:
+            groups.append({"label": label, "slots": []})
+        groups[-1]["slots"].append(slot)
+    return groups
+
+
 class InventorySlotsView(CrmAccessMixin, View):
     def get(self, request):
         return self.page(request, SlotForm(user=request.user))
 
-    def page(self, request, form):
+    def page(self, request, form, window_form=None):
+        ensure_published_hours()
         host = selected_consultation_host(request)
+        if host is not None:
+            materialize_open_slots(host)
         slots = ConsultationSlot.objects.filter(starts_at__gt=timezone.now())
+        windows = ConsultationOpenWindow.objects.select_related("host").filter(
+            date__gte=timezone.localdate()
+        )
         if host:
             slots = slots.filter(host=host)
+            windows = windows.filter(host=host)
         slots = slots.select_related(
             "host", "booking__invitation__child__parent", "consultation_booking__lead"
-        ).order_by("starts_at")[:100]
+        ).order_by("starts_at")[:400]
         return render(
             request,
             "crm/inventory_slots.html",
             {
                 "form": form,
+                "window_form": window_form or OpenWindowForm(user=request.user),
                 "slots": slots,
+                "slot_groups": slot_groups(slots),
+                "windows": windows,
                 "hosts": crm_owner_queryset(),
                 "selected_host": host,
                 "can_manage_team": can_manage_team_availability(request.user),
@@ -499,6 +529,38 @@ class InventorySlotsView(CrmAccessMixin, View):
 
     def post(self, request):
         action = request.POST.get("action")
+        if action == "open_hours":
+            window_form = OpenWindowForm(request.POST, user=request.user)
+            if not window_form.is_valid():
+                return self.page(request, SlotForm(user=request.user), window_form)
+            data = window_form.cleaned_data
+            host = data["host"]
+            with transaction.atomic():
+                CustomUser.objects.select_for_update().get(pk=host.pk)
+                window, created = ConsultationOpenWindow.objects.get_or_create(
+                    host=host,
+                    date=data["date"],
+                    starts_at=data["starts_at"],
+                    defaults={
+                        "ends_at": data["ends_at"],
+                        "timezone": data["timezone"],
+                    },
+                )
+                if not created and window.ends_at == data["ends_at"]:
+                    messages.info(request, "Those hours are already open.")
+                else:
+                    window.ends_at = data["ends_at"]
+                    window.timezone = data["timezone"]
+                    window.save(update_fields=["ends_at", "timezone"])
+                    confirming = host.pk == request.user.pk
+                    materialize_open_slots(host, active=confirming)
+                    messages.success(
+                        request,
+                        "15-minute signup times added."
+                        if confirming
+                        else "Times proposed. The host must confirm each one before families can book.",
+                    )
+            return redirect(reverse("inventory_slots") + f"?host={host.pk}")
         if action in {"withdraw", "confirm"}:
             slot_id = request.POST.get("slot", "")
             if not slot_id.isdecimal():
@@ -617,18 +679,7 @@ class InventoryBookingView(InventoryPublicView):
             .first()
         )
         host = default_consultation_host()
-        slots = ConsultationSlot.objects.filter(
-            host=host,
-            active=True,
-            starts_at__gt=timezone.now(),
-            booking__isnull=True,
-            consultation_booking__isnull=True,
-            host__is_active=True,
-            host__is_deleted=False,
-        ).select_related("host")
-        slots = available_slots(
-            slots.filter(ends_at__lte=timezone.now() + timedelta(days=MAX_DAYS))[:100]
-        )
+        slots = open_slots(host)
         form = form or BookingForm()
         form.fields["slot"].choices = [
             (
@@ -685,7 +736,8 @@ class InventoryBookingView(InventoryPublicView):
                 if InventoryBooking.objects.filter(invitation=invitation).exists():
                     return redirect("inventory_booking", token=token)
                 booking_host = get_object_or_404(
-                    ConsultationSlot.objects.only("host_id"), pk=form.cleaned_data["slot"]
+                    ConsultationSlot.objects.only("host_id"),
+                    pk=form.cleaned_data["slot"],
                 ).host_id
                 CustomUser.objects.select_for_update().get(pk=booking_host)
                 slot = get_object_or_404(

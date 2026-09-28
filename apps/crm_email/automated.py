@@ -149,7 +149,11 @@ def signature_logo_html() -> str:
 
 def token_html(token: str, value: str) -> str:
     """HTML for one substituted placeholder; the signature gets the logo below it."""
-    html = html_value(value)
+    url = value.strip()
+    if token == "scheduling_link" and url.startswith("https://"):
+        html = f'<a href="{escape(url)}">Sign up for a time</a>'
+    else:
+        html = html_value(value)
     if token == SIGNATURE_TOKEN and value.strip():
         return html + signature_logo_html()
     return html
