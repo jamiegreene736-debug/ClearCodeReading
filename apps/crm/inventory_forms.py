@@ -1,6 +1,8 @@
+from datetime import datetime, timedelta
 from zoneinfo import ZoneInfo, ZoneInfoNotFoundError
 
 from django import forms
+from django.utils import timezone
 
 from apps.crm.access import crm_owner_queryset
 from apps.crm.consultations import default_consultation_host, editable_hosts
@@ -74,7 +76,11 @@ class SlotForm(forms.Form):
         label="Time zone (e.g. America/New_York)",
     )
     duration = forms.IntegerField(
-        min_value=10, max_value=120, initial=30, label="Duration in minutes"
+        min_value=10,
+        max_value=120,
+        initial=15,
+        label="Duration in minutes",
+        help_text="Signup times from open hours are 15 minutes. Use this for one extra time.",
     )
 
     def __init__(self, *args, user=None, **kwargs):
@@ -96,6 +102,72 @@ class SlotForm(forms.Form):
                 "Enter a valid time zone, such as America/New_York."
             ) from exc
         return value
+
+
+class OpenWindowForm(forms.Form):
+    """A same-day range that becomes bookable 15-minute signup times."""
+
+    host = forms.ModelChoiceField(queryset=crm_owner_queryset())
+    date = forms.DateField(widget=forms.DateInput(attrs={"type": "date"}))
+    starts_at = forms.TimeField(
+        initial="15:00",
+        label="From",
+        widget=forms.TimeInput(format="%H:%M", attrs={"type": "time"}),
+    )
+    ends_at = forms.TimeField(
+        initial="17:00",
+        label="To",
+        widget=forms.TimeInput(format="%H:%M", attrs={"type": "time"}),
+    )
+    timezone = forms.CharField(
+        initial="America/New_York",
+        max_length=64,
+        label="Time zone (e.g. America/New_York)",
+    )
+
+    def __init__(self, *args, user=None, **kwargs):
+        super().__init__(*args, **kwargs)
+        if user is not None:
+            hosts = editable_hosts(user)
+            self.fields["host"].queryset = hosts
+            default = default_consultation_host()
+            self.fields["host"].initial = (
+                default if default and hosts.filter(pk=default.pk).exists() else user
+            )
+
+    def clean_timezone(self):
+        return SlotForm.clean_timezone(self)
+
+    def clean(self):
+        cleaned = super().clean() or {}
+        starts = cleaned.get("starts_at")
+        ends = cleaned.get("ends_at")
+        day = cleaned.get("date")
+        zone_name = cleaned.get("timezone")
+        if not starts or not ends or not day or not zone_name:
+            return cleaned
+        for field, value in (("starts_at", starts), ("ends_at", ends)):
+            if value.second or value.microsecond or value.minute % 15:
+                self.add_error(
+                    field, "Use a 15-minute increment, such as 3:00 or 3:15."
+                )
+        if starts and ends and ends <= starts:
+            self.add_error("ends_at", "Choose an end time after the start time.")
+            return cleaned
+        if self.errors:
+            return cleaned
+        zone = ZoneInfo(zone_name)
+        start = datetime.combine(day, starts, zone)
+        end = datetime.combine(day, ends, zone)
+        if start.fold == 0 and start.utcoffset() != start.replace(fold=1).utcoffset():
+            self.add_error(
+                "starts_at", "Choose a time outside the daylight-saving clock change."
+            )
+        elif (end - start) < timedelta(minutes=15):
+            self.add_error("ends_at", "Leave at least 15 minutes for one signup time.")
+        elif start <= timezone.now():
+            self.add_error("date", "Choose a future block of hours.")
+        return cleaned
 
 
 class BookingForm(forms.Form):

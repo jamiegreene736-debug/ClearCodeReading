@@ -100,10 +100,18 @@ def render_copy(
             else ""
         )
     )
+    scheduling_link = pilot.scheduling_link.strip()
+    public_booking = consultation_booking_url()
+    # Family emails use the in-app calendar so the link is a 15-minute signup page.
+    if (
+        key in {"stage_family_enrollment", "survey_family_enrollment"}
+        and public_booking
+    ) or not scheduling_link:
+        scheduling_link = public_booking
     values = {
         "contact.firstname": name,
         "company.name": company,
-        "scheduling_link": pilot.scheduling_link or consultation_booking_url(),
+        "scheduling_link": scheduling_link,
         SIGNATURE_TOKEN: pilot.bethany_signature,
         "investment_category": deal.investment_category if deal else "",
         "foundation_name": pilot.foundation_name,

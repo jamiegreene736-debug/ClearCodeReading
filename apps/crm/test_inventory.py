@@ -1061,6 +1061,36 @@ class ConsultationAvailabilityTests(TestCase):
         self.assertIn("host", response.context["form"].errors)
         self.assertEqual(ConsultationSlot.objects.count(), 2)
 
+    def test_open_hours_become_fifteen_minute_signup_times(self):
+        self.client.force_login(self.bethany)
+        day = timezone.localdate() + timedelta(days=4)
+        response = self.client.post(
+            self.url,
+            {
+                "action": "open_hours",
+                "host": self.bethany.pk,
+                "date": day.isoformat(),
+                "starts_at": "15:00",
+                "ends_at": "17:00",
+                "timezone": "America/New_York",
+            },
+        )
+        self.assertEqual(response.status_code, 302)
+        created = ConsultationSlot.objects.filter(
+            host=self.bethany, active=True
+        ).exclude(pk=self.slot.pk)
+        self.assertEqual(created.count(), 8)
+        self.assertEqual(
+            {(slot.ends_at - slot.starts_at) for slot in created},
+            {timedelta(minutes=15)},
+        )
+        first = min(created, key=lambda slot: slot.starts_at)
+        local = timezone.localtime(first.starts_at)
+        self.assertEqual((local.hour, local.minute), (15, 0))
+        self.assertContains(
+            self.client.get(self.url), "3:00 to 5:00 offers 3:00, 3:15, 3:30"
+        )
+
     def test_cannot_confirm_overlapping_or_past_slot(self):
         ConsultationSlot.objects.create(
             host=self.bethany,
@@ -1220,8 +1250,12 @@ class AssessmentQueueTests(TestCase):
         self.assertEqual(response.context["assessments_in_view"], 2)
 
     def test_queues_split_started_finished_and_closed_invitations(self):
-        other = Lead.objects.create(contact_name="Finished Parent", contact_email="done@example.com")
-        finished_child = InventoryChild.objects.create(parent=other, name="Casey", grade="grade_3")
+        other = Lead.objects.create(
+            contact_name="Finished Parent", contact_email="done@example.com"
+        )
+        finished_child = InventoryChild.objects.create(
+            parent=other, name="Casey", grade="grade_3"
+        )
         InventoryInvitation.objects.create(
             child=finished_child,
             recipient=other.contact_email,
@@ -1229,14 +1263,18 @@ class AssessmentQueueTests(TestCase):
             result={"outcome": "support", "yes_count": 2, "answered": 4, "total": 10},
             expires_at=timezone.now() + timedelta(days=10),
         )
-        expired_child = InventoryChild.objects.create(parent=other, name="Drew", grade="grade_3")
+        expired_child = InventoryChild.objects.create(
+            parent=other, name="Drew", grade="grade_3"
+        )
         InventoryInvitation.objects.create(
             child=expired_child,
             recipient=other.contact_email,
             expires_at=timezone.now() - timedelta(days=1),
         )
         deleted = Lead.objects.create(contact_name="Deleted Parent", is_deleted=True)
-        deleted_child = InventoryChild.objects.create(parent=deleted, name="Hidden", grade="grade_3")
+        deleted_child = InventoryChild.objects.create(
+            parent=deleted, name="Hidden", grade="grade_3"
+        )
         InventoryInvitation.objects.create(
             child=deleted_child,
             recipient="hidden@example.com",
@@ -1247,7 +1285,9 @@ class AssessmentQueueTests(TestCase):
         started = self.client.get(reverse("inventory_list"), {"queue": "in_progress"})
         review = self.client.get(reverse("inventory_list"), {"queue": "review"})
         legacy = self.client.get(reverse("inventory_list"), {"status": "pending"})
-        search = self.client.get(reverse("inventory_list"), {"queue": "all", "q": "Casey"})
+        search = self.client.get(
+            reverse("inventory_list"), {"queue": "all", "q": "Casey"}
+        )
         dashboard = self.client.get(reverse("crm_dashboard"))
 
         self.assertNotContains(waiting, "Casey")

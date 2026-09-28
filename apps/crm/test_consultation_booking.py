@@ -1,4 +1,7 @@
-from datetime import timedelta
+from datetime import datetime, time, timedelta
+from datetime import timezone as dt_timezone
+from unittest.mock import patch
+from zoneinfo import ZoneInfo
 
 from django.contrib.auth import get_user_model
 from django.core.cache import cache
@@ -7,8 +10,19 @@ from django.urls import reverse
 from django.utils import timezone
 
 from apps.crm.consultation_booking import consultation_booking_url
-from apps.crm.inventory_models import ConsultationBooking, ConsultationSlot
+from apps.crm.inventory_models import (
+    ConsultationBooking,
+    ConsultationHoursSeed,
+    ConsultationOpenWindow,
+    ConsultationSlot,
+)
 from apps.crm.models import FormSubmission, Lead, Opportunity, WebsiteReceipt
+from apps.crm.open_hours import (
+    PUBLISHED_DATES,
+    PUBLISHED_EMAIL,
+    PUBLISHED_KEY,
+    iter_window_slots,
+)
 from apps.crm.website_emails import receipt_context
 
 
@@ -71,9 +85,7 @@ class ConsultationBookingPageTests(TestCase):
         self.assertTrue(WebsiteReceipt.objects.filter(submission=submission).exists())
         context = receipt_context(submission, team=False)
         self.assertEqual(context["heading"], "Your consultation is booked.")
-        self.assertIn(
-            "Consultation time", [row["label"] for row in context["rows"]]
-        )
+        self.assertIn("Consultation time", [row["label"] for row in context["rows"]])
         confirmation = self.client.get(response.url)
         self.assertContains(confirmation, "Your consultation is booked.")
         self.assertContains(confirmation, "pat@example.com")
@@ -117,3 +129,99 @@ class ConsultationBookingPageTests(TestCase):
             self.assertEqual(
                 consultation_booking_url(), "https://clearcodereading.com/book/"
             )
+
+
+class PublishedConsultationHoursTests(TestCase):
+    def setUp(self):
+        cache.clear()
+        self.now = datetime(2026, 9, 28, 18, 38, tzinfo=dt_timezone.utc)
+        patcher = patch("django.utils.timezone.now", return_value=self.now)
+        self.addCleanup(patcher.stop)
+        patcher.start()
+        self.bethany = get_user_model().objects.create_user(
+            username="bethany-published",
+            email=PUBLISHED_EMAIL,
+            first_name="Bethany",
+            last_name="Fleming",
+            role="crm_user",
+        )
+        self.url = reverse("consultation_booking")
+
+    def test_quarter_hours_fill_three_to_five(self):
+        slots = iter_window_slots(
+            PUBLISHED_DATES[0], time(15, 0), time(17, 0), "America/New_York"
+        )
+        self.assertEqual(len(slots), 8)
+        self.assertEqual(
+            slots[0][0].astimezone(ZoneInfo("America/New_York")).strftime("%H:%M"),
+            "15:00",
+        )
+        self.assertEqual(
+            slots[-1][0].astimezone(ZoneInfo("America/New_York")).strftime("%H:%M"),
+            "16:45",
+        )
+        self.assertEqual(slots[-1][1] - slots[-1][0], timedelta(minutes=15))
+
+    def test_family_booking_page_lists_bethanys_published_hours(self):
+        response = self.client.get(self.url)
+        self.assertEqual(response.status_code, 200)
+        slots = list(response.context["slots"])
+        self.assertEqual(len(slots), len(PUBLISHED_DATES) * 8)
+        self.assertEqual(ConsultationOpenWindow.objects.count(), len(PUBLISHED_DATES))
+        self.assertTrue(
+            ConsultationHoursSeed.objects.filter(key=PUBLISHED_KEY).exists()
+        )
+        self.assertContains(response, "Choose a 15-minute time")
+        self.assertContains(response, "October 7")
+        self.assertContains(response, "4:45–5:00 PM")
+        self.assertNotContains(response, "September 27")
+        again = self.client.get(self.url)
+        self.assertEqual(len(again.context["slots"]), len(slots))
+
+    def test_booking_takes_one_fifteen_minute_time(self):
+        self.client.get(self.url)
+        slot = ConsultationSlot.objects.get(
+            starts_at=datetime(2026, 10, 7, 20, 0, tzinfo=dt_timezone.utc)
+        )
+        response = self.client.post(
+            self.url,
+            {
+                "name": "Pat Parent",
+                "email": "pat@example.com",
+                "phone": "4075550123",
+                "child_age_grade": "2nd grade",
+                "notes": "",
+                "slot": str(slot.pk),
+                "timezone": "America/New_York",
+            },
+        )
+        self.assertEqual(response.status_code, 302)
+        self.assertTrue(ConsultationBooking.objects.filter(slot=slot).exists())
+        self.assertEqual(len(self.client.get(self.url).context["slots"]), 63)
+
+    def test_withdrawn_time_stays_off_the_public_page(self):
+        self.client.get(self.url)
+        slot = (
+            ConsultationSlot.objects.filter(host=self.bethany)
+            .order_by("starts_at")
+            .first()
+        )
+        slot.active = False
+        slot.save(update_fields=["active"])
+        self.client.get(self.url)
+        slot.refresh_from_db()
+        self.assertFalse(slot.active)
+        self.assertEqual(
+            ConsultationSlot.objects.filter(
+                host=self.bethany, starts_at=slot.starts_at
+            ).count(),
+            1,
+        )
+        self.assertNotIn(slot, self.client.get(self.url).context["slots"])
+
+    def test_another_bethany_does_not_receive_the_published_hours(self):
+        self.bethany.email = "bethany@example.com"
+        self.bethany.save(update_fields=["email"])
+        response = self.client.get(self.url)
+        self.assertEqual(list(response.context["slots"]), [])
+        self.assertFalse(ConsultationOpenWindow.objects.exists())

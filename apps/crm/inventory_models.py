@@ -174,3 +174,42 @@ class ConsultationBooking(models.Model):
 
     def __str__(self) -> str:
         return f"Consultation for {self.lead.contact_name} at {self.slot.starts_at:%Y-%m-%d %H:%M}"
+
+
+class ConsultationOpenWindow(models.Model):
+    """A block of time families can book in 15-minute increments."""
+
+    host = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name="consultation_open_windows",
+    )
+    date = models.DateField()
+    starts_at = models.TimeField()
+    ends_at = models.TimeField()
+    timezone = models.CharField(max_length=64, default="America/New_York")
+
+    class Meta:
+        ordering: ClassVar = ["date", "starts_at"]
+        constraints: ClassVar = [
+            models.UniqueConstraint(
+                fields=["host", "date", "starts_at"],
+                name="unique_host_open_window_start",
+            ),
+            models.CheckConstraint(
+                condition=models.Q(ends_at__gt=models.F("starts_at")),
+                name="consultation_open_window_positive",
+            ),
+        ]
+
+
+class ConsultationHoursSeed(models.Model):
+    """Records that a published schedule was applied, so it is not recreated."""
+
+    key = models.CharField(max_length=64, unique=True)
+    host = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name="consultation_hours_seeds",
+    )
+    applied_at = models.DateTimeField(auto_now_add=True)
