@@ -222,7 +222,7 @@ class CalendarConnectionTests(TestCase):
         self.slot.save()
         url = reverse("inventory_booking", args=[token_for(invitation)])
         self.client.logout()
-        self.assertEqual(len(self.client.get(url).context["slots"]), 1)
+        self.assertIn(self.slot, self.client.get(url).context["slots"])
         fetch.side_effect = CalendarError("Calendar unavailable")
         payload = {"slot": self.slot.pk, "phone": "4075550123", "timezone": "UTC"}
         self.assertEqual(self.client.post(url, payload).status_code, 200)

@@ -62,7 +62,11 @@ class ConsultationBookingPageTests(TestCase):
         )
         response = self.client.get(self.url)
         self.assertEqual(response.status_code, 200)
-        self.assertEqual(list(response.context["slots"]), [self.slot])
+        slots = list(response.context["slots"])
+        inactive = ConsultationSlot.objects.get(active=False)
+        self.assertIn(self.slot, slots)
+        self.assertNotIn(inactive, slots)
+        self.assertTrue(all(slot.active for slot in slots))
         self.assertContains(response, "Book a consultation with Bethany Fleming")
 
     def test_booking_creates_contact_deal_receipt_and_takes_the_slot(self):
@@ -95,7 +99,7 @@ class ConsultationBookingPageTests(TestCase):
         self.assertEqual(second.status_code, 200)
         self.assertContains(second, "no longer available")
         self.assertEqual(ConsultationBooking.objects.count(), 1)
-        self.assertEqual(list(self.client.get(self.url).context["slots"]), [])
+        self.assertNotIn(self.slot, self.client.get(self.url).context["slots"])
 
     def test_confirmation_is_only_shown_to_the_booking_session(self):
         self.client.post(self.url, self.payload)
@@ -219,9 +223,28 @@ class PublishedConsultationHoursTests(TestCase):
         )
         self.assertNotIn(slot, self.client.get(self.url).context["slots"])
 
-    def test_another_bethany_does_not_receive_the_published_hours(self):
+    def test_unique_bethany_receives_hours_when_login_email_differs(self):
+        self.bethany.email = "bethany.fleming@example.com"
+        self.bethany.save(update_fields=["email"])
+        response = self.client.get(self.url)
+        self.assertEqual(len(response.context["slots"]), len(PUBLISHED_DATES) * 8)
+        self.assertEqual(ConsultationOpenWindow.objects.count(), len(PUBLISHED_DATES))
+        self.assertEqual(
+            set(ConsultationOpenWindow.objects.values_list("host_id", flat=True)),
+            {self.bethany.pk},
+        )
+        self.assertNotContains(response, "no consultation times open")
+
+    def test_ambiguous_bethany_name_does_not_receive_the_published_hours(self):
         self.bethany.email = "bethany@example.com"
         self.bethany.save(update_fields=["email"])
+        get_user_model().objects.create_user(
+            username="bethany-two",
+            email="bethany.two@example.com",
+            first_name="Bethany",
+            last_name="Fleming",
+            role="crm_user",
+        )
         response = self.client.get(self.url)
         self.assertEqual(list(response.context["slots"]), [])
         self.assertFalse(ConsultationOpenWindow.objects.exists())

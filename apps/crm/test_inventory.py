@@ -1011,12 +1011,16 @@ class ConsultationAvailabilityTests(TestCase):
     def test_bethany_default_and_explicit_host_selection(self):
         response = self.client.get(self.url)
         self.assertEqual(response.context["selected_host"], self.bethany)
-        self.assertEqual(list(response.context["slots"]), [self.slot])
+        slots = list(response.context["slots"])
+        self.assertIn(self.slot, slots)
+        self.assertTrue(all(slot.host_id == self.bethany.pk for slot in slots))
         response = self.client.get(self.url, {"host": self.other.pk})
         self.assertEqual(list(response.context["slots"]), [])
         response = self.client.get(self.url, {"host": ""})
         self.assertIsNone(response.context["selected_host"])
-        self.assertEqual(list(response.context["slots"]), [self.slot])
+        slots = list(response.context["slots"])
+        self.assertIn(self.slot, slots)
+        self.assertTrue(all(slot.host_id == self.bethany.pk for slot in slots))
         self.assertContains(response, 'value="" selected>All hosts')
         self.assertEqual(self.client.get(self.url, {"host": "bad"}).status_code, 404)
 
@@ -1059,7 +1063,13 @@ class ConsultationAvailabilityTests(TestCase):
         self.client.force_login(self.other)
         response = self.client.post(self.url, payload)
         self.assertIn("host", response.context["form"].errors)
-        self.assertEqual(ConsultationSlot.objects.count(), 2)
+        proposed = [
+            slot
+            for slot in ConsultationSlot.objects.exclude(pk=self.slot.pk)
+            if slot.ends_at - slot.starts_at == timedelta(minutes=30)
+        ]
+        self.assertEqual(len(proposed), 1)
+        self.assertFalse(proposed[0].active)
 
     def test_open_hours_become_fifteen_minute_signup_times(self):
         self.client.force_login(self.bethany)
@@ -1134,9 +1144,18 @@ class ConsultationAvailabilityTests(TestCase):
         self.client.logout()
         response = self.client.get(url)
         self.assertEqual(response.context["selected_host"], self.bethany)
-        self.assertEqual(list(response.context["slots"]), [])
+        slots = list(response.context["slots"])
+        self.assertNotIn(self.slot, slots)
+        self.assertNotIn(other_slot, slots)
+        self.assertTrue(slots)
+        self.assertTrue(
+            all(slot.host_id == self.bethany.pk and slot.active for slot in slots)
+        )
         response = self.client.get(url, {"host": self.other.pk})
-        self.assertEqual(list(response.context["slots"]), [])
+        self.assertNotIn(other_slot, response.context["slots"])
+        self.assertTrue(
+            all(slot.host_id == self.bethany.pk for slot in response.context["slots"])
+        )
         self.assertEqual(response.context["hosts"], [self.bethany])
         self.assertNotContains(response, "All hosts")
         self.assertNotContains(response, f'<option value="{self.other.pk}"')
@@ -1188,11 +1207,14 @@ class ConsultationAvailabilityTests(TestCase):
         url = self.public_booking_url()
         self.slot.active = True
         self.slot.save()
-        ConsultationSlot.objects.create(
+        other_slot = ConsultationSlot.objects.create(
             host=self.other, starts_at=self.slot.starts_at, ends_at=self.slot.ends_at
         )
         response = self.client.get(url, {"host": ""})
-        self.assertEqual(list(response.context["slots"]), [self.slot])
+        slots = list(response.context["slots"])
+        self.assertIn(self.slot, slots)
+        self.assertNotIn(other_slot, slots)
+        self.assertTrue(all(slot.host_id == self.bethany.pk for slot in slots))
         self.assertEqual(response.context["hosts"], [self.bethany])
 
 

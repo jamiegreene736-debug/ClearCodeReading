@@ -260,7 +260,7 @@ class LocalAvailabilityTests(TestCase):
         self.slot.save()
         url = reverse("inventory_booking", args=[token_for(invitation)])
         self.client.logout()
-        self.assertEqual(len(self.client.get(url).context["slots"]), 1)
+        self.assertIn(self.slot, self.client.get(url).context["slots"])
         rule = self.weekly(
             weekday=self.slot.starts_at.astimezone(
                 ZoneInfo("America/New_York")
@@ -268,7 +268,7 @@ class LocalAvailabilityTests(TestCase):
             mode="all",
         )
         payload = {"slot": self.slot.pk, "phone": "4075550123", "timezone": "UTC"}
-        self.assertEqual(len(self.client.get(url).context["slots"]), 0)
+        self.assertNotIn(self.slot, self.client.get(url).context["slots"])
         self.assertEqual(self.client.post(url, payload).status_code, 200)
         self.assertFalse(InventoryBooking.objects.exists())
         rule.delete()

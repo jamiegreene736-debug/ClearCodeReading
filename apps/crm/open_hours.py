@@ -53,6 +53,12 @@ def iter_window_slots(
 
 
 def published_host() -> CustomUser | None:
+    """The account that should receive Bethany's published consultation hours.
+
+    Prefer the clearcodereading.com mailbox, including when that address is
+    connected to a different login. Otherwise use the one active CRM account
+    named Bethany Fleming, so her hours still appear when her login email differs.
+    """
     host = (
         CustomUser.objects.filter(
             email__iexact=PUBLISHED_EMAIL, is_active=True, is_deleted=False
@@ -72,7 +78,16 @@ def published_host() -> CustomUser | None:
     )
     if mailbox is not None and mailbox.user.is_active and not mailbox.user.is_deleted:
         return mailbox.user
-    return None
+    from apps.crm.access import crm_owner_queryset
+
+    # The public page already requires one Bethany Fleming. Use that same person
+    # when her login email is not the published mailbox.
+    matches = list(
+        crm_owner_queryset().filter(
+            first_name__iexact="Bethany", last_name__iexact="Fleming"
+        )[:2]
+    )
+    return matches[0] if len(matches) == 1 else None
 
 
 def ensure_published_hours() -> CustomUser | None:
@@ -105,7 +120,8 @@ def ensure_published_hours() -> CustomUser | None:
                         timezone=PUBLISHED_TIMEZONE,
                     )
                     for day in PUBLISHED_DATES
-                ]
+                ],
+                ignore_conflicts=True,
             )
     except IntegrityError:
         seeded = (
