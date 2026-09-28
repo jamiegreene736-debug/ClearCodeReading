@@ -163,10 +163,10 @@ signature. Mailbox credentials and normal user-owned drafts remain private.
 Bethany's signature block (`BETHANY_SIGNATURE` in `models.py`, editable per pilot)
 is name and credential, title, email address, website and blog. Wherever the
 `{{Bethany’s email signature}}` placeholder is rendered to HTML (`token_html` in
-`automated.py`), the public website header lockup is placed at the bottom of the
-block, below the blog link. That lockup is the gold-and-teal monogram
-(`cc-monogram-gold-teal.png`) with CLEAR in linen, CODE in gold, and READING in
-medium teal on the ink bar, loaded from `PUBLIC_APP_URL` + `/assets/logo/…`; it is
+`automated.py`), the linen ClearCode Reading lockup is placed at the bottom of the
+block, below the blog link. That lockup is the supplied light artwork
+(`cc-lockup-linen-ui.png`: forest-teal channel on linen, CLEAR in gray, CODE in
+ink, READING in gray), loaded from `PUBLIC_APP_URL` + `/assets/logo/…`; it is
 left out when that setting is not HTTPS, and the plain-text part never has it.
 Her own compose signature stays formatted text because the compose sanitizer
 does not keep images.
