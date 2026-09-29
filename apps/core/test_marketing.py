@@ -730,6 +730,9 @@ class MarketingPageTests(SimpleTestCase):
         self.assertIn("You Know How to Teach Reading.", content)
         self.assertIn("Three Students, Maximum", content)
         self.assertNotIn("Never thirty kids and one of you.", content)
+        work_section = content[content.index('id="work-heading"'):content.index('id="growth-heading"')]
+        self.assertIn("md:grid-cols-3", work_section)
+        self.assertNotIn("md:grid-cols-2", work_section)
         self.assertIn("A Streamlined Platform", content)
         self.assertIn("Session notes, progress tracking, and parent updates happen in one place.", content)
         self.assertNotIn("A Platform That Does the Busywork", content)
