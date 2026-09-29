@@ -309,7 +309,6 @@ class MarketingPageTests(SimpleTestCase):
             "/how-it-works/",
             "/resources/",
             "/faq/",
-            "/foundation/",
             "/blog/",
             "/careers/",
             "/privacy/",
@@ -324,6 +323,10 @@ class MarketingPageTests(SimpleTestCase):
                 with self.subTest(route_name=route_name, link=link):
                     self.assertIn(f'href="{link}"', content)
 
+            with self.subTest(route_name=route_name, link="/foundation/"):
+                self.assertNotIn('href="/foundation/"', content)
+            with self.subTest(route_name=route_name, link="Reading survey"):
+                self.assertNotIn(">Reading survey<", content)
             with self.subTest(route_name=route_name, link="/approach/"):
                 self.assertNotIn('href="/approach/"', content)
             with self.subTest(route_name=route_name, link="/orlando/"):
@@ -372,7 +375,8 @@ class MarketingPageTests(SimpleTestCase):
         foundation = self._render("marketing_foundation")
 
         self.assertNotIn("Explore the Foundation", homepage)
-        self.assertIn('href="/foundation/"', homepage)
+        self.assertNotIn('href="/foundation/"', homepage)
+        self.assertNotIn(">Reading survey<", homepage)
         self.assertIn("Help more children find their way into reading.", foundation)
         self.assertIn('href="/contact/"', foundation)
         self.assertNotIn('id="newsletter-signup"', foundation)
@@ -380,12 +384,18 @@ class MarketingPageTests(SimpleTestCase):
     def test_family_resources_page_offers_free_actionable_paths(self):
         content = self._render("marketing_resources", {"resources_unlocked": True})
 
-        self.assertIn("Less guessing. More useful next steps.", content)
-        self.assertIn("Choose the question you need answered today.", content)
-        self.assertIn("Three moves for a calmer reading week.", content)
-        self.assertIn("Take the Reading Inventory", content)
-        self.assertIn("Bring Better Questions", content)
-        self.assertIn("See the Full Pathway", content)
+        self.assertIn("Resources and Activities for Parents", content)
+        self.assertIn(
+            "Discover free, easy-to-use reading resources, printable activities, and expert tips designed to support your child's literacy journey at home.",
+            content,
+        )
+        self.assertNotIn("Less guessing. More useful next steps.", content)
+        self.assertNotIn("Choose the question you need answered today.", content)
+        self.assertNotIn("Three moves for a calmer reading week.", content)
+        self.assertNotIn("Preview the strategy packs", content)
+        self.assertNotIn("Find the right starting point", content)
+        self.assertNotIn("A simple family plan", content)
+        self.assertNotIn('id="start-here"', content)
         self.assertIn('data-testid="comprehension-packs"', content)
         self.assertIn("Comprehension Strategy Packs", content)
         self.assertIn("Preview pack", content)
@@ -394,12 +404,9 @@ class MarketingPageTests(SimpleTestCase):
         self.assertIn("/assets/resources/g3-5-comprehension-strategy-pack.pdf", content)
         self.assertIn("/assets/resources/g6-8-comprehension-strategy-pack.pdf", content)
         self.assertIn('data-testid="pack-preview-dialog"', content)
-        self.assertIn('href="/assessment/"', content)
-        self.assertIn('href="/faq/"', content)
-        self.assertIn('href="/how-it-works/"', content)
-        self.assertIn('href="/blog/"', content)
-        self.assertIn('href="/survey/"', content)
-        self.assertIn("not a diagnosis", content)
+        self.assertNotIn('href="/assessment/"', content)
+        self.assertNotIn('href="/foundation/"', content)
+        self.assertNotIn(">Reading survey<", content)
 
     def test_family_resources_page_has_an_accessible_name_and_email_gate(self):
         content = self._render("marketing_resources")
@@ -493,6 +500,8 @@ class MarketingPageTests(SimpleTestCase):
                 self.assertIn("Be first in line", content)
                 self.assertNotIn('id="newsletter-signup"', content)
                 self.assertNotIn('href="/families/"', content)
+                self.assertNotIn('href="/foundation/"', content)
+                self.assertNotIn(">Reading survey<", content)
 
     def test_retired_families_page_redirects_permanently(self):
         response = resolve("/families/").func(RequestFactory().get("/families/"))
@@ -720,9 +729,17 @@ class MarketingPageTests(SimpleTestCase):
 
         self.assertIn("You Know How to Teach Reading.", content)
         self.assertIn("Three Students, Maximum", content)
-        self.assertIn("Paid Planning Time", content)
+        self.assertNotIn("Never thirty kids and one of you.", content)
+        self.assertIn("A Streamlined Platform", content)
+        self.assertIn("Session notes, progress tracking, and parent updates happen in one place.", content)
+        self.assertNotIn("A Platform That Does the Busywork", content)
+        self.assertNotIn("Paid Planning Time", content)
         self.assertIn("Profit Sharing", content)
-        self.assertIn("Certification, On Us", content)
+        self.assertNotIn("public schools structurally cannot offer.", content)
+        self.assertIn("Training, On Us", content)
+        self.assertIn("ClearCode covers IMSE OG+ coursework and provides a pathway to certification.", content)
+        self.assertNotIn("Certification, On Us", content)
+        self.assertNotIn("We are not optimizing for volume.", content)
         self.assertIn("We're hiring ahead of our 2027 opening", content)
         self.assertIn("Reading Specialist", content)
         self.assertIn("Educators Seeking OG Certification", content)

@@ -320,7 +320,7 @@ class WebsiteSignupView(View):
     @staticmethod
     def _redirect_target(request, result):
         if request.POST.get("redirect_to") == "/resources/":
-            return f"/resources/?signup={result}#start-here"
+            return f"/resources/?signup={result}"
         if request.POST.get("redirect_to") == "/careers/":
             return f"/careers/?signup={result}#career-interest-form"
         if request.POST.get("redirect_to") == "/contact/":
