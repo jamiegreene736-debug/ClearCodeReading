@@ -445,7 +445,7 @@ class FormSubmissionIntakeTests(TestCase):
 
         self.assertRedirects(
             response,
-            "/resources/?signup=thanks#start-here",
+            "/resources/?signup=thanks",
             fetch_redirect_response=False,
         )
         lead = Lead.objects.get(contact_email="taylor@example.com")
@@ -512,7 +512,7 @@ class FormSubmissionIntakeTests(TestCase):
 
         self.assertRedirects(
             response,
-            "/resources/?signup=invalid#start-here",
+            "/resources/?signup=invalid",
             fetch_redirect_response=False,
         )
         self.assertFalse(Lead.objects.exists())
