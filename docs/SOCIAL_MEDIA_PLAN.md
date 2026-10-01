@@ -83,12 +83,42 @@ they return. That chooser is the only extra step, and it appears only in that ca
    sign-in button.
 4. **Settings, both connected.** One Facebook sign-in filled both cards. Each card
    can reconnect or disconnect on its own.
-5. **Queue and new post.** Unchanged from the earlier plan. The queue links to
-   Settings instead of hosting the connection itself. The composer only offers a
-   network whose card says Connected.
+5. **Queue and new post.** The queue links to Settings instead of hosting the
+   connection itself. The composer only offers a network whose card says Connected.
+6. **Scheduled.** Posts that have not gone out yet, soonest first, with the
+   Eastern time and the networks. Each row has Change date and Cancel.
+7. **Change the date.** A calendar and a time for that one post. The current
+   date stays marked, the new date is selected, and saving updates only the
+   send time.
+8. **Cancel.** A confirmation names the post, the time, and both networks.
+   Keeping it scheduled closes the confirmation. Canceling removes it from the
+   schedule and leaves the caption in Drafts.
+9. **Posted.** Posts that already went out, newest first, with the time they
+   published and a link to the live Facebook or Instagram post. Those dates
+   cannot be changed.
 
 A line on the composer states the rule for this brand: do not include a child’s
 name, photo, school, or reading scores.
+
+## Scheduled and posted
+
+Social media opens on **Scheduled**. **Posted** is the history. Drafts and Needs
+attention stay as the other two tabs.
+
+A scheduled row can change until the worker picks it up to send:
+
+- **Change date** sets a new Eastern date and time. The caption, photo, and
+  networks stay as they are. A time in the past is rejected. Saving returns to
+  the Scheduled list with the new time, and the list re-sorts.
+- **Cancel** asks first. Confirming removes the post from the schedule so it
+  will not send. The caption is kept as a draft, which can be scheduled again.
+  The Scheduled count drops by one.
+
+Posted rows are a record. Each one shows when it went out and a link for every
+network that succeeded. There is no Change date and no Cancel on a post that
+already published. If Facebook succeeded and Instagram failed, the row stays in
+Needs attention until the failed network is retried or dropped, and it appears
+in Posted only for the network that actually published.
 
 ## What happens at send time
 
@@ -123,6 +153,10 @@ Routes, super administrators only:
 - `POST /portal/marketing/settings/instagram/connect/` starts Instagram sign-in.
 - `GET /portal/marketing/settings/instagram/callback/` finishes it.
 - `POST /portal/marketing/settings/<network>/disconnect/` clears that network.
+- `GET /portal/marketing/social/?tab=scheduled` lists posts still waiting, soonest first.
+- `GET /portal/marketing/social/?tab=posted` lists posts that already published, newest first.
+- `POST /portal/marketing/social/<id>/reschedule/` saves a new Eastern date and time.
+- `POST /portal/marketing/social/<id>/cancel/` takes a scheduled post off the queue.
 
 `SocialAuthorization` matches the email `Authorization` row. It stores a hashed
 state, the session hash, the super administrator, an encrypted verifier, which
@@ -159,6 +193,15 @@ network, and without the token.
 The queue and the worker read these two rows. A network that is not `connected`
 cannot be selected on a new post, and a due post skips that network instead of
 sending with a dead token.
+
+Each post stores `scheduled_at` and a status of `draft`, `scheduled`,
+`publishing`, `posted`, or `canceled`. Changing the date updates `scheduled_at`
+only while the status is still `scheduled`. The worker claims a due post by
+moving it to `publishing` first, so a date change or a cancel that arrives in
+the same moment cannot win. Cancel sets the status to `canceled`, records who
+canceled it and when, and copies the caption back to a draft. Posted history
+reads a per-network record: the network, the time it published, and the link to
+the live post. That record is what the Posted tab shows, and it is not editable.
 
 ## What has to exist before sign-in works
 
