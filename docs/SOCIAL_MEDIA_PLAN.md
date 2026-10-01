@@ -39,6 +39,43 @@ and an optional photo. The portal drafts two captions from that brief:
 
 Both drafts stay editable. The same photo can be used on both networks.
 
+The button labeled **Draft captions** only formats that brief. It adds a fixed
+opening line, keeps the person’s own words, and adds hashtags. It does not write
+new sentences. **Draft with AI**, below, is the separate button that does.
+
+### Draft with AI
+
+On the same “From a brief” screen, next to Draft captions. The person writes the
+idea, picks audience and tone, and can add a link. A checkbox, off by default,
+says **Also generate an image**. Leaving it off drafts words only.
+
+**Draft with AI** sends that idea to a writing model on the server. The model
+returns a Facebook caption and a shorter Instagram caption written as new
+wording, not a copy of the idea. Facebook may include the link. Instagram stays
+short and can include a few hashtags. Both captions land in editable fields.
+
+If the image box is checked, the same click also asks an image model for one
+illustration. It is stored as the post photo, so Instagram has a picture. The
+picture is a simple illustration in the ClearCode palette. It does not show a
+real child, a school, the logo, or words baked into the art. **New image**
+replaces only the picture. **Draft again with AI** rewrites the captions and,
+when the box is still checked, can replace the picture too. An uploaded photo
+still replaces a generated one.
+
+Nothing is scheduled or posted by either button. The person reads the result,
+then uses Save draft, Schedule, or Post now.
+
+The writing call and the image call use one provider key in the server
+environment, the same kind of setup as the Meta app secret. The key is not
+shown in the portal and is not committed. If the key is missing, Draft with AI
+explains that and leaves the idea on the page. Draft captions still works
+without it.
+
+The model is told the brand rules up front: public voice for families or
+teachers, no child’s name, no school, no reading scores. If a reply includes
+those, it is discarded and the page asks for another try. The idea itself is
+not saved as the caption unless the person edits it in.
+
 ### Write it yourself
 
 The person writes the caption, picks Facebook, Instagram, or both, attaches a photo,
@@ -218,5 +255,6 @@ recorded as failed, and the post moves to Needs attention.
 ## Not in this version
 
 Carousels, Reels, Stories, ads, inbox messages, comment replies, and a marketing
-role below super administrator. The menu and the queue are shaped so those can be
-added later without a new header item.
+role below super administrator. Draft with AI and optional image generation are
+planned above and are not built yet. The menu and the queue are shaped so those
+can be added later without a new header item.
