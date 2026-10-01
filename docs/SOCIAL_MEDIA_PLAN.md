@@ -68,7 +68,7 @@ Facebook should stay disconnected, or when the Page has no linked Instagram
 account. A personal Instagram login cannot publish, so the button only succeeds
 for a professional account.
 
-Disconnecting one card clears that network only. Upcoming posts that needed the
+Disconnecting one card clears that network only. Scheduled posts that needed the
 removed network move to Needs attention. The other network keeps publishing.
 Reconnect uses the same button. Nothing is posted during sign-in.
 
