@@ -1,7 +1,8 @@
 # Marketing menu and social media
 
-Plan for a Marketing item in the administrator portal, with one section: Social media.
-This covers Facebook and Instagram only. It is a plan for the menu, screens, and behavior.
+Plan for a Marketing item in the administrator portal. It has two sections:
+Social media, and Settings for connecting Facebook and Instagram. This covers
+those two networks only. It is a plan for the menu, screens, and behavior.
 It does not add the feature yet.
 
 ## Where it sits
@@ -10,12 +11,14 @@ Super administrators already see Dashboard, Free resources, Program, Manage, and
 in `templates/portal/_header.html`. Marketing is a new disclosure in that same row,
 after Manage and before CRM. It uses the same panel pattern as Program and Manage.
 
-The panel has one destination:
+The panel has two destinations:
 
 - **Social media** — draft, schedule, and publish posts on the ClearCode Reading
   Facebook Page and Instagram account.
+- **Settings** — sign in to connect Facebook, Instagram, or both.
 
-Do not add empty items for later ideas. The newsletter stays in the CRM.
+The newsletter stays in the CRM. Settings is only the connection. Composing and the
+queue stay on Social media.
 
 School admins, teachers, parents, students, and CRM-only users do not see Marketing.
 Posting is the public brand voice, so it stays with super administrators. A separate
@@ -48,24 +51,41 @@ Instagram feed posts require a photo. Facebook can be text, a photo, or a link.
 If both networks are selected, the captions can stay the same or be edited apart
 before scheduling.
 
+## Settings and one-click sign-in
+
+Settings is a page of two cards, Facebook and Instagram. Each card has its own
+sign-in button. The connection belongs to ClearCode Reading, not to the person who
+clicked. Any super administrator can reconnect it later.
+
+**Sign in with Facebook** is the one-click path for both networks. It opens
+Facebook, the person approves publishing, and the portal returns to Settings. If
+that person manages one Page, the portal selects it. If the Page already has a
+professional Instagram account, that same return trip fills the Instagram card.
+No second password is stored for Instagram in that case.
+
+**Sign in with Instagram** is the one-click path for Instagram alone. Use it when
+Facebook should stay disconnected, or when the Page has no linked Instagram
+account. A personal Instagram login cannot publish, so the button only succeeds
+for a professional account.
+
+Disconnecting one card clears that network only. Upcoming posts that needed the
+removed network move to Needs attention. The other network keeps publishing.
+Reconnect uses the same button. Nothing is posted during sign-in.
+
+If the person manages more than one Facebook Page, Settings asks which Page after
+they return. That chooser is the only extra step, and it appears only in that case.
+
 ## Screens
 
-1. **Marketing menu.** The header item opens a panel whose only section is Social media.
-2. **Connect.** Before anything can publish, one button starts a Meta sign-in. The
-   person signs in with the account that manages the Page, chooses the ClearCode
-   Reading Page, and returns to the portal. Instagram is the professional account
-   already linked to that Page in Meta. A personal Instagram account cannot receive
-   posts. The connection is stored the same way Gmail credentials are stored:
-   encrypted, and it can be reconnected or disconnected. Stories, Reels, ads,
-   messages, and other people’s pages are out of this connection.
-3. **Queue.** After connecting, the page shows both accounts as connected, then the
-   posts in tabs: Upcoming, Drafts, Published, and Needs attention. Each row shows
-   the photo, the networks, the Eastern time, and whether it came from a brief or
-   was written by hand. Upcoming posts can be edited or canceled until they send.
-4. **New post.** A switch at the top chooses “From a brief” or “Write it yourself.”
-   The brief screen shows the notes on the left and a Facebook preview plus an
-   Instagram preview on the right. The manual screen shows the caption, networks,
-   photo, schedule, and one preview.
+1. **Marketing menu.** Social media and Settings.
+2. **Settings, nothing connected.** Two cards, each with one sign-in button.
+3. **Settings, Facebook only.** The Page is connected. Instagram still has its own
+   sign-in button.
+4. **Settings, both connected.** One Facebook sign-in filled both cards. Each card
+   can reconnect or disconnect on its own.
+5. **Queue and new post.** Unchanged from the earlier plan. The queue links to
+   Settings instead of hosting the connection itself. The composer only offers a
+   network whose card says Connected.
 
 A line on the composer states the rule for this brand: do not include a child’s
 name, photo, school, or reading scores.
@@ -90,14 +110,66 @@ Nothing in the queue sends because a blog post was published. A later addition c
 offer “Draft a social post” from a blog article, and that draft still waits for a
 person.
 
-## What has to exist before Connect works
+## Backend
 
-1. A Meta app owned by the business.
+This follows the Gmail mailbox connection in `apps/crm_email/google.py`: a short-lived
+authorization row, an encrypted token, and a status the screen can show.
+
+Routes, super administrators only:
+
+- `GET /portal/marketing/settings/` shows the two cards.
+- `POST /portal/marketing/settings/facebook/connect/` starts Facebook sign-in.
+- `GET /portal/marketing/settings/facebook/callback/` finishes it.
+- `POST /portal/marketing/settings/instagram/connect/` starts Instagram sign-in.
+- `GET /portal/marketing/settings/instagram/callback/` finishes it.
+- `POST /portal/marketing/settings/<network>/disconnect/` clears that network.
+
+`SocialAuthorization` matches the email `Authorization` row. It stores a hashed
+state, the session hash, the super administrator, an encrypted verifier, which
+button was clicked, and a ten-minute expiry. The callback rejects a missing,
+expired, or already-used state, and it rejects a cancelled sign-in. The state is
+marked used before the token is exchanged.
+
+`SocialAccount` is one row per network, so either card can be connected alone.
+Fields: network (`facebook` or `instagram`), status (`disconnected`, `connected`,
+`reconnect`), the Page or Instagram id, the display name (`ClearCode Reading` or
+`@clearcodereading`), the encrypted token, when the token expires, who signed in,
+when, the last check, and the last error. The Instagram row records whether it
+came from the Facebook sign-in or from its own sign-in. Tokens are encrypted with
+the same helper the CRM already uses. They are not written to logs, audit text, or
+the page.
+
+Facebook sign-in asks only for permission to list the Pages this person manages,
+publish as the chosen Page, and read that Page’s linked Instagram account. On
+return, one managed Page is selected automatically. Several Pages produce the
+short chooser, then the Page token is exchanged and encrypted. The linked
+Instagram account, when present, is saved on the Instagram row in that same
+request.
+
+Instagram sign-in asks only for permission to publish as that professional
+account. The long-lived token is encrypted. A worker refreshes it before it
+expires. A failed refresh sets the card to Reconnect required, the same pill the
+mailbox already uses, and Instagram publishing pauses until someone signs in again.
+
+Disconnect deletes that row’s token and sets the status to disconnected. Scheduled
+posts that include the network are moved to Needs attention with a plain reason.
+An audit entry records connect, reconnect, and disconnect, with the actor and the
+network, and without the token.
+
+The queue and the worker read these two rows. A network that is not `connected`
+cannot be selected on a new post, and a due post skips that network instead of
+sending with a dead token.
+
+## What has to exist before sign-in works
+
+1. A Meta app owned by the business, with the two callback addresses registered.
 2. The ClearCode Reading Facebook Page.
-3. An Instagram professional account linked to that Page.
+3. An Instagram professional account, linked to that Page when one Facebook
+   sign-in should fill both cards.
 4. Meta’s approval for the Page posting and Instagram publishing permissions.
-   Until that approval is in place, only Meta’s test users can complete Connect.
-5. One connection made from this screen by a super administrator.
+   Until that approval is in place, only Meta’s test users can finish sign-in.
+5. The app id and secret in the server environment, the same way the Google
+   client id and secret are configured for Gmail. They are not committed.
 
 ## Not in this version
 
