@@ -132,6 +132,7 @@ urlpatterns = [
     path("survey/", TemplateView.as_view(template_name="survey.html"), name="early_interest_survey"),
     path("blog/", include("apps.blog.urls")),
     path("portal/blog/", include("apps.blog.manage_urls")),
+    path("portal/marketing/", include("apps.social.urls")),
     path("login/", PortalLoginView.as_view(), name="login"),
     path("logout/", LogoutView.as_view(next_page="/"), name="logout"),
     path("account/", AccountProfileView.as_view(), name="account_profile"),

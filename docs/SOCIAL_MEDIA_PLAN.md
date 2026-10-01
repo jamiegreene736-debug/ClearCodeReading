@@ -1,9 +1,8 @@
 # Marketing menu and social media
 
-Plan for a Marketing item in the administrator portal. It has two sections:
-Social media, and Settings for connecting Facebook and Instagram. This covers
-those two networks only. It is a plan for the menu, screens, and behavior.
-It does not add the feature yet.
+Marketing in the administrator portal has two sections: Social media, and
+Settings for connecting Facebook and Instagram. This covers those two networks.
+The behavior below is implemented in `apps/social`.
 
 ## Where it sits
 
@@ -195,13 +194,15 @@ cannot be selected on a new post, and a due post skips that network instead of
 sending with a dead token.
 
 Each post stores `scheduled_at` and a status of `draft`, `scheduled`,
-`publishing`, `posted`, or `canceled`. Changing the date updates `scheduled_at`
+`publishing`, `posted`, or `attention`. Changing the date updates `scheduled_at`
 only while the status is still `scheduled`. The worker claims a due post by
 moving it to `publishing` first, so a date change or a cancel that arrives in
-the same moment cannot win. Cancel sets the status to `canceled`, records who
-canceled it and when, and copies the caption back to a draft. Posted history
-reads a per-network record: the network, the time it published, and the link to
-the live post. That record is what the Posted tab shows, and it is not editable.
+the same moment cannot win. Cancel returns that same post to `draft`, clears
+the send time, and records who canceled it. The caption then shows under Drafts.
+Posted history reads a per-network record: the network, the time it published,
+and the link to the live post. That record is what the Posted tab shows, and it
+is not editable. A network that is not connected when the send time arrives is
+recorded as failed, and the post moves to Needs attention.
 
 ## What has to exist before sign-in works
 

@@ -58,6 +58,7 @@ SHARED_APPS = [
     "drf_spectacular",
     "apps.core",
     "apps.blog.apps.BlogConfig",
+    "apps.social.apps.SocialConfig",
     "apps.resources.apps.ResourcesConfig",
     "apps.notifications.apps.NotificationsConfig",
     "apps.users",
@@ -254,6 +255,12 @@ CELERY_ACCEPT_CONTENT = ["json"]
 CELERY_TASK_SERIALIZER = "json"
 CELERY_RESULT_SERIALIZER = "json"
 CELERY_TIMEZONE = TIME_ZONE
+CELERY_BEAT_SCHEDULE = {
+    "publish-scheduled-social-posts": {
+        "task": "apps.social.tasks.publish_scheduled_social_posts",
+        "schedule": 60.0,
+    },
+}
 
 EMAIL_BACKEND = os.getenv("EMAIL_BACKEND", "django.core.mail.backends.console.EmailBackend")
 DEFAULT_FROM_EMAIL = os.getenv("DEFAULT_FROM_EMAIL", "Clear Code Reading <no-reply@clearcodereading.com>")
@@ -331,6 +338,14 @@ CRM_EMAIL_PUBSUB_TOPIC = os.getenv("CRM_EMAIL_PUBSUB_TOPIC", "")
 CRM_EMAIL_PUBSUB_AUDIENCE = os.getenv("CRM_EMAIL_PUBSUB_AUDIENCE", "")
 CRM_EMAIL_PUBSUB_EMAIL = os.getenv("CRM_EMAIL_PUBSUB_EMAIL", "")
 CRM_EMAIL_ATTACHMENT_LIMIT = 10 * 1024 * 1024
+
+# Facebook Page and Instagram publishing from the portal Marketing menu.
+SOCIAL_META_APP_ID = os.getenv("SOCIAL_META_APP_ID", "")
+SOCIAL_META_APP_SECRET = os.getenv("SOCIAL_META_APP_SECRET", "")
+SOCIAL_META_GRAPH_VERSION = os.getenv("SOCIAL_META_GRAPH_VERSION", "v21.0")
+SOCIAL_FACEBOOK_REDIRECT_URI = os.getenv("SOCIAL_FACEBOOK_REDIRECT_URI", "")
+SOCIAL_INSTAGRAM_REDIRECT_URI = os.getenv("SOCIAL_INSTAGRAM_REDIRECT_URI", "")
+SOCIAL_PUBLIC_BASE_URL = os.getenv("SOCIAL_PUBLIC_BASE_URL", "").rstrip("/")
 
 # Explicit connected mailbox used for automated website confirmations.
 # Recipients see WEBSITE_EMAIL_FROM; Gmail still authenticates as WEBSITE_EMAIL_SENDER.

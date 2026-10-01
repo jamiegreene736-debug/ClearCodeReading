@@ -64,6 +64,22 @@
           </div>
         </li>
 
+        {% if request.user.is_superuser or request.user.role == 'super_admin' %}
+        <li class="static lg:relative" data-portal-disclosure>
+          <button id="marketing-navigation-button" data-testid="marketing-menu-button" class="focus-ring inline-flex min-h-11 items-center gap-2 rounded-full px-3 py-2 text-sm font-black transition hover:-translate-y-0.5 sm:px-4 {% if request.resolver_match.namespace == 'social' %}bg-ink text-white shadow-lg shadow-ink/15{% else %}text-ink/70 hover:bg-white/70 hover:text-deepTeal{% endif %}" type="button" aria-expanded="false" aria-controls="marketing-navigation-panel">
+            Marketing
+            <svg aria-hidden="true" class="h-3 w-3 transition-transform" data-disclosure-chevron viewBox="0 0 12 8" fill="none" stroke="currentColor" stroke-width="2"><path d="m1 1.5 5 5 5-5" /></svg>
+          </button>
+          <div id="marketing-navigation-panel" class="absolute left-4 right-4 top-[calc(100%+.65rem)] z-50 hidden max-h-[70vh] overflow-y-auto rounded-3xl bg-white p-3 shadow-2xl shadow-ink/20 ring-1 ring-ink/10 lg:left-0 lg:right-auto lg:w-[21rem]" aria-labelledby="marketing-navigation-button">
+            <p class="px-3 pb-2 text-xs font-black uppercase tracking-[0.16em] text-mediumTeal">Marketing</p>
+            <ul class="grid gap-1">
+              <li><a data-testid="social-media-menu-link" href="{% url 'social:queue' %}" class="focus-ring block rounded-2xl px-3 py-3 hover:bg-linen"><span class="block font-black">Social media</span><span class="mt-1 block text-xs text-ink/60">Draft, schedule, and publish Facebook and Instagram posts</span></a></li>
+              <li><a data-testid="social-settings-menu-link" href="{% url 'social:settings' %}" class="focus-ring block rounded-2xl px-3 py-3 hover:bg-linen"><span class="block font-black">Settings</span><span class="mt-1 block text-xs text-ink/60">Sign in to connect Facebook, Instagram, or both</span></a></li>
+            </ul>
+          </div>
+        </li>
+        {% endif %}
+
         {% if request.user.has_crm_access %}
           <li>
             <a data-testid="crm-header-link" href="{% url 'crm_dashboard' %}" class="focus-ring inline-flex min-h-11 items-center rounded-full px-3 py-2 text-sm font-black text-ink/70 transition hover:-translate-y-0.5 hover:bg-white/70 hover:text-deepTeal sm:px-4">CRM</a>

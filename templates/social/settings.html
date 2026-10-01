@@ -1,0 +1,53 @@
+{% extends "portal/page.html" %}
+{% block title %}Marketing settings{% endblock %}
+{% block content %}
+<div class="pb-10" data-testid="social-settings">
+  <p class="text-xs font-black uppercase tracking-[0.16em] text-deepTeal">Marketing</p>
+  <h1 class="mt-1 text-4xl font-black tracking-tight text-ink">Settings</h1>
+  <p class="mt-2 max-w-2xl text-ink/65">One click opens the network’s own sign-in, then brings you straight back. The portal asks only for permission to publish posts you approve.</p>
+  {% if not ready %}
+    <p class="mt-4 rounded-2xl border border-gold/50 bg-white px-4 py-3 text-sm font-bold text-ink/75">Meta setup is not complete yet. Drafts and the schedule still work. Sign-in needs the Meta app id, secret, both callback addresses, and the encryption keys.</p>
+  {% endif %}
+  <div class="mt-6 grid gap-4 lg:grid-cols-2">
+    <article class="flex flex-col rounded-[1.75rem] bg-white p-5 ring-1 ring-ink/10">
+      <div class="flex items-start justify-between gap-3">
+        <div>
+          <h2 class="text-2xl font-black">Facebook</h2>
+          <p class="text-sm text-ink/60">{% if accounts.facebook.is_connected %}{{ accounts.facebook.display_name }}{% else %}Not connected{% endif %}</p>
+        </div>
+        <span class="rounded-full px-3 py-1 text-xs font-black {% if accounts.facebook.status == 'connected' %}bg-emerald-100 text-emerald-800{% elif accounts.facebook.status == 'reconnect' %}bg-amber-100 text-amber-800{% else %}bg-linen text-ink/60{% endif %}">{% if accounts.facebook %}{{ accounts.facebook.get_status_display }}{% else %}Disconnected{% endif %}</span>
+      </div>
+      <p class="mt-4 text-sm leading-6 text-ink/70">Publishes as the Page, not as a personal profile. If that Page already has an Instagram account, this same sign-in connects Instagram too.</p>
+      {% if accounts.facebook.connected_at %}<p class="mt-2 text-sm font-bold text-ink/55">Signed in {{ accounts.facebook.connected_at|date:"M j, Y" }}</p>{% endif %}
+      {% if accounts.facebook.last_error %}<p class="mt-2 text-sm font-bold text-amber-800">{{ accounts.facebook.last_error }}</p>{% endif %}
+      <div class="mt-auto flex flex-wrap gap-2 pt-5">
+        {% if ready %}
+          <form method="post" action="{% url 'social:facebook_connect' %}">{% csrf_token %}<button class="rounded-xl bg-[#1877F2] px-4 py-3 font-black text-white" type="submit">{% if accounts.facebook.is_connected %}Reconnect Facebook{% else %}Sign in with Facebook{% endif %}</button></form>
+        {% endif %}
+        {% if accounts.facebook and accounts.facebook.status != "disconnected" %}
+          <form method="post" action="{% url 'social:disconnect' 'facebook' %}">{% csrf_token %}<button class="rounded-full px-4 py-3 font-black text-red-700 ring-1 ring-red-200" type="submit">Disconnect</button></form>
+        {% endif %}
+      </div>
+    </article>
+    <article class="flex flex-col rounded-[1.75rem] bg-white p-5 ring-1 ring-ink/10">
+      <div class="flex items-start justify-between gap-3">
+        <div>
+          <h2 class="text-2xl font-black">Instagram</h2>
+          <p class="text-sm text-ink/60">{% if accounts.instagram.is_connected %}{{ accounts.instagram.display_name }}{% else %}Not connected{% endif %}</p>
+        </div>
+        <span class="rounded-full px-3 py-1 text-xs font-black {% if accounts.instagram.status == 'connected' %}bg-emerald-100 text-emerald-800{% elif accounts.instagram.status == 'reconnect' %}bg-amber-100 text-amber-800{% else %}bg-linen text-ink/60{% endif %}">{% if accounts.instagram %}{{ accounts.instagram.get_status_display }}{% else %}Disconnected{% endif %}</span>
+      </div>
+      <p class="mt-4 text-sm leading-6 text-ink/70">{% if accounts.instagram.via_facebook %}Connected from the Facebook sign-in. Disconnecting Facebook also disconnects this account.{% else %}Use this when you want Instagram on its own. A personal Instagram login cannot post.{% endif %}</p>
+      {% if accounts.instagram.last_error %}<p class="mt-2 text-sm font-bold text-amber-800">{{ accounts.instagram.last_error }}</p>{% endif %}
+      <div class="mt-auto flex flex-wrap gap-2 pt-5">
+        {% if ready %}
+          <form method="post" action="{% url 'social:instagram_connect' %}">{% csrf_token %}<button class="rounded-xl bg-ink px-4 py-3 font-black text-white" type="submit">{% if accounts.instagram.is_connected %}Reconnect Instagram{% else %}Sign in with Instagram{% endif %}</button></form>
+        {% endif %}
+        {% if accounts.instagram and accounts.instagram.status != "disconnected" %}
+          <form method="post" action="{% url 'social:disconnect' 'instagram' %}">{% csrf_token %}<button class="rounded-full px-4 py-3 font-black text-red-700 ring-1 ring-red-200" type="submit">Disconnect</button></form>
+        {% endif %}
+      </div>
+    </article>
+  </div>
+</div>
+{% endblock %}

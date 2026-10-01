@@ -31,6 +31,11 @@ class PortalNavigationTests(SimpleTestCase):
         self.assertNotIn("Business tools", content)
         self.assertIn('data-testid="crm-header-link"', content)
         self.assertIn(">CRM</a>", content)
+        self.assertIn('data-testid="marketing-menu-button"', content)
+        self.assertIn('data-testid="social-media-menu-link"', content)
+        self.assertIn('data-testid="social-settings-menu-link"', content)
+        self.assertIn('href="/portal/marketing/"', content)
+        self.assertIn('href="/portal/marketing/settings/"', content)
         self.assertIn('aria-controls="program-navigation-panel"', content)
         self.assertIn('data-testid="teacher-assignments-menu-link"', content)
         self.assertIn('href="/portal/teacher-assignments/"', content)
@@ -56,6 +61,7 @@ class PortalNavigationTests(SimpleTestCase):
         self.assertNotIn('href="/dashboard/#latest-kpis"', content)
         self.assertNotIn('data-testid="business-menu-button"', content)
         self.assertNotIn('data-testid="crm-header-link"', content)
+        self.assertNotIn('data-testid="marketing-menu-button"', content)
 
     def test_parent_gets_family_menu_without_staff_destinations(self):
         content = self.render_header(role=CustomUser.Role.GUARDIAN)
@@ -66,11 +72,12 @@ class PortalNavigationTests(SimpleTestCase):
         self.assertIn('href="/portal/results/"', content)
         self.assertNotIn('data-testid="teaching-menu-button"', content)
         self.assertNotIn("Django admin", content)
+        self.assertNotIn('data-testid="marketing-menu-button"', content)
 
     def test_every_disclosure_exposes_state_and_keyboard_dismissal(self):
         content = self.render_header(role=CustomUser.Role.SUPER_ADMIN, is_staff=True)
 
-        self.assertEqual(content.count('aria-expanded="false"'), 3)
+        self.assertEqual(content.count('aria-expanded="false"'), 4)
         self.assertIn('data-testid="account-profile-link"', content)
         self.assertIn('href="/account/"', content)
         self.assertIn("event.key !== 'Escape'", content)
