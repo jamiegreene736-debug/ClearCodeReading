@@ -1,0 +1,19 @@
+{% extends "portal/page.html" %}
+{% block title %}Choose a Page{% endblock %}
+{% block content %}
+<div class="mx-auto max-w-xl" data-testid="social-choose-page">
+  <p class="text-xs font-black uppercase tracking-[0.16em] text-deepTeal">Marketing · Settings</p>
+  <h1 class="mt-1 text-4xl font-black">Which Page should post?</h1>
+  <p class="mt-2 text-ink/65">This step appears only because the sign-in manages more than one Page.</p>
+  <ul class="mt-6 grid gap-3">
+    {% for page in pages %}
+      <li>
+        <form method="post" class="rounded-[1.75rem] bg-white p-4 ring-1 ring-ink/10">{% csrf_token %}
+          <input type="hidden" name="page_id" value="{{ page.id }}">
+          <button class="font-black text-ink" type="submit">{{ page.name }}</button>
+        </form>
+      </li>
+    {% endfor %}
+  </ul>
+</div>
+{% endblock %}

@@ -1,0 +1,75 @@
+{% extends "portal/page.html" %}
+{% block title %}New post{% endblock %}
+{% block content %}
+<div class="pb-10" data-testid="social-composer">
+  <p class="text-xs font-black uppercase tracking-[0.16em] text-deepTeal">Marketing · Social media</p>
+  <h1 class="mt-1 text-4xl font-black tracking-tight text-ink">{% if post.pk %}Edit post{% else %}New post{% endif %}</h1>
+  <div class="mt-4 inline-flex rounded-full bg-white p-1 ring-1 ring-ink/10">
+    <a href="{% if post.pk %}{% url 'social:edit' post.pk %}?mode=brief{% else %}{% url 'social:new' %}?mode=brief{% endif %}" class="rounded-full px-4 py-2 text-sm font-black {% if mode == 'brief' %}bg-ink text-white{% else %}text-ink/60{% endif %}">From a brief</a>
+    <a href="{% if post.pk %}{% url 'social:edit' post.pk %}?mode=manual{% else %}{% url 'social:new' %}?mode=manual{% endif %}" class="rounded-full px-4 py-2 text-sm font-black {% if mode != 'brief' %}bg-ink text-white{% else %}text-ink/60{% endif %}">Write it yourself</a>
+  </div>
+
+  <form method="post" enctype="multipart/form-data" class="mt-6 grid gap-4 lg:grid-cols-2">
+    {% csrf_token %}
+    <input type="hidden" name="mode" value="{{ mode }}">
+    <section class="rounded-[1.75rem] bg-white p-5 ring-1 ring-ink/10">
+      {% if mode == "brief" %}
+        <label class="block text-sm font-black" for="brief">What should this post be about?</label>
+        <textarea id="brief" name="brief" rows="6" class="mt-2 w-full rounded-2xl border border-ink/15 px-4 py-3">{{ post.brief }}</textarea>
+        <p class="mt-4 text-sm font-black">Audience</p>
+        <div class="mt-2 flex flex-wrap gap-2">
+          <label class="rounded-full bg-linen px-3 py-2 text-sm font-black"><input type="radio" name="audience" value="families" {% if post.audience == "families" %}checked{% endif %}> Families</label>
+          <label class="rounded-full bg-linen px-3 py-2 text-sm font-black"><input type="radio" name="audience" value="teachers" {% if post.audience == "teachers" %}checked{% endif %}> Teachers</label>
+          <label class="rounded-full bg-linen px-3 py-2 text-sm font-black"><input type="radio" name="audience" value="general" {% if post.audience == "general" %}checked{% endif %}> General</label>
+        </div>
+        <p class="mt-4 text-sm font-black">Tone</p>
+        <div class="mt-2 flex flex-wrap gap-2">
+          <label class="rounded-full bg-linen px-3 py-2 text-sm font-black"><input type="radio" name="tone" value="warm" {% if post.tone == "warm" %}checked{% endif %}> Warm</label>
+          <label class="rounded-full bg-linen px-3 py-2 text-sm font-black"><input type="radio" name="tone" value="practical" {% if post.tone == "practical" %}checked{% endif %}> Practical</label>
+          <label class="rounded-full bg-linen px-3 py-2 text-sm font-black"><input type="radio" name="tone" value="celebratory" {% if post.tone == "celebratory" %}checked{% endif %}> Celebratory</label>
+        </div>
+      {% else %}
+        <label class="block text-sm font-black" for="caption">Caption</label>
+        <textarea id="caption" name="caption" rows="6" class="mt-2 w-full rounded-2xl border border-ink/15 px-4 py-3">{{ post.facebook_caption }}</textarea>
+        <label class="mt-4 block text-sm font-black" for="instagram_caption">Instagram caption, if it should differ</label>
+        <textarea id="instagram_caption" name="instagram_caption" rows="4" class="mt-2 w-full rounded-2xl border border-ink/15 px-4 py-3">{{ post.instagram_caption }}</textarea>
+      {% endif %}
+      <label class="mt-4 block text-sm font-black" for="link_url">Link</label>
+      <input id="link_url" name="link_url" value="{{ post.link_url }}" class="mt-2 w-full rounded-full border border-ink/15 px-4 py-3">
+      <label class="mt-4 block text-sm font-black" for="image">Photo</label>
+      <input id="image" name="image" type="file" accept="image/jpeg,image/png,image/webp" class="mt-2 block w-full text-sm">
+      {% if post.has_image %}<p class="mt-2 text-sm font-bold text-ink/60">{{ post.image_name }} is attached. Instagram needs a photo.</p>{% endif %}
+      <div class="mt-4 flex flex-wrap gap-3 text-sm font-black">
+        <label><input type="checkbox" name="post_to_facebook" {% if post.post_to_facebook or not post.pk %}checked{% endif %}> Facebook{% if not accounts.facebook.is_connected %} <span class="text-ink/50">(not connected)</span>{% endif %}</label>
+        <label><input type="checkbox" name="post_to_instagram" {% if post.post_to_instagram or not post.pk %}checked{% endif %}> Instagram{% if not accounts.instagram.is_connected %} <span class="text-ink/50">(not connected)</span>{% endif %}</label>
+      </div>
+      <p class="mt-4 rounded-2xl border border-gold/50 bg-white px-3 py-2 text-sm font-bold text-ink/70">Public brand voice only. Do not include a child’s name, photo, school, or reading scores.</p>
+      <div class="mt-4 flex flex-wrap gap-2">
+        {% if mode == "brief" %}<button name="action" value="draft" class="rounded-full bg-deepTeal px-4 py-2 font-black text-white" type="submit">Draft captions</button>{% endif %}
+        <button name="action" value="save" class="rounded-full bg-white px-4 py-2 font-black text-deepTeal ring-1 ring-deepTeal/20" type="submit">Save draft</button>
+      </div>
+    </section>
+    <section class="grid gap-4">
+      {% if mode == "brief" and post.facebook_caption %}
+        <article class="rounded-[1.75rem] bg-white p-5 ring-1 ring-ink/10">
+          <h2 class="font-black">Facebook draft</h2>
+          <textarea name="facebook_caption" rows="7" class="mt-2 w-full rounded-2xl border border-ink/15 px-4 py-3">{{ post.facebook_caption }}</textarea>
+        </article>
+        <article class="rounded-[1.75rem] bg-white p-5 ring-1 ring-ink/10">
+          <h2 class="font-black">Instagram draft</h2>
+          <textarea name="instagram_caption" rows="6" class="mt-2 w-full rounded-2xl border border-ink/15 px-4 py-3">{{ post.instagram_caption }}</textarea>
+        </article>
+      {% else %}
+        <article class="rounded-[1.75rem] bg-white p-5 ring-1 ring-ink/10">
+          <h2 class="font-black">Nothing publishes from this page by itself</h2>
+          <p class="mt-2 text-sm leading-6 text-ink/65">Save a draft, schedule it, or post it after you have read the caption. Instagram needs a photo. Facebook can be text, a photo, or a link.</p>
+        </article>
+      {% endif %}
+      <div class="flex flex-wrap gap-2">
+        <button name="action" value="schedule" class="rounded-full bg-white px-4 py-2 font-black text-deepTeal ring-1 ring-deepTeal/20" type="submit">Schedule</button>
+        <button name="action" value="post_now" class="rounded-full bg-ink px-4 py-2 font-black text-white" type="submit">Post now</button>
+      </div>
+    </section>
+  </form>
+</div>
+{% endblock %}

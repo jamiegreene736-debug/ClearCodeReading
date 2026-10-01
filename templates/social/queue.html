@@ -1,0 +1,79 @@
+{% extends "portal/page.html" %}
+{% block title %}Social media{% endblock %}
+{% block content %}
+<div class="pb-8" data-testid="social-queue">
+  <div class="flex flex-col gap-5 sm:flex-row sm:items-end sm:justify-between">
+    <div>
+      <p class="text-xs font-black uppercase tracking-[0.16em] text-deepTeal">Marketing · Social media</p>
+      <h1 class="mt-1 text-4xl font-black tracking-tight text-ink">{% if tab == "posted" %}Posted{% elif tab == "drafts" %}Drafts{% elif tab == "attention" %}Needs attention{% else %}Scheduled{% endif %}</h1>
+      <p class="mt-2 max-w-2xl text-base leading-7 text-ink/65">
+        {% if tab == "posted" %}Everything that already went out, newest first. These dates cannot be changed.
+        {% elif tab == "drafts" %}Captions that are not on the schedule yet.
+        {% elif tab == "attention" %}A network rejected the post or was disconnected. Retry after it is fixed.
+        {% else %}Posts waiting to go out. Times are Eastern. Change the date or cancel any of them until the minute it sends.{% endif %}
+      </p>
+    </div>
+    <a href="{% url 'social:new' %}" class="focus-ring inline-flex shrink-0 items-center justify-center rounded-full bg-deepTeal px-6 py-3 font-black text-white shadow-lg shadow-deepTeal/25">New post</a>
+  </div>
+
+  <div class="mt-6 grid gap-3 sm:grid-cols-2">
+    <a href="{% url 'social:settings' %}" class="rounded-3xl bg-white px-4 py-3 ring-1 ring-ink/10">
+      <span class="block text-sm font-black">Facebook</span>
+      <span class="text-sm text-ink/60">{% if accounts.facebook.is_connected %}{{ accounts.facebook.display_name }} · Connected{% else %}Not connected · open Settings{% endif %}</span>
+    </a>
+    <a href="{% url 'social:settings' %}" class="rounded-3xl bg-white px-4 py-3 ring-1 ring-ink/10">
+      <span class="block text-sm font-black">Instagram</span>
+      <span class="text-sm text-ink/60">{% if accounts.instagram.is_connected %}{{ accounts.instagram.display_name }} · Connected{% else %}Not connected · open Settings{% endif %}</span>
+    </a>
+  </div>
+
+  <nav class="mt-6 flex flex-wrap gap-2" aria-label="Post lists">
+    {% for key, label in tabs %}
+      <a href="?tab={{ key }}" data-testid="social-tab-{{ key }}" {% if tab == key %}aria-current="page"{% endif %} class="focus-ring inline-flex items-center gap-2 rounded-full px-4 py-2 text-sm font-black ring-1 {% if tab == key %}bg-ink text-white ring-ink{% else %}bg-white text-ink/70 ring-ink/10{% endif %}">
+        {{ label }}
+        <span class="rounded-full px-2 py-0.5 text-xs {% if tab == key %}bg-white/15{% else %}bg-linen{% endif %}">{% if key == "scheduled" %}{{ counts.scheduled }}{% elif key == "posted" %}{{ counts.posted }}{% elif key == "drafts" %}{{ counts.drafts }}{% else %}{{ counts.attention }}{% endif %}</span>
+      </a>
+    {% endfor %}
+  </nav>
+
+  {% if posts %}
+    <ul class="mt-4 grid gap-3">
+      {% for post in posts %}
+        <li class="flex flex-col gap-3 rounded-[1.75rem] bg-white p-4 ring-1 ring-ink/10 sm:flex-row sm:items-center" data-testid="social-post-row">
+          <div class="min-w-0 flex-1">
+            <div class="flex flex-wrap gap-2 text-xs font-black uppercase tracking-wide">
+              <span class="rounded-full px-3 py-1 {% if tab == 'posted' %}bg-emerald-100 text-emerald-800{% elif tab == 'attention' %}bg-amber-100 text-amber-800{% elif tab == 'scheduled' %}bg-amber-100 text-amber-800{% else %}bg-linen text-ink/60{% endif %}">{{ post.get_status_display }}</span>
+              {% if post.post_to_facebook %}<span class="rounded-full bg-linen px-3 py-1 text-deepTeal">Facebook</span>{% endif %}
+              {% if post.post_to_instagram %}<span class="rounded-full bg-linen px-3 py-1 text-deepTeal">Instagram</span>{% endif %}
+            </div>
+            <h2 class="mt-2 text-xl font-black text-ink">{{ post.headline }}</h2>
+            <p class="mt-1 text-sm font-bold text-ink/55">
+              {% if post.scheduled_at and tab == "scheduled" %}Posts {{ post.scheduled_at|date:"D, M j · g:i A" }} ET{% elif tab == "posted" %}Posted {{ post.updated_at|date:"D, M j · g:i A" }} ET{% else %}Edited {{ post.updated_at|date:"M j, Y" }}{% endif %}
+              · {{ post.get_source_display }}
+            </p>
+            {% if post.last_error %}<p class="mt-1 text-sm font-bold text-amber-800">{{ post.last_error }}</p>{% endif %}
+          </div>
+          <div class="flex flex-wrap gap-2">
+            {% if tab == "scheduled" %}
+              <a href="{% url 'social:schedule' post.pk %}" class="focus-ring inline-flex items-center rounded-full bg-white px-4 py-2 text-sm font-black text-deepTeal ring-1 ring-deepTeal/20">Change date</a>
+              <a href="{% url 'social:cancel' post.pk %}" class="focus-ring inline-flex items-center rounded-full bg-white px-4 py-2 text-sm font-black text-red-700 ring-1 ring-red-200">Cancel</a>
+            {% elif tab == "posted" %}
+              {% for publication in post.publications.all %}
+                {% if publication.permalink %}<a href="{{ publication.permalink }}" target="_blank" rel="noopener" class="focus-ring inline-flex items-center rounded-full bg-white px-4 py-2 text-sm font-black text-deepTeal ring-1 ring-deepTeal/20">View on {{ publication.get_network_display }}</a>{% endif %}
+              {% endfor %}
+            {% elif tab == "attention" %}
+              <a href="{% url 'social:edit' post.pk %}" class="focus-ring inline-flex items-center rounded-full bg-white px-4 py-2 text-sm font-black text-deepTeal ring-1 ring-deepTeal/20">Edit</a>
+              <form method="post" action="{% url 'social:retry' post.pk %}">{% csrf_token %}<button class="focus-ring inline-flex items-center rounded-full bg-deepTeal px-4 py-2 text-sm font-black text-white" type="submit">Retry</button></form>
+            {% else %}
+              <a href="{% url 'social:edit' post.pk %}" class="focus-ring inline-flex items-center rounded-full bg-white px-4 py-2 text-sm font-black text-deepTeal ring-1 ring-deepTeal/20">Edit</a>
+              <a href="{% url 'social:schedule' post.pk %}" class="focus-ring inline-flex items-center rounded-full bg-deepTeal px-4 py-2 text-sm font-black text-white">Schedule</a>
+            {% endif %}
+          </div>
+        </li>
+      {% endfor %}
+    </ul>
+  {% else %}
+    <p class="mt-8 rounded-[1.75rem] bg-white px-6 py-10 text-center font-bold text-ink/60 ring-1 ring-ink/10">Nothing in this list yet.</p>
+  {% endif %}
+</div>
+{% endblock %}
