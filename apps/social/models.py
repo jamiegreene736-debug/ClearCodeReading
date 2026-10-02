@@ -165,3 +165,80 @@ class SocialPublication(TimeStampedModel):
 
     def __str__(self) -> str:
         return f"{self.network} {self.status} for post {self.post_id}"
+
+
+class ContentPlan(TimeStampedModel):
+    """The public brand's single weekly editorial plan."""
+
+    class Mode(models.TextChoices):
+        PAUSED = "paused", "Paused"
+        REVIEW = "review", "Review first"
+        AUTOMATIC = "automatic", "Automatic"
+
+    id = models.PositiveSmallIntegerField(primary_key=True, default=1, editable=False)
+    mode = models.CharField(max_length=16, choices=Mode.choices, default=Mode.PAUSED)
+    weekday = models.PositiveSmallIntegerField(default=1)
+    posting_hour = models.PositiveSmallIntegerField(default=10)
+    audience = models.CharField(
+        max_length=20,
+        choices=SocialPost.Audience.choices,
+        default=SocialPost.Audience.FAMILIES,
+    )
+    priorities = models.TextField(blank=True, max_length=2000)
+    post_to_facebook = models.BooleanField(default=True)
+    post_to_instagram = models.BooleanField(default=True)
+    preview_requested = models.BooleanField(default=False)
+    updated_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True
+    )
+    last_worker_at = models.DateTimeField(null=True, blank=True)
+    last_error = models.CharField(max_length=300, blank=True)
+
+    class Meta:
+        constraints = [
+            models.CheckConstraint(
+                condition=models.Q(pk=1), name="social_single_content_plan"
+            ),
+            models.CheckConstraint(
+                condition=models.Q(weekday__lte=6), name="social_plan_weekday"
+            ),
+            models.CheckConstraint(
+                condition=models.Q(posting_hour__gte=8, posting_hour__lte=20),
+                name="social_plan_daytime",
+            ),
+        ]
+
+
+class ContentWeek(TimeStampedModel):
+    class Status(models.TextChoices):
+        PENDING = "pending", "Preparing"
+        GENERATING = "generating", "Generating"
+        READY = "ready", "Ready"
+        HELD = "held", "Needs review"
+        ERROR = "error", "Generation failed"
+        SKIPPED = "skipped", "Skipped"
+
+    week_of = models.DateField(unique=True)
+    planned_at = models.DateTimeField()
+    pillar = models.CharField(max_length=40)
+    status = models.CharField(
+        max_length=16, choices=Status.choices, default=Status.PENDING
+    )
+    post = models.OneToOneField(
+        SocialPost,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="content_week",
+    )
+    context = models.JSONField(default=dict)
+    content = models.JSONField(default=dict)
+    auto_scheduled = models.BooleanField(default=False)
+    review_passed = models.BooleanField(default=False)
+    review_note = models.CharField(max_length=500, blank=True)
+    attempts = models.PositiveSmallIntegerField(default=0)
+    next_attempt_at = models.DateTimeField(null=True, blank=True)
+    last_error = models.CharField(max_length=300, blank=True)
+
+    class Meta:
+        ordering = ["planned_at"]
