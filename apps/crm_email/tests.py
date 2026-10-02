@@ -13,6 +13,7 @@ from django.urls import reverse
 from django.utils import timezone
 
 from apps.crm.models import CrmActivity, Lead
+from apps.crm_email.contact_templates import apply_template
 from apps.crm_email.forms import ComposeForm
 from apps.crm_email.google import Gmail, ProviderError, json_request
 from apps.crm_email.models import (
@@ -24,6 +25,7 @@ from apps.crm_email.models import (
     Message,
     WorkerHeartbeat,
 )
+from apps.crm_email.referral_templates import REFERRAL_TEMPLATES
 from apps.crm_email.security import EmailError, clean_html, decrypt, encrypt
 from apps.crm_email.services import build_mime, save_message
 from apps.crm_email.sync import store_thread, sync_history, synchronize
@@ -609,6 +611,127 @@ class EmailTests(TestCase):
         self.assertEqual(
             self.client.get(reverse("crm_email_template_new")).status_code, 200
         )
+
+    def test_referral_templates_available_to_each_crm_user_without_seeding(
+        self,
+    ) -> None:
+        for user in (self.owner, self.other):
+            self.client.force_login(user)
+            for route in (
+                "crm_contact_detail",
+                "crm_contact_email",
+                "crm_email_compose",
+            ):
+                response = self.client.get(reverse(route, args=[self.lead.pk]))
+                for key, template in REFERRAL_TEMPLATES.items():
+                    self.assertContains(response, template.name)
+                    self.assertContains(response, f"?template={key}")
+        self.assertEqual(EmailTemplate.objects.count(), 0)
+        self.assertEqual(Message.objects.count(), 0)
+
+    def test_all_referral_drafts_personalize_and_use_mailbox_signature(self) -> None:
+        self.lead.contact_name = "Dr. Jordan Rivera"
+        self.lead.organization_name = "Oak & Pine"
+        self.lead.save()
+        self.mailbox.signature = "<p>Configured signature</p>"
+        self.mailbox.save()
+        url = reverse("crm_email_compose", args=[self.lead.pk])
+        for key in REFERRAL_TEMPLATES:
+            with self.subTest(template=key):
+                response = self.client.get(url, {"template": key})
+                self.assertEqual(response.status_code, 200)
+                initial = response.context["form"].initial
+                body = initial["body_html"]
+                self.assertEqual(initial["to"], self.lead.contact_email)
+                self.assertIn(
+                    "Hi Dr. Jordan Rivera,"
+                    if key == "referral-pediatrician"
+                    else "Hi Jordan,",
+                    body,
+                )
+                self.assertTrue(body.endswith("<p>Configured signature</p>"))
+                self.assertNotIn("{{", body + initial["subject"])
+                self.assertNotIn("[email signature]", body)
+                self.assertNotIn("I've attached", body)
+                self.assertIn("I can share a parent flyer", body)
+                self.assertIn("<ul>", body)
+                if key in {"referral-school-leader", "referral-rec-center"}:
+                    self.assertEqual(
+                        initial["subject"],
+                        "Helping Oak & Pine families with struggling readers",
+                    )
+        self.assertFalse(Message.objects.exists())
+
+    def test_referral_missing_names_have_readable_fallbacks(self) -> None:
+        self.lead.contact_name = "  "
+        self.lead.school_name = ""
+        for key, template in REFERRAL_TEMPLATES.items():
+            result = apply_template(template, self.lead, self.mailbox)
+            self.assertIn("Hi there,", result["body_html"])
+            self.assertNotIn("{{", result["subject"] + result["body_html"])
+            if key == "referral-school-leader":
+                self.assertEqual(
+                    result["subject"],
+                    "Helping your school families with struggling readers",
+                )
+            if key == "referral-rec-center":
+                self.assertEqual(
+                    result["subject"],
+                    "Helping your center families with struggling readers",
+                )
+
+    def test_referral_company_fallbacks_and_safe_contact_values(self) -> None:
+        from apps.crm.models import Company
+
+        template = REFERRAL_TEMPLATES["referral-school-leader"]
+        self.assertIn(
+            "Helping Test families",
+            apply_template(template, self.lead, self.mailbox)["subject"],
+        )
+        self.lead.organization_name = "Organization"
+        self.assertIn(
+            "Helping Organization families",
+            apply_template(template, self.lead, self.mailbox)["subject"],
+        )
+        self.lead.company = Company.objects.create(name="Linked company")
+        self.assertIn(
+            "Helping Linked company families",
+            apply_template(template, self.lead, self.mailbox)["subject"],
+        )
+        self.lead.contact_name = "<img/src=x/onerror=alert(1)>"
+        body = apply_template(template, self.lead, self.mailbox)["body_html"]
+        self.assertNotIn("<img", body)
+        self.assertIn("&lt;img", body)
+
+    def test_referral_draft_can_be_edited_and_sent_through_gmail(self) -> None:
+        url = reverse("crm_email_compose", args=[self.lead.pk])
+        for index, key in enumerate(REFERRAL_TEMPLATES, start=1):
+            with self.subTest(template=key):
+                response = self.client.get(url, {"template": key})
+                initial = response.context["form"].initial
+                response = self.client.post(
+                    url,
+                    self.data(
+                        draft_id=str(initial["draft_id"]),
+                        subject=initial["subject"],
+                        body_html=initial["body_html"] + "<p>Personal note</p>",
+                    ),
+                )
+                self.assertEqual(response.status_code, 302)
+                message = Message.objects.get(pk=initial["draft_id"])
+                self.assertEqual(message.status, Message.Status.QUEUED)
+                self.assertEqual(message.to, [self.lead.contact_email])
+                self.assertEqual(message.mailbox, self.mailbox)
+                client = MagicMock(spec=Gmail)
+                client.request.return_value = {
+                    "id": f"def{index}",
+                    "threadId": f"abc{index}",
+                }
+                send(client, message)
+                message.refresh_from_db()
+                self.assertEqual(message.status, Message.Status.SENT)
+                self.assertIn("Personal note", message.body_html)
+                client.request.assert_called_once()
 
     def test_template_placeholders_never_inject_html(self) -> None:
         self.lead.contact_name = "<img src=x onerror=alert(1)> Rivera"
