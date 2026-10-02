@@ -29,6 +29,7 @@ class ContactForm(forms.ModelForm):
             "company",
             "source",
             "status",
+            "priority",
             "assigned_to",
             "estimated_students",
             "notes",
@@ -43,8 +44,12 @@ class ContactForm(forms.ModelForm):
         super().__init__(*args, **kwargs)
         self.fields["company"].queryset = Company.objects.filter(is_deleted=False).order_by("name")
         self.fields["assigned_to"].queryset = crm_owner_queryset()
+        self.fields["priority"].required = False
         self.fields["company"].required = False
         self.fields["assigned_to"].required = False
+
+    def clean_priority(self) -> str:
+        return self.cleaned_data["priority"] or Lead.Priority.UNRATED
 
     def clean_contact_email(self):
         return self.cleaned_data["contact_email"].strip().lower()

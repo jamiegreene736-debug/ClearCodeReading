@@ -89,7 +89,8 @@
           <a class="action-row {% if row.is_overdue %}is-overdue{% endif %}" href="{% url 'crm_contact_detail' row.task.lead.pk %}#activity">
             <span>
               <strong>{{ row.task.subject }}</strong><br>
-              <span class="action-meta">{{ row.task.lead.contact_name }} · {{ row.owner_label }}</span>
+              <span class="action-meta">{{ row.task.lead.contact_name }} · {{ row.owner_label }}</span><br>
+              {% include "crm/includes/priority_badge.html" with contact=row.task.lead only %}
             </span>
             <span class="badge {% if row.is_overdue %}badge-warn{% else %}badge-neutral{% endif %}">{% if row.task.due_at %}{% if row.is_overdue %}Overdue · {% endif %}{{ row.task.due_at|date:"M j, g:i A" }}{% else %}No due date{% endif %}</span>
           </a>
@@ -109,7 +110,7 @@
           {% for person in routing_people %}
             <a class="action-row" href="{% url 'crm_triage_list' %}?lead={{ person.lead.pk }}">
               <span>
-                <strong>{{ person.lead.contact_name }}</strong>
+                <strong>{{ person.lead.contact_name }}</strong> {% include "crm/includes/priority_badge.html" with contact=person.lead only %}
                 <span class="signal-row">{% for signal in person.signals %}<span class="badge badge-neutral">{{ signal }}</span>{% empty %}<span class="badge badge-warn">Needs a decision</span>{% endfor %}</span>
               </span>
               <span class="badge badge-warn">{{ person.waiting_label }}</span>
@@ -124,7 +125,7 @@
           {% for person in assessment_review %}
             <a class="action-row" href="{% url 'inventory_detail' person.invitation.pk %}">
               <span>
-                <strong>{{ person.lead.contact_name }}</strong><br>
+                <strong>{{ person.lead.contact_name }}</strong> {% include "crm/includes/priority_badge.html" with contact=person.lead only %}<br>
                 <span class="action-meta">{{ person.child_name }}{% if person.outcome_label %} · {{ person.outcome_label }}{% endif %}</span>
               </span>
               <span class="badge badge-warn">{{ person.waiting_label }}</span>
@@ -160,7 +161,7 @@
         <div class="action-list">
           {% for person in assessment_waiting %}
             <a class="action-row" href="{% url 'inventory_detail' person.invitation.pk %}">
-              <span><strong>{{ person.lead.contact_name }}</strong><br><span class="action-meta">{{ person.child_label }}{% if person.open_count > 1 %} · {{ person.open_count }} assessments{% endif %}</span></span>
+              <span><strong>{{ person.lead.contact_name }}</strong> {% include "crm/includes/priority_badge.html" with contact=person.lead only %}<br><span class="action-meta">{{ person.child_label }}{% if person.open_count > 1 %} · {{ person.open_count }} assessments{% endif %}</span></span>
               <span class="badge badge-neutral">{{ person.waiting_label }}</span>
             </a>
           {% empty %}<div class="empty"><strong>0 people waiting to finish.</strong><br>Open a contact and send an assessment when a family is ready.</div>{% endfor %}
@@ -180,7 +181,7 @@
       <div class="action-list">
         {% for contact in recent_contacts %}
           <a class="action-row" href="{% url 'crm_contact_detail' contact.pk %}">
-            <span><strong>{{ contact.contact_name }}</strong><br><span class="action-meta">{{ contact.contact_email }}{% if contact.organization_name or contact.school_name %} · {{ contact.organization_name|default:contact.school_name }}{% endif %}</span></span>
+            <span><strong>{{ contact.contact_name }}</strong> {% include "crm/includes/priority_badge.html" with contact=contact only %}<br><span class="action-meta">{{ contact.contact_email }}{% if contact.organization_name or contact.school_name %} · {{ contact.organization_name|default:contact.school_name }}{% endif %}</span></span>
             <span class="badge {% if contact.status == 'new' %}badge-warn{% else %}badge-neutral{% endif %}">{{ contact.get_status_display }}</span>
           </a>
         {% empty %}<div class="empty">No contacts yet. <a href="{% url 'crm_contact_create' %}">Add a contact</a>.</div>{% endfor %}

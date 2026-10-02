@@ -10,7 +10,7 @@
   .queue.active .queue-count { color:#0f5c5c; background:white; }
   .queue-overdue:not(.active) { color:#7b1f1f; }
   .list-shell { margin-top:14px; overflow:hidden; }
-  .filters { display:grid; grid-template-columns:minmax(200px,1.4fr) repeat(4,minmax(120px,1fr)) auto; gap:10px; align-items:end; padding:16px; border-bottom:1px solid var(--line); }
+  .filters { display:grid; grid-template-columns:minmax(200px,1.4fr) repeat(5,minmax(120px,1fr)) auto; gap:10px; align-items:end; padding:16px; border-bottom:1px solid var(--line); }
   .filter-actions { display:flex; align-items:end; gap:8px; }
   .chips { display:flex; flex-wrap:wrap; align-items:center; gap:8px; padding:0 16px 14px; }
   .chip { display:inline-flex; align-items:center; gap:6px; min-height:32px; padding:4px 10px; border-radius:999px; background:var(--teal-soft); color:#0f5c5c; font-size:12px; font-weight:700; text-decoration:none; }
@@ -41,7 +41,7 @@
   .select-contact { width:18px; min-height:18px; accent-color:var(--teal); }
   .mobile-select { display:flex; align-items:center; gap:8px; margin-bottom:12px; font-size:12px; font-weight:700; }
   .select-page { display:flex; align-items:center; gap:8px; }
-  @media (max-width:1100px) { .filters { grid-template-columns:1fr 1fr; } }
+  @media (max-width:1400px) { .filters { grid-template-columns:1fr 1fr; } }
   @media (max-width:650px) {
     .page-head { align-items:stretch; flex-direction:column; }
     .filters { grid-template-columns:1fr; }
@@ -83,6 +83,7 @@
       {% if active_filters.sort and active_filters.sort != 'recent' %}<input type="hidden" name="sort" value="{{ active_filters.sort }}">{% endif %}
       <div class="field"><label for="crm-search">Search contacts</label><input id="crm-search" name="q" type="search" value="{{ active_filters.q }}" placeholder="Name, email, phone, or organization"></div>
       <div class="field"><label for="crm-status">Lead status</label><select id="crm-status" name="status" onchange="this.form.requestSubmit()"><option value="">All statuses</option>{% for value,label in status_choices %}<option value="{{ value }}" {% if active_filters.status == value %}selected{% endif %}>{{ label }}</option>{% endfor %}</select></div>
+      <div class="field"><label for="crm-priority">Priority status</label><select id="crm-priority" name="priority" onchange="this.form.requestSubmit()"><option value="">All priorities</option>{% for value,label in priority_choices %}<option value="{{ value }}" {% if active_filters.priority == value %}selected{% endif %}>{{ label }}</option>{% endfor %}</select></div>
       <div class="field"><label for="crm-audience">Pipeline category</label><select id="crm-audience" name="audience" onchange="this.form.requestSubmit()"><option value="">All pipeline categories</option>{% for value,label in audience_choices %}<option value="{{ value }}" {% if active_filters.audience == value %}selected{% endif %}>{{ label }}</option>{% endfor %}</select></div>
       <div class="field"><label for="crm-relationship-interest">Relationship interest</label><select id="crm-relationship-interest" name="relationship_interest" onchange="this.form.requestSubmit()"><option value="">All interests</option>{% for value,label in relationship_interest_choices %}<option value="{{ value }}" {% if active_filters.relationship_interest == value %}selected{% endif %}>{{ label }}</option>{% endfor %}</select></div>
       <div class="field"><label for="crm-owner">Contact owner</label><select id="crm-owner" name="owner" onchange="this.form.requestSubmit()"><option value="">All owners</option><option value="unassigned" {% if active_filters.owner == 'unassigned' %}selected{% endif %}>Unassigned</option>{% for owner in owners %}<option value="{{ owner.pk }}" {% if active_filters.owner == owner.pk|stringformat:'s' %}selected{% endif %}>{{ owner.get_full_name|default:owner.email }}</option>{% endfor %}</select></div>
@@ -108,6 +109,7 @@
               <th><label class="select-page"><input class="select-contact" type="checkbox" data-select-page aria-label="Select all contacts on this page"></label></th>
               <th><a class="th-sort {% if active_filters.sort == 'name' %}active{% endif %}" href="?{% if sort_base_query %}{{ sort_base_query }}&{% endif %}sort=name">Contact{% if active_filters.sort == 'name' %} ▲{% endif %}</a></th>
               <th>Lead status</th>
+              <th>Priority status</th>
               <th>Pipeline category</th>
               <th>Relationship interests</th>
               <th>Organization</th>
@@ -131,6 +133,7 @@
                   </div>
                 </td>
                 <td><span class="badge {% if contact.status == 'new' %}badge-warn{% endif %}">{{ contact.get_status_display }}</span></td>
+                <td>{% include "crm/includes/priority_badge.html" with contact=contact only %}</td>
                 <td>{{ contact.get_audience_display }}</td>
                 <td>{% for label in contact.relationship_interest_labels %}<span class="badge">{{ label }}</span>{% empty %}<span class="subtle">—</span>{% endfor %}</td>
                 <td>{{ contact.organization_name|default:contact.school_name }}</td>
@@ -139,7 +142,7 @@
                 <td>{% if contact.last_submission_at %}{{ contact.last_submission_at|date:"M j, Y, g:i A T" }}{% else %}<span class="subtle">No captured form</span>{% endif %}</td>
               </tr>
             {% empty %}
-              <tr><td class="empty" colspan="9"><strong>No contacts match this view.</strong><br>{% if filter_chips %}<a href="{% url 'crm_contact_list' %}">Clear filters</a>{% else %}Add a contact, or wait for the next website submission.{% endif %}</td></tr>
+              <tr><td class="empty" colspan="10"><strong>No contacts match this view.</strong><br>{% if filter_chips %}<a href="{% url 'crm_contact_list' %}">Clear filters</a>{% else %}Add a contact, or wait for the next website submission.{% endif %}</td></tr>
             {% endfor %}
           </tbody>
         </table>
@@ -158,6 +161,7 @@
             </div>
             <dl>
               <div><dt>Status</dt><dd><span class="badge {% if contact.status == 'new' %}badge-warn{% endif %}">{{ contact.get_status_display }}</span></dd></div>
+              <div><dt>Priority status</dt><dd>{% include "crm/includes/priority_badge.html" with contact=contact only %}</dd></div>
               <div><dt>Pipeline category</dt><dd>{{ contact.get_audience_display }}</dd></div>
               <div><dt>Organization</dt><dd>{{ contact.organization_name|default:contact.school_name|default:"—" }}</dd></div>
               <div><dt>Owner</dt><dd>{% if contact.assigned_to %}{{ contact.assigned_to.get_full_name|default:contact.assigned_to.email }}{% else %}<span class="owner-missing">Unassigned</span>{% endif %}</dd></div>

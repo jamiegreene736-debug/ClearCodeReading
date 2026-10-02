@@ -67,6 +67,7 @@ from apps.sessions.models import (
     SessionTemplate,
     SkillObservation,
 )
+from apps.social.models import SocialAccount, SocialPost, SocialPublication
 from apps.tenants.models import Domain
 from apps.users.management.commands.seed_demo_login import (
     DEMO_ADMIN_EMAIL,
@@ -208,6 +209,7 @@ class Command(BaseCommand):
         )
 
         self._seed_marketing(admin_user)
+        self._seed_social(admin_user)
         self._seed_crm(admin_user, center, now)
         curriculum, first, second, skill = self._seed_curriculum(
             admin_user, teacher, child, center
@@ -255,6 +257,31 @@ class Command(BaseCommand):
         )
         self._seed_workforce(admin_user, teacher, center, session)
         self._seed_outcomes(center, curriculum)
+
+    def _seed_social(self, admin_user: CustomUser) -> None:
+        # Demo coverage must never connect an account or queue an external post.
+        SocialAccount.objects.get_or_create(
+            network=SocialAccount.Network.FACEBOOK,
+            defaults={"display_name": "Demo Facebook page"},
+        )
+        post, _ = SocialPost.objects.get_or_create(
+            brief="Demo social post preview",
+            created_by=admin_user,
+            defaults={
+                "facebook_caption": "Demo reading tip: make time to read together.",
+                "status": SocialPost.Status.DRAFT,
+                "post_to_facebook": False,
+                "post_to_instagram": False,
+            },
+        )
+        SocialPublication.objects.get_or_create(
+            post=post,
+            network=SocialAccount.Network.FACEBOOK,
+            defaults={
+                "status": SocialPublication.Status.FAILED,
+                "error": "Demo preview only; no publication was attempted.",
+            },
+        )
 
     def _seed_marketing(self, admin_user):
         BlogPost.objects.update_or_create(

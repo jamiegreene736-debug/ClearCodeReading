@@ -5,6 +5,7 @@ from django.test import TestCase, override_settings
 from apps.crm.models import NewsletterCampaign, NewsletterDelivery
 from apps.curriculum.models import Lesson
 from apps.schools.models import School
+from apps.social.models import SocialAccount, SocialPost, SocialPublication
 from apps.workforce.models import PaymentRun, ProviderOnboarding, SensitiveDataReference
 
 
@@ -62,6 +63,17 @@ class AdminDemoDataTests(TestCase):
             ).status,
             ProviderOnboarding.Status.NOT_INVITED,
         )
+        account = SocialAccount.objects.get(network=SocialAccount.Network.FACEBOOK)
+        self.assertEqual(account.status, SocialAccount.Status.DISCONNECTED)
+        self.assertFalse(account.encrypted_token)
+        post = SocialPost.objects.get(brief="Demo social post preview")
+        self.assertEqual(post.status, SocialPost.Status.DRAFT)
+        self.assertIsNone(post.scheduled_at)
+        self.assertFalse(post.selected_networks())
+        publication = post.publications.get()
+        self.assertEqual(publication.status, SocialPublication.Status.FAILED)
+        self.assertFalse(publication.external_id)
+        self.assertIsNone(publication.published_at)
         reference = SensitiveDataReference.objects.get(
             external_subject_id="demo-subject-reference"
         )

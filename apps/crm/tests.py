@@ -1662,9 +1662,9 @@ class CrmWorkspaceTests(TestCase):
         self.lead.assigned_to = self.admin_user
         self.lead.save()
         url = reverse("crm_contact_update", args=[self.lead.pk])
-        for field, value in (("status", Lead.Status.CONTACTED), ("audience", Lead.PipelineCategory.FAMILY_ENROLLMENT), ("assigned_to", ""), ("company", "")):
+        for field, value in (("priority", Lead.Priority.HOT), ("status", Lead.Status.CONTACTED), ("audience", Lead.PipelineCategory.FAMILY_ENROLLMENT), ("assigned_to", ""), ("company", "")):
             self.lead.refresh_from_db()
-            before = {name: getattr(self.lead, name) for name in ("status", "audience", "assigned_to_id", "company_id")}
+            before = {name: getattr(self.lead, name) for name in ("status", "priority", "audience", "assigned_to_id", "company_id")}
             response = self.client.post(url, {"field": field, field: value, "company_name": "Must not create"})
             self.assertEqual(response.status_code, 302)
             self.lead.refresh_from_db()
@@ -1674,6 +1674,82 @@ class CrmWorkspaceTests(TestCase):
                 if name != model_field:
                     self.assertEqual(getattr(self.lead, name), previous)
         self.assertFalse(Company.objects.filter(name="Must not create").exists())
+
+    def test_priority_defaults_to_unrated(self) -> None:
+        self.assertEqual(self.lead.priority, Lead.Priority.UNRATED)
+
+    def test_priority_save_renders_on_contact_table_and_dashboard(self) -> None:
+        self.client.force_login(self.admin_user)
+        CrmActivity.objects.create(
+            lead=self.lead, activity_type=CrmActivity.ActivityType.TASK,
+            subject="Follow up", due_at=timezone.now(), created_by=self.admin_user,
+        )
+        for priority in Lead.Priority.values:
+            with self.subTest(priority=priority):
+                response = self.client.post(
+                    reverse("crm_contact_update", args=[self.lead.pk]),
+                    {"field": "priority", "priority": priority, "status": Lead.Status.CONVERTED},
+                    follow=True,
+                )
+                self.lead.refresh_from_db()
+                self.assertEqual(self.lead.priority, priority)
+                self.assertEqual(self.lead.status, Lead.Status.NEW)
+                self.assertContains(response, f'priority-{priority}')
+                audit = AuditLog.objects.filter(action="crm.contact.updated").latest("pk")
+                self.assertEqual(audit.after["priority"], priority)
+                for route in ("crm_contact_list", "crm_dashboard"):
+                    page = self.client.get(reverse(route))
+                    self.assertContains(page, f'class="badge priority-{priority}"', count=2)
+
+    def test_priority_rejects_invalid_missing_and_unauthorized_updates(self) -> None:
+        url = reverse("crm_contact_update", args=[self.lead.pk])
+        self.client.force_login(self.guardian)
+        self.assertEqual(self.client.post(url, {"field": "priority", "priority": "hot"}).status_code, 403)
+        self.client.force_login(self.admin_user)
+        for data in ({"field": "priority"}, {"field": "priority", "priority": ""}, {"field": "priority", "priority": "urgent"}):
+            with self.subTest(data=data):
+                self.client.post(url, data)
+                self.lead.refresh_from_db()
+                self.assertEqual(self.lead.priority, Lead.Priority.UNRATED)
+        self.assertFalse(AuditLog.objects.filter(action="crm.contact.updated").exists())
+        self.lead.soft_delete()
+        self.assertEqual(self.client.post(url, {"field": "priority", "priority": "hot"}).status_code, 404)
+
+    def test_priority_form_and_api_validation(self) -> None:
+        from apps.crm.forms import ContactForm
+        from apps.crm.serializers import LeadSerializer
+
+        data = {
+            "contact_name": "New contact", "contact_email": "new@example.com",
+            "audience": Lead.PipelineCategory.FAMILY_ENROLLMENT,
+            "source": Lead.Source.OTHER, "status": Lead.Status.NEW,
+        }
+        for priority in (None, *Lead.Priority.values):
+            with self.subTest(priority=priority):
+                values = {**data, **({"priority": priority} if priority else {})}
+                form = ContactForm(values)
+                self.assertTrue(form.is_valid(), form.errors)
+                self.assertEqual(form.save(commit=False).priority, priority or Lead.Priority.UNRATED)
+        form = ContactForm({**data, "priority": "invalid"})
+        self.assertFalse(form.is_valid())
+        self.assertIn("priority", form.errors)
+        serializer = LeadSerializer(self.lead, data={"priority": "hot"}, partial=True)
+        self.assertTrue(serializer.is_valid(), serializer.errors)
+        serializer.save()
+        self.assertEqual(LeadSerializer(self.lead).data["priority"], "hot")
+        invalid = LeadSerializer(self.lead, data={"priority": "invalid"}, partial=True)
+        self.assertFalse(invalid.is_valid())
+
+    def test_priority_filter_combines_with_existing_filters(self) -> None:
+        self.client.force_login(self.admin_user)
+        hot = Lead.objects.create(contact_name="Hot contact", priority=Lead.Priority.HOT)
+        Lead.objects.create(contact_name="Deleted hot contact", priority=Lead.Priority.HOT, is_deleted=True)
+        response = self.client.get(reverse("crm_contact_list"), {"priority": "hot", "status": "new"})
+        self.assertEqual(list(response.context["contacts"]), [hot])
+        self.assertContains(response, "Priority: HOT")
+        self.assertIn("priority=hot", response.context["filter_query"])
+        response = self.client.get(reverse("crm_contact_list"), {"priority": "invalid"})
+        self.assertEqual(response.context["result_count"], 2)
 
     def test_inline_contact_rejects_invalid_fields_and_values(self):
         self.client.force_login(self.admin_user)
@@ -1689,7 +1765,7 @@ class CrmWorkspaceTests(TestCase):
     def test_contact_detail_has_one_property_editor(self):
         self.client.force_login(self.admin_user)
         response = self.client.get(reverse("crm_contact_detail", args=[self.lead.pk]))
-        for field in ("status", "audience", "company", "assigned_to"):
+        for field in ("status", "priority", "audience", "company", "assigned_to"):
             self.assertContains(response, f'id="inline-{field}"')
             self.assertContains(response, f'name="field" value="{field}"')
         self.assertContains(response, 'id="inline-company-name"')

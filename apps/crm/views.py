@@ -1514,6 +1514,7 @@ class CrmContactListView(CrmAccessMixin, TemplateView):
 
         query = self.request.GET.get("q", "").strip()[:255]
         status_filter = self.request.GET.get("status", "")
+        priority_filter = self.request.GET.get("priority", "")
         audience_filter = self.request.GET.get("audience", "")
         relationship_interest_filter = self.request.GET.get("relationship_interest", "")
         owner_filter = self.request.GET.get("owner", "")
@@ -1531,6 +1532,8 @@ class CrmContactListView(CrmAccessMixin, TemplateView):
             )
         if status_filter in Lead.Status.values:
             contacts = contacts.filter(status=status_filter)
+        if priority_filter in Lead.Priority.values:
+            contacts = contacts.filter(priority=priority_filter)
         if audience_filter in Lead.PipelineCategory.values:
             contacts = contacts.filter(audience=audience_filter)
         if relationship_interest_filter in Lead.RelationshipInterest.values:
@@ -1610,6 +1613,8 @@ class CrmContactListView(CrmAccessMixin, TemplateView):
             filter_chips.append({"label": f"Search: {query}", "href": without("q")})
         if status_filter in status_labels:
             filter_chips.append({"label": status_labels[status_filter], "href": without("status")})
+        if priority_filter in Lead.Priority.values:
+            filter_chips.append({"label": f"Priority: {dict(Lead.Priority.choices)[priority_filter]}", "href": without("priority")})
         if audience_filter in audience_labels:
             filter_chips.append({"label": audience_labels[audience_filter], "href": without("audience")})
         if relationship_interest_filter in interest_labels:
@@ -1638,6 +1643,7 @@ class CrmContactListView(CrmAccessMixin, TemplateView):
                 "overdue_contacts": all_contacts.filter(_overdue_contact_filter(now)).distinct().count(),
                 "owners": owners,
                 "status_choices": Lead.Status.choices,
+                "priority_choices": Lead.Priority.choices,
                 "audience_choices": Lead.PipelineCategory.choices,
                 "relationship_interest_choices": Lead.RelationshipInterest.choices,
                 "active_queue": active_queue,
@@ -1653,6 +1659,7 @@ class CrmContactListView(CrmAccessMixin, TemplateView):
                 "active_filters": {
                     "q": query,
                     "status": status_filter,
+                    "priority": priority_filter,
                     "audience": audience_filter,
                     "relationship_interest": relationship_interest_filter,
                     "owner": owner_filter,
@@ -1708,6 +1715,7 @@ class CrmContactDetailView(CrmAccessMixin, TemplateView):
                 "related_deal_choices": Opportunity.objects.filter(is_deleted=False).select_related("company", "lead").order_by("company__name", "name"),
                 "pending_triage_count": lead.triage_items.filter(status=IntakeTriage.Status.PENDING).count(),
                 "status_choices": Lead.Status.choices,
+                "priority_choices": Lead.Priority.choices,
                 "audience_choices": Lead.PipelineCategory.choices,
                 "assessment_count": sum(
                     len(child.invitations.all()) for child in lead.inventory_children.all()
@@ -1781,7 +1789,7 @@ class CrmContactUpdateView(CrmAccessMixin, View):
     def post(self, request, pk):
         lead = get_object_or_404(Lead, pk=pk, is_deleted=False)
         field = request.POST.get("field")
-        editable_fields = {"status", "audience", "assigned_to", "company"}
+        editable_fields = {"status", "priority", "audience", "assigned_to", "company"}
         creating_company = field == "company" and request.POST.get("create_company") == "1"
         if field is not None and (field not in editable_fields or (field not in request.POST and not creating_company)):
             messages.error(request, "Choose a valid contact property.")
@@ -1791,6 +1799,7 @@ class CrmContactUpdateView(CrmAccessMixin, View):
             # Single-property edits must not overwrite other submitted or saved values.
             data = {
                 "status": lead.status,
+                "priority": lead.priority,
                 "audience": lead.audience,
                 "assigned_to": lead.assigned_to_id or "",
                 "company": lead.company_id or "",
@@ -1804,6 +1813,10 @@ class CrmContactUpdateView(CrmAccessMixin, View):
                 data["company"] = ""
                 data["company_name"] = created_name
         status_value = data.get("status", "")
+        priority = data.get("priority", lead.priority)
+        if priority not in Lead.Priority.values:
+            messages.error(request, "Choose a valid priority status.")
+            return redirect("crm_contact_detail", pk=lead.pk)
         audience = data.get("audience", "")
         owner_value = data.get("assigned_to", "")
         company_value = data.get("company", "")
@@ -1839,17 +1852,19 @@ class CrmContactUpdateView(CrmAccessMixin, View):
 
         before = {
             "status": lead.status,
+            "priority": lead.priority,
             "audience": lead.audience,
             "assigned_to_id": lead.assigned_to_id,
             "company_id": lead.company_id,
         }
+        lead.priority = priority
         lead.status = status_value
         lead.audience = audience
         lead.assigned_to = owner
         old_company_id = lead.company_id
         lead.company = company
         with transaction.atomic():
-            lead.save(update_fields=[field, "updated_at"] if field else ["status", "audience", "assigned_to", "company", "updated_at"])
+            lead.save(update_fields=[field, "updated_at"] if field else ["status", "priority", "audience", "assigned_to", "company", "updated_at"])
             if field in (None, "company"):
                 lead.opportunities.filter(
                     Q(company_id=old_company_id) | Q(company__isnull=True)
@@ -1862,6 +1877,7 @@ class CrmContactUpdateView(CrmAccessMixin, View):
             before=before,
             after={
                 "status": lead.status,
+                "priority": lead.priority,
                 "audience": lead.audience,
                 "assigned_to_id": lead.assigned_to_id,
                 "company_id": lead.company_id,

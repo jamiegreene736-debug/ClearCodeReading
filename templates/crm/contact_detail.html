@@ -151,6 +151,17 @@
             </form>
           </details>
         </dd></div>
+        <div class="property"><dt>Priority status</dt><dd>
+          <details class="inline-property" id="property-priority">
+            <summary aria-label="Edit priority status">{% include "crm/includes/priority_badge.html" with contact=lead only %}<span class="edit-cue">Edit</span></summary>
+            <form method="post" action="{% url 'crm_contact_update' lead.pk %}">{% csrf_token %}
+              <input type="hidden" name="field" value="priority">
+              <div class="field"><label for="inline-priority">Priority status</label><select id="inline-priority" name="priority" aria-describedby="priority-help">{% for value,label in priority_choices %}<option value="{{ value }}" {% if lead.priority == value %}selected{% endif %}>{{ label }}</option>{% endfor %}</select></div>
+              <p class="subtle" id="priority-help">Hot: ready for prompt follow-up. Warm: interested and considering. Cold: little engagement. Unrated: not assessed yet.</p>
+              <div class="inline-actions"><button class="btn btn-primary btn-small" type="submit">Save</button><button class="btn btn-small" type="button" data-cancel-edit>Cancel</button></div>
+            </form>
+          </details>
+        </dd></div>
         <div class="property"><dt>Pipeline category</dt><dd>
           <details class="inline-property" id="property-audience">
             <summary aria-label="Edit pipeline category"><span>{{ lead.get_audience_display }}</span><span class="edit-cue">Edit</span></summary>
