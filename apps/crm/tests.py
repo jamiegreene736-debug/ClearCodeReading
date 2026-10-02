@@ -1675,6 +1675,22 @@ class CrmWorkspaceTests(TestCase):
                     self.assertEqual(getattr(self.lead, name), previous)
         self.assertFalse(Company.objects.filter(name="Must not create").exists())
 
+    def test_dashboard_has_explicit_priority_columns_even_when_empty(self) -> None:
+        self.client.force_login(self.admin_user)
+        for has_contacts in (True, False):
+            with self.subTest(has_contacts=has_contacts):
+                if not has_contacts:
+                    self.lead.soft_delete()
+                response = self.client.get(reverse("crm_dashboard"))
+                self.assertContains(response, '<table class="dashboard-table" aria-label="Recent contacts">')
+                self.assertContains(response, '<table class="dashboard-table" aria-label="Follow-up queue">')
+                self.assertContains(response, '<th scope="col">Priority status</th>', count=2)
+                self.assertContains(response, '<th scope="col">Lead status</th>')
+                if has_contacts:
+                    self.assertContains(response, '<td><span class="badge priority-unrated"')
+                else:
+                    self.assertContains(response, 'No contacts yet.')
+
     def test_priority_defaults_to_unrated(self) -> None:
         self.assertEqual(self.lead.priority, Lead.Priority.UNRATED)
 

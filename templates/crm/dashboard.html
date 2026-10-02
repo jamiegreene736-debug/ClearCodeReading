@@ -23,6 +23,14 @@
   .action-row.is-overdue { border-color:#e7c56a; background:#fffaf0; }
   .action-row strong { color:var(--navy); }
   .action-meta { color:var(--muted); font-size:12px; }
+  .dashboard-table { width:100%; border-collapse:collapse; table-layout:fixed; }
+  .dashboard-table th { padding:10px 8px; border-bottom:1px solid var(--line); color:var(--muted); font-size:11px; text-align:left; text-transform:uppercase; }
+  .dashboard-table th:first-child { width:50%; }
+  .dashboard-table td { padding:13px 8px; border-bottom:1px solid #e2e9ee; vertical-align:top; overflow-wrap:anywhere; }
+  .dashboard-table tbody tr:last-child td { border-bottom:0; }
+  .dashboard-table .badge { white-space:normal; }
+  .dashboard-table .contact-link { color:var(--navy); font-weight:700; }
+  .dashboard-table tr.is-overdue { background:#fffaf0; }
   .signal-row { display:flex; flex-wrap:wrap; gap:6px; margin-top:6px; }
   .pipeline-grid { display:grid; grid-template-columns:repeat(5,minmax(175px,1fr)); gap:12px; overflow:auto; padding-bottom:4px; }
   .pipeline-card { min-width:175px; padding:16px; text-decoration:none; }
@@ -84,23 +92,20 @@
         </div>
       </div>
       <p class="subtle" style="margin-top:-6px">{{ open_task_count }} open{% if work_scope == 'mine' %} assigned to you{% endif %}. Oldest due dates are first.</p>
-      <div class="action-list">
-        {% for row in task_rows %}
-          <a class="action-row {% if row.is_overdue %}is-overdue{% endif %}" href="{% url 'crm_contact_detail' row.task.lead.pk %}#activity">
-            <span>
-              <strong>{{ row.task.subject }}</strong><br>
-              <span class="action-meta">{{ row.task.lead.contact_name }} · {{ row.owner_label }}</span><br>
-              {% include "crm/includes/priority_badge.html" with contact=row.task.lead only %}
-            </span>
-            <span class="badge {% if row.is_overdue %}badge-warn{% else %}badge-neutral{% endif %}">{% if row.task.due_at %}{% if row.is_overdue %}Overdue · {% endif %}{{ row.task.due_at|date:"M j, g:i A" }}{% else %}No due date{% endif %}</span>
-          </a>
-        {% empty %}
-          <div class="empty">
-            <strong>{% if work_scope == 'mine' %}Nothing is assigned to you.{% else %}No open follow-up tasks.{% endif %}</strong><br>
-            {% if work_scope == 'mine' %}<a href="{% url 'crm_dashboard' %}#follow-ups">Show the team queue</a>{% else %}Open a contact and add the next task.{% endif %}
-          </div>
-        {% endfor %}
-      </div>
+      <table class="dashboard-table" aria-label="Follow-up queue">
+        <thead><tr><th scope="col">Follow-up</th><th scope="col">Priority status</th><th scope="col">Due</th></tr></thead>
+        <tbody>
+          {% for row in task_rows %}
+            <tr {% if row.is_overdue %}class="is-overdue"{% endif %}>
+              <td><a class="contact-link" href="{% url 'crm_contact_detail' row.task.lead.pk %}#activity">{{ row.task.subject }}</a><br><span class="action-meta">{{ row.task.lead.contact_name }} · {{ row.owner_label }}</span></td>
+              <td>{% include "crm/includes/priority_badge.html" with contact=row.task.lead only %}</td>
+              <td><span class="badge {% if row.is_overdue %}badge-warn{% else %}badge-neutral{% endif %}">{% if row.task.due_at %}{% if row.is_overdue %}Overdue · {% endif %}{{ row.task.due_at|date:"M j, g:i A" }}{% else %}No due date{% endif %}</span></td>
+            </tr>
+          {% empty %}
+            <tr><td colspan="3" class="empty"><strong>{% if work_scope == 'mine' %}Nothing is assigned to you.{% else %}No open follow-up tasks.{% endif %}</strong><br>{% if work_scope == 'mine' %}<a href="{% url 'crm_dashboard' %}#follow-ups">Show the team queue</a>{% else %}Open a contact and add the next task.{% endif %}</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
     </section>
 
     <div class="queue-stack">
@@ -178,14 +183,18 @@
           <a href="{% url 'crm_contact_list' %}">See all</a>
         </span>
       </div>
-      <div class="action-list">
-        {% for contact in recent_contacts %}
-          <a class="action-row" href="{% url 'crm_contact_detail' contact.pk %}">
-            <span><strong>{{ contact.contact_name }}</strong> {% include "crm/includes/priority_badge.html" with contact=contact only %}<br><span class="action-meta">{{ contact.contact_email }}{% if contact.organization_name or contact.school_name %} · {{ contact.organization_name|default:contact.school_name }}{% endif %}</span></span>
-            <span class="badge {% if contact.status == 'new' %}badge-warn{% else %}badge-neutral{% endif %}">{{ contact.get_status_display }}</span>
-          </a>
-        {% empty %}<div class="empty">No contacts yet. <a href="{% url 'crm_contact_create' %}">Add a contact</a>.</div>{% endfor %}
-      </div>
+      <table class="dashboard-table" aria-label="Recent contacts">
+        <thead><tr><th scope="col">Contact</th><th scope="col">Lead status</th><th scope="col">Priority status</th></tr></thead>
+        <tbody>
+          {% for contact in recent_contacts %}
+            <tr>
+              <td><a class="contact-link" href="{% url 'crm_contact_detail' contact.pk %}">{{ contact.contact_name }}</a><br><span class="action-meta">{{ contact.contact_email }}{% if contact.organization_name or contact.school_name %} · {{ contact.organization_name|default:contact.school_name }}{% endif %}</span></td>
+              <td><span class="badge {% if contact.status == 'new' %}badge-warn{% else %}badge-neutral{% endif %}">{{ contact.get_status_display }}</span></td>
+              <td>{% include "crm/includes/priority_badge.html" with contact=contact only %}</td>
+            </tr>
+          {% empty %}<tr><td colspan="3" class="empty">No contacts yet. <a href="{% url 'crm_contact_create' %}">Add a contact</a>.</td></tr>{% endfor %}
+        </tbody>
+      </table>
     </section>
   </div>
 
