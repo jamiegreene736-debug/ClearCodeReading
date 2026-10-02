@@ -420,7 +420,7 @@ class PlacementEvidence(AuditedModel):
     class Instrument(models.TextChoices):
         PFR_PLACEMENT = "pfr_placement", "PFR Placement Test"
         OG_PA_DIAGNOSTIC = "og_pa_diagnostic", "OG+ Phonological Awareness Diagnostic"
-        OG_BENCHMARK = "og_benchmark", "OG+ Benchmark Assessment"
+        OG_BENCHMARK = "og_benchmark", "OG+ Benchmark Inventory"
         OG_SPELLING_SURVEY = "og_spelling_survey", "OG+ Informal Spelling Survey"
 
     class Source(models.TextChoices):
@@ -782,7 +782,7 @@ class TeachingAid(TimestampedModel, SoftDeleteModel):
         SLIDE_DECK = "slide_deck", "Slide Deck"
         MANIPULATIVE = "manipulative", "Manipulative"
         DECODABLE_TEXT = "decodable_text", "Decodable Text"
-        ASSESSMENT_PROMPT = "assessment_prompt", "Assessment Prompt"
+        ASSESSMENT_PROMPT = "assessment_prompt", "Inventory Prompt"
         OTHER = "other", "Other"
 
     lesson = models.ForeignKey(Lesson, on_delete=models.CASCADE, related_name="teaching_aids", null=True, blank=True)

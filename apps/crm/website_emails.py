@@ -41,7 +41,7 @@ TEAM_ONLY_KINDS = frozenset({"survey"})
 LABELS = {
     "consultation": "Consultation request",
     "consultation_booked": "Consultation booking",
-    "assessment": "Assessment follow-up",
+    "assessment": "Inventory follow-up",
     "survey": "Early interest survey",
     "career": "Career interest",
     "newsletter": "Newsletter signup",

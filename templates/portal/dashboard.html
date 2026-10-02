@@ -51,7 +51,7 @@
           {% elif is_admin %}
             Assign teachers, monitor demo readers, and keep the program workflow moving.
           {% else %}
-            Review student KPIs, completed surveys, and assessments waiting for human evaluator notes.
+            Review student KPIs, completed surveys, and inventories waiting for human evaluator notes.
           {% endif %}
         </p>
         <div class="mt-7 grid gap-3 sm:grid-cols-2 lg:grid-cols-1 xl:grid-cols-2">
@@ -60,7 +60,7 @@
             <p class="mt-2 text-4xl font-black">{{ child_count }}</p>
           </div>
           <div class="rounded-3xl bg-sand p-5">
-            <p class="text-sm font-black text-mediumTeal">Assessments</p>
+            <p class="text-sm font-black text-mediumTeal">Inventories</p>
             <p class="mt-2 text-4xl font-black">{{ assessment_count }}</p>
           </div>
           <div class="rounded-3xl bg-linen p-5">
@@ -243,7 +243,7 @@
             <div class="flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
               <div>
                 <p class="text-sm font-black uppercase tracking-[0.18em] text-mediumTeal">Human review queue</p>
-                <h2 class="mt-2 text-3xl font-black">Assessments needing evaluator notes</h2>
+                <h2 class="mt-2 text-3xl font-black">Inventories needing evaluator notes</h2>
               </div>
               <p class="rounded-full bg-sand px-4 py-2 text-sm font-black text-mediumTeal">{{ pending_review_count }} pending</p>
             </div>
@@ -261,7 +261,7 @@
                   </div>
                 </article>
               {% empty %}
-                <p class="rounded-3xl bg-seafoam p-5 font-bold text-ink/70">No assessments are waiting for review right now.</p>
+                <p class="rounded-3xl bg-seafoam p-5 font-bold text-ink/70">No inventories are waiting for review right now.</p>
               {% endfor %}
             </div>
           </section>
@@ -304,7 +304,7 @@
           <p class="text-sm font-black uppercase tracking-[0.18em] text-mediumTeal">Next tasks</p>
           <div class="mt-5 grid gap-3 md:grid-cols-3">
             <a class="focus-ring rounded-3xl bg-seafoam p-5 transition hover:-translate-y-1 hover:shadow-xl" href="/assessment/">
-              <span class="block text-lg font-black">Start assessment</span>
+              <span class="block text-lg font-black">Start inventory</span>
               <span class="mt-2 block text-sm leading-6 text-ink/65">Run the child-friendly reading survey.</span>
             </a>
             <div class="rounded-3xl bg-linen p-5">

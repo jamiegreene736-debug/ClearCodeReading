@@ -28,10 +28,10 @@ def delivery_feedback(invitation: InventoryInvitation) -> DeliveryFeedback:
     if mail is None:
         return DeliveryFeedback(
             "No invitation email recorded",
-            "There is no recorded invitation send for this assessment.",
+            "There is no recorded invitation send for this inventory.",
             "neutral",
         )
-    label = "Reminder" if mail.key.startswith("reminder-") else "Assessment email"
+    label = "Reminder" if mail.key.startswith("reminder-") else "Inventory email"
     if mail.status == InventoryMail.Status.SENT:
         return DeliveryFeedback(
             f"{label} sent",
