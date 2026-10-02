@@ -81,6 +81,8 @@ def save_plan(*, values: dict[str, object], actor: CustomUser) -> ContentPlan:
         if plan.mode != ContentPlan.Mode.PAUSED:
             validate_plan(plan)
         plan.last_error = ""
+        if plan.mode == ContentPlan.Mode.PAUSED:
+            plan.preview_requested = False
         plan.save()
         if plan.mode != ContentPlan.Mode.AUTOMATIC:
             ids = ContentWeek.objects.filter(auto_scheduled=True).values("post_id")

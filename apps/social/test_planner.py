@@ -319,6 +319,13 @@ class ContentPlannerTests(TestCase):
         self.assertTrue(self.plan.preview_requested)
         self.assertEqual(self.plan.mode, "paused")
 
+    def test_saving_paused_stops_a_pending_preview_request(self):
+        request_preview(actor=self.admin)
+        save_plan(values=self.values("paused"), actor=self.admin)
+        self.plan.refresh_from_db()
+        self.assertFalse(self.plan.preview_requested)
+        self.assertEqual(_run_locked(), 0)
+
     def test_advisory_lock_released_after_failure(self):
         with (
             patch(
