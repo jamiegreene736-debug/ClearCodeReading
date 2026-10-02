@@ -350,6 +350,7 @@ SOCIAL_PUBLIC_BASE_URL = os.getenv("SOCIAL_PUBLIC_BASE_URL", "").rstrip("/")
 SOCIAL_OPENAI_API_KEY = os.getenv("SOCIAL_OPENAI_API_KEY") or os.getenv("OPENAI_API_KEY", "")
 SOCIAL_AI_TEXT_MODEL = os.getenv("SOCIAL_AI_TEXT_MODEL", "gpt-4o-mini")
 SOCIAL_AI_IMAGE_MODEL = os.getenv("SOCIAL_AI_IMAGE_MODEL", "gpt-image-2")
+SOCIAL_AI_PLANNER_MODEL = os.getenv("SOCIAL_AI_PLANNER_MODEL", "gpt-6-luna")
 
 # Explicit connected mailbox used for automated website confirmations.
 # Recipients see WEBSITE_EMAIL_FROM; Gmail still authenticates as WEBSITE_EMAIL_SENDER.

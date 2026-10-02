@@ -19,7 +19,7 @@ from apps.social.planner import (
     skip_week,
     upcoming_slots,
 )
-from apps.social.planner_ai import structured, validate_content
+from apps.social.planner_ai import generate_content, structured, validate_content
 from apps.social.services import EASTERN, cancel_schedule, publish_due
 from apps.users.models import CustomUser
 
@@ -304,6 +304,7 @@ class ContentPlannerTests(TestCase):
                 "approved_sources",
                 "week_of",
                 "pillar",
+                "editorial_direction",
                 "audience",
                 "priorities",
                 "recent_captions",
@@ -349,6 +350,23 @@ class ContentPlannerTests(TestCase):
                 validate_content(candidate, [])
         with self.assertRaises(SocialError):
             validate_content(CONTENT, [CONTENT["facebook"]])
+
+    @patch("apps.social.planner_ai.structured")
+    def test_brand_week_requires_brand_and_structured_literacy_in_both_captions(
+        self, writer
+    ):
+        writer.return_value = CONTENT
+        with self.assertRaises(SocialError):
+            generate_content({"pillar": "clearcode_approach"})
+        writer.return_value = CONTENT | {
+            "source_ids": ["clearcode"],
+            "facebook": "ClearCode Reading uses explicit, systematic instruction to teach reading skills. Learn about its structured literacy approach.",
+            "instagram": "ClearCode Reading: structured literacy, explained step by step. Learn about the approach.",
+        }
+        self.assertEqual(
+            generate_content({"pillar": "clearcode_approach"})["source_ids"],
+            ["clearcode"],
+        )
 
     @patch("apps.social.planner_ai._post")
     def test_incomplete_refused_and_malformed_responses_are_rejected(self, post):

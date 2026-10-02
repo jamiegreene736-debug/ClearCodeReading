@@ -12,7 +12,7 @@ from django.utils import timezone
 
 from apps.social.access import can_manage_social
 from apps.social.ai import ai_configured, generate_image
-from apps.social.editorial import CTA_URL, pillar_for, source_context
+from apps.social.editorial import CTA_URL, PILLAR_DIRECTIONS, pillar_for, source_context
 from apps.social.exceptions import SocialError
 from apps.social.models import ContentPlan, ContentWeek, SocialPost
 from apps.social.planner_ai import generate_content, review_content
@@ -153,6 +153,7 @@ def _context(plan: ContentPlan, week: ContentWeek) -> dict[str, object]:
         "approved_sources": source_context(),
         "week_of": week.week_of.isoformat(),
         "pillar": week.pillar,
+        "editorial_direction": PILLAR_DIRECTIONS[week.pillar],
         "audience": plan.audience,
         "priorities": plan.priorities,
         "recent_captions": list(
