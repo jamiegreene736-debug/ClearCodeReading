@@ -1,13 +1,16 @@
 import base64
 import json
 from datetime import timedelta
-from unittest.mock import patch
+from io import BytesIO
+from unittest.mock import Mock, patch
 from urllib.parse import parse_qs, urlparse
 
+import requests
 from cryptography.fernet import Fernet
 from django.test import TestCase, override_settings
 from django.urls import reverse
 from django.utils import timezone
+from PIL import Image
 
 from apps.social.crypto import encrypt_text
 from apps.social.drafts import draft_captions
@@ -16,6 +19,13 @@ from apps.social.meta import absolute_image_url, image_signature
 from apps.social.models import SocialAccount, SocialPost, SocialPublication
 from apps.social.services import EASTERN, publish_due
 from apps.users.models import CustomUser
+
+
+def image_bytes():
+    output = BytesIO()
+    Image.new("RGB", (32, 32), "#1A7A7A").save(output, format="PNG")
+    return output.getvalue()
+
 
 KEY = Fernet.generate_key().decode()
 META = {
@@ -402,7 +412,7 @@ class SocialMediaTests(TestCase):
         self.assertIsNone(post.scheduled_at)
 
     @override_settings(SOCIAL_OPENAI_API_KEY="test-key", SOCIAL_AI_TEXT_MODEL="gpt-4o-mini", SOCIAL_AI_IMAGE_MODEL="dall-e-3")
-    def test_openai_request_uses_gpt_4o_mini_and_dalle_3(self):
+    def test_openai_request_migrates_retired_dalle_and_validates_image(self):
         from apps.social.ai import generate_image, write_captions
 
         captions = {
@@ -419,7 +429,7 @@ class SocialMediaTests(TestCase):
                 }
             ]
         }
-        image = {"data": [{"b64_json": base64.b64encode(b"png-bytes").decode()}]}
+        image = {"data": [{"b64_json": base64.b64encode(image_bytes()).decode()}]}
 
         def respond(*_args, **kwargs):
             url = _args[0]
@@ -430,7 +440,9 @@ class SocialMediaTests(TestCase):
             if "chat/completions" in url:
                 self.assertEqual(payload["model"], "gpt-4o-mini")
             else:
-                self.assertEqual(payload["model"], "dall-e-3")
+                self.assertEqual(payload["model"], "gpt-image-2")
+                self.assertNotIn("response_format", payload)
+                self.assertEqual(payload["output_format"], "jpeg")
                 self.assertIn("no people", payload["prompt"].lower())
                 self.assertIn("no text", payload["prompt"].lower())
             return response
@@ -445,8 +457,9 @@ class SocialMediaTests(TestCase):
             raw, content_type = generate_image(subject="A ten-minute reading routine for homework nights.")
         self.assertIn("one short page", facebook)
         self.assertIn("#ClearCodeReading", instagram)
-        self.assertEqual(raw, b"png-bytes")
-        self.assertEqual(content_type, "image/png")
+        with Image.open(BytesIO(raw)) as decoded:
+            self.assertEqual(decoded.format, "JPEG")
+        self.assertEqual(content_type, "image/jpeg")
 
         with patch("apps.social.ai.requests.post") as post:
             with self.assertRaises(SocialError):
@@ -457,3 +470,112 @@ class SocialMediaTests(TestCase):
                     link="",
                 )
             post.assert_not_called()
+
+    @override_settings(SOCIAL_OPENAI_API_KEY="test-key")
+    def test_ideas_from_blank_subject_do_not_save_or_generate_image(self):
+        self.client.force_login(self.admin)
+        ideas = ["Try a calm shared reading routine.", "Explore letter sounds with household objects.", "Ask an open question about a book."]
+        with patch("apps.social.views.suggest_ideas", return_value=ideas) as suggest, patch("apps.social.views.generate_image") as image:
+            response = self.client.post(reverse("social:new"), {"mode": "brief", "action": "ideas", "audience": "teachers", "tone": "practical", "generate_image": "on"})
+        suggest.assert_called_once_with(audience="teachers", tone="practical")
+        image.assert_not_called()
+        self.assertEqual(SocialPost.objects.count(), 0)
+        self.assertContains(response, "Draft this idea", count=3)
+        self.assertContains(response, ideas[0])
+
+    def test_selected_idea_creates_reviewable_captions_and_image(self):
+        self.client.force_login(self.admin)
+        idea = "Try a calm shared reading routine."
+        with patch("apps.social.views.write_captions", return_value=("A new Facebook caption to review.", "An Instagram caption to review.")) as write, patch("apps.social.views.generate_image", return_value=(b"jpeg-picture", "image/jpeg")):
+            response = self.client.post(reverse("social:new"), {"mode": "brief", "selected_idea": idea, "generate_image": "on", "post_to_facebook": "on", "post_to_instagram": "on"}, follow=True)
+        post = SocialPost.objects.get()
+        self.assertEqual(post.brief, idea)
+        self.assertEqual(write.call_args.kwargs["subject"], idea)
+        self.assertEqual(post.status, SocialPost.Status.DRAFT)
+        self.assertIsNone(post.scheduled_at)
+        self.assertFalse(post.publications.exists())
+        self.assertEqual(post.image_content_type, "image/jpeg")
+        self.assertContains(response, "A new Facebook caption to review.")
+        picture = self.client.get(reverse("social:image", args=[post.pk]))
+        self.assertEqual(picture.content, b"jpeg-picture")
+        self.assertEqual(picture["Content-Type"], "image/jpeg")
+
+    def test_image_failure_keeps_generated_captions_and_previous_image(self):
+        self.client.force_login(self.admin)
+        post = SocialPost.objects.create(brief="A calm shared reading routine.", source="brief", image_data=b"old-image", image_content_type="image/jpeg", created_by=self.admin)
+        with patch("apps.social.views.write_captions", return_value=("Fresh Facebook caption for review.", "Fresh Instagram caption.")), patch("apps.social.views.generate_image", side_effect=SocialError("Image service timed out.")):
+            response = self.client.post(reverse("social:edit", args=[post.pk]), {"mode": "brief", "action": "draft_ai", "brief": post.brief, "generate_image": "on"}, follow=True)
+        post.refresh_from_db()
+        self.assertEqual(post.facebook_caption, "Fresh Facebook caption for review.")
+        self.assertEqual(bytes(post.image_data), b"old-image")
+        self.assertContains(response, "Image service timed out.")
+
+    def test_manual_caption_can_generate_an_image_without_a_brief(self):
+        self.client.force_login(self.admin)
+        with patch("apps.social.views.generate_image", return_value=(b"jpeg-image", "image/jpeg")) as generate:
+            self.client.post(reverse("social:new"), {"mode": "manual", "action": "new_image", "caption": "A calm reading routine for tonight."})
+        generate.assert_called_once_with(subject="A calm reading routine for tonight.")
+        self.assertEqual(SocialPost.objects.get().facebook_caption, "A calm reading routine for tonight.")
+
+    def test_scheduled_post_cannot_receive_unreviewed_ai_content(self):
+        self.client.force_login(self.admin)
+        post = SocialPost.objects.create(source="brief", facebook_caption="Reviewed caption", status="scheduled", scheduled_at=timezone.now() + timedelta(days=1), created_by=self.admin)
+        with patch("apps.social.views.write_captions") as write:
+            response = self.client.post(reverse("social:edit", args=[post.pk]), {"mode": "brief", "action": "draft_ai", "brief": "Some fresh subject for a new post."})
+        write.assert_not_called()
+        post.refresh_from_db()
+        self.assertEqual(post.facebook_caption, "Reviewed caption")
+        self.assertContains(response, "Cancel this post")
+
+    @override_settings(SOCIAL_OPENAI_API_KEY="test-key")
+    def test_idea_provider_receives_brand_guide_and_rejects_invalid_outputs(self):
+        from apps.social.ai import suggest_ideas
+        ideas = ["Try a calm shared reading routine.", "Explore letter sounds with household objects.", "Ask an open question about a book."]
+        for result in ({"ideas": ideas}, {"ideas": ["Only one idea"]}, {"ideas": [None, 123, {}]}, {"ideas": ["Guaranteed reading results for every child."] + ideas[1:]}):
+            response = Mock(status_code=200)
+            response.json.return_value = {"choices": [{"message": {"content": json.dumps(result)}}]}
+            with patch("apps.social.ai.requests.post", return_value=response) as provider:
+                if result == {"ideas": ideas}:
+                    self.assertEqual(suggest_ideas(audience="families", tone="warm"), ideas)
+                else:
+                    with self.assertRaises(SocialError):
+                        suggest_ideas(audience="families", tone="warm")
+            prompt = provider.call_args.kwargs["json"]["messages"][0]["content"]
+            self.assertIn("Unlock Reading. Unlock Everything.", prompt)
+            self.assertIn("#1A7A7A", prompt)
+            self.assertIn("no", prompt.lower())
+
+    @override_settings(SOCIAL_OPENAI_API_KEY="test-key")
+    def test_image_provider_failures_are_clear_and_do_not_retry_paid_requests(self):
+        from apps.social.ai import generate_image
+        for status, expected in [(401, "key was rejected"), (403, "model permissions"), (429, "quota"), (500, "could not be generated")]:
+            with self.subTest(status=status), patch("apps.social.ai.requests.post", return_value=Mock(status_code=status)) as provider:
+                with self.assertRaisesMessage(SocialError, expected):
+                    generate_image(subject="A calm reading routine for tonight.")
+                self.assertEqual(provider.call_count, 1)
+        with patch("apps.social.ai.requests.post", side_effect=requests.Timeout), self.assertRaisesMessage(SocialError, "took too long"):
+            generate_image(subject="A calm reading routine for tonight.")
+
+    @override_settings(SOCIAL_OPENAI_API_KEY="test-key")
+    def test_image_provider_rejects_invalid_base64_and_non_images(self):
+        from apps.social.ai import generate_image
+        for body in ({"data": []}, {"data": [{"b64_json": "not-base64!"}]}, {"data": [{"b64_json": base64.b64encode(b"not-an-image").decode()}]}, {"data": None}):
+            response = Mock(status_code=200)
+            response.json.return_value = body
+            with self.subTest(body=body), patch("apps.social.ai.requests.post", return_value=response), self.assertRaisesMessage(SocialError, "usable picture"):
+                generate_image(subject="A calm reading routine for tonight.")
+
+    @override_settings(SOCIAL_OPENAI_API_KEY="test-key")
+    def test_captions_reject_wrong_types_and_preserve_link_line_breaks(self):
+        from apps.social.ai import write_captions
+        text = "A calm reading routine for tonight.\n\nhttps://clearcodereading.com/"
+        for facebook in (None, ["invalid"], "Guaranteed results for your child.", text):
+            response = Mock(status_code=200)
+            response.json.return_value = {"choices": [{"message": {"content": json.dumps({"facebook": facebook, "instagram": "Try a calm routine. #ClearCodeReading #ReadingAtHome"})}}]}
+            with patch("apps.social.ai.requests.post", return_value=response):
+                if facebook == text:
+                    actual, _ = write_captions(subject="A calm reading routine for tonight.", audience="families", tone="warm", link="https://clearcodereading.com/")
+                    self.assertEqual(actual, text)
+                else:
+                    with self.assertRaises(SocialError):
+                        write_captions(subject="A calm reading routine for tonight.", audience="families", tone="warm", link="")
