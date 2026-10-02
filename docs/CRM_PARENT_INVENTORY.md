@@ -11,7 +11,7 @@
 
 ## Content and routing
 
-`apps/crm/data/parent_inventory_v1.json` copies the existing `marketing-website/assessment.html` inventory, which matches the downloaded Parent Reading Inventory form. It contains Kindergarten (20), Grade 1 (25), Grade 2 (25), and Grade 3+ (24) questions, with examples counted as part of the question. All grade-specific questions must now be answered before submission. Former stopping thresholds still select the support outcome, but no longer prevent answering later questions.
+`apps/crm/data/parent_inventory_v1.json` copies the existing `marketing-website/assessment.html` inventory, which matches the downloaded Parent Reading Inventory form. It contains Kindergarten (20), Grade 1 (25), Grade 2 (25), and Grade 3+ (24) questions, with examples counted as part of the question. After a complete first section, fewer than 9 Yes answers for Kindergarten, 4 for Grade 1, 10 for Grade 2, or 8 for Grade 3+ finishes the inventory with a support outcome. Parents see “You’re in the right place!” and “Someone from our team will reach out to you.” The matching follow-up email has no booking button; the staff review task and owner notification are still created. Saving a draft does not submit it. Results record early completion and the stopping section; unanswered questions are not scored as No. Inventories already carrying later-section answers retain the full-completion flow. Later-section thresholds still select support without stopping progression.
 
 The source has conflicting percentage/Yes-count wording. Exact full-inventory boundary scores K=12, Grade 1=15, Grade 2=18, and Grade 3+=18 route to staff review; section support thresholds take precedence after all questions are answered. No diagnostic or placement decisions are made. Existing standalone website assessment behavior is unchanged.
 
@@ -61,8 +61,8 @@ The assessment action appears before a standalone “Thank you” sign-off, afte
 
 The previous implementation marked a low-scoring section as a completed inventory.
 Live investigation found a kindergarten invitation with 11 of 20 answers and rule
-`section-1-below-9`. All 20/25/25/24 grade-specific questions are now required.
-Existing valid links with early completions offer **Answer remaining questions**.
+`section-1-below-9`. At that time, all 20/25/25/24 grade-specific questions were required. The first-section completion rule described above supersedes that requirement.
+Existing valid links offer **Answer remaining questions** only when the saved answers do not satisfy the current completion rules. First-section support completions remain completed.
 This explicit action preserves answers and the earlier result in the audit log,
 reuses the review task, and issues updated follow-up receipts on completion.
 Fully completed, expired, and withdrawn invitations cannot be reopened this way.

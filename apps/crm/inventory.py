@@ -63,6 +63,18 @@ def evaluate(grade: str, answers: dict[str, bool]) -> dict[str, Any]:
         score += count
         if count < group.get("continueAt", 0) and support_rule is None:
             support_rule = f"section-{index + 1}-below-{group['continueAt']}"
+            # Finish at the first checkpoint; preserve inventories already in later sections.
+            if index == 0 and set(answers) == ids:
+                return {
+                    "complete": True,
+                    "outcome": "support",
+                    "rule": support_rule,
+                    "yes_count": score,
+                    "answered": len(answers),
+                    "total": len(allowed),
+                    "completed_early": True,
+                    "stopped_section": 1,
+                }
     if support_rule:
         return {
             "complete": True,
@@ -265,7 +277,11 @@ def complete_inventory(invitation: InventoryInvitation, result: dict[str, Any]) 
             lead=parent,
             activity_type="task",
             subject=f"Review reading inventory: {invitation.child.name}",
-            body="Review the answers and follow-up in CRM → Inventories.",
+            body=(
+                "Review the answers in CRM → Inventories and reach out to the parent."
+                if result.get("completed_early")
+                else "Review the answers and follow-up in CRM → Inventories."
+            ),
             assigned_to=parent.assigned_to,
             due_at=timezone.now() + timedelta(days=1),
         )
@@ -273,7 +289,9 @@ def complete_inventory(invitation: InventoryInvitation, result: dict[str, Any]) 
     invitation.save(update_fields=["result"])
     log_activity(invitation, "Completed")
     outcome = result["outcome"]
-    if outcome == "support":
+    if result.get("completed_early"):
+        copy, url = automated_copy("inventory_follow_up_early"), ""
+    elif outcome == "support":
         copy, url = (
             automated_copy("inventory_follow_up_support"),
             invitation_url(invitation) + "book/",

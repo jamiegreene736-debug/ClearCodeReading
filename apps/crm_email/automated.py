@@ -452,6 +452,18 @@ def _build_specs() -> tuple[AutomatedEmailSpec, ...]:
             {"child_name": "Sam"},
         ),
         _inventory(
+            "follow_up_early",
+            "Inventory results: first-section completion",
+            "A parent completes the inventory at the first-section support checkpoint",
+            "The parent",
+            "Your Parent Reading Inventory: next steps",
+            "You’re in the right place! Based on your answers, ClearCode Reading can help your child build foundational reading skills. You’ve completed the inventory—there’s nothing more to fill out. Someone from our team will reach out to you."
+            + _INVENTORY_DISCLAIMER,
+            "",
+            {"child_name": "Child’s name"},
+            {"child_name": "Sam"},
+        ),
+        _inventory(
             "follow_up_support",
             "Inventory results: support suggested",
             "A parent completes the inventory and the answers suggest reading support",
