@@ -72,7 +72,11 @@ from apps.crm.inventory_views import (
     InventorySlotsView, InventoryBookingView, InventoryPreviewView,
 )
 
+from apps.crm.inventory_intake import InventoryLinkView, InventoryIntakeView
+
 urlpatterns = [
+    path("crm/assessments/link/", InventoryLinkView.as_view(), name="inventory_link"),
+    path("reading-inventory/start/<uuid:token>/", InventoryIntakeView.as_view(), name="inventory_intake"),
     path("crm/calendar/google/connect/", GoogleCalendarConnectView.as_view(), name="crm_google_calendar_connect"),
     path("crm/calendar/", CalendarSettingsView.as_view(), name="crm_calendar_settings"),
     path("calendars/<uuid:token>.ics", calendar_feed, name="crm_calendar_feed"),

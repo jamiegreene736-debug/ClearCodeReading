@@ -1,0 +1,10 @@
+{% extends "crm/base.html" %}
+{% block title %}Inventory link{% endblock %}
+{% block content %}
+<p class="eyebrow">Parent Reading Inventory</p><h1>Your shareable inventory link</h1>
+<p>Share this reusable link with families. Each parent enters their first name, last name, email, child’s name, age, and grade before starting their own private inventory.</p>
+<p>Contacts appear in the CRM when they start. Completed inventories appear in Needs review.</p>
+<div class="card" style="padding:24px"><label for="share-url">Inventory link</label><input id="share-url" readonly value="{{ share_url }}" style="width:100%"><p><button class="btn btn-primary" id="copy-link" type="button">Copy link</button> <a class="btn" href="{{ share_url }}" target="_blank" rel="noopener">Open link</a></p><p id="copy-status" role="status" aria-live="polite"></p></div>
+<p><a href="{% url 'inventory_list' %}">Back to inventories</a></p>
+<script>document.getElementById('copy-link').addEventListener('click', async function () { const input = document.getElementById('share-url'); try { await navigator.clipboard.writeText(input.value); document.getElementById('copy-status').textContent = 'Link copied.'; } catch (error) { input.focus(); input.select(); document.getElementById('copy-status').textContent = 'Select and copy the link above.'; } });</script>
+{% endblock %}

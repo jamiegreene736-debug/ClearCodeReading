@@ -12,6 +12,7 @@ class InventoryChild(models.Model):
     name = models.CharField(max_length=120)
     grade = models.CharField(max_length=24)
     home_zip = models.CharField(max_length=10, blank=True)
+    age = models.PositiveSmallIntegerField(null=True, blank=True)
 
     @property
     def grade_label(self) -> str:
@@ -213,3 +214,14 @@ class ConsultationHoursSeed(models.Model):
         related_name="consultation_hours_seeds",
     )
     applied_at = models.DateTimeField(auto_now_add=True)
+
+
+class InventoryShareLink(models.Model):
+    """One reusable intake link; locking it serializes public contact matching."""
+
+    id = models.PositiveSmallIntegerField(primary_key=True, default=1, editable=False)
+    token = models.UUIDField(default=uuid.uuid4, unique=True, editable=False)
+    created_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True
+    )
+    created_at = models.DateTimeField(auto_now_add=True)
