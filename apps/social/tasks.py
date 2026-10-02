@@ -1,6 +1,8 @@
 from celery import shared_task
 from django_tenants.utils import schema_context
 
+from apps.social.planner import maintain_content_plan
+
 
 @shared_task
 def publish_scheduled_social_posts():
@@ -8,4 +10,6 @@ def publish_scheduled_social_posts():
     from apps.social.services import publish_due
 
     with schema_context("public"):
-        return publish_due()
+        count = publish_due()
+        maintain_content_plan()
+        return count

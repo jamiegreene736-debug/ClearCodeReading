@@ -11,7 +11,7 @@ from django.utils import timezone
 
 from apps.social.crypto import decrypt_text, encrypt_text
 from apps.social.exceptions import SocialError
-from apps.social.models import SocialAccount, SocialPost, SocialPublication
+from apps.social.models import ContentPlan, ContentWeek, SocialAccount, SocialPost, SocialPublication
 from apps.users.models import AuditLog, CustomUser
 
 logger = logging.getLogger(__name__)
@@ -90,14 +90,24 @@ def _require_publishable(post: SocialPost) -> None:
 
 def schedule_post(post: SocialPost, when: datetime, *, actor: CustomUser) -> None:
     with transaction.atomic():
+        ContentPlan.objects.select_for_update().filter(pk=1).first()
         locked = SocialPost.objects.select_for_update().get(pk=post.pk)
-        if locked.status not in {SocialPost.Status.DRAFT, SocialPost.Status.SCHEDULED, SocialPost.Status.ATTENTION}:
+        if locked.status not in {
+            SocialPost.Status.DRAFT,
+            SocialPost.Status.SCHEDULED,
+            SocialPost.Status.ATTENTION,
+        }:
             raise SocialError("This post can no longer be rescheduled.")
         _require_publishable(locked)
+        ContentWeek.objects.filter(post=locked).update(
+            auto_scheduled=False, status=ContentWeek.Status.SKIPPED
+        )
         locked.scheduled_at = when
         locked.status = SocialPost.Status.SCHEDULED
         locked.last_error = ""
-        locked.save(update_fields=["scheduled_at", "status", "last_error", "updated_at"])
+        locked.save(
+            update_fields=["scheduled_at", "status", "last_error", "updated_at"]
+        )
     AuditLog.objects.create(
         actor=actor,
         action="marketing.social.scheduled",
@@ -109,14 +119,20 @@ def schedule_post(post: SocialPost, when: datetime, *, actor: CustomUser) -> Non
 
 def cancel_schedule(post: SocialPost, *, actor: CustomUser) -> None:
     with transaction.atomic():
+        ContentPlan.objects.select_for_update().filter(pk=1).first()
         locked = SocialPost.objects.select_for_update().get(pk=post.pk)
         if locked.status != SocialPost.Status.SCHEDULED:
             raise SocialError("Only a post that is still scheduled can be canceled.")
+        ContentWeek.objects.filter(post=locked).update(
+            auto_scheduled=False, status=ContentWeek.Status.SKIPPED
+        )
         was = locked.scheduled_at.isoformat() if locked.scheduled_at else ""
         locked.status = SocialPost.Status.DRAFT
         locked.scheduled_at = None
         locked.last_error = ""
-        locked.save(update_fields=["status", "scheduled_at", "last_error", "updated_at"])
+        locked.save(
+            update_fields=["status", "scheduled_at", "last_error", "updated_at"]
+        )
     AuditLog.objects.create(
         actor=actor,
         action="marketing.social.canceled",
@@ -323,13 +339,38 @@ def publish_due(*, request=None) -> int:
     """Claim due scheduled posts, then publish them. Returns how many were claimed."""
     now = timezone.now()
     due_ids = list(
-        SocialPost.objects.filter(status=SocialPost.Status.SCHEDULED, scheduled_at__lte=now).values_list("pk", flat=True)
+        SocialPost.objects.filter(
+            status=SocialPost.Status.SCHEDULED, scheduled_at__lte=now
+        ).values_list("pk", flat=True)
     )
     claimed = []
     for pk in due_ids:
         with transaction.atomic():
+            plan = ContentPlan.objects.select_for_update().filter(pk=1).first()
             post = SocialPost.objects.select_for_update().get(pk=pk)
-            if post.status != SocialPost.Status.SCHEDULED or post.scheduled_at is None or post.scheduled_at > now:
+            automatic = ContentWeek.objects.filter(
+                post=post, auto_scheduled=True
+            ).exists()
+            if automatic:
+                from apps.social.access import can_manage_social
+
+                if (
+                    plan is None
+                    or plan.mode != ContentPlan.Mode.AUTOMATIC
+                    or plan.updated_by is None
+                    or not can_manage_social(plan.updated_by)
+                ):
+                    if post.status == SocialPost.Status.SCHEDULED:
+                        post.status, post.scheduled_at = SocialPost.Status.DRAFT, None
+                        post.save(
+                            update_fields=["status", "scheduled_at", "updated_at"]
+                        )
+                    continue
+            if (
+                post.status != SocialPost.Status.SCHEDULED
+                or post.scheduled_at is None
+                or post.scheduled_at > now
+            ):
                 continue
             post.status = SocialPost.Status.PUBLISHING
             post.save(update_fields=["status", "updated_at"])
@@ -340,7 +381,9 @@ def publish_due(*, request=None) -> int:
             publish_post(post, request=request)
         except Exception:
             logger.exception("social_publish_failed post=%s", pk)
-            SocialPost.objects.filter(pk=pk, status=SocialPost.Status.PUBLISHING).update(
+            SocialPost.objects.filter(
+                pk=pk, status=SocialPost.Status.PUBLISHING
+            ).update(
                 status=SocialPost.Status.ATTENTION,
                 last_error="Publishing stopped before the network confirmed it. Try again from Needs attention.",
             )

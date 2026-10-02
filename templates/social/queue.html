@@ -13,7 +13,8 @@
         {% else %}Posts waiting to go out. Times are Eastern. Change the date or cancel any of them until the minute it sends.{% endif %}
       </p>
     </div>
-    <a href="{% url 'social:new' %}" class="focus-ring inline-flex shrink-0 items-center justify-center rounded-full bg-deepTeal px-6 py-3 font-black text-white shadow-lg shadow-deepTeal/25">New post</a>
+    <div class="flex flex-wrap gap-2"><a href="{% url 'social:planner' %}" class="focus-ring inline-flex items-center rounded-full bg-white px-6 py-3 font-black text-deepTeal ring-1 ring-deepTeal/20">AI content plan</a>
+    <a href="{% url 'social:new' %}" class="focus-ring inline-flex shrink-0 items-center justify-center rounded-full bg-deepTeal px-6 py-3 font-black text-white shadow-lg shadow-deepTeal/25">New post</a></div>
   </div>
 
   <div class="mt-6 grid gap-3 sm:grid-cols-2">
