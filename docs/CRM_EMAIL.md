@@ -16,7 +16,8 @@ CRM follow-up tasks. Bulk campaigns are not part of this integration.
 
 ## Access and privacy
 Current CRM contacts are shared among active CRM-authorized users. Linked email history follows
-that same access rule. Drafts, outbox, BCC and templates are private to their owner. No user can
+that same access rule. Drafts, outbox, BCC and personal templates are private to their owner.
+Built-in referral templates are shared with authorized CRM users. No user can
 send through another user's mailbox. Email endpoints operate only on the public schema.
 Connection grants read access to the mailbox but imports only linked threads or explicitly
 selected historical threads. Matching a contact email alone never automatically publishes a
@@ -276,3 +277,28 @@ and inventory bookings both take a slot out of availability, the CRM availabilit
 the host's .ics feed. A honeypot field and a per-address cache rate limit protect the form.
 When the first-stage pilot's scheduling link is blank, the Families email uses
 `PUBLIC_APP_URL` + `/book/` (HTTPS only), so no link needs to be pasted after a domain change.
+
+## Referral partner contact templates
+
+Open a CRM contact, expand **Send a template email**, and select **Referral Partner -
+School Leader**, **Rec Center**, **Pediatrician**, or **General**. The same choices
+appear on the contact Email page and under **Start with a template** in Compose.
+They are built-in choices for existing and new CRM users; no seeding or migration
+is needed. Personal templates remain private and editable in Email settings.
+
+The four supplied Word letters are preserved in `apps/crm_email/content/referral_partners/`.
+Greetings use the contact's first name (common titles are removed); the pediatrician
+letter uses “Dr.” plus the contact name without duplicating an existing title.
+School and center subjects use the linked company name, then organization name,
+then school name. Missing values render as “Hi there,” or “your school/center”.
+The general letter uses “organization” for its editorial practice/organization/business
+choice. HTML substitutions are escaped. The configured CRM mailbox signature replaces
+`[email signature]`; Gmail does not automatically insert its own web-interface signature.
+The letters introduce Bethany by name, as supplied; review that wording when using
+another sender's mailbox.
+
+No parent flyer was supplied, so the copy offers to share a flyer instead of claiming
+one is attached. A sender can upload a flyer in Compose and edit the draft as needed.
+Selecting a template only opens an editable draft; **Send / schedule email** uses
+the signed-in user's connected Gmail mailbox and the existing durable outbox.
+The change does not send outreach automatically.

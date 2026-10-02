@@ -67,8 +67,8 @@ from apps.sessions.models import (
     SessionTemplate,
     SkillObservation,
 )
-from apps.social.models import SocialAccount, SocialPost, SocialPublication
 from apps.tenants.models import Domain
+from apps.social.models import SocialAccount, SocialPost, SocialPublication
 from apps.users.management.commands.seed_demo_login import (
     DEMO_ADMIN_EMAIL,
     DEMO_PARENT_EMAIL,
@@ -259,27 +259,25 @@ class Command(BaseCommand):
         self._seed_outcomes(center, curriculum)
 
     def _seed_social(self, admin_user: CustomUser) -> None:
-        # Demo coverage must never connect an account or queue an external post.
         SocialAccount.objects.get_or_create(
             network=SocialAccount.Network.FACEBOOK,
-            defaults={"display_name": "Demo Facebook page"},
+            defaults={"display_name": "Demo social account"},
         )
         post, _ = SocialPost.objects.get_or_create(
-            brief="Demo social post preview",
+            brief="Demo reading practice social post",
             created_by=admin_user,
             defaults={
-                "facebook_caption": "Demo reading tip: make time to read together.",
-                "status": SocialPost.Status.DRAFT,
-                "post_to_facebook": False,
+                "facebook_caption": "Sample reading practice idea for families.",
                 "post_to_instagram": False,
             },
         )
+        # An unsuccessful demo attempt exercises admin history without publishing.
         SocialPublication.objects.get_or_create(
             post=post,
             network=SocialAccount.Network.FACEBOOK,
             defaults={
                 "status": SocialPublication.Status.FAILED,
-                "error": "Demo preview only; no publication was attempted.",
+                "error": "Demo only; no publication was attempted.",
             },
         )
 

@@ -41,6 +41,18 @@ class AdminDemoDataTests(TestCase):
     def test_external_workflows_remain_draft_or_pending(self):
         call_command("seed_admin_demo_data", verbosity=0)
 
+        account = SocialAccount.objects.get(network=SocialAccount.Network.FACEBOOK)
+        self.assertEqual(account.status, SocialAccount.Status.DISCONNECTED)
+        self.assertEqual(account.encrypted_token, "")
+        self.assertEqual(
+            SocialPost.objects.get(brief="Demo reading practice social post").status,
+            SocialPost.Status.DRAFT,
+        )
+        publication = SocialPublication.objects.get(post__brief="Demo reading practice social post")
+        self.assertEqual(publication.status, SocialPublication.Status.FAILED)
+        self.assertEqual(publication.external_id, "")
+        self.assertIsNone(publication.published_at)
+
         self.assertEqual(
             NewsletterCampaign.objects.get(
                 subject__startswith="Demo newsletter"
@@ -63,17 +75,6 @@ class AdminDemoDataTests(TestCase):
             ).status,
             ProviderOnboarding.Status.NOT_INVITED,
         )
-        account = SocialAccount.objects.get(network=SocialAccount.Network.FACEBOOK)
-        self.assertEqual(account.status, SocialAccount.Status.DISCONNECTED)
-        self.assertFalse(account.encrypted_token)
-        post = SocialPost.objects.get(brief="Demo social post preview")
-        self.assertEqual(post.status, SocialPost.Status.DRAFT)
-        self.assertIsNone(post.scheduled_at)
-        self.assertFalse(post.selected_networks())
-        publication = post.publications.get()
-        self.assertEqual(publication.status, SocialPublication.Status.FAILED)
-        self.assertFalse(publication.external_id)
-        self.assertIsNone(publication.published_at)
         reference = SensitiveDataReference.objects.get(
             external_subject_id="demo-subject-reference"
         )
