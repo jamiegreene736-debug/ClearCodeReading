@@ -50,6 +50,7 @@ from apps.crm_email import automated
 from apps.crm_email.automated import text_to_html
 from apps.crm_email.contact_templates import (
     TEMPLATE_PLACEHOLDERS,
+    apply_pipeline_template,
     apply_template,
     contact_templates,
 )
@@ -831,12 +832,21 @@ def compose(request: EmailRequest, pk: int) -> HttpResponse:
                     )
                 )
         elif request.GET.get("template"):
-            template = REFERRAL_TEMPLATES.get(
-                request.GET["template"]
-            ) or get_object_or_404(
-                EmailTemplate, pk=request.GET["template"], owner=request.user
-            )
-            initial.update(apply_template(template, lead, mailbox))
+            selection = request.GET["template"]
+            if selection.startswith("pipeline:"):
+                try:
+                    initial.update(
+                        apply_pipeline_template(
+                            selection.removeprefix("pipeline:"), lead, mailbox
+                        )
+                    )
+                except LookupError as exc:
+                    raise Http404("Unknown pipeline template") from exc
+            else:
+                template = REFERRAL_TEMPLATES.get(selection) or get_object_or_404(
+                    EmailTemplate, pk=selection, owner=request.user
+                )
+                initial.update(apply_template(template, lead, mailbox))
     except (ValueError, ValidationError):
         raise PermissionDenied
     form = ComposeForm(request.POST or None, initial=initial)

@@ -137,6 +137,7 @@
         {% else %}
           <p class="subtle">You have no email templates yet. Save one once and reuse it from any contact.</p>
         {% endif %}
+        <p class="subtle">Pipeline templates use the current wording in <a href="{% url 'crm_email_notifications' %}">Email &amp; notifications</a>. Missing details are marked in the draft for you to complete.</p>
         <p class="template-manage"><a href="{% url 'crm_email_template_new' %}">New template</a> · <a href="{% url 'crm_email_settings' %}">Manage templates</a></p>
       </details>
       <p class="subtle">Properties live here only. Click one to edit.</p>
