@@ -43,6 +43,21 @@ The button labeled **Draft captions** only formats that brief. It adds a fixed
 opening line, keeps the person’s own words, and adds hashtags. It does not write
 new sentences. **Draft with AI**, below, is the separate button that does.
 
+### Generate post ideas
+
+**Generate post ideas** needs no subject. It uses audience and tone to suggest three
+fresh briefs. **Draft this idea** fills the subject and writes editable Facebook
+and Instagram captions, with an image when checked. Asking for ideas does not save
+or replace an existing draft. Generating on a scheduled post requires cancelling
+its schedule first, so unreviewed AI content cannot be published by the worker.
+
+AI ideas, captions, and images all load `docs/BRAND_SYSTEM.md` as their shared
+brand authority. Prompts require the exact brand identity, a supportive public
+voice, no invented offers or results, and no identifying student information.
+Output checks reject score language, incorrect brand spelling, and outcome promises;
+they are not a substitute for a person's review of all wording and imagery.
+Illustrations use the exact palette and never synthesize logos or typography.
+
 ### Draft with AI
 
 On the same “From a brief” screen, next to Draft captions. The person sets a
@@ -54,7 +69,7 @@ a Facebook caption and a shorter Instagram caption written as new wording, not
 a copy of the subject. Facebook may include the link. Instagram stays short and
 can include a few hashtags. Both captions land in editable fields.
 
-If the image box is checked, the same click also asks OpenAI DALL·E 3 for one
+If the image box is checked, the same click also asks OpenAI GPT Image for one
 illustration. It is stored as the post photo, so Instagram has a picture. The
 picture is a simple illustration in the ClearCode palette. It does not show a
 real child, a school, the logo, or words baked into the art. **New image**
@@ -69,11 +84,14 @@ Both calls use `SOCIAL_OPENAI_API_KEY` (or `OPENAI_API_KEY`) on the server.
 The key is not shown in the portal and is not committed. If it is missing,
 Draft with AI explains that and leaves the subject on the page. Draft captions
 still works without it. `SOCIAL_AI_TEXT_MODEL` defaults to `gpt-4o-mini`.
-`SOCIAL_AI_IMAGE_MODEL` defaults to `dall-e-3`.
+`SOCIAL_AI_IMAGE_MODEL` defaults to `gpt-image-2`. Retired DALL·E overrides
+are mapped to that supported default. GPT Image requests use `output_format`,
+not the unsupported `response_format` argument. Images are validated and stored
+as JPEG for Instagram. The web-worker timeout covers the bounded AI calls.
 
 The model is told the brand rules up front: public voice for families or
-teachers, no child’s name, no school, no reading scores. If a reply includes
-those, it is discarded and the page asks for another try. The idea itself is
+teachers, no child’s name, no school, no reading scores. Score language and selected unsupported claims are rejected; a person must still
+review captions for identifying details and factual accuracy. The idea itself is
 not saved as the caption unless the person edits it in.
 
 ### Write it yourself

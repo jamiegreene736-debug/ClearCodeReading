@@ -13,7 +13,14 @@ from django.utils import timezone
 from django.views.decorators.http import require_http_methods, require_POST
 
 from apps.social.access import can_manage_social, social_editor_required
-from apps.social.ai import ai_configured, generate_image, image_model, text_model, write_captions
+from apps.social.ai import (
+    ai_configured,
+    generate_image,
+    image_model,
+    suggest_ideas,
+    text_model,
+    write_captions,
+)
 from apps.social.crypto import decrypt_json, digest, encrypt_json
 from apps.social.drafts import draft_captions
 from apps.social.exceptions import SocialError
@@ -150,13 +157,24 @@ def post_edit(request, pk=None):
         messages.error(request, "A post that is already sending or posted cannot be edited here.")
         return redirect("social:queue")
     mode = request.GET.get("mode") or (post.source if pk else SocialPost.Source.BRIEF)
+    ideas: list[str] = []
     generate_image_checked = request.method != "POST" or request.POST.get("generate_image") == "on"
     if request.method == "POST":
         try:
             mode = _apply_post(post, request)
             action = request.POST.get("action") or "save"
+            selected_idea = request.POST.get("selected_idea", "").strip()
+            if selected_idea:
+                if not 12 <= len(selected_idea) <= 500:
+                    raise SocialError("Choose a valid idea or generate new ideas.")
+                post.brief = selected_idea
+                action = "draft_ai"
+            if action in {"ideas", "draft_ai", "new_image"} and post.status == SocialPost.Status.SCHEDULED:
+                raise SocialError("Cancel this post’s schedule before generating new content for review.")
             notice = "Draft saved."
-            if action == "draft":
+            if action == "ideas":
+                ideas = suggest_ideas(audience=post.audience, tone=post.tone)
+            elif action == "draft":
                 facebook, instagram = draft_captions(
                     brief=post.brief,
                     audience=post.audience,
@@ -181,7 +199,7 @@ def post_edit(request, pk=None):
                     notice = "Drafted with AI. Read both captions before you schedule or post."
                 if action == "new_image" or generate_image_checked:
                     try:
-                        raw, content_type = generate_image(subject=post.brief)
+                        raw, content_type = generate_image(subject=post.brief or post.facebook_caption or post.instagram_caption)
                     except SocialError as exc:
                         if action == "new_image" or not post.facebook_caption:
                             raise
@@ -189,26 +207,27 @@ def post_edit(request, pk=None):
                     else:
                         post.image_data = raw
                         post.image_content_type = content_type
-                        post.image_name = "ai-draft.png"
+                        post.image_name = "ai-draft.jpg"
                         if action == "new_image":
                             notice = "A new image is attached. The captions are unchanged."
-            if post.created_by_id is None:
-                post.created_by = request.user
-            if post.status not in {SocialPost.Status.SCHEDULED, SocialPost.Status.ATTENTION}:
-                post.status = SocialPost.Status.DRAFT
-            post.save()
-            if action == "schedule":
-                return redirect("social:schedule", pk=post.pk)
-            if action == "post_now":
-                claim_and_publish_now(post, actor=request.user, request=request)
-                post.refresh_from_db()
-                if post.status == SocialPost.Status.POSTED:
-                    messages.success(request, "The post was published.")
-                    return redirect(f"{reverse('social:queue')}?tab=posted")
-                messages.error(request, post.last_error or "The post needs attention.")
-                return redirect(f"{reverse('social:queue')}?tab=attention")
-            messages.success(request, notice)
-            return redirect(f"{reverse('social:edit', kwargs={'pk': post.pk})}?mode={post.source}")
+            if action != "ideas":
+                if post.created_by_id is None:
+                    post.created_by = request.user
+                if post.status not in {SocialPost.Status.SCHEDULED, SocialPost.Status.ATTENTION}:
+                    post.status = SocialPost.Status.DRAFT
+                post.save()
+                if action == "schedule":
+                    return redirect("social:schedule", pk=post.pk)
+                if action == "post_now":
+                    claim_and_publish_now(post, actor=request.user, request=request)
+                    post.refresh_from_db()
+                    if post.status == SocialPost.Status.POSTED:
+                        messages.success(request, "The post was published.")
+                        return redirect(f"{reverse('social:queue')}?tab=posted")
+                    messages.error(request, post.last_error or "The post needs attention.")
+                    return redirect(f"{reverse('social:queue')}?tab=attention")
+                messages.success(request, notice)
+                return redirect(f"{reverse('social:edit', kwargs={'pk': post.pk})}?mode={post.source}")
         except SocialError as exc:
             messages.error(request, str(exc))
             if post.pk is None:
@@ -218,6 +237,7 @@ def post_edit(request, pk=None):
         "social/post_form.html",
         {
             "post": post,
+            "ideas": ideas,
             "mode": mode,
             "accounts": _accounts(),
             "generate_image": generate_image_checked,
