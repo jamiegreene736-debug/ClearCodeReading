@@ -200,7 +200,7 @@ class Opportunity(TimestampedModel, SoftDeleteModel):
         FAMILY_LEAD_NURTURE = "family_lead_nurture", "Lead / Nurture"
         FAMILY_WAITLIST = "family_waitlist", "Waitlist"
         FAMILY_CONSULTATION = "family_consultation", "Consultation Scheduled"
-        FAMILY_ASSESSMENT = "family_assessment", "Assessment"
+        FAMILY_ASSESSMENT = "family_assessment", "Inventory"
         FAMILY_ENROLLED = "family_enrolled", "Enrolled"
         FAMILY_ACTIVE = "family_active", "Active"
         FAMILY_LOST = "family_lost", "Lost"
@@ -452,7 +452,7 @@ PIPELINE_STAGE_CHOICES = {
         (Opportunity.Stage.FAMILY_LEAD_NURTURE, "Lead / Nurture"),
         (Opportunity.Stage.FAMILY_WAITLIST, "Waitlist"),
         (Opportunity.Stage.FAMILY_CONSULTATION, "Consultation Scheduled"),
-        (Opportunity.Stage.FAMILY_ASSESSMENT, "Assessment"),
+        (Opportunity.Stage.FAMILY_ASSESSMENT, "Inventory"),
         (Opportunity.Stage.FAMILY_ENROLLED, "Enrolled"),
         (Opportunity.Stage.FAMILY_ACTIVE, "Active"),
         (Opportunity.Stage.FAMILY_LOST, "Lost"),
@@ -619,7 +619,7 @@ class FormSubmission(TimestampedModel):
 
     class FormType(models.TextChoices):
         CONSULTATION = "consultation", "Consultation request"
-        ASSESSMENT = "assessment", "Assessment follow-up"
+        ASSESSMENT = "assessment", "Inventory follow-up"
         SURVEY = "survey", "Early interest survey"
         CAREER = "career", "Career interest"
         NEWSLETTER = "newsletter", "Newsletter signup"

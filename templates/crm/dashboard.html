@@ -38,7 +38,7 @@
     <div>
       <p class="eyebrow">CRM command center</p>
       <h1>What needs attention</h1>
-      <p class="subtle">Clear overdue follow-ups first, route people who are not on a pipeline, then read finished assessments.</p>
+      <p class="subtle">Clear overdue follow-ups first, route people who are not on a pipeline, then read finished inventories.</p>
     </div>
   </div>
 
@@ -54,14 +54,14 @@
       <div class="stat-hint">{% if pending_triage %}Choose a pipeline{% else %}Queue is clear{% endif %}</div>
     </a>
     <a class="card stat {% if assessments_to_review %}is-hot{% endif %}" href="#reviews">
-      <div class="stat-label">Assessments to review</div>
+      <div class="stat-label">Inventories to review</div>
       <div class="stat-value">{{ assessments_to_review }}</div>
       <div class="stat-hint">{% if assessments_to_review %}Finished, unread{% else %}Nothing to read{% endif %}</div>
     </a>
     <a class="card stat" href="#waiting">
       <div class="stat-label">Still finishing</div>
       <div class="stat-value">{{ assessments_waiting }}</div>
-      <div class="stat-hint">{% if assessments_waiting %}Waiting on a family{% else %}No open assessments{% endif %}</div>
+      <div class="stat-hint">{% if assessments_waiting %}Waiting on a family{% else %}No open inventories{% endif %}</div>
     </a>
     {% if hiring_counts %}
       <a class="card stat {% if hiring_counts.pending_intake %}is-hot{% endif %}" href="#intake">
@@ -120,7 +120,7 @@
       </section>
 
       <section class="card section-card" id="reviews">
-        <div class="section-head"><h2>Assessments to review</h2><a href="{% url 'inventory_list' %}?queue=review">Open queue</a></div>
+        <div class="section-head"><h2>Inventories to review</h2><a href="{% url 'inventory_list' %}?queue=review">Open queue</a></div>
         <div class="action-list">
           {% for person in assessment_review %}
             <a class="action-row" href="{% url 'inventory_detail' person.invitation.pk %}">
@@ -130,7 +130,7 @@
               </span>
               <span class="badge badge-warn">{{ person.waiting_label }}</span>
             </a>
-          {% empty %}<div class="empty"><strong>No finished assessments are waiting.</strong><br>Families still working appear under Still finishing.</div>{% endfor %}
+          {% empty %}<div class="empty"><strong>No finished inventories are waiting.</strong><br>Families still working appear under Still finishing.</div>{% endfor %}
         </div>
       </section>
 
@@ -154,17 +154,17 @@
       {% endif %}
 
       <section class="card section-card quiet-card" id="waiting">
-        <div class="section-head"><h2>Waiting to finish an assessment</h2><a href="{% url 'inventory_list' %}">Open queue</a></div>
+        <div class="section-head"><h2>Waiting to finish an inventory</h2><a href="{% url 'inventory_list' %}">Open queue</a></div>
         {% if assessment_email_attention %}
-          <p class="subtle" style="margin-top:-6px"><a href="{% url 'inventory_list' %}?queue=attention">{% if assessment_email_attention == 1 %}1 assessment email needs attention{% else %}{{ assessment_email_attention }} assessment emails need attention{% endif %}</a></p>
+          <p class="subtle" style="margin-top:-6px"><a href="{% url 'inventory_list' %}?queue=attention">{% if assessment_email_attention == 1 %}1 inventory email needs attention{% else %}{{ assessment_email_attention }} inventory emails need attention{% endif %}</a></p>
         {% endif %}
         <div class="action-list">
           {% for person in assessment_waiting %}
             <a class="action-row" href="{% url 'inventory_detail' person.invitation.pk %}">
-              <span><strong>{{ person.lead.contact_name }}</strong> {% include "crm/includes/priority_badge.html" with contact=person.lead only %}<br><span class="action-meta">{{ person.child_label }}{% if person.open_count > 1 %} · {{ person.open_count }} assessments{% endif %}</span></span>
+              <span><strong>{{ person.lead.contact_name }}</strong> {% include "crm/includes/priority_badge.html" with contact=person.lead only %}<br><span class="action-meta">{{ person.child_label }}{% if person.open_count > 1 %} · {{ person.open_count }} inventories{% endif %}</span></span>
               <span class="badge badge-neutral">{{ person.waiting_label }}</span>
             </a>
-          {% empty %}<div class="empty"><strong>0 people waiting to finish.</strong><br>Open a contact and send an assessment when a family is ready.</div>{% endfor %}
+          {% empty %}<div class="empty"><strong>0 people waiting to finish.</strong><br>Open a contact and send an inventory when a family is ready.</div>{% endfor %}
         </div>
       </section>
     </div>

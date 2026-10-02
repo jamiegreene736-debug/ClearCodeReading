@@ -405,7 +405,7 @@ class ConsentLog(TimestampedModel):
         PRIVACY = "privacy", "Privacy"
         DATA_PROCESSING = "data_processing", "Data Processing"
         SCHOOL_SHARING = "school_sharing", "School Sharing"
-        ASSESSMENT = "assessment", "Assessment"
+        ASSESSMENT = "assessment", "Inventory"
 
     class Status(models.TextChoices):
         GRANTED = "granted", "Granted"

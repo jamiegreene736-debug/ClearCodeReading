@@ -149,7 +149,7 @@ def send(client: Gmail, message: Message) -> None:
         )
     ):
         message.status = Message.Status.CANCELLED
-        message.last_error = "Assessment link expired or was withdrawn before delivery."
+        message.last_error = "Inventory link expired or was withdrawn before delivery."
         message.save()
         return
     if message.lead is not None and message.lead.is_deleted:

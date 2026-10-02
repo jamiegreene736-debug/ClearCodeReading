@@ -13,14 +13,14 @@ from apps.assessments.tasks import notify_assessment_review_completed
 from apps.notifications.tasks import notify_evaluator_assessment_human_review
 
 
-@admin.action(description="Move selected assessments to human review")
+@admin.action(description="Move selected inventories to human review")
 def move_to_human_review(modeladmin, request, queryset):
     for assessment in queryset:
         assessment.status = Assessment.Status.HUMAN_REVIEW
         assessment.save(update_fields=["status", "updated_at"])
 
 
-@admin.action(description="Mark selected assessments completed")
+@admin.action(description="Mark selected inventories completed")
 def mark_completed(modeladmin, request, queryset):
     completed_at = timezone.now()
     for assessment in queryset:
@@ -45,7 +45,7 @@ def notify_evaluators(modeladmin, request, queryset):
     for assessment in queryset:
         notify_evaluator_assessment_human_review.delay(assessment.id)
         queued += 1
-    modeladmin.message_user(request, f"Queued evaluator notifications for {queued} assessment(s).", messages.SUCCESS)
+    modeladmin.message_user(request, f"Queued evaluator notifications for {queued} {'inventory' if queued == 1 else 'inventories'}.", messages.SUCCESS)
 
 
 class AssessmentResultInline(admin.StackedInline):
@@ -162,7 +162,7 @@ class AssessmentAdmin(admin.ModelAdmin):
         "final_message",
     )
     fieldsets = (
-        ("Assessment", {"fields": ("title", "child", "school", "assigned_by", "assessment_type", "status", "skill")}),
+        ("Inventory", {"fields": ("title", "child", "school", "assigned_by", "assessment_type", "status", "skill")}),
         ("Survey Result", {"fields": ("reading_age", "overall_score", "survey_completed_at", "final_message", "kpi_breakdown_display", "strengths_display", "growth_areas_display")}),
         ("Timing", {"fields": ("scheduled_for", "started_at", "completed_at")}),
         ("Scores", {"fields": ("raw_score", "max_score", "percentile", "scoring", "recommendations")}),
@@ -282,7 +282,7 @@ class AssessmentAdmin(admin.ModelAdmin):
             .order_by("created_at")[:100]
         )
         rows = [
-            "<tr><th>Assessment</th><th>Child</th><th>School</th><th>Reading Age</th><th>Overall</th><th>Growth Areas</th><th>Submitted</th><th>Open</th></tr>"
+            "<tr><th>Inventory</th><th>Child</th><th>School</th><th>Reading Age</th><th>Overall</th><th>Growth Areas</th><th>Submitted</th><th>Open</th></tr>"
         ]
         for assessment in assessments:
             change_url = reverse("admin:assessments_assessment_change", args=[assessment.id])
@@ -302,7 +302,7 @@ class AssessmentAdmin(admin.ModelAdmin):
         html = (
             "<html><head><title>Pending Human Reviews</title></head><body>"
             "<h1>Pending Human Reviews</h1>"
-            '<p><a href="../">Back to assessments</a></p>'
+            '<p><a href="../">Back to inventories</a></p>'
             '<table border="1" cellpadding="6" cellspacing="0">'
             + "".join(rows)
             + "</table></body></html>"
@@ -316,7 +316,7 @@ class AssessmentAdmin(admin.ModelAdmin):
             .order_by("-completed_at", "-survey_completed_at")[:200]
         )
         rows = [
-            "<tr><th>Assessment</th><th>Child</th><th>School</th><th>Reading Age</th><th>Grade</th><th>Overall</th><th>Strengths</th><th>Growth Areas</th><th>Completed</th><th>Open</th></tr>"
+            "<tr><th>Inventory</th><th>Child</th><th>School</th><th>Reading Age</th><th>Grade</th><th>Overall</th><th>Strengths</th><th>Growth Areas</th><th>Completed</th><th>Open</th></tr>"
         ]
         for assessment in assessments:
             result = getattr(assessment, "result", None)
@@ -339,7 +339,7 @@ class AssessmentAdmin(admin.ModelAdmin):
         html = (
             "<html><head><title>Completed Reading Surveys</title></head><body>"
             "<h1>Completed Reading Surveys</h1>"
-            '<p><a href="../">Back to assessments</a></p>'
+            '<p><a href="../">Back to inventories</a></p>'
             '<table border="1" cellpadding="6" cellspacing="0">'
             + "".join(rows)
             + "</table></body></html>"
@@ -429,7 +429,7 @@ class AssessmentResultAdmin(admin.ModelAdmin):
         "growth_areas_display",
     )
     fieldsets = (
-        ("Assessment", {"fields": ("assessment", "reading_age", "grade_equivalent", "final_message", "overall_score_display")}),
+        ("Inventory", {"fields": ("assessment", "reading_age", "grade_equivalent", "final_message", "overall_score_display")}),
         ("KPI Breakdown", {"fields": ("category_breakdown_display", "strengths_display", "growth_areas_display")}),
         ("Review Notes", {"fields": ("teacher_summary", "evaluator_notes")}),
         ("Raw Data", {"fields": ("final_scores", "category_breakdown", "strengths", "growth_areas", "metadata")}),

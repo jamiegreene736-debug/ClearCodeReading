@@ -612,6 +612,99 @@ class EmailTests(TestCase):
             self.client.get(reverse("crm_email_template_new")).status_code, 200
         )
 
+    def test_all_pipeline_templates_are_available_and_personalized(self) -> None:
+        from apps.crm_email.contact_templates import pipeline_template_keys
+
+        keys = pipeline_template_keys()
+        self.assertEqual(len(keys), 7)
+        self.lead.contact_name = "Jordan Rivera"
+        self.lead.save()
+        url = reverse("crm_email_compose", args=[self.lead.pk])
+        for route in ("crm_contact_detail", "crm_contact_email", "crm_email_compose"):
+            response = self.client.get(reverse(route, args=[self.lead.pk]))
+            for key in keys:
+                self.assertContains(response, f"?template=pipeline:{key}")
+        for key in keys:
+            with self.subTest(key=key):
+                response = self.client.get(url, {"template": "pipeline:" + key})
+                self.assertEqual(response.status_code, 200)
+                initial = response.context["form"].initial
+                self.assertEqual(initial["to"], self.lead.contact_email)
+                self.assertIn("Jordan", initial["body_html"])
+                self.assertNotIn("{{", initial["body_html"])
+                self.assertNotIn("[TEST]", initial["subject"])
+        self.assertFalse(Message.objects.exists())
+        self.assertEqual(
+            self.client.get(
+                url, {"template": "pipeline:website_consultation"}
+            ).status_code,
+            404,
+        )
+
+    def test_pipeline_template_uses_saved_copy_and_escapes_contact(self) -> None:
+        from apps.crm_email.models import AutomatedEmail
+
+        AutomatedEmail.objects.create(
+            key="stage_referral_partners",
+            subject="Hello {{contact.firstname}}",
+            body="<p>{{contact.name}} at {{company.name}}</p>",
+        )
+        self.lead.contact_name = "Jordan <script>alert(1)</script>"
+        self.lead.organization_name = "Reading & Learning"
+        self.lead.save()
+        response = self.client.get(
+            reverse("crm_email_compose", args=[self.lead.pk]),
+            {"template": "pipeline:stage_referral_partners"},
+        )
+        initial = response.context["form"].initial
+        self.assertEqual(initial["subject"], "Hello Jordan")
+        self.assertIn("&lt;script&gt;", initial["body_html"])
+        self.assertIn("Reading &amp; Learning", initial["body_html"])
+        self.assertNotIn("<script>", initial["body_html"])
+
+    def test_pipeline_equity_uses_unique_deal_and_sender_signature(self) -> None:
+        from apps.crm.models import Opportunity
+
+        self.mailbox.signature = "<p>My unique signature</p>"
+        self.mailbox.save()
+        url = reverse("crm_email_compose", args=[self.lead.pk])
+        params = {"template": "pipeline:stage_equity_investment"}
+        response = self.client.get(url, params)
+        self.assertIn(
+            "[Missing: Investment category]",
+            response.context["form"].initial["body_html"],
+        )
+        deal = Opportunity.objects.create(
+            lead=self.lead,
+            pipeline="equity_investment",
+            name="Seed round",
+            investment_category="education & literacy",
+        )
+        response = self.client.get(url, params)
+        body = response.context["form"].initial["body_html"]
+        self.assertIn("education &amp; literacy", body)
+        self.assertEqual(body.count("My unique signature"), 1)
+        duplicate = Opportunity.objects.create(
+            lead=self.lead,
+            pipeline="equity_investment",
+            name="Other round",
+            investment_category="healthcare",
+        )
+        response = self.client.get(url, params)
+        self.assertIn(
+            "[Missing: Investment category]",
+            response.context["form"].initial["body_html"],
+        )
+        duplicate.is_deleted = True
+        duplicate.save()
+        deal.is_deleted = True
+        deal.save()
+        response = self.client.get(url, params)
+        self.assertIn(
+            "[Missing: Investment category]",
+            response.context["form"].initial["body_html"],
+        )
+
     def test_referral_templates_available_to_each_crm_user_without_seeding(
         self,
     ) -> None:

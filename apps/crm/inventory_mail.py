@@ -56,13 +56,13 @@ def _enqueue_locked(delivery: InventoryMail, mailbox: Mailbox) -> None:
     invitation = delivery.invitation
     if not settings.PUBLIC_APP_URL.startswith("https://"):
         raise EmailError(
-            "Set PUBLIC_APP_URL to the public HTTPS website before sending assessment links."
+            "Set PUBLIC_APP_URL to the public HTTPS website before sending inventory links."
         )
     if "/reading-inventory/" in delivery.action_url and (
         invitation.revoked_at or invitation.expires_at <= timezone.now()
     ):
         raise EmailError(
-            "The assessment link expired or was withdrawn. Send a new invitation."
+            "The inventory link expired or was withdrawn. Send a new invitation."
         )
     if delivery.provider_message_id:
         message = Message.objects.select_for_update().get(

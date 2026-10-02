@@ -1,5 +1,5 @@
 {% extends "crm/base.html" %}
-{% block title %}Assessments{% endblock %}
+{% block title %}Inventories{% endblock %}
 {% block extra_style %}
   .page-head { display:flex; align-items:flex-end; justify-content:space-between; gap:18px; }
   .page-actions { display:flex; flex-wrap:wrap; gap:8px; }
@@ -36,8 +36,8 @@
 {% block content %}
   <div class="page-head">
     <div>
-      <p class="eyebrow">Assessment work</p>
-      <h1>Assessments</h1>
+      <p class="eyebrow">Inventory work</p>
+      <h1>Inventories</h1>
       <p class="subtle">{{ intro }}</p>
     </div>
     <div class="page-actions">
@@ -46,22 +46,22 @@
     </div>
   </div>
 
-  <ol class="assessment-flow" aria-label="Assessment flow">
+  <ol class="assessment-flow" aria-label="Inventory flow">
     <li {% if queue == "attention" %}class="is-current"{% endif %}><strong>1. Send</strong><span>From a contact record</span></li>
     <li {% if queue == "waiting" or queue == "not_started" or queue == "in_progress" %}class="is-current"{% endif %}><strong>2. Parent finishes</strong><span>This is the waiting queue</span></li>
     <li {% if queue == "review" %}class="is-current"{% endif %}><strong>3. Review</strong><span>Read the answers</span></li>
     <li {% if queue == "booked" or queue == "finished" %}class="is-current"{% endif %}><strong>4. Next step</strong><span>Consultation or resources</span></li>
   </ol>
 
-  <section class="stats" aria-label="Assessment summary">
+  <section class="stats" aria-label="Inventory summary">
     <a class="card stat" href="?queue=waiting" style="text-decoration:none"><div class="stat-label">People waiting to finish</div><div class="stat-value">{{ summary.people_waiting }}</div></a>
-    <a class="card stat" href="?queue=waiting" style="text-decoration:none"><div class="stat-label">Assessments still open</div><div class="stat-value">{{ summary.assessments_open }}</div></a>
+    <a class="card stat" href="?queue=waiting" style="text-decoration:none"><div class="stat-label">Inventories still open</div><div class="stat-value">{{ summary.assessments_open }}</div></a>
     <a class="card stat" href="?queue=review" style="text-decoration:none"><div class="stat-label">Needs review</div><div class="stat-value">{{ summary.needs_review }}</div></a>
     <a class="card stat" href="?queue=attention" style="text-decoration:none"><div class="stat-label">Email needs attention</div><div class="stat-value">{{ summary.email_attention }}</div></a>
     <div class="card stat"><div class="stat-label">Oldest still open</div><div class="stat-value" style="font-size:22px">{{ summary.oldest_waiting|default:"—" }}</div></div>
   </section>
 
-  <nav class="queue-tabs" aria-label="Assessment queues">
+  <nav class="queue-tabs" aria-label="Inventory queues">
     {% for tab in summary.tabs %}
       <a class="btn queue-tab {% if queue == tab.key %}active{% endif %}" href="?queue={{ tab.key }}{% if query %}&q={{ query|urlencode }}{% endif %}" {% if queue == tab.key %}aria-current="page"{% endif %}>{{ tab.label }}<span class="queue-count">{{ tab.count }}</span></a>
     {% endfor %}
@@ -76,7 +76,7 @@
     <button class="btn btn-primary" type="submit">Search</button>
   </form>
 
-  <p class="subtle">{{ assessments_in_view }} assessment{{ assessments_in_view|pluralize }} · {{ people_in_view }} {{ people_in_view|pluralize:"person,people" }}</p>
+  <p class="subtle">{{ assessments_in_view }} inventor{{ assessments_in_view|pluralize:"y,ies" }} · {{ people_in_view }} {{ people_in_view|pluralize:"person,people" }}</p>
 
   <div class="assessment-list">
     {% for card in cards %}
@@ -108,11 +108,11 @@
     {% empty %}
       <div class="card empty">
         {% if query %}
-          <strong>No assessments match that search.</strong><br>Try another name or email, or clear the search.
+          <strong>No inventories match that search.</strong><br>Try another name or email, or clear the search.
         {% elif queue == "waiting" %}
-          <strong>0 people waiting to finish.</strong><br>Open a contact and choose “Send assessment” when a family is ready.
+          <strong>0 people waiting to finish.</strong><br>Open a contact and choose “Send inventory” when a family is ready.
         {% else %}
-          <strong>Nothing in this queue.</strong><br>Switch queues above, or send an assessment from a contact.
+          <strong>Nothing in this queue.</strong><br>Switch queues above, or send an inventory from a contact.
         {% endif %}
       </div>
     {% endfor %}

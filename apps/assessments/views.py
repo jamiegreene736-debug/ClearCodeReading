@@ -44,8 +44,8 @@ def assessment_audio(request, key):
         except AudioGenerationError as exc:
             logger.warning("Assessment audio unavailable for %s: %s", key, exc)
             if key not in ASSESSMENT_AUDIO:
-                raise Http404("Assessment audio not found.")
-            response = HttpResponse("Assessment audio is not ready.", status=503, content_type="text/plain")
+                raise Http404("Inventory audio not found.")
+            response = HttpResponse("Inventory audio is not ready.", status=503, content_type="text/plain")
             response["Cache-Control"] = "no-store"
             response["X-Assessment-Audio-Status"] = "unavailable"
             response["X-Assessment-Audio-Reason"] = exc.reason
@@ -115,7 +115,7 @@ class AssessmentViewSet(viewsets.ModelViewSet):
     def perform_create(self, serializer):
         child = serializer.validated_data["child"]
         if not has_coppa_consent(child):
-            raise serializers.ValidationError({"child": "COPPA consent is required before assigning assessments."})
+            raise serializers.ValidationError({"child": "COPPA consent is required before assigning inventories."})
         serializer.save(assigned_by=self.request.user, status=Assessment.Status.PENDING)
 
     def _can_start_or_answer_for_child(self, user, child):
@@ -286,7 +286,7 @@ class AssessmentViewSet(viewsets.ModelViewSet):
         assessment = self.get_object()
         if assessment.status not in {Assessment.Status.PENDING, Assessment.Status.IN_PROGRESS}:
             return Response(
-                {"detail": "Only pending or in-progress assessments can be submitted."},
+                {"detail": "Only pending or in-progress inventories can be submitted."},
                 status=status.HTTP_400_BAD_REQUEST,
             )
 
@@ -322,7 +322,7 @@ class AssessmentViewSet(viewsets.ModelViewSet):
             return Response({"detail": "You are not assigned to evaluate this child."}, status=status.HTTP_403_FORBIDDEN)
         if assessment.status != Assessment.Status.HUMAN_REVIEW:
             return Response(
-                {"detail": "Only assessments in human review can be completed."},
+                {"detail": "Only inventories in human review can be completed."},
                 status=status.HTTP_400_BAD_REQUEST,
             )
 
