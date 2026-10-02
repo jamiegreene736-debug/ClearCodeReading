@@ -1,3 +1,5 @@
+import base64
+import json
 from datetime import timedelta
 from unittest.mock import patch
 from urllib.parse import parse_qs, urlparse
@@ -337,3 +339,121 @@ class SocialMediaTests(TestCase):
         self.assertEqual(visible.status_code, 200)
         self.assertEqual(visible.content, b"jpeg-bytes")
         self.assertTrue(absolute_image_url(post).startswith("https://example.com/"))
+
+    def test_draft_with_ai_requires_the_openai_key(self):
+        self.client.force_login(self.admin)
+        response = self.client.post(
+            reverse("social:new"),
+            {
+                "mode": "brief",
+                "action": "draft_ai",
+                "brief": "A ten-minute reading routine for homework nights.",
+                "audience": "families",
+                "tone": "warm",
+                "post_to_facebook": "on",
+            },
+            follow=True,
+        )
+        self.assertContains(response, "SOCIAL_OPENAI_API_KEY")
+        self.assertEqual(SocialPost.objects.count(), 0)
+
+    @override_settings(SOCIAL_OPENAI_API_KEY="test-key")
+    def test_draft_with_ai_writes_captions_and_image_then_schedule_can_be_removed(self):
+        self._connect_facebook(instagram=True)
+        self.client.force_login(self.admin)
+        with (
+            patch(
+                "apps.social.views.write_captions",
+                return_value=(
+                    "Homework can end calmly. Try one short page tonight and stop while it still feels good.",
+                    "One short page tonight. Stop while it still feels good.\n\n#ClearCodeReading #ReadingAtHome",
+                ),
+            ),
+            patch("apps.social.views.generate_image", return_value=(b"png-bytes", "image/png")),
+        ):
+            response = self.client.post(
+                reverse("social:new"),
+                {
+                    "mode": "brief",
+                    "action": "draft_ai",
+                    "brief": "A ten-minute reading routine for homework nights.",
+                    "audience": "families",
+                    "tone": "warm",
+                    "link_url": "https://clearcodereading.com/blog/calmer",
+                    "generate_image": "on",
+                    "post_to_facebook": "on",
+                    "post_to_instagram": "on",
+                },
+            )
+        post = SocialPost.objects.get()
+        self.assertRedirects(response, f"{reverse('social:edit', kwargs={'pk': post.pk})}?mode=brief")
+        self.assertIn("Homework can end calmly", post.facebook_caption)
+        self.assertIn("#ReadingAtHome", post.instagram_caption)
+        self.assertEqual(bytes(post.image_data), b"png-bytes")
+        self.assertEqual(post.status, SocialPost.Status.DRAFT)
+
+        day, clock = self._future(9, 9, 0)
+        self.client.post(reverse("social:schedule", kwargs={"pk": post.pk}), {"date": day, "time": clock})
+        post.refresh_from_db()
+        self.assertEqual(post.status, SocialPost.Status.SCHEDULED)
+        self.client.post(reverse("social:cancel", kwargs={"pk": post.pk}))
+        post.refresh_from_db()
+        self.assertEqual(post.status, SocialPost.Status.DRAFT)
+        self.assertIsNone(post.scheduled_at)
+
+    @override_settings(SOCIAL_OPENAI_API_KEY="test-key", SOCIAL_AI_TEXT_MODEL="gpt-4o-mini", SOCIAL_AI_IMAGE_MODEL="dall-e-3")
+    def test_openai_request_uses_gpt_4o_mini_and_dalle_3(self):
+        from apps.social.ai import generate_image, write_captions
+
+        captions = {
+            "choices": [
+                {
+                    "message": {
+                        "content": json.dumps(
+                            {
+                                "facebook": "Homework can stay calm when you stop after one short page.",
+                                "instagram": "One short page, then stop.\n\n#ClearCodeReading #ReadingAtHome",
+                            }
+                        )
+                    }
+                }
+            ]
+        }
+        image = {"data": [{"b64_json": base64.b64encode(b"png-bytes").decode()}]}
+
+        def respond(*_args, **kwargs):
+            url = _args[0]
+            response = type("Response", (), {})()
+            response.status_code = 200
+            response.json = lambda: captions if "chat/completions" in url else image
+            payload = kwargs["json"]
+            if "chat/completions" in url:
+                self.assertEqual(payload["model"], "gpt-4o-mini")
+            else:
+                self.assertEqual(payload["model"], "dall-e-3")
+                self.assertIn("no people", payload["prompt"].lower())
+                self.assertIn("no text", payload["prompt"].lower())
+            return response
+
+        with patch("apps.social.ai.requests.post", side_effect=respond):
+            facebook, instagram = write_captions(
+                subject="A ten-minute reading routine for homework nights.",
+                audience="families",
+                tone="warm",
+                link="https://clearcodereading.com/blog/calmer",
+            )
+            raw, content_type = generate_image(subject="A ten-minute reading routine for homework nights.")
+        self.assertIn("one short page", facebook)
+        self.assertIn("#ClearCodeReading", instagram)
+        self.assertEqual(raw, b"png-bytes")
+        self.assertEqual(content_type, "image/png")
+
+        with patch("apps.social.ai.requests.post") as post:
+            with self.assertRaises(SocialError):
+                write_captions(
+                    subject="This child scored 12 on the inventory today.",
+                    audience="families",
+                    tone="warm",
+                    link="",
+                )
+            post.assert_not_called()
