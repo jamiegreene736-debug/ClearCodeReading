@@ -13,6 +13,7 @@ from django.utils import timezone
 from django.views.decorators.http import require_http_methods, require_POST
 
 from apps.social.access import can_manage_social, social_editor_required
+from apps.social.ai import ai_configured, generate_image, image_model, text_model, write_captions
 from apps.social.crypto import decrypt_json, digest, encrypt_json
 from apps.social.drafts import draft_captions
 from apps.social.exceptions import SocialError
@@ -149,10 +150,12 @@ def post_edit(request, pk=None):
         messages.error(request, "A post that is already sending or posted cannot be edited here.")
         return redirect("social:queue")
     mode = request.GET.get("mode") or (post.source if pk else SocialPost.Source.BRIEF)
+    generate_image_checked = request.method != "POST" or request.POST.get("generate_image") == "on"
     if request.method == "POST":
         try:
             mode = _apply_post(post, request)
             action = request.POST.get("action") or "save"
+            notice = "Draft saved."
             if action == "draft":
                 facebook, instagram = draft_captions(
                     brief=post.brief,
@@ -163,6 +166,32 @@ def post_edit(request, pk=None):
                 post.facebook_caption = facebook
                 post.instagram_caption = instagram
                 post.source = SocialPost.Source.BRIEF
+                notice = "Captions drafted from your words. Read them before posting."
+            elif action in {"draft_ai", "new_image"}:
+                if action == "draft_ai":
+                    facebook, instagram = write_captions(
+                        subject=post.brief,
+                        audience=post.audience,
+                        tone=post.tone,
+                        link=post.link_url,
+                    )
+                    post.facebook_caption = facebook
+                    post.instagram_caption = instagram
+                    post.source = SocialPost.Source.BRIEF
+                    notice = "Drafted with AI. Read both captions before you schedule or post."
+                if action == "new_image" or generate_image_checked:
+                    try:
+                        raw, content_type = generate_image(subject=post.brief)
+                    except SocialError as exc:
+                        if action == "new_image" or not post.facebook_caption:
+                            raise
+                        notice = f"{notice} The image was not created: {exc}"
+                    else:
+                        post.image_data = raw
+                        post.image_content_type = content_type
+                        post.image_name = "ai-draft.png"
+                        if action == "new_image":
+                            notice = "A new image is attached. The captions are unchanged."
             if post.created_by_id is None:
                 post.created_by = request.user
             if post.status not in {SocialPost.Status.SCHEDULED, SocialPost.Status.ATTENTION}:
@@ -178,7 +207,7 @@ def post_edit(request, pk=None):
                     return redirect(f"{reverse('social:queue')}?tab=posted")
                 messages.error(request, post.last_error or "The post needs attention.")
                 return redirect(f"{reverse('social:queue')}?tab=attention")
-            messages.success(request, "Draft saved." if action == "save" else "Captions drafted. Read them before posting.")
+            messages.success(request, notice)
             return redirect(f"{reverse('social:edit', kwargs={'pk': post.pk})}?mode={post.source}")
         except SocialError as exc:
             messages.error(request, str(exc))
@@ -187,7 +216,15 @@ def post_edit(request, pk=None):
     return render(
         request,
         "social/post_form.html",
-        {"post": post, "mode": mode, "accounts": _accounts()},
+        {
+            "post": post,
+            "mode": mode,
+            "accounts": _accounts(),
+            "generate_image": generate_image_checked,
+            "ai_ready": ai_configured(),
+            "ai_text_model": text_model(),
+            "ai_image_model": image_model(),
+        },
     )
 
 

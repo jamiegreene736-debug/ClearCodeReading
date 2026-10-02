@@ -346,6 +346,10 @@ SOCIAL_META_GRAPH_VERSION = os.getenv("SOCIAL_META_GRAPH_VERSION", "v21.0")
 SOCIAL_FACEBOOK_REDIRECT_URI = os.getenv("SOCIAL_FACEBOOK_REDIRECT_URI", "")
 SOCIAL_INSTAGRAM_REDIRECT_URI = os.getenv("SOCIAL_INSTAGRAM_REDIRECT_URI", "")
 SOCIAL_PUBLIC_BASE_URL = os.getenv("SOCIAL_PUBLIC_BASE_URL", "").rstrip("/")
+# Draft with AI. gpt-4o-mini writes captions. DALL·E 3 draws the optional image.
+SOCIAL_OPENAI_API_KEY = os.getenv("SOCIAL_OPENAI_API_KEY") or os.getenv("OPENAI_API_KEY", "")
+SOCIAL_AI_TEXT_MODEL = os.getenv("SOCIAL_AI_TEXT_MODEL", "gpt-4o-mini")
+SOCIAL_AI_IMAGE_MODEL = os.getenv("SOCIAL_AI_IMAGE_MODEL", "dall-e-3")
 
 # Explicit connected mailbox used for automated website confirmations.
 # Recipients see WEBSITE_EMAIL_FROM; Gmail still authenticates as WEBSITE_EMAIL_SENDER.

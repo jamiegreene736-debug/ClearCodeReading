@@ -14,8 +14,8 @@
     <input type="hidden" name="mode" value="{{ mode }}">
     <section class="rounded-[1.75rem] bg-white p-5 ring-1 ring-ink/10">
       {% if mode == "brief" %}
-        <label class="block text-sm font-black" for="brief">What should this post be about?</label>
-        <textarea id="brief" name="brief" rows="6" class="mt-2 w-full rounded-2xl border border-ink/15 px-4 py-3">{{ post.brief }}</textarea>
+        <label class="block text-sm font-black" for="brief">Subject</label>
+        <textarea id="brief" name="brief" rows="6" class="mt-2 w-full rounded-2xl border border-ink/15 px-4 py-3" placeholder="The idea for this post. A sentence or two is enough.">{{ post.brief }}</textarea>
         <p class="mt-4 text-sm font-black">Audience</p>
         <div class="mt-2 flex flex-wrap gap-2">
           <label class="rounded-full bg-linen px-3 py-2 text-sm font-black"><input type="radio" name="audience" value="families" {% if post.audience == "families" %}checked{% endif %}> Families</label>
@@ -38,16 +38,32 @@
       <input id="link_url" name="link_url" value="{{ post.link_url }}" class="mt-2 w-full rounded-full border border-ink/15 px-4 py-3">
       <label class="mt-4 block text-sm font-black" for="image">Photo</label>
       <input id="image" name="image" type="file" accept="image/jpeg,image/png,image/webp" class="mt-2 block w-full text-sm">
-      {% if post.has_image %}<p class="mt-2 text-sm font-bold text-ink/60">{{ post.image_name }} is attached. Instagram needs a photo.</p>{% endif %}
+      {% if post.has_image %}
+        <img src="{% url 'social:image' post.pk %}" alt="" class="mt-3 h-56 w-full rounded-2xl object-cover">
+        <p class="mt-2 text-sm font-bold text-ink/60">{{ post.image_name }} is attached. Instagram needs a photo.</p>
+      {% endif %}
+      {% if mode == "brief" %}
+        <label class="mt-4 flex items-start gap-3 rounded-2xl bg-linen px-4 py-3 text-sm font-bold text-ink/80">
+          <input type="checkbox" name="generate_image" class="mt-1" {% if generate_image %}checked{% endif %}>
+          <span><span class="font-black text-ink">Also generate an image</span><br>Leave this off to draft words only. The picture is an illustration, and you can replace it.</span>
+        </label>
+      {% endif %}
       <div class="mt-4 flex flex-wrap gap-3 text-sm font-black">
         <label><input type="checkbox" name="post_to_facebook" {% if post.post_to_facebook or not post.pk %}checked{% endif %}> Facebook{% if not accounts.facebook.is_connected %} <span class="text-ink/50">(not connected)</span>{% endif %}</label>
         <label><input type="checkbox" name="post_to_instagram" {% if post.post_to_instagram or not post.pk %}checked{% endif %}> Instagram{% if not accounts.instagram.is_connected %} <span class="text-ink/50">(not connected)</span>{% endif %}</label>
       </div>
       <p class="mt-4 rounded-2xl border border-gold/50 bg-white px-3 py-2 text-sm font-bold text-ink/70">Public brand voice only. Do not include a child’s name, photo, school, or reading scores.</p>
       <div class="mt-4 flex flex-wrap gap-2">
-        {% if mode == "brief" %}<button name="action" value="draft" class="rounded-full bg-deepTeal px-4 py-2 font-black text-white" type="submit">Draft captions</button>{% endif %}
+        {% if mode == "brief" %}
+          <button name="action" value="draft" class="rounded-full bg-white px-4 py-2 font-black text-deepTeal ring-1 ring-deepTeal/20" type="submit">Draft captions</button>
+          <button name="action" value="draft_ai" data-testid="draft-with-ai" class="rounded-full bg-deepTeal px-4 py-2 font-black text-white" type="submit">Draft with AI</button>
+          {% if post.pk %}<button name="action" value="new_image" class="rounded-full bg-white px-4 py-2 font-black text-deepTeal ring-1 ring-deepTeal/20" type="submit">New image</button>{% endif %}
+        {% endif %}
         <button name="action" value="save" class="rounded-full bg-white px-4 py-2 font-black text-deepTeal ring-1 ring-deepTeal/20" type="submit">Save draft</button>
       </div>
+      {% if mode == "brief" %}
+        <p class="mt-3 text-sm font-bold text-ink/60">Draft captions only formats what you typed. Draft with AI uses {{ ai_text_model }} to write new wording{% if generate_image %} and {{ ai_image_model }} when an image is requested{% endif %}.{% if not ai_ready %} Add SOCIAL_OPENAI_API_KEY before Draft with AI can run.{% endif %}</p>
+      {% endif %}
     </section>
     <section class="grid gap-4">
       {% if mode == "brief" and post.facebook_caption %}
