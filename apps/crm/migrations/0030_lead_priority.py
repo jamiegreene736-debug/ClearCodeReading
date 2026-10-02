@@ -6,7 +6,7 @@ from django.db import migrations, models
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('crm', '0028_consultation_open_windows'),
+        ('crm', '0029_inventory_display_wording'),
     ]
 
     operations = [
