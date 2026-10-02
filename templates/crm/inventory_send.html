@@ -1,16 +1,16 @@
 {% extends "crm/base.html" %}
 {% load inventory_email %}
-{% block title %}Send assessment{% endblock %}
+{% block title %}Send inventory{% endblock %}
 {% block extra_style %}
 .invitation-layout{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,340px),1fr));gap:24px;align-items:start}.invitation-form,.invitation-preview{padding:24px}.invitation-field{margin-bottom:20px}.invitation-field label{display:block;font-weight:700;margin-bottom:7px}.invitation-field .errorlist{color:#963420;padding-left:20px;margin:8px 0}.invitation-field.has-error input,.invitation-field.has-error select{border:2px solid #b64a32}.invitation-errors{padding:20px;margin:20px 0;background:#fff5f2;border:1px solid #ebc4b8;border-left:5px solid #b64a32;border-radius:8px}.invitation-errors h2{font-size:20px;margin:0 0 8px}.invitation-errors a{color:#963420}.invitation-errors ul{margin-bottom:0}.invitation-footer{padding-top:18px;border-top:1px solid var(--line)}.invitation-actions{display:flex;flex-wrap:wrap;gap:10px}.invitation-submit-note{min-height:24px;margin:12px 0 0;color:var(--muted)}.invitation-preview{border-top:4px solid var(--teal)}.invitation-preview h2{font-size:22px;overflow-wrap:anywhere}.invitation-preview-message{white-space:pre-wrap;overflow-wrap:anywhere}.invitation-subtitle{max-width:650px;color:var(--muted)}button[disabled]{opacity:.65;cursor:wait}@media(max-width:600px){.invitation-form,.invitation-preview{padding:18px}.invitation-actions .btn{width:100%}}
 {% endblock %}
 {% block content %}
 <p><a href="{% url 'crm_contact_detail' lead.pk %}">← {{ lead.contact_name }}</a></p>
-<h1>Send an assessment</h1>
+<h1>Send an inventory</h1>
 <p class="invitation-subtitle">Parent Reading Inventory · About 5 minutes · One child per invitation</p>
 {% if form.errors %}
 <section class="invitation-errors" id="invitation-errors" role="alert" tabindex="-1" aria-labelledby="invitation-error-title">
-    <h2 id="invitation-error-title">Assessment invitation not sent</h2>
+    <h2 id="invitation-error-title">Inventory invitation not sent</h2>
     <p>Check the details below, then send again. Your entries have been kept.</p>
     {{ form.non_field_errors }}
     <ul>{% for field in form %}{% for error in field.errors %}<li><a href="#{{ field.id_for_label }}">{{ field.label }}: {{ error }}</a></li>{% endfor %}{% endfor %}</ul>
@@ -32,7 +32,7 @@
         <img src="/assets/logo/cc-lockup-linen-ui.png" alt="ClearCode Reading" width="240" style="display:block;width:240px;max-width:100%;height:auto;margin:16px 0 24px">
         <h2 id="preview-subject">{{ form.subject.value|default:"Your ClearCode Parent Reading Inventory" }}</h2>
         <p id="preview-message" class="invitation-preview-message">{{ form.message.value|default:""|before_action }}</p>
-        <span class="btn btn-primary">Complete assessment</span>
+        <span class="btn btn-primary">Complete inventory</span>
         <p id="preview-signoff" class="invitation-preview-message" style="margin-top:24px">{{ form.message.value|default:""|after_action }}</p>
         <p class="subtle">The parent opens this button to complete their child’s survey.</p>
     </aside>

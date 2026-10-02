@@ -42,7 +42,7 @@ class InvitationForm(forms.Form):
         if cleaned.get("child") and cleaned["child"].grade != cleaned.get("grade"):
             self.add_error(
                 "grade",
-                "Select the existing child’s grade. Create a new assessment child record for a different grade.",
+                "Select the existing child’s grade. Create a new inventory child record for a different grade.",
             )
         return cleaned
 

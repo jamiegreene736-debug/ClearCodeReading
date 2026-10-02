@@ -1,5 +1,5 @@
 {% extends "crm/base.html" %}
-{% block title %}Assessment responses{% endblock %}
+{% block title %}Inventory responses{% endblock %}
 {% block extra_style %}
   {% include "crm/_inventory_delivery_style.html" %}
   .crumbs { margin-bottom:8px; }
@@ -20,7 +20,7 @@
   }
 {% endblock %}
 {% block content %}
-<p class="crumbs"><a href="{% url 'inventory_list' %}?queue={{ snapshot.queue }}">← Assessments</a> · <a href="{% url 'crm_contact_detail' invitation.child.parent.pk %}">{{ invitation.child.parent.contact_name }}</a></p>
+<p class="crumbs"><a href="{% url 'inventory_list' %}?queue={{ snapshot.queue }}">← Inventories</a> · <a href="{% url 'crm_contact_detail' invitation.child.parent.pk %}">{{ invitation.child.parent.contact_name }}</a></p>
 <div class="detail-head">
   <div>
     <p class="eyebrow">Parent Reading Inventory</p>
@@ -29,7 +29,7 @@
   </div>
   <span class="badge {{ snapshot.badge }}">{{ snapshot.label }}</span>
 </div>
-<ol class="flow-steps" aria-label="Where this assessment is">
+<ol class="flow-steps" aria-label="Where this inventory is">
   {% for step in snapshot.steps %}
     <li class="is-{{ step.state }}"><strong>{{ forloop.counter }}. {{ step.label }}</strong><span>{{ step.detail }}</span></li>
   {% endfor %}

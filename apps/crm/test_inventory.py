@@ -1,3 +1,4 @@
+import re
 import smtplib
 from datetime import timedelta
 from unittest.mock import patch
@@ -142,14 +143,47 @@ class InventoryWorkflowTests(TestCase):
     def test_contact_and_overview_have_assessment_actions(self):
         self.assertContains(
             self.client.get(reverse("crm_contact_detail", args=[self.parent.pk])),
-            "Send assessment",
+            "Send inventory",
         )
         self.assertContains(self.client.get(reverse("inventory_list")), "Avery")
+
+    def test_inventory_wording_across_workspace_and_preview(self):
+        from django.utils.html import strip_tags
+
+        pages = (
+            (reverse("crm_dashboard"), "Inventories to review"),
+            (reverse("crm_contact_detail", args=[self.parent.pk]), "Send inventory"),
+            (reverse("inventory_list"), "1 inventory"),
+            (reverse("inventory_send", args=[self.parent.pk]), "Send an inventory"),
+            (
+                reverse("inventory_detail", args=[self.invitation.pk]),
+                "Inventory responses",
+            ),
+        )
+        for url, label in pages:
+            with self.subTest(url=url):
+                response = self.client.get(url)
+                self.assertContains(response, label)
+                self.assertNotRegex(
+                    strip_tags(
+                        re.sub(
+                            r"<(style|script)\b[^>]*>.*?</\1>",
+                            "",
+                            response.content.decode(),
+                            flags=re.S,
+                        )
+                    ),
+                    r"(?i)\bassessment(?:s)?\b",
+                )
+        self.assertContains(
+            self.client.get(reverse("inventory_send", args=[self.parent.pk])),
+            "Complete inventory",
+        )
 
     def test_contact_assessment_button_tracks_progress(self):
         now = timezone.now()
         cases = [
-            (None, None, None, "pending", "Not started · View assessment"),
+            (None, None, None, "pending", "Not started · View inventory"),
             (now, None, None, "started", "Started · View progress"),
             (now, now, None, "finished", "Finished · View results"),
             (now, now, now, "finished", "Finished · View results"),
@@ -529,7 +563,7 @@ class InventoryWorkflowTests(TestCase):
             "Inventory",
             "Return using the same link.\n\nThank you,\nThe ClearCode Reading team",
             "https://example.com/reading-inventory/test/",
-            "Complete assessment",
+            "Complete inventory",
         )
         with (
             patch("apps.crm.inventory_mail.require_configured"),
@@ -544,10 +578,10 @@ class InventoryWorkflowTests(TestCase):
             email.provider_message.body_text,
         ):
             self.assertLess(
-                content.index("same link."), content.index("Complete assessment")
+                content.index("same link."), content.index("Complete inventory")
             )
             self.assertLess(
-                content.index("Complete assessment"), content.index("Thank you,")
+                content.index("Complete inventory"), content.index("Thank you,")
             )
         self.assertIn(
             'aria-label="ClearCode Reading"', email.provider_message.body_html
@@ -825,7 +859,7 @@ class InventoryWorkflowTests(TestCase):
                 "grade": "grade_3",
             },
         )
-        self.assertContains(response, "Assessment invitation not sent")
+        self.assertContains(response, "Inventory invitation not sent")
         self.assertContains(response, 'id="invitation-errors"')
         self.assertContains(response, "Please keep this message.")
         self.assertEqual(self.invitation.emails.count(), 0)
@@ -846,7 +880,7 @@ class InventoryWorkflowTests(TestCase):
             },
             follow=True,
         )
-        self.assertContains(response, "Assessment email sent")
+        self.assertContains(response, "Inventory email sent")
         self.assertContains(response, self.parent.contact_email)
         self.assertContains(response, "provider confirmed sending")
         self.assertFalse(response.context["feedback"].refresh)
@@ -867,8 +901,8 @@ class InventoryWorkflowTests(TestCase):
             },
             follow=True,
         )
-        self.assertContains(response, "Assessment email not sent")
-        self.assertContains(response, "Your assessment is saved")
+        self.assertContains(response, "Inventory email not sent")
+        self.assertContains(response, "Your inventory is saved")
         self.assertContains(response, "Check email settings")
 
     def test_delivery_status_refresh_tracks_actual_receipt_not_other_mail(self):
@@ -889,7 +923,7 @@ class InventoryWorkflowTests(TestCase):
             + "?delivery_status=1"
         )
         response = self.client.get(url)
-        self.assertIn("Assessment email queued", response.json()["html"])
+        self.assertIn("Inventory email queued", response.json()["html"])
         self.assertTrue(response.json()["refresh"])
         self.assertIn("Queued", response.json()["history"])
         self.assertIn("no-store", response["Cache-Control"])
@@ -897,7 +931,7 @@ class InventoryWorkflowTests(TestCase):
             status="sent", sent_at=timezone.now()
         )
         response = self.client.get(url)
-        self.assertIn("Assessment email sent", response.json()["html"])
+        self.assertIn("Inventory email sent", response.json()["html"])
         self.assertFalse(response.json()["refresh"])
         self.assertNotIn("Queued", response.json()["history"])
 
@@ -914,7 +948,7 @@ class InventoryWorkflowTests(TestCase):
             reverse("inventory_detail", args=[self.invitation.pk])
         )
         self.assertContains(response, "sending confirmation pending")
-        self.assertNotContains(response, "Assessment email sent")
+        self.assertNotContains(response, "Inventory email sent")
 
     def test_status_endpoint_requires_crm_access(self):
         url = (
@@ -950,15 +984,15 @@ class InventoryEmailLayoutTests(SimpleTestCase):
             subject="Reading inventory",
             body="Hi <Parent>,\r\n\r\nReturn using the same link.\r\n\r\nThank you,\r\nThe team",
             action_url="https://reading.example.com/reading-inventory/test/",
-            action_label="Complete assessment",
+            action_label="Complete inventory",
         )
         html = render_to_string("crm/inventory_email.html", {"email": email})
         for content in (html, plain_text(email)):
             self.assertLess(
-                content.index("same link."), content.index("Complete assessment")
+                content.index("same link."), content.index("Complete inventory")
             )
             self.assertLess(
-                content.index("Complete assessment"), content.index("Thank you,")
+                content.index("Complete inventory"), content.index("Thank you,")
             )
         self.assertIn('aria-label="ClearCode Reading"', html)
         self.assertNotIn("<img", html)
@@ -1259,8 +1293,10 @@ class AssessmentQueueTests(TestCase):
         response = self.client.get(reverse("inventory_list"))
 
         self.assertContains(response, "People waiting to finish")
-        self.assertContains(response, "1 person waiting to finish an assessment")
+        self.assertContains(response, "1 person waiting to finish an inventory")
         self.assertContains(response, "2 open for this family")
+        self.assertContains(response, "2 inventories")
+        self.assertNotContains(response, "inventorys")
         self.assertContains(response, "Avery")
         self.assertContains(response, "Blake")
         self.assertContains(response, "Not started")
@@ -1323,8 +1359,8 @@ class AssessmentQueueTests(TestCase):
         self.assertContains(search, "Casey")
         self.assertNotContains(search, "Avery")
         self.assertContains(dashboard, "Still finishing")
-        self.assertContains(dashboard, "Waiting to finish an assessment")
-        self.assertContains(dashboard, "Assessments to review")
+        self.assertContains(dashboard, "Waiting to finish an inventory")
+        self.assertContains(dashboard, "Inventories to review")
         self.assertContains(dashboard, "Parent Queue")
         self.assertContains(dashboard, "Casey")
         self.assertContains(dashboard, "Finished Parent")
@@ -1336,7 +1372,7 @@ class AssessmentQueueTests(TestCase):
     def test_detail_shows_where_the_family_is_in_the_flow(self):
         response = self.client.get(reverse("inventory_detail", args=[self.started.pk]))
 
-        self.assertContains(response, "Where this assessment is")
+        self.assertContains(response, "Where this inventory is")
         self.assertContains(response, "Parent finishes")
         self.assertContains(response, "In progress")
         self.assertContains(response, "Send reminder")

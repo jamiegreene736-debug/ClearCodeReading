@@ -41,7 +41,7 @@ class Assessment(TimestampedModel, SoftDeleteModel):
     child = models.ForeignKey("users.ChildProfile", on_delete=models.CASCADE, related_name="assessments")
     school = models.ForeignKey("schools.School", on_delete=models.SET_NULL, null=True, blank=True, related_name="assessments")
     assigned_by = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, blank=True, related_name="assigned_assessments")
-    assessment_type = models.CharField(max_length=32, choices=AssessmentType.choices, db_index=True)
+    assessment_type = models.CharField("inventory type", max_length=32, choices=AssessmentType.choices, db_index=True)
     status = models.CharField(max_length=32, choices=Status.choices, default=Status.PENDING, db_index=True)
     title = models.CharField(max_length=255)
     skill = models.ForeignKey("curriculum.Skill", on_delete=models.SET_NULL, null=True, blank=True, related_name="assessments")
@@ -60,6 +60,8 @@ class Assessment(TimestampedModel, SoftDeleteModel):
     metadata = models.JSONField(default=dict, blank=True)
 
     class Meta:
+        verbose_name = "inventory"
+        verbose_name_plural = "inventories"
         ordering = ["-scheduled_for", "-created_at"]
         indexes = [
             models.Index(fields=["child", "status"]),
@@ -116,6 +118,8 @@ class AssessmentQuestion(TimestampedModel, SoftDeleteModel):
     metadata = models.JSONField(default=dict, blank=True)
 
     class Meta:
+        verbose_name = "inventory question"
+        verbose_name_plural = "inventory questions"
         ordering = ["category", "difficulty", "sort_order", "id"]
         indexes = [
             models.Index(fields=["category", "difficulty"]),
@@ -150,7 +154,7 @@ class QuestionOption(TimestampedModel, SoftDeleteModel):
 
 
 class ChildAssessmentResponse(TimestampedModel, SoftDeleteModel):
-    assessment = models.ForeignKey(Assessment, on_delete=models.CASCADE, related_name="child_responses", null=True, blank=True)
+    assessment = models.ForeignKey(Assessment, verbose_name="inventory", on_delete=models.CASCADE, related_name="child_responses", null=True, blank=True)
     child = models.ForeignKey("users.ChildProfile", on_delete=models.CASCADE, related_name="assessment_responses")
     question = models.ForeignKey(AssessmentQuestion, on_delete=models.PROTECT, related_name="child_responses")
     selected_option = models.ForeignKey(QuestionOption, on_delete=models.SET_NULL, null=True, blank=True, related_name="child_responses")
@@ -161,6 +165,8 @@ class ChildAssessmentResponse(TimestampedModel, SoftDeleteModel):
     metadata = models.JSONField(default=dict, blank=True)
 
     class Meta:
+        verbose_name = "child inventory response"
+        verbose_name_plural = "child inventory responses"
         ordering = ["assessment", "created_at"]
         indexes = [
             models.Index(fields=["assessment", "question"]),
@@ -175,7 +181,7 @@ class ChildAssessmentResponse(TimestampedModel, SoftDeleteModel):
 
 
 class AssessmentResult(TimestampedModel, SoftDeleteModel):
-    assessment = models.OneToOneField(Assessment, on_delete=models.CASCADE, related_name="result")
+    assessment = models.OneToOneField(Assessment, verbose_name="inventory", on_delete=models.CASCADE, related_name="result")
     final_scores = models.JSONField(default=dict, blank=True)
     reading_age = models.DecimalField(max_digits=4, decimal_places=1, db_index=True)
     grade_equivalent = models.CharField(max_length=40, blank=True, db_index=True)
@@ -194,6 +200,8 @@ class AssessmentResult(TimestampedModel, SoftDeleteModel):
     # reading_age = clamp(4.0 + (overall_score_percent / 100) * 7.0, 4.0, 11.0)
 
     class Meta:
+        verbose_name = "inventory result"
+        verbose_name_plural = "inventory results"
         ordering = ["-created_at"]
         indexes = [
             models.Index(fields=["assessment"]),
@@ -220,6 +228,8 @@ class AssessmentAudioAsset(TimestampedModel):
     metadata = models.JSONField(default=dict, blank=True)
 
     class Meta:
+        verbose_name = "inventory audio asset"
+        verbose_name_plural = "inventory audio assets"
         ordering = ["key"]
         indexes = [
             models.Index(fields=["provider", "key"]),

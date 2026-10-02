@@ -27,7 +27,7 @@ class COPPAConsentMixin:
                 {
                     self.coppa_child_field: (
                         "COPPA consent is required before creating or updating "
-                        "assessment, progress, or child learning records."
+                        "inventory, progress, or child learning records."
                     )
                 }
             )

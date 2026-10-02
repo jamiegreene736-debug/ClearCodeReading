@@ -230,7 +230,7 @@
 
     <div class="record-work">
       <nav class="section-nav" aria-label="On this contact">
-        <a href="#assessments">Assessments <span class="section-count">{{ assessment_count }}</span></a>
+        <a href="#assessments">Inventories <span class="section-count">{{ assessment_count }}</span></a>
         <a href="#deals">Deals <span class="section-count">{{ deals|length }}</span></a>
         <a href="#tasks">Tasks <span class="section-count">{{ open_tasks|length }}</span></a>
         <a href="#activity">Activity <span class="section-count">{{ timeline|length }}</span></a>
@@ -239,10 +239,10 @@
       <section class="card record-card record-section" id="assessments">
         <div class="section-head">
           <div>
-            <h2>Assessments</h2>
+            <h2>Inventories</h2>
             <p class="subtle">Open an invitation for progress, results, reminders, and a consultation booked from that inventory.</p>
           </div>
-          <a class="btn btn-primary" href="{% url 'inventory_send' lead.pk %}">Send assessment</a>
+          <a class="btn btn-primary" href="{% url 'inventory_send' lead.pk %}">Send inventory</a>
         </div>
         {% for child in lead.inventory_children.all %}
           {% for invitation in child.invitations.all %}
@@ -252,14 +252,14 @@
               <a class="btn assessment-action {% if invitation.completed_at %}assessment-action--finished{% elif invitation.started_at %}assessment-action--started{% else %}assessment-action--pending{% endif %}"
                  href="{% url 'inventory_detail' invitation.pk %}"
                  aria-labelledby="assessment-action-{{ invitation.pk }} assessment-name-{{ invitation.pk }}">
-                <span id="assessment-action-{{ invitation.pk }}">{% if invitation.completed_at %}Finished · View results{% elif invitation.started_at %}Started · View progress{% else %}Not started · View assessment{% endif %}</span>
+                <span id="assessment-action-{{ invitation.pk }}">{% if invitation.completed_at %}Finished · View results{% elif invitation.started_at %}Started · View progress{% else %}Not started · View inventory{% endif %}</span>
                 <span aria-hidden="true">→</span>
               </a>
               <p class="assessment-meta"><span class="badge">{{ invitation.status }}</span> <small>{{ invitation.created_at|date:"M j, Y" }}</small>{% if invitation.booking %} · Consultation booked {{ invitation.booking.slot.starts_at|date:"M j, Y, g:i A" }}{% endif %}</p>
             </div>
           {% endfor %}
         {% empty %}
-          {% if not consultations %}<p>No assessments yet. Send an invitation to get started.</p>{% endif %}
+          {% if not consultations %}<p>No inventories yet. Send an invitation to get started.</p>{% endif %}
         {% endfor %}
         {% if consultations %}
           <h3>Calendar consultations</h3>

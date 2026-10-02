@@ -6,7 +6,7 @@
   .calendar-connect { margin:16px 0 20px; }
 {% endblock %}
 {% block content %}
-<p><a href="{% url 'inventory_list' %}">← Assessments</a></p>
+<p><a href="{% url 'inventory_list' %}">← Inventories</a></p>
 <h1>Consultation availability</h1>
 <div class="calendar-connect availability-actions">
 <form method="post" action="{% url 'crm_google_calendar_connect' %}">{% csrf_token %}<button class="btn btn-primary">Connect Google Calendar</button></form>

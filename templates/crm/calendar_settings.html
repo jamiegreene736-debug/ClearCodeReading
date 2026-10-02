@@ -103,7 +103,7 @@
 <p>In Google Calendar, choose Other calendars → + → From URL, then paste the link above. Subscribe once; importing a downloaded file does not keep it updated.</p>
 <form method="post">{% csrf_token %}<button class="btn" name="action" value="rotate">Replace private subscription link</button></form>
 {% else %}<form method="post">{% csrf_token %}<button class="btn" name="action" value="subscribe">Create my subscription link</button></form>{% endif %}
-<p style="margin-top:16px">Only booking times are shared. Family names, phone numbers, and assessment details remain in the CRM.</p>
+<p style="margin-top:16px">Only booking times are shared. Family names, phone numbers, and inventory details remain in the CRM.</p>
 </section>
 </div>
 <noscript><style>.cal-panel[hidden]{display:block}</style></noscript>

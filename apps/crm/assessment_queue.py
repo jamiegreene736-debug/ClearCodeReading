@@ -38,7 +38,7 @@ QUEUE_INTRO = {
     "not_started": "The invitation exists, and the parent has not opened it yet.",
     "in_progress": "The parent started and still has sections left. A reminder is more useful than a new invitation.",
     "review": "Finished inventories waiting for a person to read the answers and mark them reviewed.",
-    "attention": "The latest email failed or delivery is uncertain. The invitation is saved; retry from the assessment.",
+    "attention": "The latest email failed or delivery is uncertain. The invitation is saved; retry from the inventory.",
     "booked": "A consultation is already on the calendar from this inventory.",
     "finished": "Submitted inventories, including ones that still need review.",
     "all": "Every inventory, including finished, expired, and withdrawn links.",
@@ -356,23 +356,23 @@ def assessment_snapshot(invitation, now=None, emails=None, family_open_count=1) 
         invitation.expires_at and invitation.expires_at <= now and not invitation.completed_at
     )
     if invitation.revoked_at and not invitation.completed_at:
-        key, label, badge, action = "revoked", "Withdrawn", "badge-neutral", "View assessment"
+        key, label, badge, action = "revoked", "Withdrawn", "badge-neutral", "View inventory"
     elif invitation.completed_at and not invitation.reviewed_at:
         key, label, badge, action = "review", "Needs review", "badge-warn", "Review results"
     elif invitation.completed_at:
         key, label, badge, action = "reviewed", "Reviewed", "badge", "View results"
     elif expired:
-        key, label, badge, action = "expired", "Link expired", "badge-neutral", "View assessment"
+        key, label, badge, action = "expired", "Link expired", "badge-neutral", "View inventory"
     elif invitation.started_at:
         key, label, badge, action = "in_progress", "In progress", "badge-warn", "View progress"
     elif invitation.sent_at:
-        key, label, badge, action = "not_started", "Not started", "badge-neutral", "View assessment"
+        key, label, badge, action = "not_started", "Not started", "badge-neutral", "View inventory"
     else:
         key, label, badge, action = (
             "awaiting",
             "Awaiting delivery",
             "badge-neutral",
-            "View assessment",
+            "View inventory",
         )
 
     if key in {"review", "in_progress", "not_started", "awaiting"}:

@@ -112,7 +112,7 @@ class NotificationService:
         subject = f"Human review needed: {assessment.title}"
         message = (
             f"{assessment.child} has submitted {assessment.title}. "
-            "The assessment is now in Human Review and needs evaluator review in Clear Code Reading."
+            "The inventory is now in Human Review and needs evaluator review in Clear Code Reading."
         )
         result = self.send_email(subject, message, evaluator_emails)
 
@@ -140,7 +140,7 @@ class NotificationService:
             consent_status=GuardianRelationship.ConsentStatus.GRANTED,
         ).select_related("guardian")
         recipients = [relationship.guardian.email for relationship in relationships]
-        subject = f"{assessment.child.first_name}'s assessment review is complete"
+        subject = f"{assessment.child.first_name}'s inventory review is complete"
         message = (
             f"The Clear Code Reading review for {assessment.title} is complete. "
             "Log in to view progress details and next lesson recommendations."

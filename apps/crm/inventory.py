@@ -107,11 +107,11 @@ def resolve_token(token: str) -> InventoryInvitation:
         )
     except (signing.BadSignature, InventoryInvitation.DoesNotExist, ValueError) as exc:
         raise InventoryError(
-            "This assessment link is unavailable. Please ask ClearCode for a new invitation."
+            "This inventory link is unavailable. Please ask ClearCode for a new invitation."
         ) from exc
     if invitation.revoked_at or invitation.expires_at <= timezone.now():
         raise InventoryError(
-            "This assessment link has expired or was withdrawn. Please ask ClearCode for a new invitation."
+            "This inventory link has expired or was withdrawn. Please ask ClearCode for a new invitation."
         )
     return invitation
 
@@ -182,7 +182,7 @@ def deliver_mail(pk: int) -> None:
         ):
             mail.status, mail.error = (
                 InventoryMail.Status.FAILED,
-                "Assessment link expired or withdrawn. Create a new invitation.",
+                "Inventory link expired or withdrawn. Create a new invitation.",
             )
             mail.save(update_fields=["status", "error"])
             return
@@ -265,7 +265,7 @@ def complete_inventory(invitation: InventoryInvitation, result: dict[str, Any]) 
             lead=parent,
             activity_type="task",
             subject=f"Review reading inventory: {invitation.child.name}",
-            body="Review the answers and follow-up in CRM → Assessments.",
+            body="Review the answers and follow-up in CRM → Inventories.",
             assigned_to=parent.assigned_to,
             due_at=timezone.now() + timedelta(days=1),
         )
