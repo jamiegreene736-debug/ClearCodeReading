@@ -1,0 +1,7 @@
+{% extends "crm/inventory_public_base.html" %}
+{% block content %}
+<h1>Parent Reading Inventory</h1>
+<p>Tell us about you and your child, then answer a few questions about their reading. All fields below are required.</p>
+<p class="muted">Your details and answers will be saved for the ClearCode team to review and follow up with you.</p>
+<form method="post">{% csrf_token %}{{ form.as_p }}<button type="submit">Start inventory</button></form>
+{% endblock %}

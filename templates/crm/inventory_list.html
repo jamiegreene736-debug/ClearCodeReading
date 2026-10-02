@@ -41,13 +41,14 @@
       <p class="subtle">{{ intro }}</p>
     </div>
     <div class="page-actions">
+      <form method="post" action="{% url 'inventory_link' %}">{% csrf_token %}<button class="btn btn-primary" type="submit">Create inventory link</button></form>
       <a class="btn" href="{% url 'inventory_preview' %}">Preview / test inventory</a>
       <a class="btn" href="{% url 'inventory_slots' %}">Consultation availability</a>
     </div>
   </div>
 
   <ol class="assessment-flow" aria-label="Inventory flow">
-    <li {% if queue == "attention" %}class="is-current"{% endif %}><strong>1. Send</strong><span>From a contact record</span></li>
+    <li {% if queue == "attention" %}class="is-current"{% endif %}><strong>1. Send</strong><span>Share a link or send from a contact</span></li>
     <li {% if queue == "waiting" or queue == "not_started" or queue == "in_progress" %}class="is-current"{% endif %}><strong>2. Parent finishes</strong><span>This is the waiting queue</span></li>
     <li {% if queue == "review" %}class="is-current"{% endif %}><strong>3. Review</strong><span>Read the answers</span></li>
     <li {% if queue == "booked" or queue == "finished" %}class="is-current"{% endif %}><strong>4. Next step</strong><span>Consultation or resources</span></li>

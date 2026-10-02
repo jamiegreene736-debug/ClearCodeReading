@@ -25,7 +25,7 @@
   <div>
     <p class="eyebrow">Parent Reading Inventory</p>
     <h1>{{ invitation.child.name }}</h1>
-    <p class="subtle">{{ invitation.child.grade_label }} · {{ invitation.recipient }} · Version {{ invitation.version }} · Link expires {{ invitation.expires_at|date:"M j, Y" }}</p>
+    <p class="subtle">{{ invitation.child.grade_label }}{% if invitation.child.age %} · Age {{ invitation.child.age }}{% endif %} · {{ invitation.recipient }} · Version {{ invitation.version }} · Link expires {{ invitation.expires_at|date:"M j, Y" }}</p>
   </div>
   <span class="badge {{ snapshot.badge }}">{{ snapshot.label }}</span>
 </div>
