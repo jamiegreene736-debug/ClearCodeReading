@@ -1,6 +1,7 @@
-"""Personal and shared pipeline email templates applied to one CRM contact.
+"""Personal and built-in email templates applied to one CRM contact.
 
-Templates are private to their owner (see ``EmailTemplate``). When a template is
+Personal templates are private to their owner; built-in referral copy is shared.
+When a template is
 chosen for a contact, its ``{{token}}`` placeholders are filled with that
 contact's details so the draft opens ready to review and send.
 """
@@ -22,6 +23,7 @@ from apps.crm_email.automated import (
     tokens,
 )
 from apps.crm_email.models import EmailTemplate, Mailbox, StageEmailPilot
+from apps.crm_email.referral_templates import REFERRAL_TEMPLATES, ReferralTemplate
 from apps.crm_email.security import clean_html
 
 TEMPLATE_PLACEHOLDERS: Mapping[str, str] = {
@@ -31,6 +33,19 @@ TEMPLATE_PLACEHOLDERS: Mapping[str, str] = {
     "company.name": "Company, organization or school name",
     "sender.name": "Your name",
 }
+
+
+def contact_templates(
+    sender: AbstractBaseUser,
+) -> list[EmailTemplate | ReferralTemplate | TemplateOption]:
+    return [
+        *[
+            TemplateOption("pipeline:" + copy.spec.key, copy.spec.name, copy["subject"])
+            for copy in all_copies(pipeline_template_keys())
+        ],
+        *REFERRAL_TEMPLATES.values(),
+        *EmailTemplate.objects.filter(owner_id=sender.pk),
+    ]
 
 
 def template_values(lead: Lead, sender: AbstractBaseUser) -> dict[str, str]:
@@ -49,10 +64,20 @@ def template_values(lead: Lead, sender: AbstractBaseUser) -> dict[str, str]:
 
 
 def apply_template(
-    template: EmailTemplate, lead: Lead, mailbox: Mailbox
+    template: EmailTemplate | ReferralTemplate, lead: Lead, mailbox: Mailbox
 ) -> dict[str, str]:
     """Subject and body for a new draft to ``lead`` started from ``template``."""
     values = template_values(lead, mailbox.user)
+    if isinstance(template, ReferralTemplate):
+        name = lead.contact_name.strip()
+        parts = name.split(maxsplit=1)
+        if parts and parts[0].lower().rstrip(".") in {"dr", "mr", "mrs", "ms", "mx"}:
+            name = parts[1] if len(parts) > 1 else ""
+        values["contact.firstname"] = name.split()[0] if name else "there"
+        values["contact.doctor_name"] = f"Dr. {name}" if name else "there"
+        values["company.name"] = values["company.name"].strip() or (
+            "your school" if template.pk == "referral-school-leader" else "your center"
+        )
     return {
         "subject": fill(template.subject, values),
         "body_html": fill_html(clean_html(template.body_html), values)
@@ -74,17 +99,6 @@ def pipeline_template_keys() -> tuple[str, ...]:
         if spec.group
         in {"Deal pipeline first-stage emails", "Pipeline introduction emails"}
     )
-
-
-def contact_template_options(sender: AbstractBaseUser) -> list[TemplateOption]:
-    """Shared pipeline wording plus only this user's private templates."""
-    return [
-        TemplateOption("pipeline:" + copy.spec.key, copy.spec.name, copy["subject"])
-        for copy in all_copies(pipeline_template_keys())
-    ] + [
-        TemplateOption(str(template.pk), template.name, template.subject)
-        for template in EmailTemplate.objects.filter(owner_id=sender.pk)
-    ]
 
 
 def apply_pipeline_template(key: str, lead: Lead, mailbox: Mailbox) -> dict[str, str]:

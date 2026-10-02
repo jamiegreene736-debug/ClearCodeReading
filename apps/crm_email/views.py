@@ -52,7 +52,7 @@ from apps.crm_email.contact_templates import (
     TEMPLATE_PLACEHOLDERS,
     apply_pipeline_template,
     apply_template,
-    contact_template_options,
+    contact_templates,
 )
 from apps.crm_email.forms import (
     AutomatedEmailForm,
@@ -72,6 +72,7 @@ from apps.crm_email.models import (
     Message,
     WorkerHeartbeat,
 )
+from apps.crm_email.referral_templates import REFERRAL_TEMPLATES
 from apps.crm_email.security import (
     EmailError,
     EmailRequest,
@@ -748,7 +749,7 @@ def contact_email(request: EmailRequest, pk: int) -> HttpResponse:
                 mailbox__user=request.user, import_pending=True
             ),
             "mailbox": Mailbox.objects.filter(user=request.user).first(),
-            "templates": contact_template_options(request.user),
+            "templates": contact_templates(request.user),
         },
     )
 
@@ -842,7 +843,7 @@ def compose(request: EmailRequest, pk: int) -> HttpResponse:
                 except LookupError as exc:
                     raise Http404("Unknown pipeline template") from exc
             else:
-                template = get_object_or_404(
+                template = REFERRAL_TEMPLATES.get(selection) or get_object_or_404(
                     EmailTemplate, pk=selection, owner=request.user
                 )
                 initial.update(apply_template(template, lead, mailbox))
@@ -874,7 +875,7 @@ def compose(request: EmailRequest, pk: int) -> HttpResponse:
             "form": form,
             "mailbox": mailbox,
             "draft": draft,
-            "templates": contact_template_options(request.user),
+            "templates": contact_templates(request.user),
         },
     )
 
