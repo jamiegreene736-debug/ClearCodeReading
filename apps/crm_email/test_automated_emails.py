@@ -68,6 +68,7 @@ class AutomatedEmailTests(TestCase):
             "website_team",
             "inventory_invitation",
             "inventory_reminder",
+            "inventory_follow_up_early",
             "inventory_follow_up_support",
             "inventory_follow_up_resources",
             "inventory_follow_up_other",

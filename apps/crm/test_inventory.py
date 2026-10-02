@@ -49,19 +49,43 @@ class InventoryScoringTests(SimpleTestCase):
                 self.assertEqual(result["total"], count)
                 self.assertEqual(result["outcome"], "resources")
 
-    def test_low_scores_require_all_sections_before_support_result(self):
-        for grade in ["kindergarten", "grade_1", "grade_2", "grade_3"]:
+    def test_first_section_cutoffs_for_every_grade(self):
+        from apps.crm.inventory import GRADES
+
+        for grade in GRADES:
+            group = definition(grade)["groups"][0]
+            for yes_count in (0, group["continueAt"] - 1, group["continueAt"]):
+                with self.subTest(grade=grade, yes_count=yes_count):
+                    answers = {
+                        q["id"]: i < yes_count for i, q in enumerate(group["questions"])
+                    }
+                    result = evaluate(grade, answers)
+                    stops = yes_count < group["continueAt"]
+                    self.assertEqual(result["complete"], stops)
+                    if stops:
+                        self.assertTrue(result["completed_early"])
+                        self.assertEqual(result["outcome"], "support")
+                        self.assertEqual(result["yes_count"], yes_count)
+                        self.assertEqual(result["answered"], len(answers))
+                        self.assertEqual(result["stopped_section"], 1)
+                    else:
+                        self.assertEqual(result["next_group"], 1)
+
+    def test_later_sections_and_existing_progress_still_require_completion(self):
+        for grade in ("kindergarten", "grade_1", "grade_2", "grade_3"):
             with self.subTest(grade=grade):
-                spec = definition(grade)
-                answers = {}
-                for index, group in enumerate(spec["groups"]):
+                groups = definition(grade)["groups"]
+                answers = {q["id"]: True for q in groups[0]["questions"]}
+                for index, group in enumerate(groups[1:], start=1):
                     answers.update({q["id"]: False for q in group["questions"]})
                     result = evaluate(grade, answers)
-                    self.assertEqual(
-                        result["complete"], index == len(spec["groups"]) - 1
-                    )
+                    self.assertEqual(result["complete"], index == len(groups) - 1)
                 self.assertEqual(result["outcome"], "support")
-                self.assertEqual(result["answered"], result["total"])
+                self.assertNotIn("completed_early", result)
+                answers = self.answers(grade, False)
+                self.assertEqual(evaluate(grade, answers)["answered"], len(answers))
+                del answers[groups[-1]["questions"][-1]["id"]]
+                self.assertFalse(evaluate(grade, answers)["complete"])
 
     def test_cannot_skip_an_unanswered_section(self):
         groups = definition("grade_1")["groups"]
@@ -170,7 +194,7 @@ class InventoryWorkflowTests(TestCase):
                             r"<(style|script)\b[^>]*>.*?</\1>",
                             "",
                             response.content.decode(),
-                            flags=re.S,
+                            flags=re.DOTALL,
                         )
                     ),
                     r"(?i)\bassessment(?:s)?\b",
@@ -321,7 +345,8 @@ class InventoryWorkflowTests(TestCase):
         self.assertIsNone(self.invitation.completed_at)
 
     def test_full_completion_is_idempotent_and_queues_review_and_emails(self):
-        for _ in definition(self.child.grade)["groups"]:
+        self.post_group(value="yes")
+        for _ in definition(self.child.grade)["groups"][1:]:
             self.post_group(value="no")
         self.invitation.refresh_from_db()
         self.assertIsNotNone(self.invitation.completed_at)
@@ -333,30 +358,80 @@ class InventoryWorkflowTests(TestCase):
         self.assertEqual(len(mail.outbox), 2)
         self.assertContains(self.client.get(self.url), "Schedule a consultation")
 
-    def test_first_section_no_answers_do_not_finish_grade_one_inventory(self):
+    def test_first_section_completion_saves_results_and_follow_up_once(self):
         self.child.grade = "grade_1"
         self.child.save()
         self.client.logout()
+        self.post_group(value="no", action="save")
+        self.invitation.refresh_from_db()
+        self.assertIsNone(self.invitation.completed_at)
+        self.assertEqual(self.invitation.emails.count(), 0)
         self.post_group(value="no")
         self.invitation.refresh_from_db()
         self.assertEqual(len(self.invitation.answers), 7)
-        self.assertIsNone(self.invitation.completed_at)
-        self.assertEqual(self.invitation.current_group, 1)
-        self.assertEqual(self.invitation.emails.count(), 0)
-        response = self.client.get(self.url)
-        self.assertContains(response, "Section 2 of")
-        self.assertContains(response, 'type="radio"')
-        for _ in definition(self.child.grade)["groups"][1:]:
-            self.post_group(value="no")
-        self.invitation.refresh_from_db()
-        self.assertEqual(self.invitation.result["answered"], 25)
         self.assertIsNotNone(self.invitation.completed_at)
+        self.assertTrue(self.invitation.result["completed_early"])
+        self.assertEqual(self.invitation.result["answered"], 7)
+        self.assertEqual(self.invitation.emails.count(), 2)
+        self.assertEqual(CrmActivity.objects.filter(activity_type="task").count(), 1)
+        response = self.client.get(self.url)
+        self.assertContains(response, "You’re in the right place!")
+        self.assertContains(response, "Someone from our team will reach out to you.")
+        self.assertNotContains(response, "Schedule a consultation")
+        self.assertNotContains(response, "Answer remaining questions")
+        self.assertNotContains(response, 'type="radio"')
+        follow_up = self.invitation.emails.get(key="follow-up")
+        self.assertIn("Someone from our team will reach out to you.", follow_up.body)
+        self.assertEqual(follow_up.action_url, "")
+        self.client.post(self.url, {"revision": 0, "action": "continue"})
+        self.client.post(self.url, {"action": "resume"})
+        self.invitation.refresh_from_db()
+        self.assertIsNotNone(self.invitation.completed_at)
+        self.assertEqual(self.invitation.emails.count(), 2)
+        self.assertEqual(len(mail.outbox), 2)
+        self.assertEqual(CrmActivity.objects.filter(activity_type="task").count(), 1)
+        self.client.force_login(self.staff)
+        response = self.client.get(
+            reverse("inventory_detail", args=[self.invitation.pk])
+        )
+        self.assertContains(response, "Completed early—support recommended.")
+        self.assertContains(response, "Not assessed")
+
+    def test_preview_shows_team_outreach_for_early_completion(self):
+        questions = definition("kindergarten")["groups"][0]["questions"]
+        response = self.client.post(
+            reverse("inventory_preview"),
+            {
+                "grade": "kindergarten",
+                "action": "test",
+                **{q["id"]: "no" for q in questions},
+            },
+        )
+        self.assertContains(response, "team outreach confirmation email")
+        self.assertNotContains(response, "consultation email")
+        self.assertEqual(self.invitation.emails.count(), 0)
+
+    def test_legacy_first_section_support_completion_stays_completed(self):
+        self.invitation.answers = {
+            q["id"]: False
+            for q in definition(self.child.grade)["groups"][0]["questions"]
+        }
+        self.invitation.completed_at = timezone.now()
+        self.invitation.result = {"outcome": "support", "answered": 8, "total": 24}
+        self.invitation.save()
+        original_result = self.invitation.result.copy()
+        self.assertNotContains(self.client.get(self.url), "Answer remaining questions")
+        self.client.post(self.url, {"action": "resume"})
+        self.invitation.refresh_from_db()
+        self.assertIsNotNone(self.invitation.completed_at)
+        self.assertEqual(self.invitation.result, original_result)
+        self.assertEqual(self.invitation.emails.count(), 0)
 
     def test_legacy_completed_inventory_can_resume_without_losing_answers(self):
         from apps.crm.inventory import complete_inventory
 
         answers = {
-            q["id"]: False
+            q["id"]: True
             for q in definition(self.child.grade)["groups"][0]["questions"]
         }
         self.invitation.answers = answers

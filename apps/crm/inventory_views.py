@@ -236,7 +236,11 @@ class InventoryDetailView(CrmAccessMixin, View):
                             "prompt": q["prompt"],
                             "answer": ("Yes" if invitation.answers[q["id"]] else "No")
                             if q["id"] in invitation.answers
-                            else "Not answered",
+                            else (
+                                "Not assessed"
+                                if invitation.result.get("completed_early")
+                                else "Not answered"
+                            ),
                         }
                         for q in group["questions"]
                     ],

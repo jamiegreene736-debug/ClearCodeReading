@@ -41,7 +41,7 @@
   <p>{{ snapshot.progress }}</p>
   {% if invitation.completed_at %}
     <p>Outcome: <strong>{{ invitation.result.outcome|title }}</strong> · {{ invitation.result.yes_count }} Yes answers out of {{ invitation.result.answered }} answered ({{ invitation.result.total }} in full inventory).</p>
-    <p>Rule: {{ invitation.result.rule }}. Earlier submissions may have stopped before every question was answered.</p>
+    <p>{% if invitation.result.completed_early %}<strong>Completed early—support recommended.</strong> Finished after section {{ invitation.result.stopped_section }}. Remaining questions were not assessed. {% endif %}Rule: {{ invitation.result.rule }}.</p>
     {% if invitation.result.outcome == "review" %}<p>The source cutoff is ambiguous at this score. Review the responses before recommending resources or intervention.</p>{% endif %}
     {% if snapshot.outcome_label %}<p>{{ snapshot.outcome_label }}</p>{% endif %}
     {% if not invitation.reviewed_at %}
