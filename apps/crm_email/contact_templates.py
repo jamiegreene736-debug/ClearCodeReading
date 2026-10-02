@@ -1,8 +1,7 @@
 """Personal and built-in email templates applied to one CRM contact.
 
-Personal templates are private to their owner; built-in referral copy is shared.
-When a template is
-chosen for a contact, its ``{{token}}`` placeholders are filled with that
+Personal templates are private to their owner; pipeline and referral copy is shared.
+When a template is chosen for a contact, its ``{{token}}`` placeholders are filled with that
 contact's details so the draft opens ready to review and send.
 """
 
@@ -33,6 +32,13 @@ TEMPLATE_PLACEHOLDERS: Mapping[str, str] = {
     "company.name": "Company, organization or school name",
     "sender.name": "Your name",
 }
+
+
+@dataclass(frozen=True)
+class TemplateOption:
+    pk: str
+    name: str
+    subject: str
 
 
 def contact_templates(
@@ -83,13 +89,6 @@ def apply_template(
         "body_html": fill_html(clean_html(template.body_html), values)
         + clean_html(mailbox.signature),
     }
-
-
-@dataclass(frozen=True)
-class TemplateOption:
-    pk: str
-    name: str
-    subject: str
 
 
 def pipeline_template_keys() -> tuple[str, ...]:
