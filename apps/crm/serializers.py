@@ -41,6 +41,7 @@ class LeadSerializer(serializers.ModelSerializer):
             "company",
             "source",
             "status",
+            "priority",
             "assigned_to",
             "assigned_to_detail",
             "linked_user",

@@ -877,3 +877,13 @@ def notify_assessment_review_completed(assessment_id):
     return {"status": "queued", "assessment_id": assessment.id}
 
 ```
+
+### Contact priority
+
+Contacts have a separate Priority status: Unrated (default), COLD, WARM, or HOT.
+Edit it directly below Lead status on the contact card. Hot means ready for prompt
+follow-up; Warm means interested and considering; Cold means little engagement.
+Existing contacts remain Unrated until reviewed. Labels appear in desktop and
+mobile contact lists and the overview queues, and the contact list can be filtered
+by priority. Single-property edits preserve other fields and record an audit entry.
+Lead lifecycle status and deal priority remain separate.

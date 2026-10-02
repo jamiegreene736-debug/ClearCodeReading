@@ -32,6 +32,7 @@
         <div class="form-section"><h2>Ownership and context</h2><p class="help">Set the starting point now; the contact record becomes the working history.</p></div>
         <div class="field"><label for="{{ form.source.id_for_label }}">How they found us</label>{{ form.source }}{{ form.source.errors }}</div>
         <div class="field"><label for="{{ form.status.id_for_label }}">Status</label>{{ form.status }}{{ form.status.errors }}</div>
+        <div class="field"><label for="{{ form.priority.id_for_label }}">Priority status</label>{{ form.priority }}{{ form.priority.errors }}<span class="help">{{ form.priority.help_text }}</span></div>
         <div class="field"><label for="{{ form.assigned_to.id_for_label }}">Contact owner</label>{{ form.assigned_to }}{{ form.assigned_to.errors }}</div>
         <div class="field"><label for="{{ form.estimated_students.id_for_label }}">Estimated students</label>{{ form.estimated_students }}{{ form.estimated_students.errors }}</div>
         <div class="field full"><label for="{{ form.notes.id_for_label }}">Initial note</label>{{ form.notes }}{{ form.notes.errors }}<span class="help">This is also added to the contact activity timeline.</span></div>

@@ -106,6 +106,12 @@ class Lead(TimestampedModel, SoftDeleteModel):
         UNQUALIFIED = "unqualified", "Unqualified"
         CONVERTED = "converted", "Converted"
 
+    class Priority(models.TextChoices):
+        UNRATED = "unrated", "Unrated"
+        COLD = "cold", "COLD"
+        WARM = "warm", "WARM"
+        HOT = "hot", "HOT"
+
     class RelationshipInterest(models.TextChoices):
         REFERRAL_PARTNER = "referral_partner", "Referral Partner"
         DONOR = "donor", "Donor"
@@ -132,6 +138,11 @@ class Lead(TimestampedModel, SoftDeleteModel):
     )
     source = models.CharField(max_length=32, choices=Source.choices, default=Source.WEBSITE, db_index=True)
     status = models.CharField(max_length=32, choices=Status.choices, default=Status.NEW, db_index=True)
+    priority = models.CharField(
+        max_length=16, choices=Priority.choices, default=Priority.UNRATED, db_index=True,
+        verbose_name="Priority status",
+        help_text="Hot: ready for prompt follow-up. Warm: interested and considering. Cold: little engagement. Unrated: not assessed yet.",
+    )
     assigned_to = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, blank=True, related_name="assigned_leads")
     linked_user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, blank=True, related_name="crm_leads")
     estimated_students = models.PositiveIntegerField(null=True, blank=True)

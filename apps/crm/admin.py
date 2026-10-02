@@ -41,7 +41,7 @@ class CompanyOpportunityInline(OpportunityInline):
 class ContactInline(admin.TabularInline):
     model = Lead
     extra = 0
-    fields = ("contact_name", "contact_email", "status", "assigned_to")
+    fields = ("contact_name", "contact_email", "status", "priority", "assigned_to")
     readonly_fields = ("contact_email",)
     autocomplete_fields = ("assigned_to",)
 
@@ -95,12 +95,13 @@ class LeadAdmin(admin.ModelAdmin):
         "audience",
         "source",
         "status",
+        "priority",
         "linked_user",
         "assigned_to",
         "estimated_students",
         "created_at",
     )
-    list_filter = ("status", "audience", "source", "company", "assigned_to", "linked_user", "is_deleted", "created_at")
+    list_filter = ("status", "priority", "audience", "source", "company", "assigned_to", "linked_user", "is_deleted", "created_at")
     search_fields = ("school_name", "organization_name", "contact_name", "contact_email", "contact_phone", "notes")
     autocomplete_fields = ("company", "assigned_to", "linked_user")
     readonly_fields = ("created_at", "updated_at", "deleted_at")
