@@ -5,6 +5,7 @@ from django.test import TestCase, override_settings
 from apps.crm.models import NewsletterCampaign, NewsletterDelivery
 from apps.curriculum.models import Lesson
 from apps.schools.models import School
+from apps.social.models import SocialAccount, SocialPost, SocialPublication
 from apps.workforce.models import PaymentRun, ProviderOnboarding, SensitiveDataReference
 
 
@@ -39,6 +40,18 @@ class AdminDemoDataTests(TestCase):
 
     def test_external_workflows_remain_draft_or_pending(self):
         call_command("seed_admin_demo_data", verbosity=0)
+
+        account = SocialAccount.objects.get(network=SocialAccount.Network.FACEBOOK)
+        self.assertEqual(account.status, SocialAccount.Status.DISCONNECTED)
+        self.assertEqual(account.encrypted_token, "")
+        self.assertEqual(
+            SocialPost.objects.get(brief="Demo reading practice social post").status,
+            SocialPost.Status.DRAFT,
+        )
+        publication = SocialPublication.objects.get(post__brief="Demo reading practice social post")
+        self.assertEqual(publication.status, SocialPublication.Status.FAILED)
+        self.assertEqual(publication.external_id, "")
+        self.assertIsNone(publication.published_at)
 
         self.assertEqual(
             NewsletterCampaign.objects.get(

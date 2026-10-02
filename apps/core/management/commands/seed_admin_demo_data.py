@@ -68,6 +68,7 @@ from apps.sessions.models import (
     SkillObservation,
 )
 from apps.tenants.models import Domain
+from apps.social.models import SocialAccount, SocialPost, SocialPublication
 from apps.users.management.commands.seed_demo_login import (
     DEMO_ADMIN_EMAIL,
     DEMO_PARENT_EMAIL,
@@ -208,6 +209,7 @@ class Command(BaseCommand):
         )
 
         self._seed_marketing(admin_user)
+        self._seed_social(admin_user)
         self._seed_crm(admin_user, center, now)
         curriculum, first, second, skill = self._seed_curriculum(
             admin_user, teacher, child, center
@@ -255,6 +257,29 @@ class Command(BaseCommand):
         )
         self._seed_workforce(admin_user, teacher, center, session)
         self._seed_outcomes(center, curriculum)
+
+    def _seed_social(self, admin_user: CustomUser) -> None:
+        SocialAccount.objects.get_or_create(
+            network=SocialAccount.Network.FACEBOOK,
+            defaults={"display_name": "Demo social account"},
+        )
+        post, _ = SocialPost.objects.get_or_create(
+            brief="Demo reading practice social post",
+            created_by=admin_user,
+            defaults={
+                "facebook_caption": "Sample reading practice idea for families.",
+                "post_to_instagram": False,
+            },
+        )
+        # An unsuccessful demo attempt exercises admin history without publishing.
+        SocialPublication.objects.get_or_create(
+            post=post,
+            network=SocialAccount.Network.FACEBOOK,
+            defaults={
+                "status": SocialPublication.Status.FAILED,
+                "error": "Demo only; no publication was attempted.",
+            },
+        )
 
     def _seed_marketing(self, admin_user):
         BlogPost.objects.update_or_create(
