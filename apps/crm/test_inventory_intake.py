@@ -50,7 +50,9 @@ class InventoryIntakeTests(TestCase):
         self.assertContains(
             self.client.get(reverse("inventory_list")), "Create inventory link"
         )
-        user = get_user_model().objects.create_user(username="family", email="family@example.com", role="parent")
+        user = get_user_model().objects.create_user(
+            username="family", email="family@example.com", role="parent"
+        )
         self.public.force_login(user)
         self.assertEqual(self.public.post(reverse("inventory_link")).status_code, 403)
 
