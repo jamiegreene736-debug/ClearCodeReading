@@ -46,4 +46,4 @@ jobs:
       - run: ruff check apps/social/planner.py apps/social/planner_ai.py apps/social/planner_views.py apps/social/editorial.py apps/social/test_planner.py
       - run: ruff format --check apps/social/planner.py apps/social/planner_ai.py apps/social/planner_views.py apps/social/editorial.py apps/social/test_planner.py
       - run: mypy --config-file mypy-social.ini
-      - run: python manage.py test --noinput
+      - run: python manage.py test apps.social apps.core.test_marketing --noinput
