@@ -170,7 +170,14 @@ def _context(plan: ContentPlan, week: ContentWeek) -> dict[str, object]:
 
 
 def _prepare_weeks(plan: ContentPlan) -> None:
-    for monday, planned_at in upcoming_slots(plan, timezone.now()):
+    now = timezone.now()
+    # Preserve a preview already due within a day instead of adding a fifth future week.
+    imminent = ContentWeek.objects.filter(
+        planned_at__gt=now, planned_at__lt=now + timedelta(hours=24)
+    ).count()
+    for monday, planned_at in upcoming_slots(plan, now)[
+        : max(0, PREVIEW_WEEKS - imminent)
+    ]:
         week, created = ContentWeek.objects.get_or_create(
             week_of=monday,
             defaults={"planned_at": planned_at, "pillar": pillar_for(monday)},

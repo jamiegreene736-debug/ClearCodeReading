@@ -83,6 +83,23 @@ class ContentPlannerTests(TestCase):
         slots = upcoming_slots(self.plan, datetime(2026, 10, 26, 11, tzinfo=EASTERN))
         self.assertEqual(slots[0][1].day, 3)
 
+    def test_topup_does_not_add_fifth_week_before_imminent_post(self):
+        first_day = datetime(2026, 10, 23, 12, tzinfo=EASTERN)
+        with patch("apps.social.planner.timezone.now", return_value=first_day):
+            _prepare_weeks(self.plan)
+        with patch(
+            "apps.social.planner.timezone.now",
+            return_value=datetime(2026, 10, 26, 11, tzinfo=EASTERN),
+        ):
+            _prepare_weeks(self.plan)
+        self.assertEqual(ContentWeek.objects.count(), 4)
+        with patch(
+            "apps.social.planner.timezone.now",
+            return_value=datetime(2026, 10, 27, 11, tzinfo=EASTERN),
+        ):
+            _prepare_weeks(self.plan)
+        self.assertEqual(ContentWeek.objects.count(), 5)
+
     def test_views_require_superadmin_and_actions_require_post(self):
         self.assertEqual(self.client.get(reverse("social:planner")).status_code, 200)
         self.assertEqual(
