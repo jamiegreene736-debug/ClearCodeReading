@@ -48,7 +48,11 @@ from apps.crm.newsletters import (
 )
 from apps.crm_email import automated
 from apps.crm_email.automated import text_to_html
-from apps.crm_email.contact_templates import TEMPLATE_PLACEHOLDERS, apply_template
+from apps.crm_email.contact_templates import (
+    TEMPLATE_PLACEHOLDERS,
+    apply_template,
+    contact_templates,
+)
 from apps.crm_email.forms import (
     AutomatedEmailForm,
     ComposeForm,
@@ -67,6 +71,7 @@ from apps.crm_email.models import (
     Message,
     WorkerHeartbeat,
 )
+from apps.crm_email.referral_templates import REFERRAL_TEMPLATES
 from apps.crm_email.security import (
     EmailError,
     EmailRequest,
@@ -743,7 +748,7 @@ def contact_email(request: EmailRequest, pk: int) -> HttpResponse:
                 mailbox__user=request.user, import_pending=True
             ),
             "mailbox": Mailbox.objects.filter(user=request.user).first(),
-            "templates": EmailTemplate.objects.filter(owner=request.user),
+            "templates": contact_templates(request.user),
         },
     )
 
@@ -826,7 +831,9 @@ def compose(request: EmailRequest, pk: int) -> HttpResponse:
                     )
                 )
         elif request.GET.get("template"):
-            template = get_object_or_404(
+            template = REFERRAL_TEMPLATES.get(
+                request.GET["template"]
+            ) or get_object_or_404(
                 EmailTemplate, pk=request.GET["template"], owner=request.user
             )
             initial.update(apply_template(template, lead, mailbox))
@@ -858,7 +865,7 @@ def compose(request: EmailRequest, pk: int) -> HttpResponse:
             "form": form,
             "mailbox": mailbox,
             "draft": draft,
-            "templates": EmailTemplate.objects.filter(owner=request.user),
+            "templates": contact_templates(request.user),
         },
     )
 
