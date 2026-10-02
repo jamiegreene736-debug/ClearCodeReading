@@ -49,6 +49,8 @@
   .record-section { scroll-margin-top:72px; }
   .section-head { display:flex; flex-wrap:wrap; align-items:flex-start; justify-content:space-between; gap:12px; margin-bottom:8px; }
   .section-head h2, .section-head p { margin-bottom:0; }
+  .inventory-actions { display:flex; flex-wrap:wrap; gap:8px; }
+  .inventory-actions form { margin:0; }
   .assessment-entry { margin-top:16px; padding-top:16px; border-top:1px solid var(--line); }
   .assessment-entry:first-of-type { border-top:0; padding-top:0; }
   .assessment-name { margin:0 0 8px; font-weight:700; overflow-wrap:anywhere; }
@@ -254,7 +256,13 @@
             <h2>Inventories</h2>
             <p class="subtle">Open an invitation for progress, results, reminders, and a consultation booked from that inventory.</p>
           </div>
-          <a class="btn btn-primary" href="{% url 'inventory_send' lead.pk %}">Send inventory</a>
+          <div class="inventory-actions">
+            <a class="btn btn-primary" href="{% url 'inventory_send' lead.pk %}">Send inventory</a>
+            <form method="post" action="{% url 'inventory_link' %}">
+              {% csrf_token %}
+              <button class="btn" type="submit">Create inventory link</button>
+            </form>
+          </div>
         </div>
         {% for child in lead.inventory_children.all %}
           {% for invitation in child.invitations.all %}
@@ -271,7 +279,7 @@
             </div>
           {% endfor %}
         {% empty %}
-          {% if not consultations %}<p>No inventories yet. Send an invitation to get started.</p>{% endif %}
+          {% if not consultations %}<p>No inventories yet. Send an invitation or create a link to get started.</p>{% endif %}
         {% endfor %}
         {% if consultations %}
           <h3>Calendar consultations</h3>
