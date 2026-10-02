@@ -37,6 +37,12 @@
   https://www.readingrockets.org/literacy-home/reading-101-guide-parents/reading-basics/phonics-and-decoding
   Topic reference only; do not fabricate studies, quantitative claims, or quotes.
 
+- OpenAI GPT-6 Luna: https://developers.openai.com/api/docs/models/gpt-6-luna
+  Dedicated weekly writer/reviewer model with low reasoning effort and structured output;
+  configure `SOCIAL_AI_PLANNER_MODEL` independently of the manual caption composer.
+  Explicit directions keep the four editorial themes distinct; brand weeks must name
+  ClearCode and describe structured literacy in both captions.
+
 ## Operating notes
 
 One post weekly is a conservative starting cadence, not a proven optimal posting

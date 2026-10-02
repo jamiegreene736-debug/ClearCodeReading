@@ -10,6 +10,13 @@ PILLARS = (
     ("encouragement", "Confidence and encouragement"),
     ("clearcode_approach", "Get to know ClearCode"),
 )
+PILLAR_DIRECTIONS = {
+    "reading_routine": "Give one small, specific shared-reading routine a family can try today. Show the steps briefly. Avoid vague cozy-nook advice, milestone celebrations, and sweeping outcome claims.",
+    "literacy_explained": "Explain one sound-letter or decoding concept in plain language with one accurate written-word example. Do not substitute rhyming or guessing from pictures for decoding. Do not turn this into a general reading-routine post.",
+    "encouragement": "Offer one concrete, pressure-free phrase a parent can say to acknowledge effort during reading. Avoid reward systems, comparison, organized achievement celebrations, and promises about confidence or progress.",
+    "clearcode_approach": "Introduce ClearCode Reading by name and explain one approved aspect of its explicit, systematic structured-literacy approach. Give a clear parent-friendly explanation, then a gentle invitation to learn more. This must be about ClearCode's approach, not generic family reading tips.",
+}
+
 SOURCES = {
     "clearcode": {
         "title": "ClearCode Reading public overview",
