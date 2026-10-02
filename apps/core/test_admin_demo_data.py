@@ -5,6 +5,7 @@ from django.test import TestCase, override_settings
 from apps.crm.models import NewsletterCampaign, NewsletterDelivery
 from apps.curriculum.models import Lesson
 from apps.schools.models import School
+from apps.social.models import SocialAccount, SocialPost, SocialPublication
 from apps.workforce.models import PaymentRun, ProviderOnboarding, SensitiveDataReference
 
 
@@ -69,3 +70,17 @@ class AdminDemoDataTests(TestCase):
         self.assertEqual(
             reference.data_categories, ["tax_form_status", "payment_profile_status"]
         )
+
+    def test_social_demo_records_cannot_publish(self):
+        call_command("seed_admin_demo_data", verbosity=0)
+        account = SocialAccount.objects.get(network=SocialAccount.Network.FACEBOOK)
+        self.assertFalse(account.is_connected)
+        self.assertFalse(account.encrypted_token)
+        post = SocialPost.objects.get(brief="Demo social post preview")
+        self.assertEqual(post.status, SocialPost.Status.DRAFT)
+        self.assertIsNone(post.scheduled_at)
+        self.assertEqual(post.selected_networks(), [])
+        publication = SocialPublication.objects.get(post=post)
+        self.assertEqual(publication.status, SocialPublication.Status.FAILED)
+        self.assertFalse(publication.external_id)
+        self.assertIsNone(publication.published_at)

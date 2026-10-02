@@ -67,6 +67,7 @@ from apps.sessions.models import (
     SessionTemplate,
     SkillObservation,
 )
+from apps.social.models import SocialAccount, SocialPost, SocialPublication
 from apps.tenants.models import Domain
 from apps.users.management.commands.seed_demo_login import (
     DEMO_ADMIN_EMAIL,
@@ -208,6 +209,7 @@ class Command(BaseCommand):
         )
 
         self._seed_marketing(admin_user)
+        self._seed_social(admin_user)
         self._seed_crm(admin_user, center, now)
         curriculum, first, second, skill = self._seed_curriculum(
             admin_user, teacher, child, center
@@ -1033,6 +1035,29 @@ class Command(BaseCommand):
                 "event_type": "sample.onboarding.preview",
                 "payload_hash": "0" * 64,
                 "status": ProviderEvent.Status.RECEIVED,
+            },
+        )
+
+    def _seed_social(self, admin_user: CustomUser) -> None:
+        SocialAccount.objects.get_or_create(
+            network=SocialAccount.Network.FACEBOOK,
+            defaults={"display_name": "Demo social account"},
+        )
+        post, _ = SocialPost.objects.get_or_create(
+            brief="Demo social post preview",
+            created_by=admin_user,
+            defaults={
+                "facebook_caption": "A sample reading tip for families.",
+                "post_to_facebook": False,
+                "post_to_instagram": False,
+            },
+        )
+        SocialPublication.objects.get_or_create(
+            post=post,
+            network=SocialAccount.Network.FACEBOOK,
+            defaults={
+                "status": SocialPublication.Status.FAILED,
+                "error": "Demo preview only; no publication attempted.",
             },
         )
 
