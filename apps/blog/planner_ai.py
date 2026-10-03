@@ -122,6 +122,7 @@ def generate_article(context: dict[str, object]) -> dict[str, object]:
         "Do not output HTML, markdown, URLs or citations invented from outside the supplied sources. "
         "Title under 200 chars, excerpt under 320, seo_title under 70, seo_description under 160, why under 500. "
         "Create an objects-only illustrative cover image_brief under 500 chars, no people, text or logos, and literal cover_alt under 240 chars. "
+        "Use blank blocks or unmarked cards rather than letter tiles, spelled words, labels, symbols or printed pages, even for phonics topics. "
         "Facebook is a separate 2–3 sentence teaser under 1800 chars with a clear reason to read the article, without a URL; the app adds the link. "
         "Return source_ids actually used. All string fields must have at least 8 characters.",
         context,
