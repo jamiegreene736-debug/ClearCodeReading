@@ -275,3 +275,31 @@ recorded as failed, and the post moves to Needs attention.
 Carousels, Reels, Stories, ads, inbox messages, comment replies, and a marketing
 role below super administrator. The menu and the queue are shaped so those
 can be added later without a new header item.
+
+## Live draft previews
+
+The composer shows Facebook and Instagram feed approximations beside the editable
+captions in both brief and manual modes. Selected networks, text, and photos update
+locally without saving or calling Meta. Existing photos use the authenticated image
+route; replacement files use temporary browser object URLs, released on replacement
+and page exit. Captions render as text, never HTML.
+
+The preview follows `_apply_post` and the current publishers: manual Instagram
+captions fall back to the main caption when blank; brief captions stay independent;
+Facebook sends the Link field only when there is no photo; Instagram does not append
+that field. Caption limits follow the server's Unicode code-point slicing. Long
+captions can be expanded. Missing/broken photos and empty network selection have
+explicit states. Link cards show only the supplied URL/domain; metadata, final crop,
+and device-specific layout cannot be predicted exactly.
+
+We use local cards because Meta's embeds display existing public posts, which cannot
+represent unsaved drafts. Research: [Meta Embedded Posts](https://about.fb.com/news/2013/07/introducing-embedded-posts/)
+and [Instagram oEmbed](https://developers.facebook.com/docs/instagram-platform/oembed/)
+(the latter was rate-limited during research). No Meta SDK, token, external preview
+service, or additional runtime dependency is needed.
+
+Regression coverage: `python manage.py test apps.social` and
+`npx playwright test tests/browser/social-preview.spec.js`. The browser suite renders
+the real Django template and serves local assets with intercepted requests; it needs
+Python dependencies and Playwright Chromium, but no database or network credentials.
+Set `PYTHON` to the desired interpreter if needed. Social CI runs this suite.
