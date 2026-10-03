@@ -47,8 +47,8 @@ jobs:
       - run: pip install -r requirements-crm-email-dev.txt
       - run: python manage.py check
       - run: python manage.py makemigrations --check --dry-run
-      - run: ruff check apps/social/planner.py apps/social/planner_ai.py apps/social/planner_views.py apps/social/editorial.py apps/social/test_planner.py apps/social/schedule_views.py apps/social/test_schedule_views.py apps/blog/planner.py apps/blog/planner_ai.py apps/blog/planner_views.py apps/blog/promotion.py apps/blog/test_planner.py
-      - run: ruff format --check apps/social/planner.py apps/social/planner_ai.py apps/social/planner_views.py apps/social/editorial.py apps/social/test_planner.py apps/social/schedule_views.py apps/social/test_schedule_views.py apps/blog/planner.py apps/blog/planner_ai.py apps/blog/planner_views.py apps/blog/promotion.py apps/blog/test_planner.py
+      - run: ruff check apps/social/navigation.py apps/social/templatetags apps/social/test_navigation.py apps/social/planner.py apps/social/planner_ai.py apps/social/planner_views.py apps/social/editorial.py apps/social/test_planner.py apps/social/schedule_views.py apps/social/test_schedule_views.py apps/blog/planner.py apps/blog/planner_ai.py apps/blog/planner_views.py apps/blog/promotion.py apps/blog/test_planner.py
+      - run: ruff format --check apps/social/navigation.py apps/social/templatetags apps/social/test_navigation.py apps/social/planner.py apps/social/planner_ai.py apps/social/planner_views.py apps/social/editorial.py apps/social/test_planner.py apps/social/schedule_views.py apps/social/test_schedule_views.py apps/blog/planner.py apps/blog/planner_ai.py apps/blog/planner_views.py apps/blog/promotion.py apps/blog/test_planner.py
       - run: mypy --config-file mypy-social.ini
       - run: python manage.py test apps.social apps.blog apps.core.test_marketing --noinput
       - uses: actions/setup-node@v4

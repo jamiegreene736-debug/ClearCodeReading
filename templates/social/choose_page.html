@@ -1,6 +1,9 @@
 {% extends "portal/page.html" %}
 {% block title %}Choose a Page{% endblock %}
 {% block content %}
+{% load social_navigation %}
+{% social_navigation post as nav %}
+{% include "social/_navigation.html" %}
 <div class="mx-auto max-w-xl" data-testid="social-choose-page">
   <p class="text-xs font-black uppercase tracking-[0.16em] text-deepTeal">Marketing · Settings</p>
   <h1 class="mt-1 text-4xl font-black">Which Page should post?</h1>

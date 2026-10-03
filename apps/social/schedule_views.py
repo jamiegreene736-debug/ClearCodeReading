@@ -9,13 +9,13 @@ from typing import TypedDict
 from django.contrib import messages
 from django.http import HttpResponse
 from django.shortcuts import get_object_or_404, redirect, render
-from django.urls import reverse
 from django.utils import timezone
 from django.views.decorators.http import require_http_methods
 
 from apps.social.access import SocialRequest, social_editor_required
 from apps.social.exceptions import SocialError
 from apps.social.models import ContentWeek, SocialPost
+from apps.social.navigation import navigation
 from apps.social.services import EASTERN, delete_unpublished_post
 
 
@@ -103,9 +103,7 @@ def delete_post(request: SocialRequest, pk: int) -> HttpResponse:
         messages.success(
             request, "Post deleted. It will not publish or be recreated by the AI plan."
         )
-        return redirect(
-            f"{reverse('social:queue')}?tab={'drafts' if post.status == SocialPost.Status.DRAFT else 'scheduled'}"
-        )
+        return redirect(navigation(request, post)["url"])
     if post.status not in {SocialPost.Status.DRAFT, SocialPost.Status.SCHEDULED}:
         messages.error(request, "Only drafts and scheduled posts can be deleted.")
         return redirect("social:queue")

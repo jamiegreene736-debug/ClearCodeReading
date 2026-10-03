@@ -33,6 +33,7 @@ from apps.social.meta import (
     signature_matches,
 )
 from apps.social.models import SocialAccount, SocialAuthorization, SocialPost
+from apps.social.navigation import navigation
 from apps.social.services import (
     EASTERN,
     cancel_schedule,
@@ -157,6 +158,7 @@ def post_edit(request, pk=None):
         messages.error(request, "A post that is already sending or posted cannot be edited here.")
         return redirect("social:queue")
     mode = request.GET.get("mode") or (SocialPost.Source.MANUAL if post.is_blog_promotion else post.source if pk else SocialPost.Source.BRIEF)
+    nav = navigation(request, post)
     ideas: list[str] = []
     generate_image_checked = request.method != "POST" or request.POST.get("generate_image") == "on"
     if request.method == "POST":
@@ -224,7 +226,7 @@ def post_edit(request, pk=None):
                             raise SocialError("This post changed while you were editing. Reload it before saving.")
                     post.save()
                 if action == "schedule":
-                    return redirect("social:schedule", pk=post.pk)
+                    return redirect(f"{reverse('social:schedule', kwargs={'pk': post.pk})}?return_to={nav['origin']}&via=edit")
                 if action == "post_now":
                     claim_and_publish_now(post, actor=request.user, request=request)
                     post.refresh_from_db()
@@ -234,7 +236,9 @@ def post_edit(request, pk=None):
                     messages.error(request, post.last_error or "The post needs attention.")
                     return redirect(f"{reverse('social:queue')}?tab=attention")
                 messages.success(request, notice)
-                return redirect(f"{reverse('social:edit', kwargs={'pk': post.pk})}?mode={post.source}")
+                if action == "save_return":
+                    return redirect(nav["url"])
+                return redirect(f"{reverse('social:edit', kwargs={'pk': post.pk})}?mode={post.source}&return_to={nav['origin']}")
         except SocialError as exc:
             messages.error(request, str(exc))
             if post.pk is None:

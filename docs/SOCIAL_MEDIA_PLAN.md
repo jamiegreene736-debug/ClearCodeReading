@@ -276,6 +276,14 @@ Carousels, Reels, Stories, ads, inbox messages, comment replies, and a marketing
 role below super administrator. The menu and the queue are shaped so those
 can be added later without a new header item.
 
+## Navigation and return paths
+
+Social screens expose links to Drafts, Scheduled, Posted, Needs attention, the AI content plan, and connection settings. Editors retain a named `return_to` destination through mode changes and saves. “Save and back” saves before returning; ordinary back links leave the form, with a browser warning for unsaved edits. Scheduling entered from the editor uses `via=edit` to return to that post; direct scheduling links return to the originating list or plan. Successful scheduling, publishing, and cancellation still open the list matching the resulting status.
+
+Return destinations are allowlisted names, never caller-provided URLs or browser history. Direct links fall back to the post’s current status (Drafts for a new post). Facebook Page selection returns to Settings. Regression coverage lives in `apps/social/test_navigation.py`; OAuth selection navigation is covered in `apps/social/tests.py`.
+
+The calendar and delete confirmation share these links too. Calendar-origin return destinations include a validated month so reviewing or deleting a post returns to the same calendar month. “Keep post” returns to the editor when deletion was opened there; successful deletion returns to the list, plan, or calendar instead of the removed post.
+
 ## Live draft previews
 
 The composer shows Facebook and Instagram feed approximations beside the editable

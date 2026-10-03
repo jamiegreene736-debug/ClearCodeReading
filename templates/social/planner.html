@@ -2,11 +2,14 @@
 {% load tz %}
 {% block title %}AI content plan{% endblock %}
 {% block content %}
+{% load social_navigation %}
+{% social_navigation post as nav %}
+{% include "social/_navigation.html" %}
 {% timezone "America/New_York" %}
 <div class="pb-8" data-testid="content-plan">
   <div class="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
     <div><p class="text-xs font-black uppercase tracking-[0.16em] text-deepTeal">Marketing · Weekly content</p><h1 class="mt-1 text-4xl font-black tracking-tight text-ink">Your next four weeks</h1><p class="mt-2 max-w-2xl leading-7 text-ink/65">Thoughtful reading content, ready ahead of time. One idea and image each week, with a caption written for each platform.</p></div>
-    <a href="{% url 'social:calendar' %}" class="focus-ring rounded-full bg-white px-5 py-3 text-center font-black text-deepTeal ring-1 ring-ink/10">Calendar view</a><a href="{% url 'social:queue' %}" class="focus-ring rounded-full bg-white px-5 py-3 text-center font-black text-deepTeal ring-1 ring-ink/10">All posts</a>
+    <a href="{% url 'social:calendar' %}?return_to=planner" class="focus-ring rounded-full bg-white px-5 py-3 text-center font-black text-deepTeal ring-1 ring-ink/10">Calendar view</a><a href="{{ nav.url }}" class="focus-ring rounded-full bg-white px-5 py-3 text-center font-black text-deepTeal ring-1 ring-ink/10">Back to {{ nav.label }}</a>
   </div>
   <div class="mt-6 flex flex-wrap items-center justify-between gap-4 rounded-3xl bg-white p-5 ring-1 ring-ink/10">
     <div><span class="rounded-full bg-linen px-3 py-1 text-sm font-black text-deepTeal">{{ plan.get_mode_display }}</span><p class="mt-3 text-sm text-ink/65">{% if plan.mode == 'automatic' %}New weeks are prepared and scheduled automatically after an AI editorial check.{% elif plan.mode == 'review' %}New weeks are prepared as drafts. You choose what to schedule.{% else %}Nothing new is prepared or scheduled automatically.{% endif %}</p></div>
@@ -18,7 +21,7 @@
   </div>
   {% if not ai_ready %}<p role="alert" class="mt-4 rounded-2xl bg-amber-100 p-4 text-amber-900">AI generation needs a server connection before previews can be prepared.</p>{% endif %}
   {% if worker_stale %}<p role="status" class="mt-4 rounded-2xl bg-amber-100 p-4 text-amber-900">The background worker has not checked in recently. Posts may be delayed until it resumes.</p>{% endif %}
-  {% if plan.last_error %}<p role="alert" class="mt-4 rounded-2xl bg-amber-100 p-4 text-amber-900">{{ plan.last_error }} <a class="underline" href="{% url 'social:settings' %}">Check connections</a></p>{% endif %}
+  {% if plan.last_error %}<p role="alert" class="mt-4 rounded-2xl bg-amber-100 p-4 text-amber-900">{{ plan.last_error }} <a class="underline" href="{% url 'social:settings' %}?return_to=planner">Check connections</a></p>{% endif %}
   {% if plan.preview_requested %}<p class="mt-4 text-sm font-bold text-deepTeal" role="status">Previews are queued. One week is prepared per background run, about every five minutes. Refresh to see progress.</p>{% endif %}
 
   <div class="mt-6 grid gap-6 lg:grid-cols-2">
@@ -39,8 +42,8 @@
         {% if post.last_error %}<p class="mt-3 text-sm font-bold text-amber-800">{{ post.last_error }}</p>{% endif %}
         {% if card.sources %}<details class="mt-4 text-xs text-ink/60"><summary class="cursor-pointer font-bold">Context behind this idea</summary><ul class="mt-2 space-y-2">{% for source in card.sources %}<li><a href="{{ source.url }}" target="_blank" rel="noopener" class="underline">{{ source.title }}</a></li>{% endfor %}</ul></details>{% endif %}
         <div class="mt-5 flex flex-wrap gap-2">
-          {% if post.status == 'draft' or post.status == 'scheduled' %}<a href="{% url 'social:delete' post.pk %}" class="focus-ring rounded-full px-4 py-2 text-sm font-black text-red-700 ring-1 ring-red-200">Delete post</a>{% endif %}
-          {% if post and post.status != 'posted' and post.status != 'publishing' %}<a href="{% url 'social:edit' post.pk %}" class="focus-ring rounded-full px-4 py-2 text-sm font-black text-deepTeal ring-1 ring-deepTeal/20">Review / edit</a><a href="{% url 'social:schedule' post.pk %}" class="focus-ring rounded-full px-4 py-2 text-sm font-black text-deepTeal ring-1 ring-deepTeal/20">{% if post.status == 'scheduled' %}Change date{% else %}Schedule{% endif %}</a>{% endif %}
+          {% if post.status == 'draft' or post.status == 'scheduled' %}<a href="{% url 'social:delete' post.pk %}?return_to=planner" class="focus-ring rounded-full px-4 py-2 text-sm font-black text-red-700 ring-1 ring-red-200">Delete post</a>{% endif %}
+          {% if post and post.status != 'posted' and post.status != 'publishing' %}<a href="{% url 'social:edit' post.pk %}?return_to=planner" class="focus-ring rounded-full px-4 py-2 text-sm font-black text-deepTeal ring-1 ring-deepTeal/20">Review / edit</a><a href="{% url 'social:schedule' post.pk %}?return_to=planner" class="focus-ring rounded-full px-4 py-2 text-sm font-black text-deepTeal ring-1 ring-deepTeal/20">{% if post.status == 'scheduled' %}Change date{% else %}Schedule{% endif %}</a>{% endif %}
           {% if week.status == 'error' %}<form method="post" action="{% url 'social:plan_action' %}">{% csrf_token %}<input type="hidden" name="week" value="{{ week.pk }}"><button name="action" value="retry" class="focus-ring rounded-full bg-deepTeal px-4 py-2 text-sm font-black text-white">Retry generation</button></form>{% endif %}
           {% if week.status != 'skipped' and post.status != 'posted' and post.status != 'publishing' %}<form method="post" action="{% url 'social:plan_action' %}">{% csrf_token %}<input type="hidden" name="week" value="{{ week.pk }}"><button name="action" value="skip" class="focus-ring rounded-full px-4 py-2 text-sm font-black text-red-700 ring-1 ring-red-200">Skip this week</button></form>{% endif %}
         </div>
@@ -56,7 +59,7 @@
     <p class="mt-2 text-sm leading-6 text-ink/65">Automatic publishes once a week to the selected platforms. Review first prepares drafts for you to schedule. Paused stops preparation and returns automatically queued posts to drafts; a post already sending cannot be recalled. Individually scheduled posts keep their dates.</p>
     <form method="post" class="mt-5">{% csrf_token %}
       {% if form.non_field_errors %}<div role="alert" class="mb-4 text-red-700">{{ form.non_field_errors }}</div>{% endif %}
-      <div class="grid gap-5 sm:grid-cols-2">
+      <div class="grid grid-cols-1 gap-5 sm:grid-cols-2">
         {% for field in form %}<div class="{% if field.name == 'priorities' %}sm:col-span-2{% endif %}"><label for="{{ field.id_for_label }}" class="block text-sm font-black text-ink">{{ field.label }}</label><div class="mt-2">{{ field }}</div>{% if field.errors %}<div role="alert" class="mt-1 text-sm text-red-700">{{ field.errors }}</div>{% endif %}</div>{% endfor %}
       </div>
       <p class="mt-4 text-xs leading-6 text-ink/60">Schedule and audience changes apply to weeks that have not been prepared yet. Existing previews keep their content, platforms, and dates. New previews start at least 24 hours ahead.</p>
