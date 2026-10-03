@@ -1,12 +1,23 @@
-<nav class="mb-6 flex flex-wrap gap-2" aria-label="Social marketing">
-  <a href="{% url 'social:queue' %}?tab=drafts" {% if nav.active == 'drafts' %}aria-current="page"{% endif %} class="focus-ring rounded-full px-4 py-2 text-sm font-black ring-1 ring-ink/10 {% if nav.active == 'drafts' %}bg-ink text-white{% else %}bg-white text-deepTeal{% endif %}">Drafts</a>
-  <a href="{% url 'social:queue' %}?tab=scheduled" {% if nav.active == 'scheduled' %}aria-current="page"{% endif %} class="focus-ring rounded-full px-4 py-2 text-sm font-black ring-1 ring-ink/10 {% if nav.active == 'scheduled' %}bg-ink text-white{% else %}bg-white text-deepTeal{% endif %}">Scheduled</a>
-  <a href="{% url 'social:queue' %}?tab=posted" {% if nav.active == 'posted' %}aria-current="page"{% endif %} class="focus-ring rounded-full px-4 py-2 text-sm font-black ring-1 ring-ink/10 {% if nav.active == 'posted' %}bg-ink text-white{% else %}bg-white text-deepTeal{% endif %}">Posted</a>
-  <a href="{% url 'social:queue' %}?tab=attention" {% if nav.active == 'attention' %}aria-current="page"{% endif %} class="focus-ring rounded-full px-4 py-2 text-sm font-black ring-1 ring-ink/10 {% if nav.active == 'attention' %}bg-ink text-white{% else %}bg-white text-deepTeal{% endif %}">Needs attention</a>
-  <a href="{% if nav.label == 'Calendar' %}{{ nav.url }}{% else %}{% url 'social:calendar' %}?return_to={{ nav.link_origin }}{% endif %}" {% if nav.active == 'calendar' %}aria-current="page"{% endif %} class="focus-ring rounded-full px-4 py-2 text-sm font-black ring-1 ring-ink/10 {% if nav.active == 'calendar' %}bg-ink text-white{% else %}bg-white text-deepTeal{% endif %}">Calendar</a>
-  <a href="{% url 'social:planner' %}?return_to={{ nav.link_origin }}" {% if nav.active == 'planner' %}aria-current="page"{% endif %} class="focus-ring rounded-full px-4 py-2 text-sm font-black ring-1 ring-ink/10 {% if nav.active == 'planner' %}bg-ink text-white{% else %}bg-white text-deepTeal{% endif %}">AI content plan</a>
-  <a href="{% url 'social:settings' %}?return_to={{ nav.link_origin }}" {% if nav.active == 'settings' or nav.active == 'choose_page' %}aria-current="page"{% endif %} class="focus-ring rounded-full px-4 py-2 text-sm font-black ring-1 ring-ink/10 {% if nav.active == 'settings' or nav.active == 'choose_page' %}bg-ink text-white{% else %}bg-white text-deepTeal{% endif %}">Settings</a>
-</nav>
+{% load static %}
+<link rel="stylesheet" href="{% static 'social/navigation.css' %}">
+<section class="social-workspace" aria-label="Social media workspace">
+  <div class="social-workspace-heading"><strong>Social media</strong><span>Manage Facebook and Instagram posts, including blog features.</span></div>
+  <nav class="social-workspace-links" aria-label="Social marketing">
+    <a href="{% url 'social:queue' %}?tab=scheduled" {% if nav.active == 'drafts' or nav.active == 'scheduled' or nav.active == 'posted' or nav.active == 'attention' %}aria-current="page"{% endif %}><strong>Posts</strong><span>Drafts, scheduled, and published</span></a>
+    <a href="{% if nav.label == 'Calendar' %}{{ nav.url }}{% else %}{% url 'social:calendar' %}?return_to={{ nav.link_origin }}{% endif %}" {% if nav.active == 'calendar' %}aria-current="page"{% endif %}><strong>Social post calendar</strong><span>See dated posts by month</span></a>
+    <a href="{% url 'social:planner' %}?return_to={{ nav.link_origin }}" {% if nav.active == 'planner' %}aria-current="page"{% endif %}><strong>AI content plan</strong><span>Prepare and automate weekly posts</span></a>
+    <a href="{% url 'social:settings' %}?return_to={{ nav.link_origin }}" {% if nav.active == 'settings' or nav.active == 'choose_page' %}aria-current="page"{% endif %}><strong>Connections</strong><span>Facebook and Instagram accounts</span></a>
+  </nav>
+  <p class="social-workspace-related">Planning articles instead? <a href="{% url 'blog_manage:planner' %}">AI blog plan →</a></p>
+</section>
 {% if nav.active != 'drafts' and nav.active != 'scheduled' and nav.active != 'posted' and nav.active != 'attention' %}
-  <a href="{{ nav.back_url }}" data-testid="social-back" class="focus-ring mb-4 inline-flex rounded-full bg-white px-4 py-2 text-sm font-black text-deepTeal ring-1 ring-ink/10">← Back to {{ nav.back_label }}</a>
+  <div class="social-workspace-return">
+    <a href="{{ nav.back_url }}" data-testid="social-back" class="focus-ring font-black text-deepTeal">← Back to {{ nav.back_label }}</a>
+    <nav aria-label="Post lists" class="flex flex-wrap gap-3 text-sm text-deepTeal">
+      <a class="focus-ring underline" href="{% url 'social:queue' %}?tab=drafts">Drafts</a>
+      <a class="focus-ring underline" href="{% url 'social:queue' %}?tab=scheduled">Scheduled</a>
+      <a class="focus-ring underline" href="{% url 'social:queue' %}?tab=posted">Posted</a>
+      <a class="focus-ring underline" href="{% url 'social:queue' %}?tab=attention">Needs attention</a>
+    </nav>
+  </div>
 {% endif %}

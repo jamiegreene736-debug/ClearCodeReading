@@ -6,6 +6,7 @@ on:
       - 'apps/blog/**'
       - 'templates/social/**'
       - 'tests/browser/social-preview.spec.js'
+      - 'tests/browser/social-navigation.spec.js'
       - 'templates/portal/_header.html'
       - 'mypy-social.ini'
       - '.github/workflows/social.yml'
@@ -16,6 +17,7 @@ on:
       - 'apps/blog/**'
       - 'templates/social/**'
       - 'tests/browser/social-preview.spec.js'
+      - 'tests/browser/social-navigation.spec.js'
 permissions:
   contents: read
 jobs:
@@ -57,4 +59,4 @@ jobs:
           cache: npm
       - run: npm ci
       - run: npx playwright install --with-deps chromium
-      - run: npx playwright test tests/browser/social-preview.spec.js --workers=2
+      - run: npx playwright test tests/browser/social-preview.spec.js tests/browser/social-navigation.spec.js --workers=2

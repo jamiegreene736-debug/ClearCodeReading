@@ -54,6 +54,45 @@ class SocialNavigationTests(TestCase):
                 self.assertContains(response, 'aria-label="Social marketing"')
                 self.assertContains(response, 'data-testid="social-back"')
 
+    def test_workspace_navigation_is_consistent_and_calendar_links_are_contextual(self):
+        for route, active_label in [
+            ("queue", "Posts"),
+            ("calendar", "Social post calendar"),
+            ("planner", "AI content plan"),
+        ]:
+            with self.subTest(route=route):
+                response = self.client.get(reverse(f"social:{route}"))
+                self.assertContains(response, 'aria-label="Social media workspace"')
+                self.assertContains(response, "See dated posts by month")
+                self.assertContains(response, "Prepare and automate weekly posts")
+                self.assertNotContains(response, ">Calendar view</a>")
+                content = response.content.decode()
+                workspace = content.split('aria-label="Social marketing">')[1].split(
+                    "</nav>"
+                )[0]
+                labels = [
+                    "Posts",
+                    "Social post calendar",
+                    "AI content plan",
+                    "Connections",
+                ]
+                self.assertEqual(
+                    sorted(
+                        labels,
+                        key=lambda label: workspace.index(f"<strong>{label}</strong>"),
+                    ),
+                    labels,
+                )
+                self.assertEqual(workspace.count('aria-current="page"'), 1)
+                active_link = next(
+                    link
+                    for link in workspace.split("</a>")
+                    if 'aria-current="page"' in link
+                )
+                self.assertIn(f"<strong>{active_label}</strong>", active_link)
+                self.assertEqual(workspace.count(reverse("social:calendar")), 1)
+                self.assertEqual(workspace.count(reverse("social:planner")), 1)
+
     def test_draft_and_attention_lists_round_trip_through_save(self):
         for tab, status in [("drafts", "draft"), ("attention", "attention")]:
             self.post.status = status

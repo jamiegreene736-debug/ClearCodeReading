@@ -261,4 +261,6 @@ class ScheduleViewsTests(TestCase):
         self.assertContains(
             self.client.get(reverse("social:edit", args=[post.pk])), "Delete post"
         )
-        self.assertContains(self.client.get(reverse("social:planner")), "Calendar view")
+        self.assertContains(
+            self.client.get(reverse("social:planner")), "Social post calendar"
+        )

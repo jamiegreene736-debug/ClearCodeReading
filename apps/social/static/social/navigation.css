@@ -1,0 +1,16 @@
+.social-workspace { margin-bottom: 24px; padding: 18px; border: 1px solid #d3dfdb; border-radius: 24px; background: #fff; }
+.social-workspace-heading { display: flex; flex-wrap: wrap; align-items: baseline; gap: 6px 16px; margin-bottom: 14px; }
+.social-workspace-heading strong { color: #123039; font-size: 16px; }
+.social-workspace-heading span, .social-workspace-related { color: #52605c; font-size: 12px; line-height: 1.6; }
+.social-workspace-links { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 8px; }
+.social-workspace-links a { display: block; padding: 12px; border: 1px solid #d3dfdb; border-radius: 14px; color: #126b68; overflow-wrap: anywhere; }
+.social-workspace-links a strong { display: block; font-size: 14px; }
+.social-workspace-links a span { display: block; margin-top: 4px; font-size: 12px; line-height: 1.5; color: #52605c; }
+.social-workspace-links a:hover { background: #edf5f2; }
+.social-workspace-links a[aria-current="page"] { background: #123039; border-color: #123039; color: #fff; }
+.social-workspace-links a[aria-current="page"] span { color: #e0eeea; }
+.social-workspace a:focus-visible { outline: 3px solid #b97c22; outline-offset: 3px; }
+.social-workspace-related { margin-top: 12px; }
+.social-workspace-related a { color: #126b68; font-weight: 700; text-decoration: underline; }
+.social-workspace-return { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 12px; margin-bottom: 20px; }
+@media (max-width: 767px) { .social-workspace-links { grid-template-columns: repeat(2, minmax(0, 1fr)); } .social-workspace { padding: 12px; } }
