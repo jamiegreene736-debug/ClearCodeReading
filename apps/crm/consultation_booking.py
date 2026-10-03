@@ -16,6 +16,7 @@ from django.utils.decorators import method_decorator
 from django.views import View
 from django.views.decorators.cache import never_cache
 
+from apps.core.bot_protection import HUMAN_MESSAGE, human_check_ok
 from apps.crm.calendars import MAX_DAYS, available_slots
 from apps.crm.consultations import default_consultation_host
 from apps.crm.inventory_forms import SlotForm
@@ -198,6 +199,8 @@ class ConsultationBookingView(View):
                 request, error="Too many booking attempts. Please try again later."
             )
         cache.set(key, attempts + 1, RATE_WINDOW_SECONDS)
+        if not human_check_ok(request, "consultation"):
+            return self.render_page(request, error=HUMAN_MESSAGE)
 
         host = default_consultation_host()
         ensure_published_hours()

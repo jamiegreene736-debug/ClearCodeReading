@@ -29,6 +29,7 @@ from rest_framework.decorators import action
 from rest_framework.permissions import BasePermission, IsAuthenticated
 from rest_framework.response import Response
 
+from apps.core.bot_protection import BURST_MESSAGE, HUMAN_MESSAGE, BotVerdict, bot_verdict
 from apps.core.forms import RecruitingInterestForm
 from apps.core.models import RecruitingInterest
 from apps.crm.hiring import hiring_queue_counts, select_intake_owner
@@ -130,6 +131,9 @@ class WebsiteSignupView(View):
     }
 
     def post(self, request):
+        blocked = self._bot_response(request)
+        if blocked is not None:
+            return blocked
         if request.POST.get("redirect_to") == "/careers/":
             return self._record_recruiting_interest(request)
 
@@ -317,6 +321,15 @@ class WebsiteSignupView(View):
             ".docx": "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
         }[Path(filename).suffix.lower()]
 
+    def _bot_response(self, request):
+        verdict = bot_verdict(request, "signup")
+        if verdict is None:
+            return None
+        if verdict is BotVerdict.HONEYPOT:
+            return redirect(self._redirect_target(request, "thanks"))
+        messages.error(request, BURST_MESSAGE if verdict is BotVerdict.BURST else HUMAN_MESSAGE)
+        return redirect(self._redirect_target(request, "invalid"))
+
     @staticmethod
     def _redirect_target(request, result):
         if request.POST.get("redirect_to") == "/resources/":
@@ -385,8 +398,12 @@ class SurveySubmissionView(View):
             messages.error(request, "This survey link is no longer valid. Please use the main survey page.")
             return redirect(self._redirect_target("/survey/", "invalid"))
 
-        if request.POST.get("website", "").strip():
+        verdict = bot_verdict(request, "survey")
+        if verdict is BotVerdict.HONEYPOT:
             return redirect(self._redirect_target(source.path, "thanks"))
+        if verdict is not None:
+            messages.error(request, BURST_MESSAGE if verdict is BotVerdict.BURST else HUMAN_MESSAGE)
+            return redirect(self._redirect_target(source.path, "invalid"))
 
         try:
             answers = parse_early_interest_survey(request.POST)
@@ -406,8 +423,12 @@ class SurveySubmissionView(View):
 class NewsletterSignupView(View):
     def post(self, request):
         redirect_path = self._redirect_path(request)
-        if request.POST.get("website", "").strip():
+        verdict = bot_verdict(request, "newsletter")
+        if verdict is BotVerdict.HONEYPOT:
             return redirect(f"{redirect_path}?newsletter=thanks#newsletter-signup")
+        if verdict is not None:
+            messages.error(request, BURST_MESSAGE if verdict is BotVerdict.BURST else HUMAN_MESSAGE)
+            return redirect(f"{redirect_path}?newsletter=invalid#newsletter-signup")
 
         email = request.POST.get("email", "").strip().lower()
         consent_given = request.POST.get("consent") == "yes"
@@ -488,6 +509,30 @@ class NewsletterUnsubscribeView(View):
     def post(self, request, token):
         subscription = resolve_unsubscribe_token(token)
         invalid_link = subscription is None
+        verdict = None if invalid_link else bot_verdict(request, "unsubscribe")
+        if verdict is BotVerdict.HONEYPOT:
+            return render(
+                request,
+                self.template_name,
+                {
+                    "token": token,
+                    "subscription": subscription,
+                    "invalid_link": False,
+                    "unsubscribed": True,
+                },
+            )
+        if verdict is not None:
+            return render(
+                request,
+                self.template_name,
+                {
+                    "token": token,
+                    "subscription": subscription,
+                    "invalid_link": False,
+                    "unsubscribed": False,
+                    "bot_message": BURST_MESSAGE if verdict is BotVerdict.BURST else HUMAN_MESSAGE,
+                },
+            )
         if subscription and subscription.status != NewsletterSubscription.Status.UNSUBSCRIBED:
             subscription.status = NewsletterSubscription.Status.UNSUBSCRIBED
             subscription.unsubscribed_at = timezone.now()

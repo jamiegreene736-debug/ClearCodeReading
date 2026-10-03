@@ -57,6 +57,7 @@
       {% endif %}
 
       <form action="{% url 'crm_signup' %}" method="post" class="mt-7 space-y-5">
+        {% load bot_protection %}{% bot_fields "signup" %}
         {% csrf_token %}
         <input type="hidden" name="redirect_to" value="/resources/">
         <input type="hidden" name="audience" value="parent">

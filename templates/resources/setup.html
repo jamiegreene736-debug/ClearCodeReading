@@ -6,7 +6,7 @@
         <h1 class="rm-title">Your content starts here.</h1>
         <p class="rm-muted">Choose your staff login. You’ll be able to add resources, review drafts, and publish to the website.</p>
         <form method="post">
-            {% csrf_token %}
+            {% load bot_protection %}{% csrf_token %}{% bot_fields "staff-setup" %}
             {{ form.non_field_errors }}
             {% for field in form %}
                 <div class="rm-field">{{ field.label_tag }}{{ field }}{{ field.errors }}{% if field.help_text %}<small>{{ field.help_text|safe }}</small>{% endif %}</div>

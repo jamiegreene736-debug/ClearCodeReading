@@ -238,6 +238,7 @@
         </div>
 
         <form id="career-interest-form" class="scroll-mt-28 rounded-xl bg-white p-6 shadow-xl shadow-deepTeal/10 ring-1 ring-ink/10 sm:p-8" method="post" action="/crm/signup/" enctype="multipart/form-data">
+          {% load bot_protection %}{% bot_fields "signup" %}
           {% csrf_token %}
           <input type="hidden" name="redirect_to" value="/careers/">
           <input type="hidden" name="career_path" value="teacher">

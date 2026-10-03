@@ -1,4 +1,4 @@
-{% load static %}
+{% load static bot_protection %}
 <!doctype html>
 <html lang="en">
 <head>
@@ -46,7 +46,7 @@
       {% if demo_access_enabled %}
       <div class="mt-7 grid gap-3">
         <form method="post" action="{% url 'demo_login' 'admin' %}">
-          {% csrf_token %}
+          {% csrf_token %}{% bot_fields "demo-login" %}
           <button class="focus-ring w-full rounded-3xl bg-linen p-5 text-left shadow-sm ring-1 ring-gold/30 transition hover:-translate-y-1 hover:shadow-xl" type="submit">
             <span class="block text-sm font-black uppercase tracking-[0.16em] text-ink/65">Demo Administrator</span>
             <span class="mt-2 block text-xl font-black">Assign teachers and manage program work</span>
@@ -55,7 +55,7 @@
         </form>
         <div class="grid gap-3 sm:grid-cols-2">
         <form method="post" action="{% url 'demo_login' 'parent' %}">
-          {% csrf_token %}
+          {% csrf_token %}{% bot_fields "demo-login" %}
           <button class="focus-ring w-full rounded-3xl bg-seafoam p-5 text-left shadow-sm ring-1 ring-deepTeal/15 transition hover:-translate-y-1 hover:shadow-xl" type="submit">
             <span class="block text-sm font-black uppercase tracking-[0.16em] text-deepTeal">Demo Parent</span>
             <span class="mt-2 block text-xl font-black">View Avery's reading snapshot</span>
@@ -63,7 +63,7 @@
           </button>
         </form>
         <form method="post" action="{% url 'demo_login' 'teacher' %}">
-          {% csrf_token %}
+          {% csrf_token %}{% bot_fields "demo-login" %}
           <button class="focus-ring w-full rounded-3xl bg-sand p-5 text-left shadow-sm ring-1 ring-mediumTeal/15 transition hover:-translate-y-1 hover:shadow-xl" type="submit">
             <span class="block text-sm font-black uppercase tracking-[0.16em] text-mediumTeal">Demo Teacher</span>
             <span class="mt-2 block text-xl font-black">Review classroom KPIs</span>
@@ -118,7 +118,7 @@
       {% endif %}
 
       <form class="mt-6 space-y-5" method="post">
-        {% csrf_token %}
+        {% csrf_token %}{% bot_fields "login" %}
         <input type="hidden" name="next" value="{{ next }}">
         <label class="block">
           <span class="text-sm font-black text-ink">Email</span>

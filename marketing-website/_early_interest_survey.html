@@ -28,11 +28,9 @@
 
         <form method="post" action="/crm/survey/" class="rounded-[2rem] bg-white p-5 shadow-sm ring-1 ring-ink/10 sm:p-7" data-survey-form novalidate>
           {% csrf_token %}
+          {% load bot_protection %}{% bot_fields "survey" %}
           <input type="hidden" name="source_path" value="{{ survey_source_path }}">
           <input type="hidden" name="blog_post_slug" value="{% if blog_post %}{{ blog_post.slug }}{% endif %}">
-          <div class="hidden" aria-hidden="true">
-            <label>Website <input type="text" name="website" tabindex="-1" autocomplete="off"></label>
-          </div>
 
           <div class="mb-6" aria-live="polite">
             <div class="flex items-center justify-between gap-4 text-sm font-black">

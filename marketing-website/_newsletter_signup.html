@@ -12,11 +12,8 @@
     </div>
     <form method="post" action="{% url 'newsletter_signup' %}" class="rounded-[1.6rem] bg-linen p-5 sm:p-6">
       {% csrf_token %}
+      {% load bot_protection %}{% bot_fields "newsletter" %}
       <input type="hidden" name="redirect_to" value="{{ request.path }}">
-      <div class="hidden" aria-hidden="true">
-        <label for="newsletter-website">Website</label>
-        <input id="newsletter-website" name="website" type="text" tabindex="-1" autocomplete="off">
-      </div>
       <div class="grid gap-4 sm:grid-cols-2">
         <label class="block font-black" for="newsletter-name">
           Name <span class="font-medium text-ink/55">(optional)</span>

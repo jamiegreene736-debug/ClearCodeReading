@@ -16,6 +16,7 @@ from django.utils.decorators import method_decorator
 from django.views import View
 from django.views.decorators.cache import never_cache
 
+from apps.core.bot_protection import inventory_bot_redirect
 from apps.crm.access import crm_owner_queryset
 from apps.crm.assessment_queue import (
     QUEUE_INTRO,
@@ -404,6 +405,9 @@ class InventoryPublicView(View):
         )
 
     def post(self, request, token):
+        blocked = inventory_bot_redirect(request)
+        if blocked is not None:
+            return blocked
         original = self.get_invitation(token)
         with transaction.atomic():
             invitation = (
@@ -714,6 +718,9 @@ class InventoryBookingView(InventoryPublicView):
         return self.booking_page(request, invitation)
 
     def post(self, request, token):
+        blocked = inventory_bot_redirect(request)
+        if blocked is not None:
+            return blocked
         original = self.get_invitation(token)
         if InventoryBooking.objects.filter(invitation=original).exists():
             return redirect("inventory_booking", token=token)

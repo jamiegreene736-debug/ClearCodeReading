@@ -9,7 +9,8 @@ Set your password
 {% if validlink %}
 <h1>Welcome to ClearCode Reading</h1>
 <p>Choose a password for your new account.</p>
-<form method="post">{% csrf_token %}{{ form.as_p }}<button type="submit">Set password</button>
+{% if messages %}<div role="alert">{% for message in messages %}<p>{{ message }}</p>{% endfor %}</div>{% endif %}
+<form method="post">{% load bot_protection %}{% csrf_token %}{% bot_fields "invitation" %}{{ form.as_p }}<button type="submit">Set password</button>
 </form>
 {% else %}
 <h1>This setup link is no longer available</h1>
