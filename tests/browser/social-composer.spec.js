@@ -1,8 +1,10 @@
 const { test, expect } = require('@playwright/test');
 const { execFileSync } = require('node:child_process');
 
+test.use({ channel: 'chromium' });
+
 function composer(mode, ready = false) {
-  return execFileSync(process.env.TEST_PYTHON || 'python', ['-c', `
+  return execFileSync(process.env.PYTHON || 'python', ['-c', `
 import django, sys
 django.setup()
 from django.template.loader import render_to_string
@@ -65,7 +67,7 @@ test('new brief cannot schedule or post before captions exist', async ({ page })
 });
 
 test('month and day navigation preserve the edited time', async ({ page }) => {
-  const html = execFileSync(process.env.TEST_PYTHON || 'python', ['-c', `
+  const html = execFileSync(process.env.PYTHON || 'python', ['-c', `
 import django
 django.setup()
 from datetime import date

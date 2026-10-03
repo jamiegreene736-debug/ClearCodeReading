@@ -1,0 +1,30 @@
+#social-post-form > section { min-width: 0; }
+.social-preview { min-width: 0; padding: 20px; border: 1px solid #dce2df; border-radius: 28px; background: #f6f7f8; }
+.social-preview [hidden] { display: none !important; }
+.social-preview-note { margin: 8px 0 16px; color: #52605c; font-size: 12px; line-height: 1.6; }
+.social-preview-label { margin: 20px 0 8px; font-size: 14px; font-weight: 800; }
+.social-preview-card { overflow: hidden; border: 1px solid #dce0e5; border-radius: 10px; background: #fff; color: #1c1e21; font-family: Arial, sans-serif; font-size: 14px; }
+.social-preview-header { display: flex; align-items: center; gap: 10px; padding: 14px; overflow-wrap: anywhere; }
+.social-preview-header small { display: block; color: #65676b; font-size: 12px; margin-top: 3px; }
+.social-preview-avatar { flex-shrink: 0; display: grid; place-items: center; width: 38px; height: 38px; border-radius: 50%; background: #126b68; color: #fff; font-size: 12px; font-weight: bold; }
+.social-preview-menu { margin-left: auto; }
+.social-preview-copy { padding: 0 14px 14px; }
+.social-preview-copy p { white-space: pre-wrap; overflow-wrap: anywhere; line-height: 1.5; }
+.social-preview-copy p.is-collapsed { display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 4; overflow: hidden; }
+.social-preview-instagram .social-preview-copy p.is-collapsed { -webkit-line-clamp: 2; }
+.social-preview-copy button { color: #65676b; font-weight: bold; margin-top: 4px; }
+.social-preview-copy button:focus-visible { outline: 2px solid #126b68; outline-offset: 3px; }
+.social-preview-card img { display: block; width: 100%; height: auto; max-height: 560px; object-fit: contain; background: #f0f2f5; }
+.social-preview-actions { display: flex; gap: 14px; justify-content: space-around; margin: 0 14px; padding: 12px 0; border-top: 1px solid #e4e6eb; color: #65676b; font-size: 12px; }
+.social-preview-instagram .social-preview-actions { justify-content: flex-start; border: 0; font-size: 23px; color: #262626; }
+.social-preview-link { padding: 14px; background: #f0f2f5; overflow-wrap: anywhere; }
+.social-preview-link strong { font-size: 12px; text-transform: uppercase; }
+.social-preview-link p { margin: 4px 0; }
+.social-preview-link small { color: #65676b; }
+.social-preview-placeholder { display: grid; place-items: center; min-height: 230px; padding: 24px; text-align: center; background: #edf1ef; color: #52605c; }
+.social-preview-warning { padding: 12px; border: 1px solid #b97c22; border-radius: 8px; font-size: 13px; }
+@media (max-width: 420px) { .social-preview { padding: 12px; } }
+
+.social-preview-actions span { display: inline-flex; align-items: center; gap: 5px; }
+.social-preview-actions svg { width: 18px; height: 18px; flex-shrink: 0; }
+.social-preview-instagram .social-preview-actions svg { width: 23px; height: 23px; }
