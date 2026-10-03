@@ -3,6 +3,7 @@
 {% block content %}
 {% load social_navigation %}
 {% social_navigation post as nav %}
+{% include "social/_navigation.html" %}
 <div class="pb-8" data-testid="social-queue">
   <div class="flex flex-col gap-5 sm:flex-row sm:items-end sm:justify-between">
     <div>
@@ -15,7 +16,7 @@
         {% else %}Posts waiting to go out. Times are Eastern. Change the date or cancel any of them until the minute it sends.{% endif %}
       </p>
     </div>
-    <div class="flex flex-wrap gap-2"><a href="{% url 'blog_manage:planner' %}" class="focus-ring rounded-full bg-white px-5 py-3 font-black text-deepTeal ring-1 ring-deepTeal/20">AI blog plan</a><a href="{% url 'social:planner' %}?return_to={{ nav.origin }}" class="focus-ring inline-flex items-center rounded-full bg-white px-6 py-3 font-black text-deepTeal ring-1 ring-deepTeal/20">AI content plan</a>
+    <div class="flex flex-wrap gap-2">
     <a href="{% url 'social:new' %}?return_to={{ nav.origin }}" class="focus-ring inline-flex shrink-0 items-center justify-center rounded-full bg-deepTeal px-6 py-3 font-black text-white shadow-lg shadow-deepTeal/25">New post</a></div>
   </div>
 
@@ -30,7 +31,6 @@
     </a>
   </div>
 
-  <div class="mt-5"><a href="{% url 'social:calendar' %}?return_to={{ nav.origin }}" class="focus-ring inline-flex rounded-full bg-white px-5 py-3 font-black text-deepTeal ring-1 ring-deepTeal/20">Calendar view</a></div>
   <nav class="mt-6 flex flex-wrap gap-2" aria-label="Post lists">
     {% for key, label in tabs %}
       <a href="?tab={{ key }}" data-testid="social-tab-{{ key }}" {% if tab == key %}aria-current="page"{% endif %} class="focus-ring inline-flex items-center gap-2 rounded-full px-4 py-2 text-sm font-black ring-1 {% if tab == key %}bg-ink text-white ring-ink{% else %}bg-white text-ink/70 ring-ink/10{% endif %}">

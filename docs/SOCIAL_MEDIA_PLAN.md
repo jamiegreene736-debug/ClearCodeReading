@@ -311,3 +311,24 @@ Regression coverage: `python manage.py test apps.social` and
 the real Django template and serves local assets with intercepted requests; it needs
 Python dependencies and Playwright Chromium, but no database or network credentials.
 Set `PYTHON` to the desired interpreter if needed. Social CI runs this suite.
+
+## Social workspace navigation
+
+Post lists, the calendar, AI content planning, and account connections use the same
+labeled navigation panel above page content. Each destination includes a short
+purpose statement; the current destination uses `aria-current="page"`. Status
+filters remain beside the post lists. The AI blog plan is labeled as a related
+article-planning tool. The calendar is named **Social post calendar** in both the
+workspace and Marketing menu, and its heading explains that blog features are
+Facebook posts rather than the article publishing calendar.
+
+This replaces isolated Calendar view buttons and duplicate planner/header links.
+Existing named return destinations and month preservation remain intact. The
+navigation wraps into two columns on phones and has visible keyboard focus.
+
+Design basis: [NN/g local navigation](https://www.nngroup.com/articles/local-navigation/)
+recommends consistent local navigation beneath global navigation for related pages;
+[W3C consistent navigation](https://www.w3.org/WAI/WCAG21/Understanding/consistent-navigation)
+calls for repeated navigation in the same relative order. Regression coverage includes
+rendered navigation order/current state, existing return flows, and Playwright
+navigation and overflow checks at 320, 390, and 1280 pixels.
