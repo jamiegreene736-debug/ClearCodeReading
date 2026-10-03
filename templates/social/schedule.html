@@ -8,13 +8,18 @@
   <form method="post" class="mt-6 grid gap-4 lg:grid-cols-2">
     {% csrf_token %}
     <section class="rounded-[1.75rem] bg-white p-5 ring-1 ring-ink/10">
-      <h2 class="font-black">{{ selected_date|default:"Pick a day" }}</h2>
+      <div class="flex items-center justify-between gap-3">
+        <a data-calendar-navigation href="?month={{ previous }}&amp;date={{ selected_date }}&amp;time={{ selected_time }}" aria-label="Previous month" class="focus-ring rounded-full bg-linen px-4 py-2 text-xl font-black text-deepTeal">←</a>
+        <h2 class="font-black">{{ focus|date:"F Y" }}</h2>
+        <a data-calendar-navigation href="?month={{ following }}&amp;date={{ selected_date }}&amp;time={{ selected_time }}" aria-label="Next month" class="focus-ring rounded-full bg-linen px-4 py-2 text-xl font-black text-deepTeal">→</a>
+      </div>
+      <p class="mt-2 text-sm font-bold">Selected date: {{ selected_date }}</p>
       <div class="mt-3 grid grid-cols-7 gap-1 text-center text-xs font-black text-ink/50">
         <span>Su</span><span>Mo</span><span>Tu</span><span>We</span><span>Th</span><span>Fr</span><span>Sa</span>
         {% for week in weeks %}
           {% for day in week %}
             {% if day.in_month %}
-              <a href="?date={{ day.day|date:'Y-m-d' }}&amp;time={{ selected_time }}" class="grid h-10 place-items-center rounded-xl font-black {% if day.is_selected %}bg-deepTeal text-white{% elif day.is_current %}bg-gold/30 text-ink{% else %}bg-linen text-ink{% endif %}">{{ day.day|date:"j" }}</a>
+              <a data-calendar-navigation href="?date={{ day.day|date:'Y-m-d' }}&amp;time={{ selected_time }}" class="grid h-10 place-items-center rounded-xl font-black {% if day.is_selected %}bg-deepTeal text-white{% elif day.is_current %}bg-gold/30 text-ink{% else %}bg-linen text-ink{% endif %}">{{ day.day|date:"j" }}</a>
             {% else %}
               <span></span>
             {% endif %}
@@ -44,4 +49,13 @@
     </section>
   </form>
 </div>
+<script>
+  document.querySelectorAll('[data-calendar-navigation]').forEach(function (link) {
+    link.addEventListener('click', function () {
+      const url = new URL(link.href);
+      url.searchParams.set('time', document.getElementById('time').value);
+      link.href = url.toString();
+    });
+  });
+</script>
 {% endblock %}

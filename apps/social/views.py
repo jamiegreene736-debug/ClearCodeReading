@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import calendar
 import secrets
-from datetime import datetime, timedelta
+from datetime import date, timedelta
 
 from django.contrib import messages
 from django.db import transaction
@@ -33,6 +33,7 @@ from apps.social.meta import (
     signature_matches,
 )
 from apps.social.models import SocialAccount, SocialAuthorization, SocialPost
+from apps.social.schedule_views import month_start
 from apps.social.services import (
     EASTERN,
     cancel_schedule,
@@ -42,6 +43,7 @@ from apps.social.services import (
     parse_eastern,
     publish_post,
     quick_times,
+    require_post_content,
     save_facebook_page,
     save_instagram_account,
     schedule_post,
@@ -210,6 +212,8 @@ def post_edit(request, pk=None):
                         post.image_name = "ai-draft.jpg"
                         if action == "new_image":
                             notice = "A new image is attached. The captions are unchanged."
+            if action in {"schedule", "post_now"}:
+                require_post_content(post)
             if action != "ideas":
                 if post.created_by_id is None:
                     post.created_by = request.user
@@ -265,8 +269,9 @@ def schedule(request, pk):
     current = timezone.localtime(post.scheduled_at, EASTERN) if post.scheduled_at else None
     selected_date = request.GET.get("date") or (current.date().isoformat() if current else "")
     selected_time = request.GET.get("time") or (current.strftime("%H:%M") if current else "09:00")
+    today = timezone.now().astimezone(EASTERN).date()
     if not selected_date:
-        selected_date = timezone.localdate().isoformat()
+        selected_date = today.isoformat()
     if request.method == "POST":
         try:
             when = parse_eastern(request.POST.get("date", ""), request.POST.get("time", ""))
@@ -281,9 +286,15 @@ def schedule(request, pk):
         selected_date = request.POST.get("date", selected_date)
         selected_time = request.POST.get("time", selected_time)
     try:
-        focus = datetime.strptime(selected_date, "%Y-%m-%d").date() if selected_date else timezone.localdate()
+        selected = date.fromisoformat(selected_date)
+        if not 1901 <= selected.year <= 9998:
+            raise ValueError("Date outside calendar range")
     except ValueError:
-        focus = timezone.localdate()
+        selected = today
+        selected_date = today.isoformat()
+    focus = month_start(request.GET.get("month", selected.strftime("%Y-%m")), today)
+    previous = focus - timedelta(days=1)
+    following = (focus + timedelta(days=32)).replace(day=1)
     return render(
         request,
         "social/schedule.html",
@@ -291,7 +302,10 @@ def schedule(request, pk):
             "post": post,
             "selected_date": selected_date,
             "selected_time": selected_time,
-            "weeks": _month(focus, current.date() if current else None, focus),
+            "focus": focus,
+            "previous": previous.strftime("%Y-%m"),
+            "following": following.strftime("%Y-%m"),
+            "weeks": _month(focus, today, selected),
             "quick": quick_times(),
             "changing": post.status == SocialPost.Status.SCHEDULED,
         },
