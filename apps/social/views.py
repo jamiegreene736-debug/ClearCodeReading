@@ -90,7 +90,7 @@ def _apply_post(post: SocialPost, request) -> str:
     mode = request.POST.get("mode") or post.source or SocialPost.Source.MANUAL
     if mode not in {SocialPost.Source.BRIEF, SocialPost.Source.MANUAL}:
         mode = SocialPost.Source.MANUAL
-    post.source = mode
+    post.source = SocialPost.Source.BLOG if post.is_blog_promotion else mode
     post.link_url = _clean_link(request.POST.get("link_url", ""))
     post.post_to_facebook = request.POST.get("post_to_facebook") == "on"
     post.post_to_instagram = request.POST.get("post_to_instagram") == "on"
@@ -141,7 +141,7 @@ def queue(request):
         posts = posts.filter(status=SocialPost.Status.DRAFT).order_by("-updated_at")
     else:
         posts = posts.filter(status=SocialPost.Status.ATTENTION).order_by("-updated_at")
-    posts = posts.prefetch_related("publications")
+    posts = posts.select_related("blog_post").prefetch_related("publications")
     return render(
         request,
         "social/queue.html",
@@ -156,7 +156,7 @@ def post_edit(request, pk=None):
     if pk and post.status in {SocialPost.Status.POSTED, SocialPost.Status.PUBLISHING}:
         messages.error(request, "A post that is already sending or posted cannot be edited here.")
         return redirect("social:queue")
-    mode = request.GET.get("mode") or (post.source if pk else SocialPost.Source.BRIEF)
+    mode = request.GET.get("mode") or (SocialPost.Source.MANUAL if post.is_blog_promotion else post.source if pk else SocialPost.Source.BRIEF)
     ideas: list[str] = []
     generate_image_checked = request.method != "POST" or request.POST.get("generate_image") == "on"
     if request.method == "POST":
@@ -183,7 +183,7 @@ def post_edit(request, pk=None):
                 )
                 post.facebook_caption = facebook
                 post.instagram_caption = instagram
-                post.source = SocialPost.Source.BRIEF
+                post.source = SocialPost.Source.BLOG if post.is_blog_promotion else SocialPost.Source.BRIEF
                 notice = "Captions drafted from your words. Read them before posting."
             elif action in {"draft_ai", "new_image"}:
                 if action == "draft_ai":
@@ -195,7 +195,7 @@ def post_edit(request, pk=None):
                     )
                     post.facebook_caption = facebook
                     post.instagram_caption = instagram
-                    post.source = SocialPost.Source.BRIEF
+                    post.source = SocialPost.Source.BLOG if post.is_blog_promotion else SocialPost.Source.BRIEF
                     notice = "Drafted with AI. Read both captions before you schedule or post."
                 if action == "new_image" or generate_image_checked:
                     try:
@@ -319,6 +319,8 @@ def retry(request, pk):
     try:
         with transaction.atomic():
             locked = SocialPost.objects.select_for_update().get(pk=post.pk)
+            if locked.status != SocialPost.Status.ATTENTION:
+                raise SocialError("This post is already being retried or has been posted.")
             locked.status = SocialPost.Status.PUBLISHING
             locked.save(update_fields=["status", "updated_at"])
         publish_post(locked, request=request)

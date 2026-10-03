@@ -4,23 +4,27 @@ from __future__ import annotations
 
 import logging
 import random
-from datetime import date, datetime, time, timedelta
-from typing import Protocol, cast
+from datetime import timedelta
 
 from django.db import connection, transaction
 from django.utils import timezone
 
+from apps.blog.models import BlogContentPlan as ContentPlan
+from apps.blog.models import BlogContentWeek as ContentWeek
+from apps.blog.models import BlogPost, clean_article_html
+from apps.blog.planner_ai import generate_article, render_body, review_article
+from apps.blog.promotion import article_url, validate_promotion
 from apps.social.access import can_manage_social
 from apps.social.ai import ai_configured, generate_image
-from apps.social.editorial import CTA_URL, PILLAR_DIRECTIONS, pillar_for, source_context
+from apps.social.editorial import PILLAR_DIRECTIONS, pillar_for, source_context
 from apps.social.exceptions import SocialError
-from apps.social.models import ContentPlan, ContentWeek, SocialPost
-from apps.social.planner_ai import generate_content, review_content
-from apps.social.services import EASTERN, connected_account
+from apps.social.models import SocialPost
+from apps.social.planner import upcoming_slots
+from apps.social.services import _require_publishable, connected_account
 from apps.users.models import AuditLog, CustomUser
 
 logger = logging.getLogger(__name__)
-PLANNER_LOCK = 491730218
+PLANNER_LOCK = 491730219
 PREVIEW_WEEKS = 4
 MAX_ATTEMPTS = 3
 
@@ -30,42 +34,19 @@ def get_plan() -> ContentPlan:
     return plan
 
 
-class WeeklyTiming(Protocol):
-    weekday: int
-    posting_hour: int
-
-
-def upcoming_slots(plan: WeeklyTiming, now: datetime) -> list[tuple[date, datetime]]:
-    local = now.astimezone(EASTERN)
-    monday = local.date() - timedelta(days=local.weekday())
-    result: list[tuple[date, datetime]] = []
-    while len(result) < PREVIEW_WEEKS:
-        target = datetime.combine(
-            monday + timedelta(days=plan.weekday), time(plan.posting_hour), EASTERN
-        )
-        # Every newly generated post has at least a day available for preview.
-        if target >= now + timedelta(hours=24):
-            result.append((monday, target))
-        monday += timedelta(days=7)
-    return result
-
-
 def validate_plan(plan: ContentPlan) -> None:
-    if not plan.post_to_facebook and not plan.post_to_instagram:
-        raise SocialError("Choose Facebook, Instagram, or both.")
     if not ai_configured():
         raise SocialError("AI generation is not configured on the server.")
     if plan.updated_by is None or not can_manage_social(plan.updated_by):
         raise SocialError("A current super administrator must save this plan.")
-    if plan.mode == ContentPlan.Mode.AUTOMATIC:
-        for network, selected in (
-            ("facebook", plan.post_to_facebook),
-            ("instagram", plan.post_to_instagram),
-        ):
-            if selected and connected_account(network) is None:
-                raise SocialError(
-                    f"Connect {network.title()} before enabling automatic posts."
-                )
+    if (
+        plan.mode == ContentPlan.Mode.AUTOMATIC
+        and plan.promote_facebook
+        and connected_account("facebook") is None
+    ):
+        raise SocialError(
+            "Connect Facebook before enabling automatic article features."
+        )
 
 
 def save_plan(*, values: dict[str, object], actor: CustomUser) -> ContentPlan:
@@ -78,8 +59,8 @@ def save_plan(*, values: dict[str, object], actor: CustomUser) -> ContentPlan:
             "posting_hour",
             "audience",
             "priorities",
-            "post_to_facebook",
-            "post_to_instagram",
+            "promote_facebook",
+            "promotion_delay_hours",
         ):
             setattr(plan, key, values[key])
         plan.updated_by = actor
@@ -90,15 +71,32 @@ def save_plan(*, values: dict[str, object], actor: CustomUser) -> ContentPlan:
             plan.preview_requested = False
         plan.save()
         if plan.mode != ContentPlan.Mode.AUTOMATIC:
-            ids = ContentWeek.objects.filter(auto_scheduled=True).values("post_id")
-            SocialPost.objects.filter(
-                pk__in=ids, status=SocialPost.Status.SCHEDULED
-            ).update(status=SocialPost.Status.DRAFT, scheduled_at=None)
-            ContentWeek.objects.filter(auto_scheduled=True).update(auto_scheduled=False)
+            for week in (
+                ContentWeek.objects.select_for_update(of=("self",))
+                .filter(auto_scheduled=True)
+                .select_related("post")
+            ):
+                if week.post and week.post.is_scheduled:
+                    week.post.status = BlogPost.Status.DRAFT
+                    week.post.save(update_fields=["status", "updated_at"])
+                SocialPost.objects.filter(
+                    blog_post_id=week.post_id,
+                    blog_auto_scheduled=True,
+                    status__in=[
+                        SocialPost.Status.SCHEDULED,
+                        SocialPost.Status.ATTENTION,
+                    ],
+                ).update(
+                    status=SocialPost.Status.DRAFT, scheduled_at=None, last_error=""
+                )
+                week.auto_scheduled = False
+                week.status = ContentWeek.Status.HELD
+                week.review_note = "Automatic publication cancelled. Review the article and schedule it again when ready."
+                week.save()
         AuditLog.objects.create(
             actor=actor,
-            action="marketing.plan.updated",
-            entity_type="ContentPlan",
+            action="blog.plan.updated",
+            entity_type="BlogContentPlan",
             entity_id="1",
             after={"mode": plan.mode},
         )
@@ -119,17 +117,33 @@ def skip_week(pk: int, *, actor: CustomUser) -> None:
         ContentPlan.objects.select_for_update().get(pk=1)
         week = ContentWeek.objects.select_for_update().get(pk=pk)
         if week.post_id:
-            post = SocialPost.objects.select_for_update().get(pk=week.post_id)
-            if post.status in {SocialPost.Status.POSTED, SocialPost.Status.PUBLISHING}:
-                raise SocialError("This post is already sending or posted.")
-            post.status, post.scheduled_at = SocialPost.Status.DRAFT, None
-            post.save(update_fields=["status", "scheduled_at", "updated_at"])
+            post = BlogPost.objects.select_for_update().get(pk=week.post_id)
+            promotion = (
+                SocialPost.objects.select_for_update().filter(blog_post=post).first()
+            )
+            if post.is_live or (
+                promotion
+                and promotion.status
+                in {SocialPost.Status.POSTED, SocialPost.Status.PUBLISHING}
+            ):
+                raise SocialError(
+                    "This article or its Facebook feature is already publishing or published."
+                )
+            post.status = BlogPost.Status.DRAFT
+            post.save(update_fields=["status", "updated_at"])
+            if promotion:
+                promotion.status, promotion.scheduled_at, promotion.last_error = (
+                    SocialPost.Status.DRAFT,
+                    None,
+                    "",
+                )
+                promotion.save()
         week.status, week.auto_scheduled = ContentWeek.Status.SKIPPED, False
         week.save(update_fields=["status", "auto_scheduled", "updated_at"])
         AuditLog.objects.create(
             actor=actor,
-            action="marketing.plan.skipped",
-            entity_type="ContentWeek",
+            action="blog.plan.skipped",
+            entity_type="BlogContentWeek",
             entity_id=str(pk),
         )
 
@@ -161,19 +175,13 @@ def _context(plan: ContentPlan, week: ContentWeek) -> dict[str, object]:
         "editorial_direction": PILLAR_DIRECTIONS[week.pillar],
         "audience": plan.audience,
         "priorities": plan.priorities,
-        "recent_captions": list(
-            SocialPost.objects.exclude(facebook_caption="")
-            .order_by("-created_at")
-            .values_list("facebook_caption", flat=True)[:16]
+        "recent_titles": list(
+            BlogPost.objects.order_by("-created_at").values_list("title", flat=True)[
+                :24
+            ]
         ),
-        "networks": [
-            network
-            for network, selected in (
-                ("facebook", plan.post_to_facebook),
-                ("instagram", plan.post_to_instagram),
-            )
-            if selected
-        ],
+        "promote_facebook": plan.promote_facebook,
+        "promotion_delay_hours": plan.promotion_delay_hours,
     }
 
 
@@ -200,52 +208,86 @@ def _prepare_weeks(plan: ContentPlan) -> None:
             ).update(planned_at=planned_at)
 
 
-def _schedule_ready(plan: ContentPlan) -> None:
-    if plan.mode != ContentPlan.Mode.AUTOMATIC:
-        return
-    for week_id in ContentWeek.objects.filter(
-        status=ContentWeek.Status.READY,
-        review_passed=True,
-        post__status=SocialPost.Status.DRAFT,
-    ).values_list("pk", flat=True):
-        with transaction.atomic():
-            current = ContentPlan.objects.select_for_update().get(pk=1)
-            if current.mode != ContentPlan.Mode.AUTOMATIC:
+def schedule_week(pk: int, *, actor: CustomUser, automatic: bool = False) -> None:
+    with transaction.atomic():
+        plan = ContentPlan.objects.select_for_update().get(pk=1)
+        if not can_manage_social(actor):
+            raise SocialError("A current super administrator must schedule articles.")
+        if automatic:
+            if plan.mode != ContentPlan.Mode.AUTOMATIC:
                 return
-            validate_plan(current)
-            week = ContentWeek.objects.select_for_update().get(pk=week_id)
-            if week.post_id is None:
-                continue
-            post = SocialPost.objects.select_for_update().get(pk=week.post_id)
-            if (
-                week.status != ContentWeek.Status.READY
-                or post.status != SocialPost.Status.DRAFT
-            ):
-                continue
-            if week.planned_at <= timezone.now():
-                week.status, week.review_note = (
-                    ContentWeek.Status.HELD,
-                    "The planned time passed. Review and choose a new date.",
+            validate_plan(plan)
+        week = ContentWeek.objects.select_for_update().get(pk=pk)
+        if (
+            week.status != ContentWeek.Status.READY
+            or not week.review_passed
+            or not week.post_id
+        ):
+            raise SocialError(
+                "Only an approved, ready article can be scheduled here. Edit other articles in the blog editor."
+            )
+        post = BlogPost.objects.select_for_update().get(pk=week.post_id)
+        if post.status != BlogPost.Status.DRAFT:
+            raise SocialError(
+                "This article has already been scheduled or published in the editor."
+            )
+        if week.planned_at <= timezone.now():
+            raise SocialError(
+                "The planned time passed. Choose a new date in the article editor."
+            )
+        if (
+            post.title != str(week.content["title"])
+            or post.body != clean_article_html(render_body(week.content))
+            or post.excerpt != str(week.content["excerpt"])
+        ):
+            raise SocialError(
+                "The article was edited after its AI check. Review and schedule it in the article editor."
+            )
+        post.status, post.published_at = BlogPost.Status.PUBLISHED, week.planned_at
+        post.save()
+        promotion = (
+            SocialPost.objects.select_for_update().filter(blog_post=post).first()
+        )
+        if promotion:
+            if promotion.status != SocialPost.Status.DRAFT:
+                raise SocialError(
+                    "The Facebook feature has already been changed. Review it in the social schedule."
                 )
-                week.save(update_fields=["status", "review_note", "updated_at"])
-                continue
-            from apps.social.services import _require_publishable
+            if promotion.facebook_caption != str(week.content["facebook"]):
+                raise SocialError(
+                    "The teaser was edited after its AI check. Review and schedule it from Feature on Facebook."
+                )
+            when = week.planned_at + timedelta(
+                hours=int(week.context.get("promotion_delay_hours", 1))
+            )
+            validate_promotion(promotion, when=when)
+            _require_publishable(promotion)
+            promotion.blog_auto_scheduled = automatic
+            promotion.status, promotion.scheduled_at = SocialPost.Status.SCHEDULED, when
+            promotion.save()
+        week.status, week.auto_scheduled = ContentWeek.Status.SCHEDULED, automatic
+        week.save()
+        AuditLog.objects.create(
+            actor=actor,
+            action="blog.plan.scheduled",
+            entity_type="BlogContentWeek",
+            entity_id=str(pk),
+            after={"automatic": automatic, "published_at": week.planned_at.isoformat()},
+        )
 
-            _require_publishable(post)
-            post.status, post.scheduled_at = (
-                SocialPost.Status.SCHEDULED,
-                week.planned_at,
-            )
-            post.save(update_fields=["status", "scheduled_at", "updated_at"])
-            week.auto_scheduled = True
-            week.save(update_fields=["auto_scheduled", "updated_at"])
-            AuditLog.objects.create(
-                actor=current.updated_by,
-                action="marketing.plan.scheduled",
-                entity_type="SocialPost",
-                entity_id=str(post.pk),
-                after={"scheduled_at": week.planned_at.isoformat()},
-            )
+
+def _schedule_ready(plan: ContentPlan) -> None:
+    if plan.mode != ContentPlan.Mode.AUTOMATIC or plan.updated_by is None:
+        return
+    for week in ContentWeek.objects.filter(
+        status=ContentWeek.Status.READY, review_passed=True
+    ):
+        try:
+            schedule_week(week.pk, actor=plan.updated_by, automatic=True)
+        except SocialError as exc:
+            ContentWeek.objects.filter(
+                pk=week.pk, status=ContentWeek.Status.READY
+            ).update(status=ContentWeek.Status.HELD, review_note=str(exc)[:500])
 
 
 def _generate_week(plan: ContentPlan, week: ContentWeek) -> None:
@@ -263,14 +305,14 @@ def _generate_week(plan: ContentPlan, week: ContentWeek) -> None:
         locked.save()
         week.refresh_from_db()
     if not week.content:
-        week.content = generate_content(week.context)
+        week.content = generate_article(week.context)
         ContentWeek.objects.filter(pk=week.pk).update(content=week.content)
     if ContentWeek.objects.filter(
         pk=week.pk, status=ContentWeek.Status.SKIPPED
     ).exists():
         return
     if not week.review_note:
-        week.review_passed, week.review_note = review_content(
+        week.review_passed, week.review_note = review_article(
             week.content, week.context
         )
         ContentWeek.objects.filter(pk=week.pk).update(
@@ -287,26 +329,29 @@ def _generate_week(plan: ContentPlan, week: ContentWeek) -> None:
         locked = ContentWeek.objects.select_for_update().get(pk=week.pk)
         if locked.status == ContentWeek.Status.SKIPPED or locked.post_id:
             return
-        networks = cast(list[str], week.context["networks"])
-        facebook = str(week.content["facebook"])
-        link = CTA_URL if week.pillar == "clearcode_approach" else ""
-        if link:
-            facebook += "\n\n" + link
-        locked.post = SocialPost.objects.create(
-            brief=str(week.content["brief"]),
-            facebook_caption=facebook,
-            instagram_caption=str(week.content["instagram"]),
-            audience=str(week.context["audience"]),
-            tone=SocialPost.Tone.WARM,
-            source=SocialPost.Source.BRIEF,
-            link_url=link,
-            post_to_facebook="facebook" in networks,
-            post_to_instagram="instagram" in networks,
-            image_data=raw or None,
-            image_content_type=content_type,
-            image_name="weekly-illustration.jpg" if raw else "",
-            created_by=current.updated_by,
+        locked.post = BlogPost.objects.create(
+            title=str(week.content["title"]),
+            excerpt=str(week.content["excerpt"]),
+            body=render_body(week.content),
+            body_format=BlogPost.BodyFormat.HTML,
+            category="Reading support",
+            seo_title=str(week.content["seo_title"]),
+            seo_description=str(week.content["seo_description"]),
+            cover_data=raw or None,
+            cover_content_type=content_type,
+            cover_image_alt=str(week.content["cover_alt"]) if raw else "",
+            author=None,
         )
+        if week.context.get("promote_facebook"):
+            SocialPost.objects.create(
+                blog_post=locked.post,
+                source=SocialPost.Source.BLOG,
+                facebook_caption=str(week.content["facebook"]),
+                post_to_facebook=True,
+                post_to_instagram=False,
+                link_url=article_url(locked.post),
+                created_by=current.updated_by,
+            )
         locked.status = (
             ContentWeek.Status.READY if week.review_passed else ContentWeek.Status.HELD
         )
@@ -314,13 +359,13 @@ def _generate_week(plan: ContentPlan, week: ContentWeek) -> None:
         locked.save()
         AuditLog.objects.create(
             actor=current.updated_by,
-            action="marketing.plan.generated",
-            entity_type="ContentWeek",
+            action="blog.plan.generated",
+            entity_type="BlogContentWeek",
             entity_id=str(week.pk),
             after={"review_passed": week.review_passed, "attempts": week.attempts},
         )
     logger.info(
-        "social_plan_generated week=%s attempt=%s approved=%s image_bytes=%s",
+        "blog_plan_generated week=%s attempt=%s approved=%s image_bytes=%s",
         week.pk,
         week.attempts,
         week.review_passed,
@@ -382,7 +427,7 @@ def _run_locked() -> int:
         )
         ContentPlan.objects.filter(pk=1).update(last_error=str(exc)[:300])
         logger.warning(
-            "social_plan_generation_failed week=%s attempt=%s", week.pk, week.attempts
+            "blog_plan_generation_failed week=%s attempt=%s", week.pk, week.attempts
         )
         return 0
     _schedule_ready(ContentPlan.objects.get(pk=1))
@@ -390,7 +435,7 @@ def _run_locked() -> int:
     return 1
 
 
-def maintain_content_plan() -> int:
+def maintain_blog_plan() -> int:
     """Generate at most one week's image per pass; serialize cron and Celery workers."""
     with connection.cursor() as cursor:
         cursor.execute("SELECT pg_try_advisory_lock(%s)", [PLANNER_LOCK])
@@ -400,7 +445,7 @@ def maintain_content_plan() -> int:
         return _run_locked()
     except SocialError as exc:
         ContentPlan.objects.filter(pk=1).update(last_error=str(exc)[:300])
-        logger.warning("social_plan_not_ready")
+        logger.warning("blog_plan_not_ready")
         return 0
     finally:
         with connection.cursor() as cursor:

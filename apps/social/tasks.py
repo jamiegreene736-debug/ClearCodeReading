@@ -11,5 +11,9 @@ def publish_scheduled_social_posts():
 
     with schema_context("public"):
         count = publish_due()
-        maintain_content_plan()
+        from apps.blog.planner import maintain_blog_plan
+        try:
+            maintain_content_plan()
+        finally:
+            maintain_blog_plan()
         return count

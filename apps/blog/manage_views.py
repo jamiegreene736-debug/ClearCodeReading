@@ -11,6 +11,7 @@ from django.shortcuts import get_object_or_404, redirect, render
 from django.utils import timezone
 from django.views.decorators.http import require_http_methods, require_POST
 
+from apps.social.access import can_manage_social
 from apps.blog.access import EditorRequest, blog_editor_required
 from apps.blog.forms import BlogPostForm
 from apps.blog.forms import BlogImageUploadForm
@@ -67,6 +68,7 @@ def post_list(request: EditorRequest) -> HttpResponseBase:
         request,
         "blog/manage/list.html",
         {
+            "can_manage_social": can_manage_social(request.user),
             "page": page,
             "tab": tab,
             "tabs": TABS,
@@ -112,7 +114,7 @@ def post_edit(request: EditorRequest, pk: int) -> HttpResponseBase:
     return render(
         request,
         "blog/manage/form.html",
-        {"form": form, "post": post, "categories": _categories()},
+        {"form": form, "post": post, "categories": _categories(), "can_manage_social": can_manage_social(request.user)},
     )
 
 

@@ -13,11 +13,16 @@ class Command(BaseCommand):
     def handle(self, *args, **options):
         with schema_context("public"):
             count = publish_due()
-            try:
-                generated = maintain_content_plan()
-            except Exception:
-                # Publishing must continue even if a planner dependency fails unexpectedly.
-                logging.getLogger(__name__).exception("social_planner_failed")
-                raise
-            self.stdout.write(f"Prepared {generated} weekly content post(s).")
+            from apps.blog.planner import maintain_blog_plan
+            failures = []
+            for name, maintain in (("social", maintain_content_plan), ("blog", maintain_blog_plan)):
+                try:
+                    generated = maintain()
+                    self.stdout.write(f"Prepared {generated} weekly {name} post(s).")
+                except Exception as exc:
+                    # A failing planner must not starve the other or stop due deliveries.
+                    logging.getLogger(__name__).exception("%s_planner_failed", name)
+                    failures.append(exc)
+            if failures:
+                raise failures[0]
         self.stdout.write(f"Claimed {count} scheduled social post(s).")

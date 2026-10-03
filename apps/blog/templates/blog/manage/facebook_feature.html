@@ -1,0 +1,13 @@
+{% extends "portal/page.html" %}{% load tz %}
+{% block title %}Feature on Facebook{% endblock %}
+{% block content %}{% timezone "America/New_York" %}
+<div class="mx-auto max-w-3xl pb-8">
+<p class="text-sm font-bold text-deepTeal">Blog · Facebook feature</p><h1 class="mt-2 text-3xl font-black">Bring readers to your article</h1>
+<section class="mt-6 rounded-3xl bg-white p-6 ring-1 ring-ink/10">
+<h2 class="text-2xl font-black">{{ article.title }}</h2><p class="mt-2 text-sm text-ink/65">{{ article.state }}{% if article.published_at %} · {{ article.published_at|date:"M j, Y · g:i A" }} Eastern{% endif %}</p>
+<p class="mt-4 leading-7">Facebook will share a teaser with the article’s link. Its cover and summary are available for Facebook’s link preview. The feature appears alongside your other posts in the marketing schedule.</p>
+{% if article.status == 'draft' %}<p role="alert" class="mt-4 rounded-xl bg-amber-100 p-4">First publish or schedule this article in the <a class="underline" href="{% url 'blog_manage:edit' article.pk %}">blog editor</a>. Choose a Facebook time after publication.</p>{% endif %}
+{% if promotion %}<p class="mt-4 text-sm font-bold">Facebook: {{ promotion.get_status_display }}{% if promotion.scheduled_at %} · {{ promotion.scheduled_at|date:"M j, g:i A" }} Eastern{% endif %}</p>{% if promotion.last_error %}<p role="alert" class="mt-2 text-amber-800">{{ promotion.last_error }}</p>{% endif %}{% endif %}
+<form method="post" class="mt-6 space-y-5">{% csrf_token %}{{ form.non_field_errors }}{% for field in form %}<div><label class="mb-2 block font-black" for="{{ field.id_for_label }}">{{ field.label }}</label>{{ field }}{{ field.errors }}</div>{% endfor %}<p class="text-sm leading-6 text-ink/60">The article must be publicly available before its feature sends. Moving its publication date moves a queued feature by the same amount. Unpublishing or deleting it holds the feature for attention.</p><button class="focus-ring rounded-full bg-deepTeal px-6 py-3 font-black text-white">Schedule Facebook feature</button></form>
+<div class="mt-5 flex flex-wrap gap-5"><a class="font-bold text-deepTeal underline" href="{% url 'blog_manage:edit' article.pk %}">Back to article</a><a class="font-bold text-deepTeal underline" href="{% url 'social:queue' %}?tab=scheduled">Social media schedule</a></div>
+</section></div>{% endtimezone %}{% endblock %}

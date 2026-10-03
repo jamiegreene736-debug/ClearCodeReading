@@ -258,7 +258,7 @@ def publish_facebook(post: SocialPost, account: SocialAccount, *, image_url: str
     token = decrypt_text(account.encrypted_token)
     version = _version()
     caption = post.facebook_caption.strip()
-    if post.has_image and image_url:
+    if post.has_image and image_url and not post.is_blog_promotion:
         payload = _graph(
             "POST",
             f"https://graph.facebook.com/{version}/{account.external_id}/photos",

@@ -3,6 +3,7 @@ on:
   pull_request:
     paths:
       - 'apps/social/**'
+      - 'apps/blog/**'
       - 'templates/social/**'
       - 'templates/portal/_header.html'
       - 'mypy-social.ini'
@@ -11,6 +12,7 @@ on:
     branches: [main]
     paths:
       - 'apps/social/**'
+      - 'apps/blog/**'
       - 'templates/social/**'
 permissions:
   contents: read
@@ -43,7 +45,7 @@ jobs:
       - run: pip install -r requirements-crm-email-dev.txt
       - run: python manage.py check
       - run: python manage.py makemigrations --check --dry-run
-      - run: ruff check apps/social/planner.py apps/social/planner_ai.py apps/social/planner_views.py apps/social/editorial.py apps/social/test_planner.py
-      - run: ruff format --check apps/social/planner.py apps/social/planner_ai.py apps/social/planner_views.py apps/social/editorial.py apps/social/test_planner.py
+      - run: ruff check apps/social/planner.py apps/social/planner_ai.py apps/social/planner_views.py apps/social/editorial.py apps/social/test_planner.py apps/blog/planner.py apps/blog/planner_ai.py apps/blog/planner_views.py apps/blog/promotion.py apps/blog/test_planner.py
+      - run: ruff format --check apps/social/planner.py apps/social/planner_ai.py apps/social/planner_views.py apps/social/editorial.py apps/social/test_planner.py apps/blog/planner.py apps/blog/planner_ai.py apps/blog/planner_views.py apps/blog/promotion.py apps/blog/test_planner.py
       - run: mypy --config-file mypy-social.ini
-      - run: python manage.py test apps.social apps.core.test_marketing --noinput
+      - run: python manage.py test apps.social apps.blog apps.core.test_marketing --noinput

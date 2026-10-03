@@ -13,7 +13,7 @@
         {% else %}Posts waiting to go out. Times are Eastern. Change the date or cancel any of them until the minute it sends.{% endif %}
       </p>
     </div>
-    <div class="flex flex-wrap gap-2"><a href="{% url 'social:planner' %}" class="focus-ring inline-flex items-center rounded-full bg-white px-6 py-3 font-black text-deepTeal ring-1 ring-deepTeal/20">AI content plan</a>
+    <div class="flex flex-wrap gap-2"><a href="{% url 'blog_manage:planner' %}" class="focus-ring rounded-full bg-white px-5 py-3 font-black text-deepTeal ring-1 ring-deepTeal/20">AI blog plan</a><a href="{% url 'social:planner' %}" class="focus-ring inline-flex items-center rounded-full bg-white px-6 py-3 font-black text-deepTeal ring-1 ring-deepTeal/20">AI content plan</a>
     <a href="{% url 'social:new' %}" class="focus-ring inline-flex shrink-0 items-center justify-center rounded-full bg-deepTeal px-6 py-3 font-black text-white shadow-lg shadow-deepTeal/25">New post</a></div>
   </div>
 
@@ -50,7 +50,7 @@
             <h2 class="mt-2 text-xl font-black text-ink">{{ post.headline }}</h2>
             <p class="mt-1 text-sm font-bold text-ink/55">
               {% if post.scheduled_at and tab == "scheduled" %}Posts {{ post.scheduled_at|date:"D, M j · g:i A" }} ET{% elif tab == "posted" %}Posted {{ post.updated_at|date:"D, M j · g:i A" }} ET{% else %}Edited {{ post.updated_at|date:"M j, Y" }}{% endif %}
-              · {{ post.get_source_display }}
+              · {{ post.get_source_display }}{% if post.blog_post_id %} · <a href="{% url 'blog_manage:edit' post.blog_post_id %}" class="underline">{{ post.blog_post.title }}</a>{% endif %}
             </p>
             {% if post.last_error %}<p class="mt-1 text-sm font-bold text-amber-800">{{ post.last_error }}</p>{% endif %}
           </div>
