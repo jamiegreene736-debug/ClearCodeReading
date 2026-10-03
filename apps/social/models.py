@@ -83,6 +83,7 @@ class SocialPost(TimeStampedModel):
     class Source(models.TextChoices):
         BRIEF = "brief", "From a brief"
         MANUAL = "manual", "Written by hand"
+        BLOG = "blog", "Blog feature"
 
     class Audience(models.TextChoices):
         FAMILIES = "families", "Families"
@@ -94,6 +95,9 @@ class SocialPost(TimeStampedModel):
         PRACTICAL = "practical", "Practical"
         CELEBRATORY = "celebratory", "Celebratory"
 
+    blog_post = models.OneToOneField("blog.BlogPost", on_delete=models.SET_NULL, null=True, blank=True, related_name="facebook_promotion")
+    blog_auto_scheduled = models.BooleanField(default=False)
+    blog_publication_at = models.DateTimeField(null=True, blank=True)
     brief = models.TextField(blank=True)
     audience = models.CharField(max_length=16, choices=Audience.choices, default=Audience.FAMILIES)
     tone = models.CharField(max_length=16, choices=Tone.choices, default=Tone.WARM)
@@ -134,6 +138,10 @@ class SocialPost(TimeStampedModel):
     @property
     def has_image(self) -> bool:
         return bool(self.image_data)
+
+    @property
+    def is_blog_promotion(self) -> bool:
+        return self.blog_post_id is not None or self.source == self.Source.BLOG
 
     def selected_networks(self) -> list[str]:
         networks = []

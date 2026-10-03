@@ -17,6 +17,7 @@
       <h1 class="text-4xl font-black tracking-tight text-ink">Blog posts</h1>
       <p class="mt-2 max-w-2xl text-base leading-7 text-ink/65">Published posts show on the public blog. Everything else stays private.</p>
     </div>
+    {% if can_manage_social %}<a href="{% url 'blog_manage:planner' %}" class="focus-ring rounded-full bg-white px-6 py-3 font-black text-deepTeal ring-1 ring-deepTeal/20">AI blog plan</a>{% endif %}
     <a data-testid="blog-new-post-button" href="{% url 'blog_manage:create' %}" class="focus-ring inline-flex shrink-0 items-center justify-center gap-2 rounded-full bg-deepTeal px-6 py-3 font-black text-white shadow-lg shadow-deepTeal/25 transition hover:-translate-y-0.5 hover:bg-[#156767]">
       <span aria-hidden="true" class="text-lg leading-none">＋</span> New post
     </a>
@@ -95,6 +96,7 @@
                     <form method="post" action="{% url 'blog_manage:publish' post.pk %}" class="sm:hidden"><input type="hidden" name="next" value="{{ request.get_full_path }}">{% csrf_token %}<button type="submit" class="focus-ring block w-full rounded-xl px-3 py-2 text-left text-sm font-black text-ink hover:bg-linen">Publish now</button></form>
                     <a href="{% url 'blog_manage:preview' post.pk %}" target="_blank" rel="noopener" class="focus-ring block rounded-xl px-3 py-2 text-sm font-black text-ink hover:bg-linen">Preview</a>
                   {% endif %}
+                  {% if can_manage_social %}<a href="{% url 'blog_manage:facebook_feature' post.pk %}" class="focus-ring block rounded-xl px-3 py-2 text-sm font-black text-ink hover:bg-linen">Feature on Facebook</a>{% endif %}
                   <form method="post" action="{% url 'blog_manage:feature' post.pk %}"><input type="hidden" name="next" value="{{ request.get_full_path }}">{% csrf_token %}<button type="submit" class="focus-ring block w-full rounded-xl px-3 py-2 text-left text-sm font-black text-ink hover:bg-linen">{% if post.is_featured %}Remove feature{% else %}Feature on the blog{% endif %}</button></form>
                   <form method="post" action="{% url 'blog_manage:duplicate' post.pk %}">{% csrf_token %}<button type="submit" class="focus-ring block w-full rounded-xl px-3 py-2 text-left text-sm font-black text-ink hover:bg-linen">Duplicate</button></form>
                   <form method="post" action="{% url 'blog_manage:delete' post.pk %}" data-confirm="Delete “{{ post.title }}”? This cannot be undone.">{% csrf_token %}<button type="submit" class="focus-ring block w-full rounded-xl px-3 py-2 text-left text-sm font-black text-red-700 hover:bg-red-50">Delete</button></form>

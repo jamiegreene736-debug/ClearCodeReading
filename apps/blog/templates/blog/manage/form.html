@@ -28,6 +28,7 @@
 {% endblock %}
 
 {% block content %}
+{% if post.pk and can_manage_social %}<div class="mb-4 flex justify-end"><a href="{% url 'blog_manage:facebook_feature' post.pk %}" class="focus-ring rounded-full bg-white px-5 py-3 font-black text-deepTeal ring-1 ring-deepTeal/20">Feature on Facebook</a></div>{% endif %}
 <div class="blog-cms pb-20" data-testid="blog-editor">
   <form method="post" enctype="multipart/form-data" id="blog-post-form" novalidate>
     {% csrf_token %}

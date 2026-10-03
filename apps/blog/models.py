@@ -85,7 +85,7 @@ class BlogImage(TimeStampedModel):
     def __str__(self):
         return self.original_name or str(self.key)
 
-    def get_absolute_url(self):
+    def get_absolute_url(self) -> str:
         return reverse("blog:image", kwargs={"key": self.key})
 
     @property
@@ -264,7 +264,7 @@ class BlogPost(TimeStampedModel):
                 {"cover_image_alt": "Describe the cover image before saving the post."}
             )
 
-    def save(self, *args, **kwargs):
+    def save(self, *args: object, **kwargs: object) -> None:
         if not self.slug:
             self.slug = self._available_slug()
         if self.body_format == self.BodyFormat.HTML:
@@ -285,7 +285,7 @@ class BlogPost(TimeStampedModel):
             suffix += 1
         return candidate
 
-    def get_absolute_url(self):
+    def get_absolute_url(self) -> str:
         return reverse("blog:detail", kwargs={"slug": self.slug})
 
     # -- Cover images -------------------------------------------------------
@@ -363,3 +363,89 @@ class BlogPost(TimeStampedModel):
         if self.body_format == self.BodyFormat.HTML:
             return mark_safe(clean_article_html(self.body))
         return mark_safe(linebreaks(self.body or "", autoescape=True))
+
+
+class BlogContentPlan(TimeStampedModel):
+    class Mode(models.TextChoices):
+        PAUSED = "paused", "Paused"
+        REVIEW = "review", "Review first"
+        AUTOMATIC = "automatic", "Automatic"
+
+    id = models.PositiveSmallIntegerField(primary_key=True, default=1, editable=False)
+    mode = models.CharField(max_length=16, choices=Mode.choices, default=Mode.PAUSED)
+    weekday = models.PositiveSmallIntegerField(default=2)
+    posting_hour = models.PositiveSmallIntegerField(default=9)
+    audience = models.CharField(
+        max_length=16,
+        choices=[
+            ("families", "Families"),
+            ("teachers", "Teachers"),
+            ("general", "General"),
+        ],
+        default="families",
+    )
+    priorities = models.TextField(blank=True, max_length=2000)
+    promote_facebook = models.BooleanField(default=True)
+    promotion_delay_hours = models.PositiveSmallIntegerField(default=1)
+    preview_requested = models.BooleanField(default=False)
+    updated_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True
+    )
+    last_worker_at = models.DateTimeField(null=True, blank=True)
+    last_error = models.CharField(max_length=300, blank=True)
+
+    class Meta:
+        constraints = [
+            models.CheckConstraint(
+                condition=models.Q(pk=1), name="blog_single_content_plan"
+            ),
+            models.CheckConstraint(
+                condition=models.Q(weekday__lte=6), name="blog_plan_weekday"
+            ),
+            models.CheckConstraint(
+                condition=models.Q(posting_hour__gte=8, posting_hour__lte=20),
+                name="blog_plan_daytime",
+            ),
+            models.CheckConstraint(
+                condition=models.Q(
+                    promotion_delay_hours__gte=1, promotion_delay_hours__lte=72
+                ),
+                name="blog_promotion_delay",
+            ),
+        ]
+
+
+class BlogContentWeek(TimeStampedModel):
+    class Status(models.TextChoices):
+        PENDING = "pending", "Preparing"
+        GENERATING = "generating", "Generating"
+        READY = "ready", "Ready"
+        SCHEDULED = "scheduled", "Scheduled"
+        HELD = "held", "Needs review"
+        ERROR = "error", "Generation failed"
+        SKIPPED = "skipped", "Skipped"
+
+    week_of = models.DateField(unique=True)
+    planned_at = models.DateTimeField()
+    pillar = models.CharField(max_length=40)
+    status = models.CharField(
+        max_length=16, choices=Status.choices, default=Status.PENDING
+    )
+    post = models.OneToOneField(
+        BlogPost,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="content_week",
+    )
+    context = models.JSONField(default=dict)
+    content = models.JSONField(default=dict)
+    auto_scheduled = models.BooleanField(default=False)
+    review_passed = models.BooleanField(default=False)
+    review_note = models.CharField(max_length=500, blank=True)
+    attempts = models.PositiveSmallIntegerField(default=0)
+    next_attempt_at = models.DateTimeField(null=True, blank=True)
+    last_error = models.CharField(max_length=300, blank=True)
+
+    class Meta:
+        ordering = ["planned_at"]

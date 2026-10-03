@@ -37,7 +37,12 @@ REVIEW_SCHEMA: dict[str, object] = {
 
 
 def structured(
-    instructions: str, inputs: dict[str, object], schema: dict[str, object], name: str
+    instructions: str,
+    inputs: dict[str, object],
+    schema: dict[str, object],
+    name: str,
+    *,
+    max_tokens: int = 4000,
 ) -> dict[str, object]:
     _require_key()
     model = str(settings.SOCIAL_AI_PLANNER_MODEL)
@@ -47,7 +52,7 @@ def structured(
             "model": model,
             "reasoning": {"effort": "low"},
             "store": False,
-            "max_output_tokens": 4000,
+            "max_output_tokens": max_tokens,
             "instructions": _brand_rules() + "\n" + instructions,
             "input": json.dumps(inputs),
             "text": {

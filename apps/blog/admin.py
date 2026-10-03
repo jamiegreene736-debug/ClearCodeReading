@@ -7,17 +7,17 @@ from apps.blog.models import BlogPost
 @admin.action(description="Publish selected posts")
 def publish_posts(modeladmin, request, queryset):
     now = timezone.now()
-    queryset.filter(published_at__isnull=True).update(published_at=now)
-    queryset.update(status=BlogPost.Status.PUBLISHED, updated_at=now)
+    for post in queryset:
+        post.status = BlogPost.Status.PUBLISHED
+        post.published_at = post.published_at or now
+        post.save(update_fields=["status", "published_at", "updated_at"])
 
 
 @admin.action(description="Move selected posts back to draft")
 def unpublish_posts(modeladmin, request, queryset):
-    queryset.update(
-        status=BlogPost.Status.DRAFT,
-        is_featured=False,
-        updated_at=timezone.now(),
-    )
+    for post in queryset:
+        post.status, post.is_featured = BlogPost.Status.DRAFT, False
+        post.save(update_fields=["status", "is_featured", "updated_at"])
 
 
 @admin.register(BlogPost)

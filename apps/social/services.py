@@ -73,6 +73,9 @@ def store_image(post: SocialPost, upload) -> None:
 
 
 def _require_publishable(post: SocialPost) -> None:
+    if post.is_blog_promotion:
+        from apps.blog.promotion import validate_promotion
+        validate_promotion(post)
     networks = post.selected_networks()
     if not networks:
         raise SocialError("Choose Facebook, Instagram, or both.")
@@ -99,14 +102,18 @@ def schedule_post(post: SocialPost, when: datetime, *, actor: CustomUser) -> Non
         }:
             raise SocialError("This post can no longer be rescheduled.")
         _require_publishable(locked)
+        if locked.is_blog_promotion:
+            from apps.blog.promotion import validate_promotion
+            validate_promotion(locked, when=when)
         ContentWeek.objects.filter(post=locked).update(
             auto_scheduled=False, status=ContentWeek.Status.SKIPPED
         )
+        locked.blog_auto_scheduled = False
         locked.scheduled_at = when
         locked.status = SocialPost.Status.SCHEDULED
         locked.last_error = ""
         locked.save(
-            update_fields=["scheduled_at", "status", "last_error", "updated_at"]
+            update_fields=["scheduled_at", "status", "last_error", "link_url", "blog_publication_at", "blog_auto_scheduled", "updated_at"]
         )
     AuditLog.objects.create(
         actor=actor,
@@ -272,8 +279,17 @@ def publish_post(post: SocialPost, *, request=None) -> SocialPost:
     """Publish every selected network that does not already have a live post."""
     from apps.social.meta import absolute_image_url, publish_facebook, publish_instagram
 
+    if post.is_blog_promotion:
+        from apps.blog.promotion import validate_promotion
+        try:
+            validate_promotion(post, sending=True)
+        except SocialError as exc:
+            post.status, post.last_error = SocialPost.Status.ATTENTION, str(exc)[:300]
+            post.save(update_fields=["status", "last_error", "updated_at"])
+            raise
+        post.save(update_fields=["link_url", "blog_publication_at", "updated_at"])
     image_url = ""
-    if post.has_image:
+    if post.has_image and not post.is_blog_promotion:
         try:
             image_url = absolute_image_url(post)
         except SocialError as exc:
@@ -281,7 +297,7 @@ def publish_post(post: SocialPost, *, request=None) -> SocialPost:
             if post.post_to_instagram or post.post_to_facebook:
                 post.last_error = str(exc)
     failures = []
-    missing_image_url = bool(post.has_image and not image_url)
+    missing_image_url = bool(post.has_image and not image_url and not post.is_blog_promotion)
     for network in post.selected_networks():
         existing = post.publications.filter(network=network, status=SocialPublication.Status.PUBLISHED).first()
         if existing:
@@ -347,7 +363,17 @@ def publish_due(*, request=None) -> int:
     for pk in due_ids:
         with transaction.atomic():
             plan = ContentPlan.objects.select_for_update().filter(pk=1).first()
+            from apps.blog.models import BlogContentPlan
+            blog_plan = BlogContentPlan.objects.select_for_update().filter(pk=1).first()
             post = SocialPost.objects.select_for_update().get(pk=pk)
+            blog_automatic = post.blog_auto_scheduled
+            if blog_automatic:
+                from apps.social.access import can_manage_social
+                if blog_plan is None or blog_plan.mode != BlogContentPlan.Mode.AUTOMATIC or blog_plan.updated_by is None or not can_manage_social(blog_plan.updated_by):
+                    if post.status == SocialPost.Status.SCHEDULED:
+                        post.status, post.scheduled_at = SocialPost.Status.DRAFT, None
+                        post.save(update_fields=["status", "scheduled_at", "updated_at"])
+                    continue
             automatic = ContentWeek.objects.filter(
                 post=post, auto_scheduled=True
             ).exists()
@@ -379,6 +405,8 @@ def publish_due(*, request=None) -> int:
         post = SocialPost.objects.get(pk=pk)
         try:
             publish_post(post, request=request)
+        except SocialError as exc:
+            SocialPost.objects.filter(pk=pk, status=SocialPost.Status.PUBLISHING).update(status=SocialPost.Status.ATTENTION, last_error=str(exc)[:300])
         except Exception:
             logger.exception("social_publish_failed post=%s", pk)
             SocialPost.objects.filter(
