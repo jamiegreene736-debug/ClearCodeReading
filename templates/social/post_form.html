@@ -4,6 +4,7 @@
 <div class="pb-10" data-testid="social-composer">
   <p class="text-xs font-black uppercase tracking-[0.16em] text-deepTeal">Marketing · Social media</p>
   <h1 class="mt-1 text-4xl font-black tracking-tight text-ink">{% if post.pk %}Edit post{% else %}New post{% endif %}</h1>
+  {% if post.pk and post.status == 'draft' or post.pk and post.status == 'scheduled' %}<a href="{% url 'social:delete' post.pk %}" class="focus-ring mt-3 inline-flex rounded-full bg-white px-4 py-2 text-sm font-black text-red-700 ring-1 ring-red-200">Delete post</a>{% endif %}
   <div class="mt-4 inline-flex rounded-full bg-white p-1 ring-1 ring-ink/10">
     <a href="{% if post.pk %}{% url 'social:edit' post.pk %}?mode=brief{% else %}{% url 'social:new' %}?mode=brief{% endif %}" class="rounded-full px-4 py-2 text-sm font-black {% if mode == 'brief' %}bg-ink text-white{% else %}text-ink/60{% endif %}">From a brief</a>
     <a href="{% if post.pk %}{% url 'social:edit' post.pk %}?mode=manual{% else %}{% url 'social:new' %}?mode=manual{% endif %}" class="rounded-full px-4 py-2 text-sm font-black {% if mode != 'brief' %}bg-ink text-white{% else %}text-ink/60{% endif %}">Write it yourself</a>

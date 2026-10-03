@@ -215,7 +215,14 @@ def post_edit(request, pk=None):
                     post.created_by = request.user
                 if post.status not in {SocialPost.Status.SCHEDULED, SocialPost.Status.ATTENTION}:
                     post.status = SocialPost.Status.DRAFT
-                post.save()
+                with transaction.atomic():
+                    if post.pk:
+                        current = SocialPost.objects.select_for_update().filter(pk=post.pk).first()
+                        if current is None:
+                            raise SocialError("This post was deleted while you were editing. It has not been recreated.")
+                        if current.status in {SocialPost.Status.PUBLISHING, SocialPost.Status.POSTED} or current.updated_at != post.updated_at:
+                            raise SocialError("This post changed while you were editing. Reload it before saving.")
+                    post.save()
                 if action == "schedule":
                     return redirect("social:schedule", pk=post.pk)
                 if action == "post_now":
