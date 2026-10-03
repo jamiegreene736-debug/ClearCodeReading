@@ -37,6 +37,7 @@ else:
 
 class PlanForm(PlanFormBase):
     weekday = forms.TypedChoiceField(
+        label="Day of the week",
         choices=list(
             enumerate(
                 (
@@ -53,6 +54,7 @@ class PlanForm(PlanFormBase):
         coerce=int,
     )
     posting_hour = forms.TypedChoiceField(
+        label="Article publication time",
         choices=[
             (hour, f"{hour % 12 or 12}:00 {'AM' if hour < 12 else 'PM'} Eastern")
             for hour in range(8, 21)
