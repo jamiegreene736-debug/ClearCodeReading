@@ -64,6 +64,29 @@ class SocialMediaTests(TestCase):
             role=CustomUser.Role.TEACHER,
         )
 
+    def test_live_preview_renders_without_connected_accounts_in_both_modes(self):
+        self.client.force_login(self.admin)
+        for mode in ("manual", "brief"):
+            response = self.client.get(reverse("social:new"), {"mode": mode})
+            self.assertContains(response, 'data-testid="social-preview"')
+            self.assertContains(response, 'social/preview.js')
+            self.assertContains(response, 'social/preview.css')
+            self.assertContains(response, 'id="instagram_caption"')
+
+    def test_live_preview_renders_instagram_only_draft_and_saved_photo(self):
+        self.client.force_login(self.admin)
+        post = SocialPost.objects.create(
+            source=SocialPost.Source.BRIEF,
+            instagram_caption="Instagram only",
+            post_to_facebook=False,
+            image_data=image_bytes(),
+            image_content_type="image/png",
+        )
+        response = self.client.get(reverse("social:edit", args=[post.pk]))
+        self.assertContains(response, 'id="instagram_caption"')
+        self.assertContains(response, "Instagram only")
+        self.assertContains(response, f'data-saved-image="{reverse("social:image", args=[post.pk])}"')
+
     def _future(self, days=10, hour=15, minute=0):
         local = (timezone.now() + timedelta(days=days)).astimezone(EASTERN)
         return local.date().isoformat(), f"{hour:02d}:{minute:02d}"

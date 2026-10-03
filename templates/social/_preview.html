@@ -1,0 +1,37 @@
+<aside class="social-preview" aria-labelledby="social-preview-heading" data-testid="social-preview" data-saved-image="{% if post.pk and post.has_image %}{% url 'social:image' post.pk %}{% endif %}">
+  <h2 id="social-preview-heading" class="font-black">Live preview</h2>
+  <p class="social-preview-note">Updates as you edit. Approximate feed appearance; layout and cropping may vary by device. Nothing publishes until you choose Post now or Schedule.</p>
+  <noscript><p>Enable JavaScript to see live previews while editing.</p></noscript>
+  <p data-preview-empty hidden>Select Facebook or Instagram to see a preview.</p>
+  <p data-preview-image-error class="social-preview-warning" role="status" hidden></p>
+  <section data-preview-network="facebook" aria-labelledby="facebook-preview-heading">
+    <h3 id="facebook-preview-heading" class="social-preview-label">Facebook</h3>
+    <article class="social-preview-card">
+      <header class="social-preview-header">
+        <span class="social-preview-avatar" aria-hidden="true">CC</span>
+        <div><strong>{{ accounts.facebook.display_name|default:"ClearCode Reading" }}</strong><small>Just now · Public</small></div>
+        <span class="social-preview-menu" aria-hidden="true">•••</span>
+      </header>
+      <div class="social-preview-copy"><p id="facebook-preview-caption" data-preview-caption></p><button type="button" data-preview-expand aria-expanded="false" aria-controls="facebook-preview-caption" hidden>See more</button></div>
+      <img data-preview-image alt="Photo attached to the Facebook draft" hidden>
+      <div data-preview-link class="social-preview-link" hidden><strong data-preview-domain></strong><p data-preview-url></p><small>Facebook generates the link card when published.</small></div>
+      <footer class="social-preview-actions" aria-hidden="true"><span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M7 10v11H3V10h4Zm0 0 5-8a3 3 0 0 1 2 3l-1 5h6a2 2 0 0 1 2 2l-2 7a2 2 0 0 1-2 2H7"/></svg> Like</span><span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M21 11.5a8.4 8.4 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.4 8.4 0 0 1-3.8-.9L3 21l1.9-5.7a8.4 8.4 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.4 8.4 0 0 1 3.8-.9h.5a8.5 8.5 0 0 1 8 8v.5Z"/></svg> Comment</span><span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="m22 2-7 20-4-9-9-4 20-7ZM22 2 11 13"/></svg> Share</span></footer>
+    </article>
+    <p data-preview-photo-link class="social-preview-note" hidden>The Link field is not sent with photo posts. Include the URL in the Facebook caption if needed.</p>
+  </section>
+  <section data-preview-network="instagram" aria-labelledby="instagram-preview-heading">
+    <h3 id="instagram-preview-heading" class="social-preview-label">Instagram</h3>
+    <article class="social-preview-card social-preview-instagram">
+      <header class="social-preview-header">
+        <span class="social-preview-avatar" aria-hidden="true">CC</span>
+        <strong>{% firstof accounts.instagram.username accounts.instagram.display_name "ClearCode Reading" %}</strong>
+        <span class="social-preview-menu" aria-hidden="true">•••</span>
+      </header>
+      <img data-preview-image alt="Photo attached to the Instagram draft" hidden>
+      <div data-preview-photo-needed class="social-preview-placeholder">Add a photo to publish on Instagram.</div>
+      <div class="social-preview-actions" aria-hidden="true"><span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M20.8 4.6a5.5 5.5 0 0 0-7.8 0L12 5.7l-1.1-1.1a5.5 5.5 0 0 0-7.8 7.8L12 21l8.8-8.6a5.5 5.5 0 0 0 0-7.8Z"/></svg></span><span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M21 11.5a8.4 8.4 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.4 8.4 0 0 1-3.8-.9L3 21l1.9-5.7a8.4 8.4 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.4 8.4 0 0 1 3.8-.9h.5a8.5 8.5 0 0 1 8 8v.5Z"/></svg></span><span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="m22 2-7 20-4-9-9-4 20-7ZM22 2 11 13"/></svg></span><span class="social-preview-menu"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M5 3h14v18l-7-5-7 5V3Z"/></svg></span></div>
+      <div class="social-preview-copy"><p id="instagram-preview-caption" data-preview-caption></p><button type="button" data-preview-expand aria-expanded="false" aria-controls="instagram-preview-caption" hidden>See more</button></div>
+    </article>
+    <p class="social-preview-note">The Link field is not added to Instagram captions.</p>
+  </section>
+</aside>
