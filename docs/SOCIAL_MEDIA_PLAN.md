@@ -283,3 +283,31 @@ Social screens expose links to Drafts, Scheduled, Posted, Needs attention, the A
 Return destinations are allowlisted names, never caller-provided URLs or browser history. Direct links fall back to the post’s current status (Drafts for a new post). Facebook Page selection returns to Settings. Regression coverage lives in `apps/social/test_navigation.py`; OAuth selection navigation is covered in `apps/social/tests.py`.
 
 The calendar and delete confirmation share these links too. Calendar-origin return destinations include a validated month so reviewing or deleting a post returns to the same calendar month. “Keep post” returns to the editor when deletion was opened there; successful deletion returns to the list, plan, or calendar instead of the removed post.
+
+## Live draft previews
+
+The composer shows Facebook and Instagram feed approximations beside the editable
+captions in both brief and manual modes. Selected networks, text, and photos update
+locally without saving or calling Meta. Existing photos use the authenticated image
+route; replacement files use temporary browser object URLs, released on replacement
+and page exit. Captions render as text, never HTML.
+
+The preview follows `_apply_post` and the current publishers: manual Instagram
+captions fall back to the main caption when blank; brief captions stay independent;
+Facebook sends the Link field only when there is no photo; Instagram does not append
+that field. Caption limits follow the server's Unicode code-point slicing. Long
+captions can be expanded. Missing/broken photos and empty network selection have
+explicit states. Link cards show only the supplied URL/domain; metadata, final crop,
+and device-specific layout cannot be predicted exactly.
+
+We use local cards because Meta's embeds display existing public posts, which cannot
+represent unsaved drafts. Research: [Meta Embedded Posts](https://about.fb.com/news/2013/07/introducing-embedded-posts/)
+and [Instagram oEmbed](https://developers.facebook.com/docs/instagram-platform/oembed/)
+(the latter was rate-limited during research). No Meta SDK, token, external preview
+service, or additional runtime dependency is needed.
+
+Regression coverage: `python manage.py test apps.social` and
+`npx playwright test tests/browser/social-preview.spec.js`. The browser suite renders
+the real Django template and serves local assets with intercepted requests; it needs
+Python dependencies and Playwright Chromium, but no database or network credentials.
+Set `PYTHON` to the desired interpreter if needed. Social CI runs this suite.
