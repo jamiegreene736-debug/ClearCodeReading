@@ -44,6 +44,11 @@ class ScheduleViewsTests(TestCase):
             **values,
         )
 
+    def test_calendar_includes_its_responsive_layout(self):
+        response = self.client.get(reverse("social:calendar"))
+        self.assertContains(response, ".social-calendar{display:grid")
+        self.assertContains(response, "@media(max-width:767px)")
+
     def test_confirm_then_delete_draft_and_audit(self):
         post = self.post(image_data=b"image")
         url = reverse("social:delete", args=[post.pk])
