@@ -262,3 +262,106 @@ class ScheduleViewsTests(TestCase):
             self.client.get(reverse("social:edit", args=[post.pk])), "Delete post"
         )
         self.assertContains(self.client.get(reverse("social:planner")), "Calendar view")
+
+    def test_schedule_picker_browses_months_without_changing_selection(self):
+        post = self.post()
+        response = self.client.get(
+            reverse("social:schedule", args=[post.pk]),
+            {
+                "date": "2026-12-31",
+                "month": "2027-01",
+                "time": "14:35",
+            },
+        )
+        self.assertContains(response, "January 2027")
+        self.assertContains(response, "Previous month")
+        self.assertContains(response, "Next month")
+        self.assertEqual(response.context["previous"], "2026-12")
+        self.assertEqual(response.context["following"], "2027-02")
+        self.assertEqual(response.context["selected_date"], "2026-12-31")
+        self.assertEqual(response.context["selected_time"], "14:35")
+        self.assertFalse(
+            any(
+                day["is_selected"]
+                for week in response.context["weeks"]
+                for day in week
+                if day["in_month"]
+            )
+        )
+
+    def test_schedule_picker_leap_day_and_invalid_dates(self):
+        post = self.post()
+        url = reverse("social:schedule", args=[post.pk])
+        response = self.client.get(url, {"date": "2028-02-29"})
+        selected = [
+            day["day"]
+            for week in response.context["weeks"]
+            for day in week
+            if day["is_selected"]
+        ]
+        self.assertEqual(selected, [date(2028, 2, 29)])
+        for value in ["junk", "0001-01-01", "9999-12-31"]:
+            self.assertEqual(
+                self.client.get(url, {"date": value, "month": value}).status_code, 200
+            )
+
+    def test_composer_rejects_missing_content_before_save_or_publish(self):
+        cases = [
+            ({"post_to_facebook": "on", "caption": "  "}, "Facebook caption"),
+            (
+                {"post_to_instagram": "on", "caption": "Ready caption"},
+                "Instagram needs a photo",
+            ),
+            ({"caption": "Ready caption"}, "Choose Facebook"),
+        ]
+        for action in ["schedule", "post_now"]:
+            for fields, error in cases:
+                with (
+                    self.subTest(action=action, fields=fields),
+                    patch("apps.social.views.claim_and_publish_now") as publish,
+                ):
+                    response = self.client.post(
+                        reverse("social:new"),
+                        {"mode": "manual", "action": action, **fields},
+                    )
+                    self.assertContains(response, error)
+                    self.assertFalse(SocialPost.objects.exists())
+                    publish.assert_not_called()
+
+    def test_composer_allows_facebook_text_only_and_incomplete_drafts(self):
+        response = self.client.post(
+            reverse("social:new"),
+            {
+                "mode": "manual",
+                "action": "schedule",
+                "caption": "Ready for Facebook.",
+                "post_to_facebook": "on",
+            },
+        )
+        post = SocialPost.objects.get()
+        self.assertRedirects(
+            response,
+            reverse("social:schedule", args=[post.pk]) + "?return_to=drafts&via=edit",
+        )
+        response = self.client.post(
+            reverse("social:new"), {"mode": "brief", "action": "save"}
+        )
+        self.assertEqual(response.status_code, 302)
+        self.assertEqual(SocialPost.objects.count(), 2)
+
+    def test_invalid_edit_does_not_overwrite_existing_content(self):
+        post = self.post(post_to_instagram=False)
+        response = self.client.post(
+            reverse("social:edit", args=[post.pk]),
+            {
+                "mode": "brief",
+                "action": "schedule",
+                "facebook_caption": " ",
+                "post_to_facebook": "on",
+            },
+        )
+        self.assertContains(response, "Facebook caption")
+        post.refresh_from_db()
+        self.assertEqual(
+            post.facebook_caption, "A practical reading moment to share together."
+        )

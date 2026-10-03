@@ -16,7 +16,7 @@
     <a href="{% if post.pk %}{% url 'social:edit' post.pk %}?mode=manual&amp;return_to={{ nav.origin }}{% else %}{% url 'social:new' %}?mode=manual&amp;return_to={{ nav.origin }}{% endif %}" class="rounded-full px-4 py-2 text-sm font-black {% if mode != 'brief' %}bg-ink text-white{% else %}text-ink/60{% endif %}">Write it yourself</a>
   </div>
 
-  <form method="post" enctype="multipart/form-data" class="mt-6 grid gap-4 lg:grid-cols-2" id="social-post-form">
+  <form method="post" enctype="multipart/form-data" class="mt-6 grid gap-4 lg:grid-cols-2" id="social-post-form" data-has-image="{{ post.has_image|yesno:'true,false' }}">
     {% csrf_token %}
     <input type="hidden" name="mode" value="{{ mode }}">
     <section class="rounded-[1.75rem] bg-white p-5 ring-1 ring-ink/10">
@@ -70,8 +70,8 @@
         </label>
       {% endif %}
       <div class="mt-4 flex flex-wrap gap-3 text-sm font-black">
-        <label><input type="checkbox" name="post_to_facebook" {% if post.post_to_facebook or not post.pk %}checked{% endif %}> Facebook{% if not accounts.facebook.is_connected %} <span class="text-ink/50">(not connected)</span>{% endif %}</label>
-        <label><input type="checkbox" name="post_to_instagram" {% if post.post_to_instagram or not post.pk %}checked{% endif %}> Instagram{% if not accounts.instagram.is_connected %} <span class="text-ink/50">(not connected)</span>{% endif %}</label>
+        <label><input type="checkbox" name="post_to_facebook" {% if post.post_to_facebook %}checked{% endif %}> Facebook{% if not accounts.facebook.is_connected %} <span class="text-ink/50">(not connected)</span>{% endif %}</label>
+        <label><input type="checkbox" name="post_to_instagram" {% if post.post_to_instagram %}checked{% endif %}> Instagram{% if not accounts.instagram.is_connected %} <span class="text-ink/50">(not connected)</span>{% endif %}</label>
       </div>
       <p class="mt-4 rounded-2xl border border-gold/50 bg-white px-3 py-2 text-sm font-bold text-ink/70">Public brand voice only. Do not include a child’s name, photo, school, or reading scores.</p>
       <div class="mt-4 flex flex-wrap gap-2">
@@ -104,14 +104,40 @@
       {% endif %}
       {% include "social/_preview.html" %}
       <div class="flex flex-wrap items-start gap-2">
-        <button name="action" value="schedule" class="rounded-full bg-white px-4 py-2 font-black text-deepTeal ring-1 ring-deepTeal/20" type="submit">Schedule</button>
-        <button name="action" value="post_now" class="rounded-full bg-ink px-4 py-2 font-black text-white" type="submit">Post now</button>
+        <button name="action" value="schedule" disabled aria-describedby="publish-requirements" class="rounded-full bg-white px-4 py-2 font-black text-deepTeal ring-1 ring-deepTeal/20" type="submit">Schedule</button>
+        <button name="action" value="post_now" disabled aria-describedby="publish-requirements" class="rounded-full bg-ink px-4 py-2 font-black text-white" type="submit">Post now</button>
       </div>
+      <p id="publish-requirements" role="status" aria-live="polite" class="text-sm font-bold text-ink/70"></p>
     </section>
     <p id="generation-status" role="status" aria-live="polite" class="hidden text-sm font-bold text-deepTeal lg:col-span-2"></p>
   </form>
   <script>
     const socialForm = document.getElementById('social-post-form');
+    function updatePublishReadiness() {
+      const facebook = socialForm.elements.post_to_facebook.checked;
+      const instagram = socialForm.elements.post_to_instagram.checked;
+      const caption = socialForm.elements.facebook_caption || socialForm.elements.caption;
+      const facebookCaption = caption ? caption.value.trim() : '';
+      const instagramField = socialForm.elements.instagram_caption;
+      const instagramCaption = (instagramField ? instagramField.value.trim() : '') ||
+        (socialForm.elements.mode.value === 'manual' ? facebookCaption : '');
+      const hasImage = socialForm.dataset.hasImage === 'true' || socialForm.elements.image.files.length > 0;
+      const missing = [];
+      if (!facebook && !instagram) missing.push('Choose Facebook, Instagram, or both.');
+      if (facebook && !facebookCaption) missing.push('Add a Facebook caption.');
+      if (instagram && !instagramCaption) missing.push('Add an Instagram caption.');
+      if (instagram && !hasImage) missing.push('Add a photo for Instagram.');
+      document.getElementById('publish-requirements').textContent = missing.join(' ');
+      socialForm.querySelectorAll('[value="schedule"], [value="post_now"]').forEach(function (button) {
+        button.disabled = missing.length > 0;
+        button.style.opacity = button.disabled ? '0.5' : '';
+        button.style.cursor = button.disabled ? 'not-allowed' : '';
+      });
+      return missing.length === 0;
+    }
+    socialForm.addEventListener('input', updatePublishReadiness);
+    socialForm.addEventListener('change', updatePublishReadiness);
+    updatePublishReadiness();
     let unsavedChanges = false;
     socialForm.addEventListener('input', function () { unsavedChanges = true; });
     socialForm.addEventListener('change', function () { unsavedChanges = true; });
@@ -125,8 +151,12 @@
         event.preventDefault();
         return;
       }
-      unsavedChanges = false;
       const button = event.submitter;
+      if (button && ['schedule', 'post_now'].includes(button.value) && !updatePublishReadiness()) {
+        event.preventDefault();
+        return;
+      }
+      unsavedChanges = false;
       if (!button || !(button.name === 'selected_idea' || ['ideas', 'draft_ai', 'new_image'].includes(button.value))) return;
       socialForm.dataset.busy = 'true';
       socialForm.setAttribute('aria-busy', 'true');
@@ -135,6 +165,7 @@
       status.classList.remove('hidden');
     });
     window.addEventListener('pageshow', function () {
+      updatePublishReadiness();
       socialForm.dataset.busy = 'false';
       socialForm.removeAttribute('aria-busy');
       document.getElementById('generation-status').classList.add('hidden');
