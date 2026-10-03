@@ -12,10 +12,9 @@ from apps.social.models import ContentPlan, ContentWeek, SocialPost, SocialPubli
 from apps.social.planner import _prepare_weeks, _schedule_ready
 from apps.social.schedule_views import (
     calendar_days,
-    delete_unpublished_post,
     month_start,
 )
-from apps.social.services import EASTERN, publish_due
+from apps.social.services import EASTERN, delete_unpublished_post, publish_due
 from apps.social.tests import META
 from apps.users.models import AuditLog, CustomUser
 

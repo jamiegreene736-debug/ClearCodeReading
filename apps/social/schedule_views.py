@@ -7,19 +7,16 @@ from datetime import date, datetime, time, timedelta
 from typing import TypedDict
 
 from django.contrib import messages
-from django.db import transaction
 from django.http import HttpResponse
 from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse
 from django.utils import timezone
 from django.views.decorators.http import require_http_methods
 
-from apps.blog.models import BlogContentPlan
-from apps.social.access import SocialRequest, can_manage_social, social_editor_required
+from apps.social.access import SocialRequest, social_editor_required
 from apps.social.exceptions import SocialError
-from apps.social.models import ContentPlan, ContentWeek, SocialPost, SocialPublication
-from apps.social.services import EASTERN
-from apps.users.models import AuditLog, CustomUser
+from apps.social.models import ContentWeek, SocialPost
+from apps.social.services import EASTERN, delete_unpublished_post
 
 
 class CalendarDay(TypedDict):
@@ -27,48 +24,6 @@ class CalendarDay(TypedDict):
     in_month: bool
     today: bool
     posts: list[SocialPost]
-
-
-def delete_unpublished_post(pk: int, *, actor: CustomUser) -> None:
-    if not can_manage_social(actor):
-        raise SocialError("Only a super administrator can delete social posts.")
-    with transaction.atomic():
-        # Match the publisher's lock order, then retire the AI slot before removing its post.
-        ContentPlan.objects.select_for_update().filter(pk=1).first()
-        BlogContentPlan.objects.select_for_update().filter(pk=1).first()
-        weeks = list(ContentWeek.objects.select_for_update().filter(post_id=pk))
-        post = SocialPost.objects.select_for_update().filter(pk=pk).first()
-        if post is None:
-            raise SocialError("This post has already been deleted.")
-        if (
-            post.status not in {SocialPost.Status.DRAFT, SocialPost.Status.SCHEDULED}
-            or post.publications.filter(
-                status=SocialPublication.Status.PUBLISHED
-            ).exists()
-        ):
-            raise SocialError(
-                "Only unpublished drafts and scheduled posts can be deleted. A post already sending or posted cannot be removed here."
-            )
-        for week in weeks:
-            week.status, week.auto_scheduled = ContentWeek.Status.SKIPPED, False
-            week.content = {"title": "Deleted post"}
-            week.save(
-                update_fields=["status", "auto_scheduled", "content", "updated_at"]
-            )
-        AuditLog.objects.create(
-            actor=actor,
-            action="marketing.social.deleted",
-            entity_type="SocialPost",
-            entity_id=str(pk),
-            before={
-                "status": post.status,
-                "scheduled_at": post.scheduled_at.isoformat()
-                if post.scheduled_at
-                else None,
-                "blog_post_id": post.blog_post_id,
-            },
-        )
-        post.delete()
 
 
 def month_start(value: str, today: date) -> date:

@@ -448,3 +448,48 @@ def claim_and_publish_now(post: SocialPost, *, actor: CustomUser, request) -> So
 def token_for_tests(account: SocialAccount) -> str:
     """Used by tests to confirm a token round-trips. Not for views."""
     return decrypt_text(account.encrypted_token)
+
+
+def delete_unpublished_post(pk: int, *, actor: CustomUser) -> None:
+    from apps.blog.models import BlogContentPlan
+    from apps.social.access import can_manage_social
+
+    if not can_manage_social(actor):
+        raise SocialError("Only a super administrator can delete social posts.")
+    with transaction.atomic():
+        # Match the publisher's lock order, then retire the AI slot before removing its post.
+        ContentPlan.objects.select_for_update().filter(pk=1).first()
+        BlogContentPlan.objects.select_for_update().filter(pk=1).first()
+        weeks = list(ContentWeek.objects.select_for_update().filter(post_id=pk))
+        post = SocialPost.objects.select_for_update().filter(pk=pk).first()
+        if post is None:
+            raise SocialError("This post has already been deleted.")
+        if (
+            post.status not in {SocialPost.Status.DRAFT, SocialPost.Status.SCHEDULED}
+            or post.publications.filter(
+                status=SocialPublication.Status.PUBLISHED
+            ).exists()
+        ):
+            raise SocialError(
+                "Only unpublished drafts and scheduled posts can be deleted. A post already sending or posted cannot be removed here."
+            )
+        for week in weeks:
+            week.status, week.auto_scheduled = ContentWeek.Status.SKIPPED, False
+            week.content = {"title": "Deleted post"}
+            week.save(
+                update_fields=["status", "auto_scheduled", "content", "updated_at"]
+            )
+        AuditLog.objects.create(
+            actor=actor,
+            action="marketing.social.deleted",
+            entity_type="SocialPost",
+            entity_id=str(pk),
+            before={
+                "status": post.status,
+                "scheduled_at": post.scheduled_at.isoformat()
+                if post.scheduled_at
+                else None,
+                "blog_post_id": post.blog_post_id,
+            },
+        )
+        post.delete()
