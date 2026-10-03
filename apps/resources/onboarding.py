@@ -57,6 +57,12 @@ def setup_staff(request: HttpRequest, token: str) -> HttpResponse:
             expires_at__gt=timezone.now(),
         )
         form = StaffSetupForm(request.POST or None)
+        if request.method == "POST":
+            from apps.core.bot_protection import redirect_if_blocked
+
+            blocked = redirect_if_blocked(request, "staff-setup", request.path)
+            if blocked is not None:
+                return blocked
         if request.method == "POST" and form.is_valid():
             user = form.save(commit=False)
             user.username = f"resource-{uuid4().hex[:20]}"

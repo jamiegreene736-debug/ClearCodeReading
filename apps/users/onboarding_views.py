@@ -194,6 +194,14 @@ class AcceptInvitationView(PasswordResetConfirmView):
             return user
         return None
 
+    def post(self, request: HttpRequest, *args: object, **kwargs: object) -> HttpResponse:
+        from apps.core.bot_protection import redirect_if_blocked
+
+        blocked = redirect_if_blocked(request, "invitation", request.path)
+        if blocked is not None:
+            return blocked
+        return super().post(request, *args, **kwargs)
+
     def form_valid(self, form: SetPasswordForm[AbstractBaseUser]) -> HttpResponse:
         with transaction.atomic():
             invitation = (

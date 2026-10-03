@@ -56,7 +56,7 @@ SHARED_APPS = [
     "guardian",
     "corsheaders",
     "drf_spectacular",
-    "apps.core",
+    "apps.core.apps.CoreConfig",
     "apps.blog.apps.BlogConfig",
     "apps.social.apps.SocialConfig",
     "apps.resources.apps.ResourcesConfig",

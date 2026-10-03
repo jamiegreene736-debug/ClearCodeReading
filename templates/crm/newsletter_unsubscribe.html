@@ -16,7 +16,9 @@
       {% else %}
         <h1 class="mt-4 text-4xl font-black">Unsubscribe from the newsletter?</h1>
         <p class="mt-5 text-lg leading-8 text-ink/70">This will stop newsletter emails to {{ subscription.email }}.</p>
+        {% if bot_message %}<p class="mt-5 text-lg font-bold leading-8 text-deepTeal" role="alert">{{ bot_message }}</p>{% endif %}
         <form method="post" class="mt-8">
+          {% load bot_protection %}{% csrf_token %}{% bot_fields "unsubscribe" %}
           <button class="focus-ring rounded-full bg-deepTeal px-7 py-4 font-black text-white" type="submit">Confirm unsubscribe</button>
         </form>
       {% endif %}

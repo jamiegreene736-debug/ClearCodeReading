@@ -76,6 +76,7 @@
       </div>
 
       <form id="support-form" class="scroll-mt-28 rounded-[2rem] bg-white p-6 shadow-2xl shadow-deepTeal/10 ring-1 ring-deepTeal/10 sm:p-9" method="post" action="/crm/signup/">
+        {% load bot_protection %}{% bot_fields "signup" %}
         {% csrf_token %}
         <input type="hidden" name="redirect_to" value="/support/">
         <input type="hidden" name="organization_name" value="ClearCode support">

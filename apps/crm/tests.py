@@ -248,8 +248,12 @@ class NewsletterUnsubscribeTests(TestCase):
         self.assertEqual(response.status_code, 200)
         self.assertEqual(self.subscription.status, NewsletterSubscription.Status.ACTIVE)
 
+        from apps.core.bot_protection import issue_human_token
+
         response = NewsletterUnsubscribeView.as_view()(
-            RequestFactory().post(self.url),
+            RequestFactory().post(
+                self.url, {"human_check": issue_human_token("unsubscribe")}
+            ),
             token=self.token,
         )
         self.subscription.refresh_from_db()

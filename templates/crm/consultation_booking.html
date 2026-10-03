@@ -13,7 +13,7 @@
 <p>Choose a 15-minute time for a free phone consultation about your child’s reading. Times are shown in Eastern Time; tell us your time zone and we’ll confirm the appointment in it.</p>
 {% if error %}<p class="notice" role="alert">{{ error }}</p>{% endif %}
 {% if slots %}
-<form method="post">{% csrf_token %}
+<form method="post">{% load bot_protection %}{% csrf_token %}{% bot_human_field "consultation" %}
 {% for field in form.visible_fields %}
 {% if field.name == "slot" %}
 <fieldset class="question"><legend>{{ field.label }}</legend>{{ field.errors }}

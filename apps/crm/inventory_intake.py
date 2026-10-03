@@ -16,6 +16,7 @@ from django.utils.decorators import method_decorator
 from django.views import View
 from django.views.decorators.cache import never_cache
 
+from apps.core.bot_protection import HUMAN_MESSAGE, human_check_ok
 from apps.crm.consultation_booking import client_key
 from apps.crm.inventory import GRADES, log_activity, token_for
 from apps.crm.inventory_models import (
@@ -106,6 +107,8 @@ class InventoryIntakeView(View):
             return HttpResponse(
                 "Too many attempts. Please try again in an hour.", status=429
             )
+        if not human_check_ok(request, "inventory-intake"):
+            return HttpResponse(HUMAN_MESSAGE, status=400)
         form = InventoryIntakeForm(request.POST)
         if not form.is_valid():
             return render(request, "crm/inventory_intake.html", {"form": form})

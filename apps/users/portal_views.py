@@ -133,6 +133,14 @@ class PortalLoginView(LoginView):
         context["demo_access_enabled"] = settings.ENABLE_DEMO_ACCESS
         return context
 
+    def post(self, request, *args, **kwargs):
+        from apps.core.bot_protection import redirect_if_blocked
+
+        blocked = redirect_if_blocked(request, "login", "login")
+        if blocked is not None:
+            return blocked
+        return super().post(request, *args, **kwargs)
+
     def form_valid(self, form):
         from apps.users.onboarding_views import needs_gmail_welcome
 
@@ -147,6 +155,11 @@ class PortalLoginView(LoginView):
 
 class DemoLoginView(View):
     def post(self, request: HttpRequest, role: str) -> HttpResponse:
+        from apps.core.bot_protection import redirect_if_blocked
+
+        blocked = redirect_if_blocked(request, "demo-login", "login")
+        if blocked is not None:
+            return blocked
         if not settings.ENABLE_DEMO_ACCESS:
             raise Http404
         email = DEMO_LOGINS.get(role)

@@ -8,16 +8,24 @@ from apps.resources.access import public_site
 from apps.resources.onboarding import setup_staff
 
 app_name = "resources"
+class StaffLoginView(LoginView):
+    template_name = "resources/signin.html"
+    next_page = reverse_lazy("resources:manager")
+
+    def post(self, request, *args, **kwargs):
+        from apps.core.bot_protection import redirect_if_blocked
+
+        blocked = redirect_if_blocked(request, "staff-login", request.path)
+        if blocked is not None:
+            return blocked
+        return super().post(request, *args, **kwargs)
+
+
 urlpatterns = [
     path("staff-setup/<str:token>/", setup_staff, name="setup_staff"),
     path(
         "staff-sign-in/",
-        public_site(
-            LoginView.as_view(
-                template_name="resources/signin.html",
-                next_page=reverse_lazy("resources:manager"),
-            )
-        ),
+        public_site(StaffLoginView.as_view()),
         name="sign_in",
     ),
     path("manage/", views.manager, name="manager"),

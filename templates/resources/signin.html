@@ -6,7 +6,7 @@
         <h1 class="rm-title">Staff sign-in</h1>
         <p class="rm-muted">Sign in with your staff account to manage resources. Public demo sessions cannot access this workspace.</p>
         <form method="post">
-            {% csrf_token %}
+            {% load bot_protection %}{% csrf_token %}{% bot_fields "staff-login" %}
             {{ form.non_field_errors }}
             {% for field in form %}<div class="rm-field">{{ field.label_tag }}{{ field }}{{ field.errors }}</div>{% endfor %}
             <input type="hidden" name="next" value="{{ next }}">
