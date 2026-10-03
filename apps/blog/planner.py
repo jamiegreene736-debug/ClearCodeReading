@@ -340,7 +340,7 @@ def _generate_week(plan: ContentPlan, week: ContentWeek) -> None:
             cover_data=raw or None,
             cover_content_type=content_type,
             cover_image_alt=str(week.content["cover_alt"]) if raw else "",
-            author=current.updated_by,
+            author=None,
         )
         if week.context.get("promote_facebook"):
             SocialPost.objects.create(

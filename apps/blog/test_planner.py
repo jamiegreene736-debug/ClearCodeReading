@@ -127,6 +127,7 @@ class BlogPlannerTests(TestCase):
         week = self.ready_week()
         self.assertEqual(BlogContentWeek.objects.count(), 4)
         self.assertTrue(week.post.has_cover)
+        self.assertEqual(week.post.display_author, "ClearCode Reading")
         self.assertEqual(week.post.status, "draft")
         promotion = week.post.facebook_promotion
         self.assertEqual(promotion.source, "blog")
