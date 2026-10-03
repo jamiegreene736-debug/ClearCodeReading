@@ -55,3 +55,12 @@ listing (app ID `6806810085`); no automatic redirects or JavaScript are needed.
 [official English badge](https://developer.apple.com/assets/elements/badges/download-on-the-app-store.svg).
 Keep its proportions and 40px height, with clear space as described in
 [Apple's badge guidelines](https://developer.apple.com/app-store/marketing/guidelines/).
+
+## Generated blog and social images
+
+Blog covers and Facebook/Instagram images use lifelike, photorealistic photography
+with cheerful warmth, natural daylight, realistic textures, and inviting compositions.
+Do not use cartoons, flat illustrations, vector art, or artificial-looking renders.
+Brand colors are subtle accents in physical objects, not flat background requirements.
+Keep images objects-only and free of text, letters, and logos. This style also applies
+when regenerating an image from an older illustration brief.
