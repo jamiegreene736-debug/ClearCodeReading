@@ -129,7 +129,12 @@ class SocialNavigationTests(TestCase):
         self.assertContains(response, "Back to AI content plan")
         response = self.client.post(
             edit,
-            {"mode": "manual", "caption": "Keep this", "action": "schedule"},
+            {
+                "mode": "manual",
+                "caption": "Keep this",
+                "action": "schedule",
+                "post_to_facebook": "on",
+            },
             follow=True,
         )
         self.assertContains(response, f'href="{edit}"')

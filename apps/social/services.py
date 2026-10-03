@@ -72,19 +72,23 @@ def store_image(post: SocialPost, upload) -> None:
     post.image_name = (getattr(upload, "name", "") or "photo")[:200]
 
 
+def require_post_content(post: SocialPost) -> None:
+    if not post.selected_networks():
+        raise SocialError("Choose Facebook, Instagram, or both.")
+    if post.post_to_facebook and not post.facebook_caption.strip():
+        raise SocialError("Write the Facebook caption before scheduling or posting.")
+    if post.post_to_instagram and not post.instagram_caption.strip():
+        raise SocialError("Write the Instagram caption before scheduling or posting.")
+    if post.post_to_instagram and not post.has_image:
+        raise SocialError("Instagram needs a photo.")
+
+
 def _require_publishable(post: SocialPost) -> None:
     if post.is_blog_promotion:
         from apps.blog.promotion import validate_promotion
         validate_promotion(post)
+    require_post_content(post)
     networks = post.selected_networks()
-    if not networks:
-        raise SocialError("Choose Facebook, Instagram, or both.")
-    if post.post_to_facebook and not post.facebook_caption.strip():
-        raise SocialError("Write the Facebook caption before scheduling.")
-    if post.post_to_instagram and not post.instagram_caption.strip():
-        raise SocialError("Write the Instagram caption before scheduling.")
-    if post.post_to_instagram and not post.has_image:
-        raise SocialError("Instagram needs a photo.")
     for network in networks:
         if connected_account(network) is None:
             label = "Facebook" if network == SocialAccount.Network.FACEBOOK else "Instagram"
