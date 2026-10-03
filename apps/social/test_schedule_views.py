@@ -339,7 +339,10 @@ class ScheduleViewsTests(TestCase):
             },
         )
         post = SocialPost.objects.get()
-        self.assertRedirects(response, reverse("social:schedule", args=[post.pk]))
+        self.assertRedirects(
+            response,
+            reverse("social:schedule", args=[post.pk]) + "?return_to=drafts&via=edit",
+        )
         response = self.client.post(
             reverse("social:new"), {"mode": "brief", "action": "save"}
         )

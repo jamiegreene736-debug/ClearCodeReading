@@ -10,9 +10,13 @@ os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'clearcodereading.settings')
 import django
 django.setup()
 from django.template.loader import render_to_string
+from django.test import RequestFactory
+from django.urls import resolve
+request = RequestFactory().get("/portal/marketing/posts/123/")
+request.resolver_match = resolve(request.path)
 from apps.social.models import SocialPost
 post = SocialPost(pk=123, source='${mode}', facebook_caption='Saved Facebook caption', instagram_caption='Saved Instagram caption', image_data=${image ? "b'image'" : 'None'})
-print(render_to_string('social/post_form.html', {'post': post, 'mode': '${mode}', 'accounts': {}, 'ai_ready': False}))
+print(render_to_string('social/post_form.html', {'request': request, 'post': post, 'mode': '${mode}', 'accounts': {}, 'ai_ready': False}))
 `], { encoding: 'utf8' });
 const png = Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+aX1kAAAAASUVORK5CYII=', 'base64');
 const html = { manual: render('manual'), brief: render('brief'), saved: render('manual', true) };

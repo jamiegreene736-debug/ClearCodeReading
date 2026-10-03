@@ -1,6 +1,9 @@
 {% extends "portal/page.html" %}
 {% block title %}Schedule{% endblock %}
 {% block content %}
+{% load social_navigation %}
+{% social_navigation post as nav %}
+{% include "social/_navigation.html" %}
 <div class="pb-10" data-testid="social-schedule">
   <p class="text-xs font-black uppercase tracking-[0.16em] text-deepTeal">Marketing · Social media · Scheduled</p>
   <h1 class="mt-1 text-4xl font-black tracking-tight text-ink">{% if changing %}Change the date{% else %}Schedule{% endif %}</h1>
@@ -9,9 +12,9 @@
     {% csrf_token %}
     <section class="rounded-[1.75rem] bg-white p-5 ring-1 ring-ink/10">
       <div class="flex items-center justify-between gap-3">
-        <a data-calendar-navigation href="?month={{ previous }}&amp;date={{ selected_date }}&amp;time={{ selected_time }}" aria-label="Previous month" class="focus-ring rounded-full bg-linen px-4 py-2 text-xl font-black text-deepTeal">←</a>
+        <a data-calendar-navigation href="?return_to={{ nav.origin }}&amp;via={{ nav.via }}&amp;month={{ previous }}&amp;date={{ selected_date }}&amp;time={{ selected_time }}" aria-label="Previous month" class="focus-ring rounded-full bg-linen px-4 py-2 text-xl font-black text-deepTeal">←</a>
         <h2 class="font-black">{{ focus|date:"F Y" }}</h2>
-        <a data-calendar-navigation href="?month={{ following }}&amp;date={{ selected_date }}&amp;time={{ selected_time }}" aria-label="Next month" class="focus-ring rounded-full bg-linen px-4 py-2 text-xl font-black text-deepTeal">→</a>
+        <a data-calendar-navigation href="?return_to={{ nav.origin }}&amp;via={{ nav.via }}&amp;month={{ following }}&amp;date={{ selected_date }}&amp;time={{ selected_time }}" aria-label="Next month" class="focus-ring rounded-full bg-linen px-4 py-2 text-xl font-black text-deepTeal">→</a>
       </div>
       <p class="mt-2 text-sm font-bold">Selected date: {{ selected_date }}</p>
       <div class="mt-3 grid grid-cols-7 gap-1 text-center text-xs font-black text-ink/50">
@@ -19,7 +22,7 @@
         {% for week in weeks %}
           {% for day in week %}
             {% if day.in_month %}
-              <a data-calendar-navigation href="?date={{ day.day|date:'Y-m-d' }}&amp;time={{ selected_time }}" class="grid h-10 place-items-center rounded-xl font-black {% if day.is_selected %}bg-deepTeal text-white{% elif day.is_current %}bg-gold/30 text-ink{% else %}bg-linen text-ink{% endif %}">{{ day.day|date:"j" }}</a>
+              <a data-calendar-navigation href="?return_to={{ nav.origin }}&amp;via={{ nav.via }}&amp;date={{ day.day|date:'Y-m-d' }}&amp;time={{ selected_time }}" class="grid h-10 place-items-center rounded-xl font-black {% if day.is_selected %}bg-deepTeal text-white{% elif day.is_current %}bg-gold/30 text-ink{% else %}bg-linen text-ink{% endif %}">{{ day.day|date:"j" }}</a>
             {% else %}
               <span></span>
             {% endif %}
@@ -32,7 +35,7 @@
       <input id="time" name="time" type="time" value="{{ selected_time }}" class="mt-2 w-full rounded-full border border-ink/15 px-4 py-3">
       <div class="mt-3 flex flex-wrap gap-2">
         {% for label, moment in quick %}
-          <a href="?date={{ moment|date:'Y-m-d' }}&amp;time={{ moment|time:'H:i' }}" class="rounded-full bg-linen px-3 py-2 text-sm font-black">{{ label }}</a>
+          <a href="?return_to={{ nav.origin }}&amp;via={{ nav.via }}&amp;date={{ moment|date:'Y-m-d' }}&amp;time={{ moment|time:'H:i' }}" class="rounded-full bg-linen px-3 py-2 text-sm font-black">{{ label }}</a>
         {% endfor %}
       </div>
     </section>
@@ -44,7 +47,7 @@
       <h2 class="mt-3 text-2xl font-black">New time</h2>
       <p class="mt-2 text-ink/70">The caption and photo stay the same. Only the send time changes.</p>
       <button class="mt-6 rounded-full bg-deepTeal px-5 py-3 font-black text-white" type="submit">Save this time</button>
-      <a href="{% url 'social:queue' %}?tab=scheduled" class="ml-2 inline-flex rounded-full px-4 py-3 font-black text-deepTeal">Back to scheduled</a>
+      <a href="{{ nav.back_url }}" class="ml-2 inline-flex rounded-full px-4 py-3 font-black text-deepTeal">Back to {{ nav.back_label }}</a>
       <p class="mt-4 text-sm font-bold text-ink/55">A time in the past is rejected. Once sending starts, the date can no longer change.</p>
     </section>
   </form>

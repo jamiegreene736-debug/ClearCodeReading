@@ -1,6 +1,8 @@
 {% extends "portal/page.html" %}
 {% block title %}Social media{% endblock %}
 {% block content %}
+{% load social_navigation %}
+{% social_navigation post as nav %}
 <div class="pb-8" data-testid="social-queue">
   <div class="flex flex-col gap-5 sm:flex-row sm:items-end sm:justify-between">
     <div>
@@ -13,22 +15,22 @@
         {% else %}Posts waiting to go out. Times are Eastern. Change the date or cancel any of them until the minute it sends.{% endif %}
       </p>
     </div>
-    <div class="flex flex-wrap gap-2"><a href="{% url 'blog_manage:planner' %}" class="focus-ring rounded-full bg-white px-5 py-3 font-black text-deepTeal ring-1 ring-deepTeal/20">AI blog plan</a><a href="{% url 'social:planner' %}" class="focus-ring inline-flex items-center rounded-full bg-white px-6 py-3 font-black text-deepTeal ring-1 ring-deepTeal/20">AI content plan</a>
-    <a href="{% url 'social:new' %}" class="focus-ring inline-flex shrink-0 items-center justify-center rounded-full bg-deepTeal px-6 py-3 font-black text-white shadow-lg shadow-deepTeal/25">New post</a></div>
+    <div class="flex flex-wrap gap-2"><a href="{% url 'blog_manage:planner' %}" class="focus-ring rounded-full bg-white px-5 py-3 font-black text-deepTeal ring-1 ring-deepTeal/20">AI blog plan</a><a href="{% url 'social:planner' %}?return_to={{ nav.origin }}" class="focus-ring inline-flex items-center rounded-full bg-white px-6 py-3 font-black text-deepTeal ring-1 ring-deepTeal/20">AI content plan</a>
+    <a href="{% url 'social:new' %}?return_to={{ nav.origin }}" class="focus-ring inline-flex shrink-0 items-center justify-center rounded-full bg-deepTeal px-6 py-3 font-black text-white shadow-lg shadow-deepTeal/25">New post</a></div>
   </div>
 
   <div class="mt-6 grid gap-3 sm:grid-cols-2">
-    <a href="{% url 'social:settings' %}" class="rounded-3xl bg-white px-4 py-3 ring-1 ring-ink/10">
+    <a href="{% url 'social:settings' %}?return_to={{ nav.origin }}" class="rounded-3xl bg-white px-4 py-3 ring-1 ring-ink/10">
       <span class="block text-sm font-black">Facebook</span>
       <span class="text-sm text-ink/60">{% if accounts.facebook.is_connected %}{{ accounts.facebook.display_name }} · Connected{% else %}Not connected · open Settings{% endif %}</span>
     </a>
-    <a href="{% url 'social:settings' %}" class="rounded-3xl bg-white px-4 py-3 ring-1 ring-ink/10">
+    <a href="{% url 'social:settings' %}?return_to={{ nav.origin }}" class="rounded-3xl bg-white px-4 py-3 ring-1 ring-ink/10">
       <span class="block text-sm font-black">Instagram</span>
       <span class="text-sm text-ink/60">{% if accounts.instagram.is_connected %}{{ accounts.instagram.display_name }} · Connected{% else %}Not connected · open Settings{% endif %}</span>
     </a>
   </div>
 
-  <div class="mt-5"><a href="{% url 'social:calendar' %}" class="focus-ring inline-flex rounded-full bg-white px-5 py-3 font-black text-deepTeal ring-1 ring-deepTeal/20">Calendar view</a></div>
+  <div class="mt-5"><a href="{% url 'social:calendar' %}?return_to={{ nav.origin }}" class="focus-ring inline-flex rounded-full bg-white px-5 py-3 font-black text-deepTeal ring-1 ring-deepTeal/20">Calendar view</a></div>
   <nav class="mt-6 flex flex-wrap gap-2" aria-label="Post lists">
     {% for key, label in tabs %}
       <a href="?tab={{ key }}" data-testid="social-tab-{{ key }}" {% if tab == key %}aria-current="page"{% endif %} class="focus-ring inline-flex items-center gap-2 rounded-full px-4 py-2 text-sm font-black ring-1 {% if tab == key %}bg-ink text-white ring-ink{% else %}bg-white text-ink/70 ring-ink/10{% endif %}">
@@ -56,20 +58,20 @@
             {% if post.last_error %}<p class="mt-1 text-sm font-bold text-amber-800">{{ post.last_error }}</p>{% endif %}
           </div>
           <div class="flex flex-wrap gap-2">
-            {% if post.status == 'draft' or post.status == 'scheduled' %}<a href="{% url 'social:delete' post.pk %}" class="focus-ring inline-flex items-center rounded-full bg-white px-4 py-2 text-sm font-black text-red-700 ring-1 ring-red-200">Delete</a>{% endif %}
+            {% if post.status == 'draft' or post.status == 'scheduled' %}<a href="{% url 'social:delete' post.pk %}?return_to={{ nav.origin }}" class="focus-ring inline-flex items-center rounded-full bg-white px-4 py-2 text-sm font-black text-red-700 ring-1 ring-red-200">Delete</a>{% endif %}
             {% if tab == "scheduled" %}
-              <a href="{% url 'social:schedule' post.pk %}" class="focus-ring inline-flex items-center rounded-full bg-white px-4 py-2 text-sm font-black text-deepTeal ring-1 ring-deepTeal/20">Change date</a>
-              <a href="{% url 'social:cancel' post.pk %}" class="focus-ring inline-flex items-center rounded-full bg-white px-4 py-2 text-sm font-black text-red-700 ring-1 ring-red-200">Cancel</a>
+              <a href="{% url 'social:schedule' post.pk %}?return_to={{ nav.origin }}" class="focus-ring inline-flex items-center rounded-full bg-white px-4 py-2 text-sm font-black text-deepTeal ring-1 ring-deepTeal/20">Change date</a>
+              <a href="{% url 'social:cancel' post.pk %}?return_to={{ nav.origin }}" class="focus-ring inline-flex items-center rounded-full bg-white px-4 py-2 text-sm font-black text-red-700 ring-1 ring-red-200">Cancel</a>
             {% elif tab == "posted" %}
               {% for publication in post.publications.all %}
                 {% if publication.permalink %}<a href="{{ publication.permalink }}" target="_blank" rel="noopener" class="focus-ring inline-flex items-center rounded-full bg-white px-4 py-2 text-sm font-black text-deepTeal ring-1 ring-deepTeal/20">View on {{ publication.get_network_display }}</a>{% endif %}
               {% endfor %}
             {% elif tab == "attention" %}
-              <a href="{% url 'social:edit' post.pk %}" class="focus-ring inline-flex items-center rounded-full bg-white px-4 py-2 text-sm font-black text-deepTeal ring-1 ring-deepTeal/20">Edit</a>
+              <a href="{% url 'social:edit' post.pk %}?return_to={{ nav.origin }}" class="focus-ring inline-flex items-center rounded-full bg-white px-4 py-2 text-sm font-black text-deepTeal ring-1 ring-deepTeal/20">Edit</a>
               <form method="post" action="{% url 'social:retry' post.pk %}">{% csrf_token %}<button class="focus-ring inline-flex items-center rounded-full bg-deepTeal px-4 py-2 text-sm font-black text-white" type="submit">Retry</button></form>
             {% else %}
-              <a href="{% url 'social:edit' post.pk %}" class="focus-ring inline-flex items-center rounded-full bg-white px-4 py-2 text-sm font-black text-deepTeal ring-1 ring-deepTeal/20">Edit</a>
-              <a href="{% url 'social:schedule' post.pk %}" class="focus-ring inline-flex items-center rounded-full bg-deepTeal px-4 py-2 text-sm font-black text-white">Schedule</a>
+              <a href="{% url 'social:edit' post.pk %}?return_to={{ nav.origin }}" class="focus-ring inline-flex items-center rounded-full bg-white px-4 py-2 text-sm font-black text-deepTeal ring-1 ring-deepTeal/20">Edit</a>
+              <a href="{% url 'social:schedule' post.pk %}?return_to={{ nav.origin }}" class="focus-ring inline-flex items-center rounded-full bg-deepTeal px-4 py-2 text-sm font-black text-white">Schedule</a>
             {% endif %}
           </div>
         </li>

@@ -8,13 +8,17 @@ function composer(mode, ready = false) {
 import django, sys
 django.setup()
 from django.template.loader import render_to_string
+from django.test import RequestFactory
+from django.urls import resolve, reverse
+request = RequestFactory().get(reverse('social:new'))
+request.resolver_match = resolve(request.path)
 from apps.social.models import SocialPost
 post = SocialPost()
 if sys.argv[2] == 'ready':
     post.facebook_caption = 'Reviewed Facebook caption'
     post.instagram_caption = 'Reviewed Instagram caption'
     post.image_data = b'image'
-print(render_to_string('social/post_form.html', {'post': post, 'mode': sys.argv[1], 'accounts': {}}))
+print(render_to_string('social/post_form.html', {'request': request, 'post': post, 'mode': sys.argv[1], 'accounts': {}}))
 `, mode, ready ? 'ready' : 'empty'], {
     env: { ...process.env, DJANGO_SETTINGS_MODULE: 'clearcodereading.settings' },
     encoding: 'utf8',
@@ -72,10 +76,14 @@ import django
 django.setup()
 from datetime import date
 from django.template.loader import render_to_string
+from django.test import RequestFactory
+from django.urls import resolve, reverse
+request = RequestFactory().get(reverse('social:new'))
+request.resolver_match = resolve(request.path)
 from apps.social.models import SocialPost
 from apps.social.views import _month
 print(render_to_string('social/schedule.html', {
-    'post': SocialPost(pk=1), 'focus': date(2026, 12, 1),
+    'request': request, 'post': SocialPost(pk=1), 'focus': date(2026, 12, 1),
     'selected_date': '2026-12-31', 'selected_time': '09:00',
     'previous': '2026-11', 'following': '2027-01',
     'weeks': _month(date(2026, 12, 1), None, date(2026, 12, 31)),

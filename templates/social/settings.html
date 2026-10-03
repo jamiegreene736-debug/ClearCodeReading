@@ -1,6 +1,9 @@
 {% extends "portal/page.html" %}
 {% block title %}Marketing settings{% endblock %}
 {% block content %}
+{% load social_navigation %}
+{% social_navigation post as nav %}
+{% include "social/_navigation.html" %}
 <div class="pb-10" data-testid="social-settings">
   <p class="text-xs font-black uppercase tracking-[0.16em] text-deepTeal">Marketing</p>
   <h1 class="mt-1 text-4xl font-black tracking-tight text-ink">Settings</h1>

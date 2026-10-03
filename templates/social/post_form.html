@@ -4,13 +4,16 @@
 {% block content %}
 <link rel="stylesheet" href="{% static 'social/preview.css' %}">
 <script src="{% static 'social/preview.js' %}" defer></script>
+{% load social_navigation %}
+{% social_navigation post as nav %}
+{% include "social/_navigation.html" %}
 <div class="pb-10" data-testid="social-composer">
   <p class="text-xs font-black uppercase tracking-[0.16em] text-deepTeal">Marketing · Social media</p>
   <h1 class="mt-1 text-4xl font-black tracking-tight text-ink">{% if post.pk %}Edit post{% else %}New post{% endif %}</h1>
-  {% if post.pk and post.status == 'draft' or post.pk and post.status == 'scheduled' %}<a href="{% url 'social:delete' post.pk %}" class="focus-ring mt-3 inline-flex rounded-full bg-white px-4 py-2 text-sm font-black text-red-700 ring-1 ring-red-200">Delete post</a>{% endif %}
+  {% if post.pk and post.status == 'draft' or post.pk and post.status == 'scheduled' %}<a href="{% url 'social:delete' post.pk %}?return_to={{ nav.origin }}&amp;via=edit" class="focus-ring mt-3 inline-flex rounded-full bg-white px-4 py-2 text-sm font-black text-red-700 ring-1 ring-red-200">Delete post</a>{% endif %}
   <div class="mt-4 inline-flex rounded-full bg-white p-1 ring-1 ring-ink/10">
-    <a href="{% if post.pk %}{% url 'social:edit' post.pk %}?mode=brief{% else %}{% url 'social:new' %}?mode=brief{% endif %}" class="rounded-full px-4 py-2 text-sm font-black {% if mode == 'brief' %}bg-ink text-white{% else %}text-ink/60{% endif %}">From a brief</a>
-    <a href="{% if post.pk %}{% url 'social:edit' post.pk %}?mode=manual{% else %}{% url 'social:new' %}?mode=manual{% endif %}" class="rounded-full px-4 py-2 text-sm font-black {% if mode != 'brief' %}bg-ink text-white{% else %}text-ink/60{% endif %}">Write it yourself</a>
+    <a href="{% if post.pk %}{% url 'social:edit' post.pk %}?mode=brief&amp;return_to={{ nav.origin }}{% else %}{% url 'social:new' %}?mode=brief&amp;return_to={{ nav.origin }}{% endif %}" class="rounded-full px-4 py-2 text-sm font-black {% if mode == 'brief' %}bg-ink text-white{% else %}text-ink/60{% endif %}">From a brief</a>
+    <a href="{% if post.pk %}{% url 'social:edit' post.pk %}?mode=manual&amp;return_to={{ nav.origin }}{% else %}{% url 'social:new' %}?mode=manual&amp;return_to={{ nav.origin }}{% endif %}" class="rounded-full px-4 py-2 text-sm font-black {% if mode != 'brief' %}bg-ink text-white{% else %}text-ink/60{% endif %}">Write it yourself</a>
   </div>
 
   <form method="post" enctype="multipart/form-data" class="mt-6 grid gap-4 lg:grid-cols-2" id="social-post-form" data-has-image="{{ post.has_image|yesno:'true,false' }}">
@@ -80,6 +83,7 @@
           <button name="action" value="new_image" class="rounded-full bg-white px-4 py-2 font-black text-deepTeal ring-1 ring-deepTeal/20" type="submit">Generate image</button>
         {% endif %}
         <button name="action" value="save" class="rounded-full bg-white px-4 py-2 font-black text-deepTeal ring-1 ring-deepTeal/20" type="submit">Save draft</button>
+        <button name="action" value="save_return" class="focus-ring rounded-full bg-white px-4 py-2 font-black text-deepTeal ring-1 ring-deepTeal/20" type="submit">Save and back to {{ nav.label }}</button>
       </div>
       {% if mode == "brief" %}
         <p class="mt-3 text-sm font-bold text-ink/60">Draft captions formats your words. Draft with AI writes new captions using the brand guidelines. Review the wording and image before publishing.{% if not ai_ready %} Add SOCIAL_OPENAI_API_KEY before Draft with AI can run.{% endif %}</p>
@@ -134,6 +138,14 @@
     socialForm.addEventListener('input', updatePublishReadiness);
     socialForm.addEventListener('change', updatePublishReadiness);
     updatePublishReadiness();
+    let unsavedChanges = false;
+    socialForm.addEventListener('input', function () { unsavedChanges = true; });
+    socialForm.addEventListener('change', function () { unsavedChanges = true; });
+    window.addEventListener('beforeunload', function (event) {
+      if (!unsavedChanges) return;
+      event.preventDefault();
+      event.returnValue = '';
+    });
     socialForm.addEventListener('submit', function (event) {
       if (socialForm.dataset.busy === 'true') {
         event.preventDefault();
@@ -144,6 +156,7 @@
         event.preventDefault();
         return;
       }
+      unsavedChanges = false;
       if (!button || !(button.name === 'selected_idea' || ['ideas', 'draft_ai', 'new_image'].includes(button.value))) return;
       socialForm.dataset.busy = 'true';
       socialForm.setAttribute('aria-busy', 'true');
