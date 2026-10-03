@@ -1,7 +1,7 @@
 from datetime import datetime, timedelta
 from unittest.mock import patch
 
-from django.test import TestCase, override_settings
+from django.test import SimpleTestCase, TestCase, override_settings
 from django.urls import reverse
 from django.utils import timezone
 
@@ -384,3 +384,34 @@ class ContentPlannerTests(TestCase):
         payload = post.call_args.args[1]
         self.assertFalse(payload["store"])
         self.assertTrue(payload["text"]["format"]["strict"])
+
+
+class ImageStyleTests(SimpleTestCase):
+    def test_blog_and_social_writers_and_reviewers_require_photography(self):
+        from apps.blog import planner_ai as blog_ai
+        from apps.blog.test_planner import CONTENT as ARTICLE
+        from apps.social import planner_ai as social_ai
+
+        for module, writer, reviewer, candidate in (
+            (social_ai, social_ai.generate_content, social_ai.review_content, CONTENT),
+            (blog_ai, blog_ai.generate_article, blog_ai.review_article, ARTICLE),
+        ):
+            with self.subTest(module=module.__name__):
+                with patch.object(
+                    module, "structured", return_value=candidate
+                ) as request:
+                    writer({})
+                    prompt = request.call_args.args[0]
+                    self.assertIn("photorealistic", prompt)
+                    self.assertIn("cheerful", prompt)
+                    self.assertNotIn("objects-only illustration", prompt)
+                with patch.object(
+                    module,
+                    "structured",
+                    return_value={"approved": True, "reason": "Suitable."},
+                ) as request:
+                    reviewer(candidate, {})
+                    prompt = request.call_args.args[0]
+                    self.assertIn("photorealistic", prompt)
+                    self.assertIn("cheerful", prompt)
+                    self.assertIn("reject cartoon or illustration styles", prompt)

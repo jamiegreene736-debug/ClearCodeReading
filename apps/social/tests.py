@@ -447,6 +447,11 @@ class SocialMediaTests(TestCase):
                 self.assertEqual(payload["output_format"], "jpeg")
                 self.assertIn("no people", payload["prompt"].lower())
                 self.assertIn("no text", payload["prompt"].lower())
+                self.assertIn("photorealistic editorial photograph", payload["prompt"])
+                self.assertIn("cheerful", payload["prompt"])
+                self.assertIn("No cartoons, flat illustrations", payload["prompt"])
+                self.assertIn("take precedence over any style", payload["prompt"])
+                self.assertNotIn("or a photograph", payload["prompt"])
             return response
 
         with patch("apps.social.ai.requests.post", side_effect=respond):

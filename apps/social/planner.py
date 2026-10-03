@@ -304,7 +304,7 @@ def _generate_week(plan: ContentPlan, week: ContentWeek) -> None:
             post_to_instagram="instagram" in networks,
             image_data=raw or None,
             image_content_type=content_type,
-            image_name="weekly-illustration.jpg" if raw else "",
+            image_name="weekly-photo.jpg" if raw else "",
             created_by=current.updated_by,
         )
         locked.status = (

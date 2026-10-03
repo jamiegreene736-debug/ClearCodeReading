@@ -94,7 +94,9 @@ def _require_publishable(post: SocialPost) -> None:
 def schedule_post(post: SocialPost, when: datetime, *, actor: CustomUser) -> None:
     with transaction.atomic():
         ContentPlan.objects.select_for_update().filter(pk=1).first()
-        locked = SocialPost.objects.select_for_update().get(pk=post.pk)
+        locked = SocialPost.objects.select_for_update().filter(pk=post.pk).first()
+        if locked is None:
+            raise SocialError("This post has been deleted.")
         if locked.status not in {
             SocialPost.Status.DRAFT,
             SocialPost.Status.SCHEDULED,
@@ -127,7 +129,9 @@ def schedule_post(post: SocialPost, when: datetime, *, actor: CustomUser) -> Non
 def cancel_schedule(post: SocialPost, *, actor: CustomUser) -> None:
     with transaction.atomic():
         ContentPlan.objects.select_for_update().filter(pk=1).first()
-        locked = SocialPost.objects.select_for_update().get(pk=post.pk)
+        locked = SocialPost.objects.select_for_update().filter(pk=post.pk).first()
+        if locked is None:
+            raise SocialError("This post has been deleted.")
         if locked.status != SocialPost.Status.SCHEDULED:
             raise SocialError("Only a post that is still scheduled can be canceled.")
         ContentWeek.objects.filter(post=locked).update(
@@ -365,7 +369,9 @@ def publish_due(*, request=None) -> int:
             plan = ContentPlan.objects.select_for_update().filter(pk=1).first()
             from apps.blog.models import BlogContentPlan
             blog_plan = BlogContentPlan.objects.select_for_update().filter(pk=1).first()
-            post = SocialPost.objects.select_for_update().get(pk=pk)
+            post = SocialPost.objects.select_for_update().filter(pk=pk).first()
+            if post is None:
+                continue
             blog_automatic = post.blog_auto_scheduled
             if blog_automatic:
                 from apps.social.access import can_manage_social
@@ -420,7 +426,9 @@ def publish_due(*, request=None) -> int:
 
 def claim_and_publish_now(post: SocialPost, *, actor: CustomUser, request) -> SocialPost:
     with transaction.atomic():
-        locked = SocialPost.objects.select_for_update().get(pk=post.pk)
+        locked = SocialPost.objects.select_for_update().filter(pk=post.pk).first()
+        if locked is None:
+            raise SocialError("This post has been deleted.")
         if locked.status == SocialPost.Status.PUBLISHING:
             raise SocialError("This post is already being sent.")
         _require_publishable(locked)
@@ -440,3 +448,48 @@ def claim_and_publish_now(post: SocialPost, *, actor: CustomUser, request) -> So
 def token_for_tests(account: SocialAccount) -> str:
     """Used by tests to confirm a token round-trips. Not for views."""
     return decrypt_text(account.encrypted_token)
+
+
+def delete_unpublished_post(pk: int, *, actor: CustomUser) -> None:
+    from apps.blog.models import BlogContentPlan
+    from apps.social.access import can_manage_social
+
+    if not can_manage_social(actor):
+        raise SocialError("Only a super administrator can delete social posts.")
+    with transaction.atomic():
+        # Match the publisher's lock order, then retire the AI slot before removing its post.
+        ContentPlan.objects.select_for_update().filter(pk=1).first()
+        BlogContentPlan.objects.select_for_update().filter(pk=1).first()
+        weeks = list(ContentWeek.objects.select_for_update().filter(post_id=pk))
+        post = SocialPost.objects.select_for_update().filter(pk=pk).first()
+        if post is None:
+            raise SocialError("This post has already been deleted.")
+        if (
+            post.status not in {SocialPost.Status.DRAFT, SocialPost.Status.SCHEDULED}
+            or post.publications.filter(
+                status=SocialPublication.Status.PUBLISHED
+            ).exists()
+        ):
+            raise SocialError(
+                "Only unpublished drafts and scheduled posts can be deleted. A post already sending or posted cannot be removed here."
+            )
+        for week in weeks:
+            week.status, week.auto_scheduled = ContentWeek.Status.SKIPPED, False
+            week.content = {"title": "Deleted post"}
+            week.save(
+                update_fields=["status", "auto_scheduled", "content", "updated_at"]
+            )
+        AuditLog.objects.create(
+            actor=actor,
+            action="marketing.social.deleted",
+            entity_type="SocialPost",
+            entity_id=str(pk),
+            before={
+                "status": post.status,
+                "scheduled_at": post.scheduled_at.isoformat()
+                if post.scheduled_at
+                else None,
+                "blog_post_id": post.blog_post_id,
+            },
+        )
+        post.delete()

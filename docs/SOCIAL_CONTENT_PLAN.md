@@ -50,3 +50,18 @@ frequency or time. Change the day/time using actual audience results. Automation
 uses the account's OpenAI API billing. Four preview slots bound initial generation;
 normal operation generates one replacement per week. Failed requests may still incur
 provider charges. There is no automatic retry of ambiguous public publishing failures.
+
+## Calendar and deletion
+
+`/portal/marketing/calendar/` displays a navigable month of dated social posts,
+including linked blog features, in Eastern time. Scheduled, sending, posted and
+attention states remain distinguishable. Unscheduled drafts and AI preview dates
+are excluded so the calendar reflects actual publishing commitments. On narrow
+screens, days become a readable chronological list.
+
+Draft and scheduled posts can be deleted from the queue, composer, AI plan or
+calendar after a POST/CSRF confirmation. Deletion serializes with the publishing
+worker and both planners, refuses sending/published or partially published posts,
+and marks an AI social slot skipped before removing its post. Deleting a linked
+Facebook feature preserves its blog article. A stale editor cannot recreate the
+removed row, and the worker tolerates a deletion after its due-post snapshot.

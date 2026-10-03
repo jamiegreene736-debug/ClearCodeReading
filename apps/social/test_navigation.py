@@ -29,8 +29,21 @@ class SocialNavigationTests(TestCase):
         self.post.status = SocialPost.Status.SCHEDULED
         self.post.scheduled_at = timezone.now() + timedelta(days=10)
         self.post.save()
-        for route in ["new", "edit", "schedule", "cancel", "settings", "planner"]:
-            args = [self.post.pk] if route in {"edit", "schedule", "cancel"} else []
+        for route in [
+            "new",
+            "edit",
+            "schedule",
+            "cancel",
+            "settings",
+            "planner",
+            "calendar",
+            "delete",
+        ]:
+            args = (
+                [self.post.pk]
+                if route in {"edit", "schedule", "cancel", "delete"}
+                else []
+            )
             with self.subTest(route=route):
                 response = self.client.get(reverse(f"social:{route}", args=args))
                 self.assertEqual(response.status_code, 200)
@@ -116,7 +129,7 @@ class SocialNavigationTests(TestCase):
 
     def test_new_post_and_settings_preserve_list_origin(self):
         response = self.client.get(reverse("social:queue") + "?tab=attention")
-        for route in ["new", "settings", "planner"]:
+        for route in ["new", "settings", "planner", "calendar"]:
             target = reverse(f"social:{route}") + "?return_to=attention"
             self.assertContains(response, f'href="{target}"')
             page = self.client.get(target)
@@ -128,3 +141,47 @@ class SocialNavigationTests(TestCase):
             response.context["nav"]["back_url"], reverse("social:queue") + "?tab=drafts"
         )
         self.assertContains(response, reverse("social:settings") + "?return_to=planner")
+
+    def test_calendar_month_survives_edit_schedule_and_delete(self):
+        self.post.status = SocialPost.Status.SCHEDULED
+        self.post.scheduled_at = timezone.now()
+        self.post.save()
+        month = timezone.localdate().strftime("%Y-%m")
+        origin = f"calendar-{month}"
+        calendar = reverse("social:calendar") + f"?month={month}"
+        response = self.client.get(calendar)
+        self.assertContains(response, f"?return_to={origin}")
+        for route in ["edit", "schedule", "delete"]:
+            response = self.client.get(
+                reverse(f"social:{route}", args=[self.post.pk]) + f"?return_to={origin}"
+            )
+            self.assertContains(response, f'href="{calendar}"')
+            self.assertContains(response, "Back to Calendar")
+        response = self.client.post(
+            reverse("social:delete", args=[self.post.pk]) + f"?return_to={origin}"
+        )
+        self.assertRedirects(response, calendar)
+        self.assertFalse(SocialPost.objects.filter(pk=self.post.pk).exists())
+
+    def test_delete_from_editor_can_return_without_deleting(self):
+        response = self.client.get(
+            reverse("social:delete", args=[self.post.pk])
+            + "?return_to=planner&via=edit"
+        )
+        target = reverse("social:edit", args=[self.post.pk]) + "?return_to=planner"
+        self.assertContains(response, f'href="{target}"')
+        self.assertTrue(SocialPost.objects.filter(pk=self.post.pk).exists())
+
+    def test_invalid_calendar_destinations_use_safe_fallback(self):
+        for origin in [
+            "calendar-0001-01",
+            "calendar-2026-13",
+            "calendar-https://example.com",
+        ]:
+            response = self.client.get(
+                reverse("social:edit", args=[self.post.pk]), {"return_to": origin}
+            )
+            self.assertEqual(
+                response.context["nav"]["back_url"],
+                reverse("social:queue") + "?tab=drafts",
+            )
