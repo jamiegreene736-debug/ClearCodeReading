@@ -132,7 +132,7 @@ class SocialMediaTests(TestCase):
             },
         )
         post = SocialPost.objects.get()
-        self.assertRedirects(response, f"{reverse('social:edit', kwargs={'pk': post.pk})}?mode=brief")
+        self.assertRedirects(response, f"{reverse('social:edit', kwargs={'pk': post.pk})}?mode=brief&return_to=drafts")
         self.assertEqual(post.status, SocialPost.Status.DRAFT)
         self.assertIn("calmer", post.facebook_caption)
         self.assertIn("#ReadingAtHome", post.instagram_caption)
@@ -299,6 +299,8 @@ class SocialMediaTests(TestCase):
         choice = self.client.get(reverse("social:choose_page"))
         self.assertContains(choice, "ClearCode Reading")
         self.assertNotContains(choice, "token-one")
+        self.assertContains(choice, "Back to Settings")
+        self.assertContains(choice, 'aria-label="Social marketing"')
         self.client.post(reverse("social:choose_page"), {"page_id": "page-1"})
         facebook = SocialAccount.objects.get(network=SocialAccount.Network.FACEBOOK)
         self.assertEqual(facebook.external_id, "page-1")
@@ -396,7 +398,7 @@ class SocialMediaTests(TestCase):
                 },
             )
         post = SocialPost.objects.get()
-        self.assertRedirects(response, f"{reverse('social:edit', kwargs={'pk': post.pk})}?mode=brief")
+        self.assertRedirects(response, f"{reverse('social:edit', kwargs={'pk': post.pk})}?mode=brief&return_to=drafts")
         self.assertIn("Homework can end calmly", post.facebook_caption)
         self.assertIn("#ReadingAtHome", post.instagram_caption)
         self.assertEqual(bytes(post.image_data), b"png-bytes")
