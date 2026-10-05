@@ -9,6 +9,7 @@ from django.test import TestCase, override_settings
 from django.urls import reverse
 from django.utils import timezone
 
+from apps.core.captcha import CAPTCHA_FIELD, CAPTCHA_MESSAGE, CAPTCHA_MOCK_TOKEN
 from apps.crm.consultation_booking import consultation_booking_url
 from apps.crm.inventory_models import (
     ConsultationBooking,
@@ -108,6 +109,26 @@ class ConsultationBookingPageTests(TestCase):
         response = other.get(f"{self.url}?booked={booking.pk}")
         self.assertNotContains(response, "Your consultation is booked.")
         self.assertNotContains(response, "pat@example.com")
+
+    def test_booking_rejects_a_missing_captcha_and_accepts_the_mock_token(self):
+        blocked = self.client.post(self.url, {**self.payload, CAPTCHA_FIELD: ""})
+        self.assertContains(blocked, CAPTCHA_MESSAGE)
+        self.assertFalse(ConsultationBooking.objects.exists())
+        self.assertFalse(Lead.objects.exists())
+
+        accepted = self.client.post(
+            self.url,
+            {
+                **self.payload,
+                "email": "mock-captcha@example.com",
+                CAPTCHA_FIELD: CAPTCHA_MOCK_TOKEN,
+            },
+        )
+        self.assertEqual(accepted.status_code, 302)
+        self.assertTrue(
+            Lead.objects.filter(contact_email="mock-captcha@example.com").exists()
+        )
+        self.assertEqual(ConsultationBooking.objects.count(), 1)
 
     def test_honeypot_and_rate_limit_block_abuse(self):
         response = self.client.post(self.url, {**self.payload, "website": "spam"})

@@ -1,0 +1,34 @@
+<script>
+(function () {
+  if (!window.renderTurnstileWidgets) {
+    window.renderTurnstileWidgets = function () {
+      if (!window.turnstile) return;
+      document.querySelectorAll("[data-turnstile-sitekey]").forEach(function (el) {
+        if (el.getAttribute("data-turnstile-rendered") === "1") return;
+        var sitekey = el.getAttribute("data-turnstile-sitekey");
+        if (!sitekey) return;
+        el.setAttribute("data-turnstile-rendered", "1");
+        window.turnstile.render(el, { sitekey: sitekey, theme: "auto" });
+      });
+    };
+  }
+  function boot() {
+    if (window.turnstile) {
+      window.renderTurnstileWidgets();
+      return;
+    }
+    if (window.__turnstileScriptRequested) return;
+    window.__turnstileScriptRequested = true;
+    var script = document.createElement("script");
+    script.src = "https://challenges.cloudflare.com/turnstile/v0/api.js?render=explicit";
+    script.async = true;
+    script.onload = function () { window.renderTurnstileWidgets(); };
+    document.head.appendChild(script);
+  }
+  if (document.readyState === "loading") {
+    document.addEventListener("DOMContentLoaded", boot);
+  } else {
+    boot();
+  }
+})();
+</script>

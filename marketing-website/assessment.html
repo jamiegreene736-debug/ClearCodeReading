@@ -158,6 +158,7 @@
   </template>
 
   <script type="application/json" id="assessment-bot-fields">{% bot_human_json "signup" %}</script>
+  {% include "includes/turnstile_loader.html" %}
   <script>
     const assessmentBot = JSON.parse(document.getElementById("assessment-bot-fields").textContent);
     const assessmentSteps = [
@@ -1046,6 +1047,9 @@
           <input type="hidden" name="csrfmiddlewaretoken" value="${getCookie('csrftoken')}">
           <input type="hidden" name="human_check" value="${escapeAttribute(assessmentBot.human_check)}">
           <div style="position:absolute;left:-10000px;top:auto;width:1px;height:1px;overflow:hidden" aria-hidden="true"><label>Website <input type="text" name="website" tabindex="-1" autocomplete="off" value=""></label></div>
+          ${assessmentBot.turnstile_site_key
+            ? '<div style="margin:1rem 0"><p style="margin:0 0 .5rem;font-weight:700">Security check</p><div data-turnstile-sitekey="' + escapeAttribute(assessmentBot.turnstile_site_key) + '"></div></div>'
+            : '<p role="alert" style="margin:1rem 0;font-weight:700">This form needs a security check that is not configured.</p>'}
           <input type="hidden" name="audience" value="parent">
           <input type="hidden" name="organization_name" value="Reading assessment follow-up">
           <input type="hidden" name="estimated_students" value="1">
@@ -1148,6 +1152,16 @@
           <a href="/contact/" class="mt-5 inline-flex rounded-full bg-white px-6 py-3 font-black text-deepTeal transition hover:-translate-y-0.5">Schedule a consultation</a>
         </div>
       `;
+      mountAssessmentCaptcha();
+    }
+
+    function mountAssessmentCaptcha(attempt) {
+      attempt = attempt || 0;
+      if (window.renderTurnstileWidgets) window.renderTurnstileWidgets();
+      const pending = document.querySelector("[data-turnstile-sitekey]:not([data-turnstile-rendered='1'])");
+      if (pending && attempt < 25) {
+        window.setTimeout(() => mountAssessmentCaptcha(attempt + 1), 200);
+      }
     }
 
     function escapeAttribute(value) {

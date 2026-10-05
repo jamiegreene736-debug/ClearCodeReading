@@ -249,10 +249,15 @@ class NewsletterUnsubscribeTests(TestCase):
         self.assertEqual(self.subscription.status, NewsletterSubscription.Status.ACTIVE)
 
         from apps.core.bot_protection import issue_human_token
+        from apps.core.captcha import CAPTCHA_FIELD, CAPTCHA_MOCK_TOKEN
 
         response = NewsletterUnsubscribeView.as_view()(
             RequestFactory().post(
-                self.url, {"human_check": issue_human_token("unsubscribe")}
+                self.url,
+                {
+                    "human_check": issue_human_token("unsubscribe"),
+                    CAPTCHA_FIELD: CAPTCHA_MOCK_TOKEN,
+                },
             ),
             token=self.token,
         )

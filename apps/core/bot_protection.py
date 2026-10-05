@@ -1,19 +1,26 @@
 """Bot checks for anonymous form posts.
 
-No third-party CAPTCHA is configured in this project, so protection uses
-three measures that do not need a new secret:
+Public form posts are rejected unless every layer that applies says the post
+may continue:
 
 * A honeypot field (``website``). People leave it blank. A client that fills
   it is discarded quietly.
 * A signed human-check token rendered into the form. It is signed with the
   existing Django secret. A post that omits it, or sends an empty or forged
   value, is rejected.
+* A Cloudflare Turnstile token (``cf-turnstile-response``). Siteverify must
+  succeed. See ``apps.core.captcha`` for ``TURNSTILE_SITE_KEY`` and
+  ``TURNSTILE_SECRET_KEY``.
 * A short cache-backed burst limit per address and form. Repeated posts from
   the same network are rejected.
 
 An empty honeypot alone is not treated as human. The post still needs a valid
-human-check token, and a burst of repeats is rejected even when both of those
-look fine.
+human-check token and a valid CAPTCHA token. A burst of repeats is rejected
+even when those look fine.
+
+``bot_verdict`` applies the CAPTCHA requirement for every scope it protects.
+Consultation booking and inventory intake call ``captcha_ok`` directly because
+they keep their own rate limits.
 """
 
 from __future__ import annotations
@@ -25,6 +32,13 @@ from django.conf import settings
 from django.core import signing
 from django.core.cache import cache
 from django.http import HttpRequest
+
+from apps.core.captcha import (
+    CAPTCHA_FIELD,
+    CAPTCHA_MESSAGE,
+    CAPTCHA_MOCK_TOKEN,
+    captcha_ok,
+)
 
 HONEYPOT_FIELD = "website"
 HUMAN_FIELD = "human_check"
@@ -59,13 +73,24 @@ PUBLIC_FORM_PREFIXES: tuple[tuple[str, str], ...] = (
 )
 
 HUMAN_MESSAGE = "Please reload the page and submit the form again."
-BURST_MESSAGE = "Too many submissions from this network. Please wait a few minutes and try again."
+BURST_MESSAGE = (
+    "Too many submissions from this network. Please wait a few minutes and try again."
+)
 
 
 class BotVerdict(Enum):
     HONEYPOT = "honeypot"
     HUMAN = "human"
+    CAPTCHA = "captcha"
     BURST = "burst"
+
+
+def bot_message(verdict: BotVerdict) -> str:
+    if verdict is BotVerdict.BURST:
+        return BURST_MESSAGE
+    if verdict is BotVerdict.CAPTCHA:
+        return CAPTCHA_MESSAGE
+    return HUMAN_MESSAGE
 
 
 def issue_human_token(scope: str) -> str:
@@ -110,7 +135,11 @@ def burst_window() -> int:
 
 def client_address(request: HttpRequest) -> str:
     forwarded = request.META.get("HTTP_X_FORWARDED_FOR", "")
-    return forwarded.split(",")[0].strip() or request.META.get("REMOTE_ADDR", "") or "unknown"
+    return (
+        forwarded.split(",")[0].strip()
+        or request.META.get("REMOTE_ADDR", "")
+        or "unknown"
+    )
 
 
 def burst_cache_key(scope: str, address: str) -> str:
@@ -141,7 +170,7 @@ def redirect_if_blocked(request: HttpRequest, scope: str, fallback: str):
     if verdict is None:
         return None
     if verdict is not BotVerdict.HONEYPOT:
-        messages.error(request, BURST_MESSAGE if verdict is BotVerdict.BURST else HUMAN_MESSAGE)
+        messages.error(request, bot_message(verdict))
     return redirect(fallback)
 
 
@@ -170,6 +199,9 @@ def bot_verdict(request: HttpRequest, scope: str) -> BotVerdict | None:
     if not human_check_ok(request, scope):
         consume_burst(request, scope)
         return BotVerdict.HUMAN
+    if not captcha_ok(request):
+        consume_burst(request, scope)
+        return BotVerdict.CAPTCHA
     if consume_burst(request, scope):
         return BotVerdict.BURST
     return None
@@ -179,13 +211,17 @@ _test_client_hook_installed = False
 
 
 def install_test_client_human_check() -> None:
-    """Stamp a valid human-check token onto Django test-client form posts.
+    """Stamp human-check and mock CAPTCHA tokens onto Django test-client posts.
 
-    Production browsers get the token from the rendered form. Existing tests
-    post the form fields directly, which is the same shape as a real submission
-    once the page has issued a token. Tests that need to prove a missing check
-    can send ``human_check`` as an empty string; that value is left untouched.
+    Production browsers get both from the rendered form. Existing tests post
+    the form fields directly. Tests that need to prove a missing check can send
+    ``human_check`` or ``cf-turnstile-response`` as an empty string; that value
+    is left untouched. The mock CAPTCHA token is accepted only while the test
+    runner has enabled the captcha mock.
     """
+    from apps.core.captcha import enable_captcha_mock
+
+    enable_captcha_mock()
     global _test_client_hook_installed
     if _test_client_hook_installed:
         return
@@ -203,23 +239,34 @@ def install_test_client_human_check() -> None:
 
 def _stamp_test_post(path, data, content_type):
     media = str(content_type or "").split(";", 1)[0].strip().lower()
-    if media and media not in {"multipart/form-data", "application/x-www-form-urlencoded"}:
+    if media and media not in {
+        "multipart/form-data",
+        "application/x-www-form-urlencoded",
+    }:
         return data
     scope = scope_for_path(str(path))
     if not scope:
         return data
     if data is None:
-        return {HUMAN_FIELD: issue_human_token(scope)}
+        return {
+            HUMAN_FIELD: issue_human_token(scope),
+            CAPTCHA_FIELD: CAPTCHA_MOCK_TOKEN,
+        }
     if isinstance(data, (str, bytes)) or not hasattr(data, "__contains__"):
         return data
-    if HUMAN_FIELD in data:
+    updates = {}
+    if HUMAN_FIELD not in data:
+        updates[HUMAN_FIELD] = issue_human_token(scope)
+    if CAPTCHA_FIELD not in data:
+        updates[CAPTCHA_FIELD] = CAPTCHA_MOCK_TOKEN
+    if not updates:
         return data
-    token = issue_human_token(scope)
     if type(data) is dict:
-        return {**data, HUMAN_FIELD: token}
+        return {**data, **updates}
     if hasattr(data, "copy") and hasattr(data, "__setitem__"):
         copied = data.copy()
-        copied[HUMAN_FIELD] = token
+        for key, value in updates.items():
+            copied[key] = value
         return copied
     return data
 

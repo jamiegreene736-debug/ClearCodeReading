@@ -352,6 +352,11 @@ SOCIAL_AI_TEXT_MODEL = os.getenv("SOCIAL_AI_TEXT_MODEL", "gpt-4o-mini")
 SOCIAL_AI_IMAGE_MODEL = os.getenv("SOCIAL_AI_IMAGE_MODEL", "gpt-image-2")
 SOCIAL_AI_PLANNER_MODEL = os.getenv("SOCIAL_AI_PLANNER_MODEL", "gpt-6-luna")
 
+# Cloudflare Turnstile. Public forms reject posts that fail siteverify.
+# TURNSTILE_SITE_KEY is the widget site key. TURNSTILE_SECRET_KEY is the secret.
+TURNSTILE_SITE_KEY = os.getenv("TURNSTILE_SITE_KEY", "").strip()
+TURNSTILE_SECRET_KEY = os.getenv("TURNSTILE_SECRET_KEY", "").strip()
+
 # Explicit connected mailbox used for automated website confirmations.
 # Recipients see WEBSITE_EMAIL_FROM; Gmail still authenticates as WEBSITE_EMAIL_SENDER.
 WEBSITE_EMAIL_SENDER = os.getenv("WEBSITE_EMAIL_SENDER", "").strip().lower()
