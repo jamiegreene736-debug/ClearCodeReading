@@ -1,0 +1,53 @@
+name: Public form verification
+on:
+  pull_request:
+    paths:
+      - 'templates/includes/turnstile*'
+      - 'templates/includes/bot_*'
+      - 'templates/crm/**'
+      - 'templates/registration/**'
+      - 'templates/resources/**'
+      - 'marketing-website/**'
+      - 'apps/core/captcha.py'
+      - 'apps/core/bot_protection.py'
+      - 'apps/core/templatetags/bot_protection.py'
+      - 'tests/browser/human-verification.spec.js'
+      - '.github/workflows/public-forms.yml'
+permissions:
+  contents: read
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:17
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: clearcode_test
+        ports: ['5432:5432']
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+    env:
+      DATABASE_URL: postgresql://postgres:postgres@localhost:5432/clearcode_test
+      CRM_EMAIL_ENABLED: '0'
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+          cache: pip
+          cache-dependency-path: 'requirements*.txt'
+      - run: pip install -r requirements.txt
+      - run: python manage.py check
+      - run: python manage.py test apps.core.test_bot_protection apps.core.test_marketing apps.crm.test_consultation_booking apps.crm.test_inventory_intake --noinput
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - run: npm ci
+      - run: npx playwright install --with-deps chromium
+      - run: npx playwright test tests/browser/human-verification.spec.js --workers=2

@@ -74,7 +74,8 @@
       </aside>
 
       <section class="order-2 rounded-[2rem] bg-white p-5 shadow-2xl shadow-ink/10 ring-1 ring-ink/10 sm:p-8">
-        <div id="assessment-app">
+        <div id="assessment-app" data-human-check-scope>
+          {% bot_human_field "signup" %}
           <div class="mb-6">
             <div class="flex items-center justify-between gap-4">
               <div>
@@ -100,7 +101,7 @@
 
           <div class="mt-8 flex flex-col-reverse gap-3 sm:flex-row sm:justify-between">
             <button id="back-button" class="focus-ring rounded-full bg-ink/5 px-6 py-4 font-black text-ink transition hover:bg-ink/10" type="button">Back</button>
-            <button id="next-button" class="focus-ring rounded-full bg-deepTeal px-7 py-4 font-black text-white shadow-glow transition hover:-translate-y-0.5 hover:bg-[#176a6a]" type="button">Next</button>
+            <button data-human-check-next id="next-button" class="focus-ring rounded-full bg-deepTeal px-7 py-4 font-black text-white shadow-glow transition hover:-translate-y-0.5 hover:bg-[#176a6a]" type="button">Next</button>
           </div>
         </div>
       </section>
@@ -1049,7 +1050,7 @@
           <div style="position:absolute;left:-10000px;top:auto;width:1px;height:1px;overflow:hidden" aria-hidden="true"><label>Website <input type="text" name="website" tabindex="-1" autocomplete="off" value=""></label></div>
           ${assessmentBot.turnstile_site_key
             ? '<div style="margin:1rem 0"><p style="margin:0 0 .5rem;font-weight:700">Security check</p><div data-turnstile-sitekey="' + escapeAttribute(assessmentBot.turnstile_site_key) + '"></div></div>'
-            : '<p role="alert" style="margin:1rem 0;font-weight:700">This form needs a security check that is not configured.</p>'}
+            : '<div data-turnstile-sitekey=""></div><p role="alert" style="margin:1rem 0;font-weight:700">This form needs a security check that is not configured.</p>'}
           <input type="hidden" name="audience" value="parent">
           <input type="hidden" name="organization_name" value="Reading assessment follow-up">
           <input type="hidden" name="estimated_students" value="1">

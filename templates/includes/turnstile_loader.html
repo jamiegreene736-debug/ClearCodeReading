@@ -1,32 +1,95 @@
 <script>
 (function () {
   if (!window.renderTurnstileWidgets) {
+    const scopeSelector = 'form, [data-human-check-scope]';
+    const controlSelector = 'button:not([type]), button[type="submit"], input[type="submit"], input[type="image"], [data-human-check-next]';
+    const verified = new WeakSet();
+    const locked = new WeakSet();
+
+    function widgets(scope) {
+      return [...scope.querySelectorAll('[data-turnstile-sitekey]')]
+        .filter(el => el.closest(scopeSelector) === scope);
+    }
+    function ready(scope) {
+      return widgets(scope).every(el => verified.has(el));
+    }
+    function sync(scope) {
+      const blocked = !ready(scope);
+      scope.querySelectorAll(controlSelector).forEach(control => {
+        if (control.closest(scopeSelector) !== scope) return;
+        if (blocked && !control.disabled) {
+          locked.add(control);
+          control.disabled = true;
+        } else if (!blocked && locked.has(control)) {
+          locked.delete(control);
+          control.disabled = false;
+        }
+      });
+    }
+    function guard(event, scope) {
+      if (!scope || ready(scope)) return;
+      event.preventDefault();
+      event.stopImmediatePropagation();
+      sync(scope);
+      const widget = widgets(scope).find(el => !verified.has(el));
+      widget.scrollIntoView({ block: 'center' });
+    }
+    // Capture runs before individual forms' Next and submit handlers, including Enter.
+    document.addEventListener('click', event => {
+      const control = event.target.closest(controlSelector);
+      if (control) guard(event, control.closest(scopeSelector));
+    }, true);
+    document.addEventListener('submit', event => guard(event, event.target), true);
+
     window.renderTurnstileWidgets = function () {
-      if (!window.turnstile) return;
-      document.querySelectorAll("[data-turnstile-sitekey]").forEach(function (el) {
-        if (el.getAttribute("data-turnstile-rendered") === "1") return;
-        var sitekey = el.getAttribute("data-turnstile-sitekey");
+      document.querySelectorAll('[data-turnstile-sitekey]').forEach(el => {
+        const scope = el.closest(scopeSelector);
+        if (!scope) return;
+        sync(scope);
+        if (!window.turnstile || el.getAttribute('data-turnstile-rendered') === '1') return;
+        const sitekey = el.getAttribute('data-turnstile-sitekey');
         if (!sitekey) return;
-        el.setAttribute("data-turnstile-rendered", "1");
-        window.turnstile.render(el, { sitekey: sitekey, theme: "auto" });
+        el.setAttribute('data-turnstile-rendered', '1');
+        function update(token) {
+          if (token) verified.add(el);
+          else verified.delete(el);
+          sync(scope);
+          const status = el.parentElement.querySelector('[data-human-check-status]');
+          if (status) status.textContent = token
+            ? 'Security check complete. You can continue.'
+            : 'Please verify you are human before continuing.';
+        }
+        try {
+          window.turnstile.render(el, {
+            sitekey: sitekey,
+            theme: 'auto',
+            callback: update,
+            'expired-callback': () => update(''),
+            'error-callback': () => update(''),
+            'timeout-callback': () => update(''),
+          });
+        } catch (error) {
+          update('');
+          console.error('Unable to load the security check.', error);
+        }
       });
     };
+    new MutationObserver(() => window.renderTurnstileWidgets()).observe(document.documentElement, {
+      childList: true, subtree: true,
+    });
   }
   function boot() {
-    if (window.turnstile) {
-      window.renderTurnstileWidgets();
-      return;
-    }
-    if (window.__turnstileScriptRequested) return;
+    window.renderTurnstileWidgets();
+    if (window.turnstile || window.__turnstileScriptRequested) return;
     window.__turnstileScriptRequested = true;
-    var script = document.createElement("script");
-    script.src = "https://challenges.cloudflare.com/turnstile/v0/api.js?render=explicit";
+    const script = document.createElement('script');
+    script.src = 'https://challenges.cloudflare.com/turnstile/v0/api.js?render=explicit';
     script.async = true;
-    script.onload = function () { window.renderTurnstileWidgets(); };
+    script.onload = () => window.renderTurnstileWidgets();
     document.head.appendChild(script);
   }
-  if (document.readyState === "loading") {
-    document.addEventListener("DOMContentLoaded", boot);
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', boot);
   } else {
     boot();
   }
