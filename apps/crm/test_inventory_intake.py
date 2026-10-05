@@ -6,6 +6,7 @@ from django.core.cache import cache
 from django.test import Client, TestCase, override_settings
 from django.urls import reverse
 
+from apps.core.captcha import CAPTCHA_FIELD, CAPTCHA_MESSAGE, CAPTCHA_MOCK_TOKEN
 from apps.crm.inventory import definition
 from apps.crm.inventory_models import (
     InventoryChild,
@@ -103,6 +104,25 @@ class InventoryIntakeTests(TestCase):
         self.assertEqual(parent.assigned_to, self.staff)
         self.assertEqual(parent.inventory_children.count(), 2)
         self.assertNotContains(self.public.get(self.url), "Staff name")
+
+    def test_intake_requires_a_captcha_token(self):
+        blocked = self.public.post(self.url, {**self.payload(), CAPTCHA_FIELD: ""})
+        self.assertEqual(blocked.status_code, 400)
+        self.assertContains(blocked, CAPTCHA_MESSAGE, status_code=400)
+        self.assertFalse(Lead.objects.exists())
+
+        accepted = self.public.post(
+            self.url,
+            {
+                **self.payload(),
+                "email": "captcha-ok@example.com",
+                CAPTCHA_FIELD: CAPTCHA_MOCK_TOKEN,
+            },
+        )
+        self.assertEqual(accepted.status_code, 302)
+        self.assertTrue(
+            Lead.objects.filter(contact_email="captcha-ok@example.com").exists()
+        )
 
     def test_tamper_spam_rate_limit_and_csrf(self):
         data = self.payload()

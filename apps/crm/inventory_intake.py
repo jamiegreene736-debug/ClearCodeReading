@@ -17,6 +17,7 @@ from django.views import View
 from django.views.decorators.cache import never_cache
 
 from apps.core.bot_protection import HUMAN_MESSAGE, human_check_ok
+from apps.core.captcha import CAPTCHA_MESSAGE, captcha_ok
 from apps.crm.consultation_booking import client_key
 from apps.crm.inventory import GRADES, log_activity, token_for
 from apps.crm.inventory_models import (
@@ -109,6 +110,8 @@ class InventoryIntakeView(View):
             )
         if not human_check_ok(request, "inventory-intake"):
             return HttpResponse(HUMAN_MESSAGE, status=400)
+        if not captcha_ok(request):
+            return HttpResponse(CAPTCHA_MESSAGE, status=400)
         form = InventoryIntakeForm(request.POST)
         if not form.is_valid():
             return render(request, "crm/inventory_intake.html", {"form": form})

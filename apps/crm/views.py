@@ -29,7 +29,7 @@ from rest_framework.decorators import action
 from rest_framework.permissions import BasePermission, IsAuthenticated
 from rest_framework.response import Response
 
-from apps.core.bot_protection import BURST_MESSAGE, HUMAN_MESSAGE, BotVerdict, bot_verdict
+from apps.core.bot_protection import BotVerdict, bot_message, bot_verdict
 from apps.core.forms import RecruitingInterestForm
 from apps.core.models import RecruitingInterest
 from apps.crm.hiring import hiring_queue_counts, select_intake_owner
@@ -327,7 +327,7 @@ class WebsiteSignupView(View):
             return None
         if verdict is BotVerdict.HONEYPOT:
             return redirect(self._redirect_target(request, "thanks"))
-        messages.error(request, BURST_MESSAGE if verdict is BotVerdict.BURST else HUMAN_MESSAGE)
+        messages.error(request, bot_message(verdict))
         return redirect(self._redirect_target(request, "invalid"))
 
     @staticmethod
@@ -402,7 +402,7 @@ class SurveySubmissionView(View):
         if verdict is BotVerdict.HONEYPOT:
             return redirect(self._redirect_target(source.path, "thanks"))
         if verdict is not None:
-            messages.error(request, BURST_MESSAGE if verdict is BotVerdict.BURST else HUMAN_MESSAGE)
+            messages.error(request, bot_message(verdict))
             return redirect(self._redirect_target(source.path, "invalid"))
 
         try:
@@ -427,7 +427,7 @@ class NewsletterSignupView(View):
         if verdict is BotVerdict.HONEYPOT:
             return redirect(f"{redirect_path}?newsletter=thanks#newsletter-signup")
         if verdict is not None:
-            messages.error(request, BURST_MESSAGE if verdict is BotVerdict.BURST else HUMAN_MESSAGE)
+            messages.error(request, bot_message(verdict))
             return redirect(f"{redirect_path}?newsletter=invalid#newsletter-signup")
 
         email = request.POST.get("email", "").strip().lower()
@@ -530,7 +530,7 @@ class NewsletterUnsubscribeView(View):
                     "subscription": subscription,
                     "invalid_link": False,
                     "unsubscribed": False,
-                    "bot_message": BURST_MESSAGE if verdict is BotVerdict.BURST else HUMAN_MESSAGE,
+                    "bot_message": bot_message(verdict),
                 },
             )
         if subscription and subscription.status != NewsletterSubscription.Status.UNSUBSCRIBED:
