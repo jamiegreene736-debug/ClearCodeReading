@@ -725,3 +725,21 @@ Historical submissions are not automatically emailed.
 The web app, background worker, and container use `America/New_York` (EST in winter, EDT in summer). Django forms, admin pages, reports, and default scheduling use Eastern Time. Resource publishing inputs are Eastern Time; nonexistent or ambiguous daylight-saving times must be corrected before saving. Explicit availability timezones and existing profile preferences are retained. New profiles default to Eastern Time.
 
 `USE_TZ=True` remains enabled: database connections and stored instants stay UTC, and API timestamps retain their offsets. Do not shift stored timestamps during deployment. Django converts them for display; see the [Django timezone documentation](https://docs.djangoproject.com/en/5.2/topics/i18n/timezones/).
+
+### Public form human verification
+
+Public form submit controls stay disabled until their own Cloudflare Turnstile
+widget succeeds. The early-interest and optional reading surveys also require
+verification before advancing with Next. Expired or failed challenges lock the
+controls again; missing keys or a blocked challenge script do not bypass the gate.
+The server independently verifies the submitted token before accepting data.
+
+New public forms should use the `bot_fields` or `bot_human_field` template tag.
+Mark client-side forward buttons with `data-human-check-next`; a questionnaire
+outside a form also needs a `data-human-check-scope` container around its widget
+and controls. Keep Back buttons outside the forward-control marker.
+
+Run the browser regression suite with
+`npx playwright test tests/browser/human-verification.spec.js` (set `PYTHON` to the
+project Python environment if needed). The tests mock Cloudflare callbacks and
+render the real templates without sending submissions to the live site.

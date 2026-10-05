@@ -2,9 +2,11 @@
 <div style="margin:1rem 0">
   <p style="margin:0 0 .5rem;font-weight:700">Security check</p>
   <div data-turnstile-sitekey="{{ turnstile_site_key }}"></div>
+  <p data-human-check-status role="status" style="margin:.5rem 0">Please verify you are human before continuing.</p>
   <noscript><p role="alert" style="margin:.5rem 0 0;font-weight:700">Enable JavaScript to complete the security check.</p></noscript>
 </div>
-{% include "includes/turnstile_loader.html" %}
 {% else %}
+<div data-turnstile-sitekey=""></div>
 <p role="alert" style="margin:1rem 0;font-weight:700">This form needs a security check that is not configured.</p>
 {% endif %}
+{% include "includes/turnstile_loader.html" %}
