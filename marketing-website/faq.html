@@ -21,7 +21,7 @@
     <div class="mx-auto max-w-4xl space-y-4">
       {% discovery_faqs as faq_entries %}
       {% for entry in faq_entries %}
-        <details class="group rounded-2xl bg-linen p-5"><summary class="focus-ring flex cursor-pointer list-none items-center justify-between gap-5 rounded-lg font-bold"><span>{{ entry.question }}</span><span class="text-2xl text-deepTeal group-open:rotate-45" aria-hidden="true">+</span></summary><p class="mt-4 max-w-3xl leading-7 text-ink/65">{{ entry.answer }}</p></details>
+        <details class="group rounded-2xl bg-linen p-5"><summary class="focus-ring flex cursor-pointer list-none items-center justify-between gap-5 rounded-lg font-bold"><span>{{ entry.question }}</span><span class="text-2xl text-deepTeal group-open:rotate-45" aria-hidden="true">+</span></summary><p class="mt-4 max-w-3xl leading-7 text-ink/65">{{ entry.answer|linebreaksbr }}</p></details>
       {% endfor %}
     </div>
   </section>

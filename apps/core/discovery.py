@@ -58,6 +58,49 @@ ROBOTS_DISALLOW_PATHS = (
 
 FAQ_ENTRIES = (
     {
+        "question": "How much does a ClearCode session cost?",
+        "answer": (
+            "Every family starts with a free consultation. If ClearCode is a good fit, "
+            "your child’s next step is a comprehensive initial assessment ($300). "
+            "The assessment pinpoints your child’s specific skill gaps and shapes "
+            "their intervention plan. You’ll sit down with a member of our team to "
+            "review your child’s assessment results and the recommended intervention "
+            "plan, including session frequency and a ballpark projection of how many "
+            "sessions are needed for your child to reach their reading goals.\n\n"
+            "All sessions are 60 minutes:\n"
+            "• Small group (up to 3 students): $75 per session\n"
+            "• One-on-one: $125 per session\n\n"
+            "Most students attend multiple times a week so that students maintain "
+            "their progress. We’ll recommend a format and schedule after the assessment."
+        ),
+    },
+    {
+        "question": "How long will my child need reading intervention?",
+        "answer": (
+            "It depends on where your child starts and how often they attend. Most "
+            "students attend multiple sessions per week for 4 to 12 months.\n\n"
+            "Your child’s initial assessment results show us their starting point. "
+            "From there, you’ll get a progress report every week, so you can see "
+            "their skills grow. Before you start, we’ll provide you with a ballpark "
+            "projection of how many sessions are needed for your child to reach "
+            "their reading goals."
+        ),
+    },
+    {
+        "question": "What credentials do ClearCode reading specialists have?",
+        "answer": (
+            "ClearCode reading specialists are trained in structured literacy and "
+            "teach two evidence-based programs:\n"
+            "• Grades K–2: IMSE Orton-Gillingham Plus\n"
+            "• Grades 3–8: Phonics for Reading, by Dr. Anita Archer\n\n"
+            "Our specialists hold or are working toward Florida’s K–12 Reading "
+            "Endorsement. ClearCode pays for every specialist’s Orton-Gillingham "
+            "certification and ongoing training. Our program is led by an "
+            "Orton-Gillingham trained reading specialist with 15 years of K–8 "
+            "literacy experience."
+        ),
+    },
+    {
         "question": "Who does ClearCode serve?",
         "answer": (
             "ClearCode is designed for K–8 students who need explicit foundational "
