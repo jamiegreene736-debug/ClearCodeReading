@@ -11,13 +11,24 @@
   <p class="text-xs font-black uppercase tracking-[0.16em] text-deepTeal">Marketing · Social media</p>
   <h1 class="mt-1 text-4xl font-black tracking-tight text-ink">{% if post.pk %}Edit post{% else %}New post{% endif %}</h1>
   {% if post.pk and post.status == 'draft' or post.pk and post.status == 'scheduled' %}<a href="{% url 'social:delete' post.pk %}?return_to={{ nav.origin }}&amp;via=edit" class="focus-ring mt-3 inline-flex rounded-full bg-white px-4 py-2 text-sm font-black text-red-700 ring-1 ring-red-200">Delete post</a>{% endif %}
+  <section class="post-format-guide" aria-labelledby="post-format-heading">
+    <h2 id="post-format-heading">Create a single image or a carousel</h2>
+    <p>Upload your own photos or let AI create the slides. Adding 2–10 images creates an Instagram carousel and a Facebook multi-photo post.</p>
+    <div class="post-format-options">
+      <a href="#image"><strong>Single image</strong><span>Upload one photo for your post.</span></a>
+      <a href="#images"><strong>Upload carousel images</strong><span>Choose 2–10 photos, then arrange their order.</span></a>
+      <a href="#ai-carousel"><strong>Create an AI carousel</strong><span>Enter a subject or caption below, then plan and generate your slides.</span></a>
+    </div>
+    <p class="post-format-detail">The number of images determines the format. Instagram shows swipeable slides; Facebook chooses the photo layout. Review both previews before publishing.</p>
+  </section>
   <div class="mt-4 inline-flex rounded-full bg-white p-1 ring-1 ring-ink/10">
     <a href="{% if post.pk %}{% url 'social:edit' post.pk %}?mode=brief&amp;return_to={{ nav.origin }}{% else %}{% url 'social:new' %}?mode=brief&amp;return_to={{ nav.origin }}{% endif %}" class="rounded-full px-4 py-2 text-sm font-black {% if mode == 'brief' %}bg-ink text-white{% else %}text-ink/60{% endif %}">From a brief</a>
     <a href="{% if post.pk %}{% url 'social:edit' post.pk %}?mode=manual&amp;return_to={{ nav.origin }}{% else %}{% url 'social:new' %}?mode=manual&amp;return_to={{ nav.origin }}{% endif %}" class="rounded-full px-4 py-2 text-sm font-black {% if mode != 'brief' %}bg-ink text-white{% else %}text-ink/60{% endif %}">Write it yourself</a>
   </div>
 
-  <form method="post" enctype="multipart/form-data" class="mt-6 grid gap-4 lg:grid-cols-2" id="social-post-form" data-has-image="{{ post.has_image|yesno:'true,false' }}">
+  <form method="post" enctype="multipart/form-data" class="mt-6 grid gap-4 lg:grid-cols-2" id="social-post-form" data-has-image="{{ post.has_image|yesno:'true,false' }}" data-generation-pending="{{ carousel_pending|yesno:'true,false' }}">
     {% csrf_token %}
+    <input type="hidden" name="revision" value="{{ post.updated_at|date:'c' }}">
     <input type="hidden" name="mode" value="{{ mode }}">
     <section class="rounded-[1.75rem] bg-white p-5 ring-1 ring-ink/10">
       {% if mode == "brief" %}
@@ -58,15 +69,11 @@
       {% endif %}
       <label class="mt-4 block text-sm font-black" for="link_url">Link</label>
       <input id="link_url" name="link_url" value="{{ post.link_url }}" class="mt-2 w-full rounded-full border border-ink/15 px-4 py-3">
-      <label class="mt-4 block text-sm font-black" for="image">Photo</label>
-      <input id="image" name="image" type="file" accept="image/jpeg,image/png,image/webp" class="mt-2 block w-full text-sm">
-      {% if post.pk and post.has_image %}
-        <p class="mt-2 text-sm font-bold text-ink/60">{{ post.image_name }} is attached. Instagram needs a photo.</p>
-      {% endif %}
+      {% include "social/_carousel_editor.html" %}
       {% if mode == "brief" %}
         <label class="mt-4 flex items-start gap-3 rounded-2xl bg-linen px-4 py-3 text-sm font-bold text-ink/80">
           <input type="checkbox" name="generate_image" class="mt-1" {% if generate_image %}checked{% endif %}>
-          <span><span class="font-black text-ink">Also generate an image</span><br>Leave this off to draft words only. The AI-generated picture has a lifelike, cheerful photography style, and you can replace it.</span>
+          <span><span class="font-black text-ink">Also generate one image</span><br>Leave this off to draft words only. For multiple slides, use Create an AI carousel above. The AI-generated picture has a lifelike, cheerful photography style, and you can replace it.</span>
         </label>
       {% endif %}
       <div class="mt-4 flex flex-wrap gap-3 text-sm font-black">
@@ -121,8 +128,12 @@
       const instagramField = socialForm.elements.instagram_caption;
       const instagramCaption = (instagramField ? instagramField.value.trim() : '') ||
         (socialForm.elements.mode.value === 'manual' ? facebookCaption : '');
-      const hasImage = socialForm.dataset.hasImage === 'true' || socialForm.elements.image.files.length > 0;
+      const hasImage = socialForm.dataset.hasImage === 'true' ||
+        (socialForm.elements.photo_order.disabled && socialForm.elements.image.files.length > 0);
+      const photoError = socialForm.dataset.photoError || '';
       const missing = [];
+      if (photoError) missing.push(photoError);
+      if (socialForm.dataset.generationPending === 'true') missing.push('Finish generating the carousel or discard its AI plan.');
       if (!facebook && !instagram) missing.push('Choose Facebook, Instagram, or both.');
       if (facebook && !facebookCaption) missing.push('Add a Facebook caption.');
       if (instagram && !instagramCaption) missing.push('Add an Instagram caption.');
@@ -135,6 +146,7 @@
       });
       return missing.length === 0;
     }
+    socialForm.addEventListener('photoschange', updatePublishReadiness);
     socialForm.addEventListener('input', updatePublishReadiness);
     socialForm.addEventListener('change', updatePublishReadiness);
     updatePublishReadiness();
@@ -157,7 +169,7 @@
         return;
       }
       unsavedChanges = false;
-      if (!button || !(button.name === 'selected_idea' || ['ideas', 'draft_ai', 'new_image'].includes(button.value))) return;
+      if (!button || !(button.name === 'selected_idea' || ['ideas', 'draft_ai', 'new_image', 'plan_carousel'].includes(button.value))) return;
       socialForm.dataset.busy = 'true';
       socialForm.setAttribute('aria-busy', 'true');
       const status = document.getElementById('generation-status');

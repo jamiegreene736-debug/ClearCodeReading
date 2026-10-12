@@ -6,6 +6,7 @@ text that is safe to show a super administrator.
 
 from __future__ import annotations
 
+import json
 import logging
 import time
 from datetime import timedelta
@@ -252,13 +253,67 @@ def signature_matches(post_id: int, signature: str, *, max_age: int = 3600) -> b
     return value == str(post_id)
 
 
-def publish_facebook(post: SocialPost, account: SocialAccount, *, image_url: str) -> dict[str, str]:
+def slide_signature_matches(post_id: int, slide_id: int, signature: str) -> bool:
+    try:
+        value = TimestampSigner(salt="social-carousel-slide").unsign(
+            signature, max_age=3600
+        )
+    except (BadSignature, SignatureExpired):
+        return False
+    return value == f"{post_id}:{slide_id}"
+
+
+def carousel_image_urls(post: SocialPost, cover_url: str) -> list[str]:
+    urls = [cover_url] if cover_url else []
+    for slide in post.slides.all():
+        signature = TimestampSigner(salt="social-carousel-slide").sign(
+            f"{post.pk}:{slide.pk}"
+        )
+        path = reverse(
+            "social:slide_image", kwargs={"pk": post.pk, "slide_id": slide.pk}
+        )
+        urls.append(f"{public_base_url()}{path}?{urlencode({'t': signature})}")
+    if len(urls) > 10:
+        raise SocialError("A post can have up to 10 photos.")
+    return urls
+
+
+def publish_facebook(
+    post: SocialPost,
+    account: SocialAccount,
+    *,
+    image_url: str,
+    image_urls: list[str] | None = None,
+) -> dict[str, str]:
     from apps.social.crypto import decrypt_text
 
     token = decrypt_text(account.encrypted_token)
     version = _version()
     caption = post.facebook_caption.strip()
-    if post.has_image and image_url and not post.is_blog_promotion:
+    if image_urls and len(image_urls) > 1 and not post.is_blog_promotion:
+        if len(image_urls) > 10:
+            raise SocialError("A post can have up to 10 photos.")
+        attachments = []
+        for index, url in enumerate(image_urls, 1):
+            uploaded = _graph(
+                "POST",
+                f"https://graph.facebook.com/{version}/{account.external_id}/photos",
+                token=token,
+                data={"url": url, "published": "false"},
+            )
+            photo_id = str(uploaded.get("id") or "")
+            if not photo_id:
+                raise SocialError(
+                    f"Facebook did not accept photo {index}. No carousel was published."
+                )
+            attachments.append({"media_fbid": photo_id})
+        payload = _graph(
+            "POST",
+            f"https://graph.facebook.com/{version}/{account.external_id}/feed",
+            token=token,
+            data={"message": caption, "attached_media": json.dumps(attachments)},
+        )
+    elif post.has_image and image_url and not post.is_blog_promotion:
         payload = _graph(
             "POST",
             f"https://graph.facebook.com/{version}/{account.external_id}/photos",
@@ -292,40 +347,58 @@ def publish_facebook(post: SocialPost, account: SocialAccount, *, image_url: str
     return {"external_id": external_id, "permalink": permalink}
 
 
-def publish_instagram(post: SocialPost, account: SocialAccount, *, image_url: str) -> dict[str, str]:
+def publish_instagram(
+    post: SocialPost,
+    account: SocialAccount,
+    *,
+    image_url: str,
+    image_urls: list[str] | None = None,
+) -> dict[str, str]:
     from apps.social.crypto import decrypt_text
 
     if not image_url:
         raise SocialError("Instagram needs a photo.")
     token = decrypt_text(account.encrypted_token)
     version = _version()
-    base = f"https://graph.facebook.com/{version}" if account.via_facebook else "https://graph.instagram.com"
-    container = _graph(
-        "POST",
-        f"{base}/{account.external_id}/media",
-        token=token,
-        data={"image_url": image_url, "caption": post.instagram_caption.strip()},
+    base = (
+        f"https://graph.facebook.com/{version}"
+        if account.via_facebook
+        else "https://graph.instagram.com"
     )
-    creation_id = str(container.get("id") or "")
-    if not creation_id:
-        raise SocialError("Instagram did not accept the photo.")
-    ready = False
-    for _ in range(5):
-        status = _graph(
-            "GET",
-            f"{base}/{creation_id}",
-            token=token,
-            params={"fields": "status_code"},
+    urls = image_urls or [image_url]
+    if not 1 <= len(urls) <= 10:
+        raise SocialError("Choose up to 10 photos.")
+    children = []
+    for index, url in enumerate(urls, 1):
+        data = {"image_url": url}
+        if len(urls) > 1:
+            data["is_carousel_item"] = "true"
+        else:
+            data["caption"] = post.instagram_caption.strip()
+        container = _graph(
+            "POST", f"{base}/{account.external_id}/media", token=token, data=data
         )
-        code = status.get("status_code")
-        if code == "FINISHED":
-            ready = True
-            break
-        if code == "ERROR":
-            raise SocialError("Instagram could not prepare the photo.")
-        time.sleep(1)
-    if not ready:
-        raise SocialError("Instagram is still preparing the photo. Try again in a moment.")
+        creation_id = str(container.get("id") or "")
+        if not creation_id:
+            raise SocialError(f"Instagram did not accept photo {index}.")
+        _wait_for_container(base, token, creation_id, label=f"photo {index}")
+        children.append(creation_id)
+    creation_id = children[0]
+    if len(children) > 1:
+        parent = _graph(
+            "POST",
+            f"{base}/{account.external_id}/media",
+            token=token,
+            data={
+                "media_type": "CAROUSEL",
+                "children": ",".join(children),
+                "caption": post.instagram_caption.strip(),
+            },
+        )
+        creation_id = str(parent.get("id") or "")
+        if not creation_id:
+            raise SocialError("Instagram did not accept the carousel.")
+        _wait_for_container(base, token, creation_id, label="carousel")
     published = _graph(
         "POST",
         f"{base}/{account.external_id}/media_publish",
@@ -335,13 +408,35 @@ def publish_instagram(post: SocialPost, account: SocialAccount, *, image_url: st
     external_id = str(published.get("id") or "")
     if not external_id:
         raise SocialError("Instagram did not confirm the post.")
-    details = _graph(
-        "GET",
-        f"{base}/{external_id}",
-        token=token,
-        params={"fields": "permalink"},
-    )
-    return {"external_id": external_id, "permalink": str(details.get("permalink") or "")}
+    # A permalink lookup must not turn a confirmed publication into a retry/duplicate.
+    try:
+        details = _graph(
+            "GET", f"{base}/{external_id}", token=token, params={"fields": "permalink"}
+        )
+        permalink = str(details.get("permalink") or "")
+    except SocialError:
+        permalink = ""
+    return {"external_id": external_id, "permalink": permalink}
+
+
+def _wait_for_container(base: str, token: str, creation_id: str, *, label: str) -> None:
+    for attempt in range(5):
+        status = _graph(
+            "GET",
+            f"{base}/{creation_id}",
+            token=token,
+            params={"fields": "status_code"},
+        )
+        code = status.get("status_code")
+        if code == "FINISHED":
+            return
+        if code in {"ERROR", "EXPIRED"}:
+            raise SocialError(
+                f"Instagram could not prepare {label}. No carousel was published."
+            )
+        if attempt < 4:
+            time.sleep(1)
+    raise SocialError(f"Instagram is still preparing {label}. Try again in a moment.")
 
 
 def token_expiry(expires_in: int):

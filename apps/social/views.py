@@ -6,10 +6,11 @@ from datetime import date, timedelta
 
 from django.contrib import messages
 from django.db import transaction
-from django.http import Http404, HttpResponse
+from django.http import Http404, HttpRequest, HttpResponse, JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse
 from django.utils import timezone
+from django.utils.dateparse import parse_datetime
 from django.views.decorators.http import require_http_methods, require_POST
 
 from apps.social.access import can_manage_social, social_editor_required
@@ -21,9 +22,16 @@ from apps.social.ai import (
     text_model,
     write_captions,
 )
+from apps.social.carousel_ai import (
+    generate_next_slide,
+    generation_active,
+    generation_pending,
+    plan_carousel,
+)
 from apps.social.crypto import decrypt_json, digest, encrypt_json
 from apps.social.drafts import draft_captions
 from apps.social.exceptions import SocialError
+from apps.social.media import edited_photos, save_slides, set_cover
 from apps.social.meta import (
     exchange_facebook_code,
     exchange_instagram_code,
@@ -32,7 +40,14 @@ from apps.social.meta import (
     meta_ready,
     signature_matches,
 )
-from apps.social.models import SocialAccount, SocialAuthorization, SocialPost
+from apps.social.models import (
+    ContentPlan,
+    ContentWeek,
+    SocialAccount,
+    SocialAuthorization,
+    SocialPost,
+    SocialPostSlide,
+)
 from apps.social.navigation import navigation
 from apps.social.schedule_views import month_start
 from apps.social.services import (
@@ -109,7 +124,6 @@ def _apply_post(post: SocialPost, request) -> str:
         separate = (request.POST.get("instagram_caption") or "").strip()
         post.facebook_caption = caption
         post.instagram_caption = (separate or caption)[:2200]
-    store_image(post, request.FILES.get("image"))
     return mode
 
 
@@ -165,6 +179,24 @@ def post_edit(request, pk=None):
     generate_image_checked = request.method != "POST" or request.POST.get("generate_image") == "on"
     if request.method == "POST":
         try:
+            revision = request.POST.get("revision")
+            if post.pk and revision:
+                try:
+                    revision_matches = parse_datetime(revision) == post.updated_at
+                except ValueError:
+                    revision_matches = False
+                if not revision_matches:
+                    raise SocialError("This draft changed in another window. Reload it before saving.")
+            if generation_active(post):
+                raise SocialError("A carousel slide is being generated. Finish or resume generation before editing.")
+            photos = edited_photos(post, request)
+            if photos is not None:
+                set_cover(post, photos)
+                post.carousel_plan = {}
+            elif request.FILES.get("image"):
+                store_image(post, request.FILES.get("image"))
+                photos = []  # The legacy single-photo input replaces the whole set.
+                post.carousel_plan = {}
             mode = _apply_post(post, request)
             action = request.POST.get("action") or "save"
             selected_idea = request.POST.get("selected_idea", "").strip()
@@ -173,10 +205,27 @@ def post_edit(request, pk=None):
                     raise SocialError("Choose a valid idea or generate new ideas.")
                 post.brief = selected_idea
                 action = "draft_ai"
-            if action in {"ideas", "draft_ai", "new_image"} and post.status == SocialPost.Status.SCHEDULED:
+            if action in {"ideas", "draft_ai", "new_image", "plan_carousel"} and post.status == SocialPost.Status.SCHEDULED:
                 raise SocialError("Cancel this post’s schedule before generating new content for review.")
             notice = "Draft saved."
-            if action == "ideas":
+            if action == "plan_carousel":
+                if post.is_blog_promotion:
+                    raise SocialError("Blog features publish a link card. Create a separate social post for a carousel.")
+                if post.status != SocialPost.Status.DRAFT or (post.pk and post.publications.exists()):
+                    raise SocialError("Only an unpublished draft can generate a carousel.")
+                try:
+                    count = int(request.POST.get("slide_count", "3"))
+                except ValueError as exc:
+                    raise SocialError("Choose between 2 and 10 slides.") from exc
+                plan = plan_carousel(subject=post.brief or post.facebook_caption, count=count, audience=post.audience, tone=post.tone)
+                post.facebook_caption = str(plan.pop("facebook"))
+                post.instagram_caption = str(plan.pop("instagram"))
+                post.carousel_plan = plan
+                notice = "Carousel planned. Review the slide ideas, then choose Generate slides."
+            elif action == "discard_carousel":
+                post.carousel_plan = {}
+                notice = "AI plan removed. Your current photos are kept."
+            elif action == "ideas":
                 ideas = suggest_ideas(audience=post.audience, tone=post.tone)
             elif action == "draft":
                 facebook, instagram = draft_captions(
@@ -212,23 +261,43 @@ def post_edit(request, pk=None):
                         post.image_data = raw
                         post.image_content_type = content_type
                         post.image_name = "ai-draft.jpg"
+                        photos = []
+                        post.carousel_plan = {}
                         if action == "new_image":
                             notice = "A new image is attached. The captions are unchanged."
-            if action in {"schedule", "post_now"}:
+            if action in {"schedule", "post_now"} or post.status == SocialPost.Status.SCHEDULED:
                 require_post_content(post)
             if action != "ideas":
                 if post.created_by_id is None:
                     post.created_by = request.user
                 if post.status not in {SocialPost.Status.SCHEDULED, SocialPost.Status.ATTENTION}:
                     post.status = SocialPost.Status.DRAFT
+                changing_media = photos is not None or action == "plan_carousel"
                 with transaction.atomic():
+                    weeks = []
+                    if changing_media and post.pk:
+                        # Match planner lock order before retiring its old editorial approval.
+                        ContentPlan.objects.select_for_update().filter(pk=1).first()
+                        weeks = list(ContentWeek.objects.select_for_update().filter(post_id=post.pk))
                     if post.pk:
                         current = SocialPost.objects.select_for_update().filter(pk=post.pk).first()
                         if current is None:
                             raise SocialError("This post was deleted while you were editing. It has not been recreated.")
                         if current.status in {SocialPost.Status.PUBLISHING, SocialPost.Status.POSTED} or current.updated_at != post.updated_at:
                             raise SocialError("This post changed while you were editing. Reload it before saving.")
+                    if any(week.auto_scheduled for week in weeks):
+                        post.status, post.scheduled_at = SocialPost.Status.DRAFT, None
                     post.save()
+                    if photos is not None:
+                        save_slides(post, photos)
+                    if changing_media:
+                        ContentWeek.objects.filter(post_id=post.pk).update(
+                            status=ContentWeek.Status.SKIPPED,
+                            auto_scheduled=False,
+                            review_passed=False,
+                            review_note="Photos changed in the composer. Review and schedule this post manually.",
+                            updated_at=timezone.now(),
+                        )
                 if action == "schedule":
                     return redirect(f"{reverse('social:schedule', kwargs={'pk': post.pk})}?return_to={nav['origin']}&via=edit")
                 if action == "post_now":
@@ -245,6 +314,13 @@ def post_edit(request, pk=None):
                 return redirect(f"{reverse('social:edit', kwargs={'pk': post.pk})}?mode={post.source}&return_to={nav['origin']}")
         except SocialError as exc:
             messages.error(request, str(exc))
+            if request.FILES:
+                messages.warning(request, "The photos were not saved. Select them again after resolving the error.")
+            if post.pk:
+                saved = SocialPost.objects.filter(pk=post.pk).first()
+                if saved:
+                    for field in ("image_data", "image_name", "image_content_type", "carousel_plan"):
+                        setattr(post, field, getattr(saved, field))
             if post.pk is None:
                 mode = request.POST.get("mode") or mode
     return render(
@@ -252,6 +328,8 @@ def post_edit(request, pk=None):
         "social/post_form.html",
         {
             "post": post,
+            "slides": list(post.slides.all()) if post.pk else [],
+            "carousel_pending": generation_pending(post),
             "ideas": ideas,
             "mode": mode,
             "accounts": _accounts(),
@@ -372,6 +450,33 @@ def image(request, pk):
     elif not can_manage_social(request.user):
         raise Http404
     return HttpResponse(bytes(post.image_data), content_type=post.image_content_type or "image/jpeg")
+
+
+@social_editor_required
+@require_POST
+def carousel_generate(request: HttpRequest, pk: int) -> JsonResponse:
+    get_object_or_404(SocialPost, pk=pk)
+    try:
+        completed, total = generate_next_slide(pk)
+    except SocialError as exc:
+        return JsonResponse({"error": str(exc)}, status=400)
+    return JsonResponse({"completed": completed, "total": total})
+
+
+def slide_image(request: HttpRequest, pk: int, slide_id: int) -> HttpResponse:
+    from apps.social.meta import slide_signature_matches
+
+    signature = request.GET.get("t", "")
+    if signature:
+        if not slide_signature_matches(pk, slide_id, signature):
+            raise Http404
+    elif not can_manage_social(request.user):
+        raise Http404
+    slide = get_object_or_404(SocialPostSlide, pk=slide_id, post_id=pk)
+    response = HttpResponse(bytes(slide.image_data), content_type="image/jpeg")
+    response["Cache-Control"] = "private, no-store"
+    response["X-Content-Type-Options"] = "nosniff"
+    return response
 
 
 @social_editor_required

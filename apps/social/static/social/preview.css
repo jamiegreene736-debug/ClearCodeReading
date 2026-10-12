@@ -28,3 +28,32 @@
 .social-preview-actions span { display: inline-flex; align-items: center; gap: 5px; }
 .social-preview-actions svg { width: 18px; height: 18px; flex-shrink: 0; }
 .social-preview-instagram .social-preview-actions svg { width: 23px; height: 23px; }
+
+.carousel-editor { margin-top: 1.5rem; border-top: 1px solid #d7dfdd; padding-top: 1rem; }
+.carousel-photo-list { list-style: none; padding: 0; margin: .8rem 0; display: grid; gap: .7rem; }
+.carousel-photo-list li { display: flex; flex-wrap: wrap; align-items: center; gap: .4rem; border: 1px solid #d7dfdd; border-radius: .8rem; padding: .6rem; }
+.carousel-photo-list img { width: 3.5rem; height: 3.5rem; object-fit: contain; border-radius: .3rem; }
+.carousel-photo-list span { flex: 1 1 8rem; overflow-wrap: anywhere; font-size: .8rem; }
+.carousel-photo-list button, .carousel-button, .carousel-controls button { border: 1px solid #1a7a7a; border-radius: 1rem; padding: .4rem .7rem; color: #145b5b; font-weight: 700; background: white; font-size: .85rem; }
+.carousel-photo-list button:disabled { opacity: .4; }
+.carousel-editor button:focus-visible, .carousel-controls button:focus-visible { outline: 3px solid #f5a623; outline-offset: 2px; }
+.carousel-ai { margin-top: 1rem; background: #f7f2ea; border-radius: 1rem; padding: 1rem; }
+.carousel-ai select { margin: .5rem; padding: .5rem; border-radius: .5rem; }
+.carousel-plan { list-style: decimal; padding-left: 1.5rem; font-size: .85rem; }
+.carousel-plan li { margin: .5rem 0; }
+.carousel-controls { display: flex; justify-content: center; align-items: center; gap: 1rem; padding: .5rem; }
+.carousel-controls[hidden], .carousel-editor [hidden] { display: none; }
+
+.post-format-guide { margin-top: 1.25rem; padding: 1.25rem; border: 1px solid #b6d4ce; border-radius: 1.5rem; background: #edf5f2; }
+.post-format-guide h2 { font-size: 1.15rem; font-weight: 900; }
+.post-format-guide p { margin-top: .5rem; line-height: 1.6; font-size: .9rem; }
+.post-format-options { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: .75rem; margin-top: 1rem; }
+.post-format-options a { display: block; padding: 1rem; border: 1px solid #b6d4ce; border-radius: 1rem; background: white; color: #145b5b; }
+.post-format-options strong, .post-format-options span { display: block; }
+.post-format-options strong { text-decoration: underline; text-underline-offset: 3px; }
+.post-format-options span { margin-top: .4rem; color: #52605c; font-size: .85rem; line-height: 1.5; }
+.post-format-options a:hover { border-color: #145b5b; }
+.post-format-options a:focus-visible, #ai-carousel:focus { outline: 3px solid #145b5b; outline-offset: 3px; }
+.post-format-guide .post-format-detail { color: #52605c; font-size: .8rem; }
+#images, #image, #ai-carousel { scroll-margin-top: 2rem; }
+@media (max-width: 640px) { .post-format-options { grid-template-columns: 1fr; } }

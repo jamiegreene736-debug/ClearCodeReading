@@ -11,7 +11,13 @@ from django.utils import timezone
 
 from apps.social.crypto import decrypt_text, encrypt_text
 from apps.social.exceptions import SocialError
-from apps.social.models import ContentPlan, ContentWeek, SocialAccount, SocialPost, SocialPublication
+from apps.social.models import (
+    ContentPlan,
+    ContentWeek,
+    SocialAccount,
+    SocialPost,
+    SocialPublication,
+)
 from apps.users.models import AuditLog, CustomUser
 
 logger = logging.getLogger(__name__)
@@ -73,6 +79,9 @@ def store_image(post: SocialPost, upload) -> None:
 
 
 def require_post_content(post: SocialPost) -> None:
+    from apps.social.carousel_ai import generation_pending
+    if generation_pending(post):
+        raise SocialError("Finish generating the carousel or discard its AI plan before publishing.")
     if not post.selected_networks():
         raise SocialError("Choose Facebook, Instagram, or both.")
     if post.post_to_facebook and not post.facebook_caption.strip():
@@ -285,7 +294,12 @@ def _record(post: SocialPost, network: str, *, status: str, external_id: str = "
 
 def publish_post(post: SocialPost, *, request=None) -> SocialPost:
     """Publish every selected network that does not already have a live post."""
-    from apps.social.meta import absolute_image_url, publish_facebook, publish_instagram
+    from apps.social.meta import (
+        absolute_image_url,
+        carousel_image_urls,
+        publish_facebook,
+        publish_instagram,
+    )
 
     if post.is_blog_promotion:
         from apps.blog.promotion import validate_promotion
@@ -304,6 +318,7 @@ def publish_post(post: SocialPost, *, request=None) -> SocialPost:
             image_url = ""
             if post.post_to_instagram or post.post_to_facebook:
                 post.last_error = str(exc)
+    image_urls = carousel_image_urls(post, image_url) if image_url else []
     failures = []
     missing_image_url = bool(post.has_image and not image_url and not post.is_blog_promotion)
     for network in post.selected_networks():
@@ -324,9 +339,9 @@ def publish_post(post: SocialPost, *, request=None) -> SocialPost:
             continue
         try:
             if network == SocialAccount.Network.FACEBOOK:
-                result = publish_facebook(post, account, image_url=image_url)
+                result = publish_facebook(post, account, image_url=image_url, **({"image_urls": image_urls} if len(image_urls) > 1 else {}))
             else:
-                result = publish_instagram(post, account, image_url=image_url)
+                result = publish_instagram(post, account, image_url=image_url, **({"image_urls": image_urls} if len(image_urls) > 1 else {}))
         except SocialError as exc:
             if str(exc).startswith("Sign in again"):
                 account.status = SocialAccount.Status.RECONNECT
