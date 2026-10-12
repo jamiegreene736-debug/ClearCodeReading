@@ -197,3 +197,30 @@ test('AI carousel generates one slide per request, explains failure, and resumes
   await page.locator('[data-generate-slides]').click();
   await expect.poll(() => calls).toBe(3);
 });
+
+for (const mode of ['manual', 'brief']) {
+  test(`carousel shortcuts are clear and reach their controls in ${mode} mode`, async ({ page }) => {
+    await page.setViewportSize({ width: 390, height: 844 });
+    await openComposer(page, mode);
+    const guide = page.getByRole('region', { name: 'Create a single image or a carousel' });
+    await expect(guide).toBeVisible();
+    await expect(guide).toContainText('Instagram carousel and a Facebook multi-photo post');
+    const formTop = await page.locator('#social-post-form').evaluate(element => element.getBoundingClientRect().top);
+    const guideBottom = await guide.evaluate(element => element.getBoundingClientRect().bottom);
+    expect(guideBottom).toBeLessThan(formTop);
+    const mutations = [];
+    page.on('request', request => { if (request.method() !== 'GET') mutations.push(request.url()); });
+    await guide.getByRole('link', { name: 'Upload carousel images' }).click();
+    await expect(page.locator('#images')).toBeInViewport();
+    await guide.getByRole('link', { name: 'Create an AI carousel' }).click();
+    await expect(page.locator('#ai-carousel')).toBeFocused();
+    await expect(page.locator('[name=slide_count]')).toBeInViewport();
+    await guide.getByRole('link', { name: 'Single image' }).click();
+    await expect(page.locator('#image')).toBeInViewport();
+    expect(mutations).toEqual([]);
+    for (const width of [320, 1280]) {
+      await page.setViewportSize({ width, height: 900 });
+      expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(width);
+    }
+  });
+}

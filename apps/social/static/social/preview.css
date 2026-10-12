@@ -43,3 +43,17 @@
 .carousel-plan li { margin: .5rem 0; }
 .carousel-controls { display: flex; justify-content: center; align-items: center; gap: 1rem; padding: .5rem; }
 .carousel-controls[hidden], .carousel-editor [hidden] { display: none; }
+
+.post-format-guide { margin-top: 1.25rem; padding: 1.25rem; border: 1px solid #b6d4ce; border-radius: 1.5rem; background: #edf5f2; }
+.post-format-guide h2 { font-size: 1.15rem; font-weight: 900; }
+.post-format-guide p { margin-top: .5rem; line-height: 1.6; font-size: .9rem; }
+.post-format-options { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: .75rem; margin-top: 1rem; }
+.post-format-options a { display: block; padding: 1rem; border: 1px solid #b6d4ce; border-radius: 1rem; background: white; color: #145b5b; }
+.post-format-options strong, .post-format-options span { display: block; }
+.post-format-options strong { text-decoration: underline; text-underline-offset: 3px; }
+.post-format-options span { margin-top: .4rem; color: #52605c; font-size: .85rem; line-height: 1.5; }
+.post-format-options a:hover { border-color: #145b5b; }
+.post-format-options a:focus-visible, #ai-carousel:focus { outline: 3px solid #145b5b; outline-offset: 3px; }
+.post-format-guide .post-format-detail { color: #52605c; font-size: .8rem; }
+#images, #image, #ai-carousel { scroll-margin-top: 2rem; }
+@media (max-width: 640px) { .post-format-options { grid-template-columns: 1fr; } }

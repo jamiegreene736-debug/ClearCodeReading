@@ -11,6 +11,16 @@
   <p class="text-xs font-black uppercase tracking-[0.16em] text-deepTeal">Marketing · Social media</p>
   <h1 class="mt-1 text-4xl font-black tracking-tight text-ink">{% if post.pk %}Edit post{% else %}New post{% endif %}</h1>
   {% if post.pk and post.status == 'draft' or post.pk and post.status == 'scheduled' %}<a href="{% url 'social:delete' post.pk %}?return_to={{ nav.origin }}&amp;via=edit" class="focus-ring mt-3 inline-flex rounded-full bg-white px-4 py-2 text-sm font-black text-red-700 ring-1 ring-red-200">Delete post</a>{% endif %}
+  <section class="post-format-guide" aria-labelledby="post-format-heading">
+    <h2 id="post-format-heading">Create a single image or a carousel</h2>
+    <p>Upload your own photos or let AI create the slides. Adding 2–10 images creates an Instagram carousel and a Facebook multi-photo post.</p>
+    <div class="post-format-options">
+      <a href="#image"><strong>Single image</strong><span>Upload one photo for your post.</span></a>
+      <a href="#images"><strong>Upload carousel images</strong><span>Choose 2–10 photos, then arrange their order.</span></a>
+      <a href="#ai-carousel"><strong>Create an AI carousel</strong><span>Enter a subject or caption below, then plan and generate your slides.</span></a>
+    </div>
+    <p class="post-format-detail">The number of images determines the format. Instagram shows swipeable slides; Facebook chooses the photo layout. Review both previews before publishing.</p>
+  </section>
   <div class="mt-4 inline-flex rounded-full bg-white p-1 ring-1 ring-ink/10">
     <a href="{% if post.pk %}{% url 'social:edit' post.pk %}?mode=brief&amp;return_to={{ nav.origin }}{% else %}{% url 'social:new' %}?mode=brief&amp;return_to={{ nav.origin }}{% endif %}" class="rounded-full px-4 py-2 text-sm font-black {% if mode == 'brief' %}bg-ink text-white{% else %}text-ink/60{% endif %}">From a brief</a>
     <a href="{% if post.pk %}{% url 'social:edit' post.pk %}?mode=manual&amp;return_to={{ nav.origin }}{% else %}{% url 'social:new' %}?mode=manual&amp;return_to={{ nav.origin }}{% endif %}" class="rounded-full px-4 py-2 text-sm font-black {% if mode != 'brief' %}bg-ink text-white{% else %}text-ink/60{% endif %}">Write it yourself</a>
@@ -63,7 +73,7 @@
       {% if mode == "brief" %}
         <label class="mt-4 flex items-start gap-3 rounded-2xl bg-linen px-4 py-3 text-sm font-bold text-ink/80">
           <input type="checkbox" name="generate_image" class="mt-1" {% if generate_image %}checked{% endif %}>
-          <span><span class="font-black text-ink">Also generate an image</span><br>Leave this off to draft words only. The AI-generated picture has a lifelike, cheerful photography style, and you can replace it.</span>
+          <span><span class="font-black text-ink">Also generate one image</span><br>Leave this off to draft words only. For multiple slides, use Create an AI carousel above. The AI-generated picture has a lifelike, cheerful photography style, and you can replace it.</span>
         </label>
       {% endif %}
       <div class="mt-4 flex flex-wrap gap-3 text-sm font-black">
