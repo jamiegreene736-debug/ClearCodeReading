@@ -510,3 +510,89 @@ class CarouselTests(TestCase):
         self.assertEqual(len(facebook.call_args.kwargs["image_urls"]), 3)
         self.post.refresh_from_db()
         self.assertEqual(self.post.status, SocialPost.Status.POSTED)
+
+    def test_carousel_edit_retires_weekly_approval_and_prevents_auto_scheduling(
+        self,
+    ) -> None:
+        from datetime import timedelta
+
+        from django.utils import timezone
+
+        from apps.social.models import ContentPlan, ContentWeek
+        from apps.social.planner import _schedule_ready
+
+        plan = ContentPlan.objects.create(
+            mode=ContentPlan.Mode.AUTOMATIC, updated_by=self.admin
+        )
+        week = ContentWeek.objects.create(
+            week_of=timezone.now().date(),
+            planned_at=timezone.now() + timedelta(days=2),
+            pillar="family_support",
+            post=self.post,
+            status=ContentWeek.Status.READY,
+            review_passed=True,
+        )
+        response = self.client.post(
+            self.url,
+            {
+                **self.data,
+                "photo_order": '["upload:0","upload:1"]',
+                "images": [upload("one.png"), upload("two.png")],
+            },
+        )
+        self.assertEqual(response.status_code, 302)
+        week.refresh_from_db()
+        self.assertFalse(week.review_passed)
+        self.assertEqual(week.status, ContentWeek.Status.SKIPPED)
+        _schedule_ready(plan)
+        self.post.refresh_from_db()
+        self.assertEqual(self.post.status, SocialPost.Status.DRAFT)
+        week.status, week.review_passed, week.auto_scheduled = (
+            ContentWeek.Status.READY,
+            True,
+            True,
+        )
+        week.save()
+        self.post.status = SocialPost.Status.SCHEDULED
+        self.post.scheduled_at = week.planned_at
+        self.post.save()
+        self.client.post(
+            self.url,
+            {
+                **self.data,
+                "photo_order": '["upload:0","upload:1"]',
+                "images": [upload("three.png"), upload("four.png")],
+            },
+        )
+        self.post.refresh_from_db()
+        self.assertEqual(self.post.status, SocialPost.Status.DRAFT)
+        self.assertIsNone(self.post.scheduled_at)
+
+    def test_ai_carousel_plan_retires_weekly_approval_before_generation(self) -> None:
+        from django.utils import timezone
+
+        from apps.social.models import ContentPlan, ContentWeek
+
+        ContentPlan.objects.create(updated_by=self.admin)
+        week = ContentWeek.objects.create(
+            week_of=timezone.now().date(),
+            planned_at=timezone.now(),
+            pillar="family_support",
+            post=self.post,
+            status=ContentWeek.Status.READY,
+            review_passed=True,
+        )
+        plan = {
+            "slides": ["A sunny reading corner", "A warm reading lamp"],
+            "completed": 0,
+            "facebook": "A new Facebook caption",
+            "instagram": "A new Instagram caption",
+        }
+        with patch("apps.social.views.plan_carousel", return_value=plan):
+            response = self.client.post(
+                self.url, {**self.data, "action": "plan_carousel", "slide_count": "2"}
+            )
+        self.assertEqual(response.status_code, 302)
+        week.refresh_from_db()
+        self.assertFalse(week.review_passed)
+        self.assertEqual(week.status, ContentWeek.Status.SKIPPED)

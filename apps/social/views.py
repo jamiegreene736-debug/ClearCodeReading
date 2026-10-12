@@ -41,6 +41,8 @@ from apps.social.meta import (
     signature_matches,
 )
 from apps.social.models import (
+    ContentPlan,
+    ContentWeek,
     SocialAccount,
     SocialAuthorization,
     SocialPost,
@@ -270,16 +272,32 @@ def post_edit(request, pk=None):
                     post.created_by = request.user
                 if post.status not in {SocialPost.Status.SCHEDULED, SocialPost.Status.ATTENTION}:
                     post.status = SocialPost.Status.DRAFT
+                changing_media = photos is not None or action == "plan_carousel"
                 with transaction.atomic():
+                    weeks = []
+                    if changing_media and post.pk:
+                        # Match planner lock order before retiring its old editorial approval.
+                        ContentPlan.objects.select_for_update().filter(pk=1).first()
+                        weeks = list(ContentWeek.objects.select_for_update().filter(post_id=post.pk))
                     if post.pk:
                         current = SocialPost.objects.select_for_update().filter(pk=post.pk).first()
                         if current is None:
                             raise SocialError("This post was deleted while you were editing. It has not been recreated.")
                         if current.status in {SocialPost.Status.PUBLISHING, SocialPost.Status.POSTED} or current.updated_at != post.updated_at:
                             raise SocialError("This post changed while you were editing. Reload it before saving.")
+                    if any(week.auto_scheduled for week in weeks):
+                        post.status, post.scheduled_at = SocialPost.Status.DRAFT, None
                     post.save()
                     if photos is not None:
                         save_slides(post, photos)
+                    if changing_media:
+                        ContentWeek.objects.filter(post_id=post.pk).update(
+                            status=ContentWeek.Status.SKIPPED,
+                            auto_scheduled=False,
+                            review_passed=False,
+                            review_note="Photos changed in the composer. Review and schedule this post manually.",
+                            updated_at=timezone.now(),
+                        )
                 if action == "schedule":
                     return redirect(f"{reverse('social:schedule', kwargs={'pk': post.pk})}?return_to={nav['origin']}&via=edit")
                 if action == "post_now":

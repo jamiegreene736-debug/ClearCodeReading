@@ -360,7 +360,9 @@ resuming; completed slides are not generated twice. A five-minute lease prevents
 concurrent generation and can be reclaimed after an interrupted request. Each slide
 uses the existing configured image model and brand rules. No generated slide is
 published automatically. Finish generation or discard the plan before scheduling.
-Discarding keeps the current saved photos. Weekly automated content planning remains
+Discarding keeps the current saved photos. Changing photos or planning a carousel retires
+a linked weekly slot’s old editorial approval and automatic scheduling; the edited post
+requires manual review and scheduling. Weekly automated content planning remains
 single-image; this feature is available in the editable composer.
 
 Instagram uploads each child with `is_carousel_item=true`, checks child readiness,
