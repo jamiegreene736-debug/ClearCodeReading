@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+from typing import ClassVar
+
 from django.conf import settings
 from django.db import models
 
@@ -104,6 +106,7 @@ class SocialPost(TimeStampedModel):
     facebook_caption = models.TextField(blank=True)
     instagram_caption = models.TextField(blank=True)
     link_url = models.URLField(blank=True)
+    carousel_plan = models.JSONField(default=dict, blank=True)
     image_data = models.BinaryField(null=True, blank=True)
     image_content_type = models.CharField(max_length=80, blank=True)
     image_name = models.CharField(max_length=200, blank=True)
@@ -150,6 +153,29 @@ class SocialPost(TimeStampedModel):
         if self.post_to_instagram:
             networks.append(SocialAccount.Network.INSTAGRAM)
         return networks
+
+
+class SocialPostSlide(TimeStampedModel):
+    """Additional photos after the existing cover image, in publishing order."""
+
+    post = models.ForeignKey(
+        SocialPost, on_delete=models.CASCADE, related_name="slides"
+    )
+    position = models.PositiveSmallIntegerField()
+    image_data = models.BinaryField()
+    image_name = models.CharField(max_length=200)
+
+    class Meta:
+        ordering: ClassVar[list[str]] = ["position", "pk"]
+        constraints: ClassVar[list[models.BaseConstraint]] = [
+            models.UniqueConstraint(
+                fields=["post", "position"], name="social_slide_position"
+            ),
+            models.CheckConstraint(
+                condition=models.Q(position__gte=1, position__lte=9),
+                name="social_slide_range",
+            ),
+        ]
 
 
 class SocialPublication(TimeStampedModel):

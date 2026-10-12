@@ -4,7 +4,7 @@ const fs = require('node:fs');
 const path = require('node:path');
 
 // Render the real Django composer without accounts, credentials, or a database.
-const render = (mode, image = false) => execFileSync(process.env.PYTHON || 'python', ['-c', `
+const render = (mode, image = false, carousel = false) => execFileSync(process.env.PYTHON || 'python', ['-c', `
 import os
 os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'clearcodereading.settings')
 import django
@@ -16,17 +16,20 @@ request = RequestFactory().get("/portal/marketing/posts/123/")
 request.resolver_match = resolve(request.path)
 from apps.social.models import SocialPost
 post = SocialPost(pk=123, source='${mode}', facebook_caption='Saved Facebook caption', instagram_caption='Saved Instagram caption', image_data=${image ? "b'image'" : 'None'})
-print(render_to_string('social/post_form.html', {'request': request, 'post': post, 'mode': '${mode}', 'accounts': {}, 'ai_ready': False}))
+from types import SimpleNamespace
+slides = [SimpleNamespace(pk=456, image_name='second.jpg')] if ${carousel ? 'True' : 'False'} else []
+if slides: post.carousel_plan = {'slides': ['A warm reading corner', 'A sunny reading lamp'], 'completed': 0}
+print(render_to_string('social/post_form.html', {'request': request, 'post': post, 'mode': '${mode}', 'accounts': {}, 'ai_ready': False, 'csrf_token': 'test-csrf', 'slides': slides, 'carousel_pending': bool(slides)}))
 `], { encoding: 'utf8' });
 const png = Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+aX1kAAAAASUVORK5CYII=', 'base64');
-const html = { manual: render('manual'), brief: render('brief'), saved: render('manual', true) };
+const html = { manual: render('manual'), brief: render('brief'), saved: render('manual', true), carousel: render('manual', true, true) };
 test.use({ channel: 'chromium' });
 
 async function openComposer(page, mode = 'manual') {
   await page.route('**/*', async (route) => {
     const url = new URL(route.request().url());
     if (url.pathname === '/') return route.fulfill({ contentType: 'text/html', body: html[mode] });
-    if (url.pathname.includes('/image/')) return route.fulfill({ contentType: 'image/png', body: png });
+    if (url.pathname.includes('/image/') || url.pathname.includes('/slides/')) return route.fulfill({ contentType: 'image/png', body: png });
     const assets = {
       '/static/social/preview.js': ['apps/social/static/social/preview.js', 'application/javascript'],
       '/static/social/navigation.css': ['apps/social/static/social/navigation.css', 'text/css'],
@@ -138,4 +141,59 @@ test('photo preview preserves the image and remains readable on desktop and mobi
     expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(width);
     await page.screenshot({ path: testInfo.outputPath(`preview-${width}.png`), fullPage: true });
   }
+});
+
+
+test('carousel uploads reorder and remove photos in the saved payload and both previews', async ({ page }) => {
+  await openComposer(page, 'saved');
+  await page.locator('#images').setInputFiles([
+    { name: 'second.png', mimeType: 'image/png', buffer: png },
+    { name: 'third.png', mimeType: 'image/png', buffer: png },
+  ]);
+  await expect(page.locator('[data-photo-list] li')).toHaveCount(3);
+  await expect(page.locator('[data-slide-count]').first()).toHaveText('1 / 3');
+  const cover = await page.locator('[data-preview-image]').first().getAttribute('src');
+  await page.locator('[data-slide-next]').first().click();
+  await expect(page.locator('[data-slide-count]').last()).toHaveText('2 / 3');
+  expect(await page.locator('[data-preview-image]').last().getAttribute('src')).not.toBe(cover);
+  await page.getByRole('button', { name: 'Earlier photo 3', exact: true }).click();
+  await expect(page.locator('[data-photo-list] li').nth(1)).toContainText('third.png');
+  expect(await page.locator('#images').evaluate((node) => [...node.files].map((file) => file.name))).toEqual(['third.png', 'second.png']);
+  await expect(page.locator('[name=photo_order]')).toHaveValue('[' + '"cover","upload:0","upload:1"' + ']');
+  await page.getByRole('button', { name: 'Remove photo 1', exact: true }).click();
+  await expect(page.locator('[data-photo-list] li')).toHaveCount(2);
+  await page.getByRole('button', { name: 'Remove photo 1', exact: true }).click();
+  await page.getByRole('button', { name: 'Remove photo 1', exact: true }).click();
+  await expect(page.locator('[value=schedule]')).toBeDisabled();
+  await expect(page.locator('[data-preview-photo-needed]')).toBeVisible();
+});
+
+test('carousel enforces ten-photo limit and keeps controls within a phone viewport', async ({ page }) => {
+  await page.setViewportSize({ width: 320, height: 900 });
+  await openComposer(page);
+  await page.locator('#images').setInputFiles(Array.from({ length: 11 }, (_, i) => ({ name: `photo-${i}.png`, mimeType: 'image/png', buffer: png })));
+  await expect(page.locator('p[data-photo-error]')).toHaveText('Choose up to 10 photos.');
+  await expect(page.locator('[value=post_now]')).toBeDisabled();
+  await page.getByRole('button', { name: 'Remove photo 11', exact: true }).click();
+  await expect(page.locator('p[data-photo-error]')).toBeHidden();
+  await expect(page.locator('[value=post_now]')).toBeEnabled();
+  expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
+});
+
+test('AI carousel generates one slide per request, explains failure, and resumes', async ({ page }) => {
+  await openComposer(page, 'carousel');
+  let calls = 0;
+  await page.route('**/generate-slide/', async (route) => {
+    calls += 1;
+    expect(route.request().method()).toBe('POST');
+    if (calls === 2) return route.fulfill({ status: 400, contentType: 'application/json', body: JSON.stringify({ error: 'AI generation is temporarily limited.' }) });
+    return route.fulfill({ contentType: 'application/json', body: JSON.stringify({ completed: calls === 1 ? 1 : 2, total: 2 }) });
+  });
+  await expect(page.locator('[value=post_now]')).toBeDisabled();
+  await page.locator('[data-generate-slides]').click();
+  await expect(page.locator('[data-generation-progress]')).toContainText('Completed slides are saved');
+  expect(calls).toBe(2);
+  await expect(page.locator('[data-generate-slides]')).toBeEnabled();
+  await page.locator('[data-generate-slides]').click();
+  await expect.poll(() => calls).toBe(3);
 });

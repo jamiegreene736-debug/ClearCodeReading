@@ -272,7 +272,7 @@ recorded as failed, and the post moves to Needs attention.
 
 ## Not in this version
 
-Carousels, Reels, Stories, ads, inbox messages, comment replies, and a marketing
+Reels, Stories, ads, inbox messages, comment replies, and a marketing
 role below super administrator. The menu and the queue are shaped so those
 can be added later without a new header item.
 
@@ -332,3 +332,50 @@ recommends consistent local navigation beneath global navigation for related pag
 calls for repeated navigation in the same relative order. Regression coverage includes
 rendered navigation order/current state, existing return flows, and Playwright
 navigation and overflow checks at 320, 390, and 1280 pixels.
+
+
+## Photo carousels (October 2026)
+
+In the composer, **Add photos** accepts up to ten JPEG, PNG, or WebP images.
+The ordered list provides Earlier, Later, and Remove controls. The first photo is
+the cover; both live previews have previous/next controls and a slide counter.
+Single-photo, text-only Facebook, and blog-link posts retain their existing behavior.
+Facebook renders multi-photo feed posts in its own layout; Instagram renders a
+swipeable carousel. The same ordered set goes to both networks.
+
+Files are decoded and validated (8 MB per input, at most 16 megapixels), stripped
+of metadata, and saved as JPEG. Carousel images fit within a 1080-pixel square linen
+canvas without cropping, matching Instagram's shared aspect-ratio requirement.
+The existing cover fields remain intact; `SocialPostSlide` stores positions 1–9
+following the cover. Edits validate the full order and file batch before atomically
+saving. Signed slide URLs expire after one hour and bind the exact post and slide;
+staff previews require the existing social-media permission.
+
+**Plan AI carousel** uses the subject or caption and chosen count (2–10) to create
+shared captions and a coherent set of photographic briefs. It does not spend image
+requests yet. Review the plan, then choose **Generate / resume slides**. The browser
+requests one slide at a time; every completed slide is saved. The first successful
+slide replaces the previous image set. Failures preserve completed slides and allow
+resuming; completed slides are not generated twice. A five-minute lease prevents
+concurrent generation and can be reclaimed after an interrupted request. Each slide
+uses the existing configured image model and brand rules. No generated slide is
+published automatically. Finish generation or discard the plan before scheduling.
+Discarding keeps the current saved photos. Weekly automated content planning remains
+single-image; this feature is available in the editable composer.
+
+Instagram uploads each child with `is_carousel_item=true`, checks child readiness,
+creates a `CAROUSEL` parent in selected order, checks parent readiness, then publishes
+only that parent. Both Instagram sign-in methods are supported. Facebook uploads
+photos unpublished before attaching all photo IDs to one feed post. A child failure
+prevents publication of a partial carousel. Confirmed networks are skipped on retry;
+a failed Instagram permalink lookup does not make a confirmed post retryable.
+
+Primary API references, inspected October 12, 2026:
+- [Meta Instagram content publishing](https://developers.facebook.com/docs/instagram-platform/content-publishing/): ten-item API cap, JPEG format, shared crop, child and parent containers.
+- [Meta Page photos](https://developers.facebook.com/docs/graph-api/reference/page/photos/#multi): unpublished uploads and ordered `attached_media` in a feed post.
+
+Deploy migration `0004_socialpost_carousel_plan_socialpostslide` before the new web
+and publishing worker code. No existing images are migrated or regenerated. Both
+services need the new release; collect static assets as in the normal deployment.
+Verification uses mocked Meta/OpenAI requests and local generated image fixtures;
+no paid image requests or live social publishing are part of the automated tests.
