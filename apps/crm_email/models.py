@@ -5,7 +5,7 @@ from django.conf import settings
 from django.db import models
 
 # Bethany's signature on every automated email sent in her name. The HTML part
-# shows the website header lockup (BETHANY_SIGNATURE_LOGO) below these lines.
+# shows the linen lockup (BETHANY_SIGNATURE_LOGO) below these lines.
 BETHANY_SIGNATURE = (
     "Bethany Fleming, M.Ed.\n"
     "Founder & CEO\n"
@@ -13,8 +13,8 @@ BETHANY_SIGNATURE = (
     "Website: https://clearcodereading.com\n"
     "Blog: https://clearcodereading.com/blog/"
 )
-# Gold-and-teal monogram used in the public website header lockup.
-BETHANY_SIGNATURE_LOGO = "/assets/logo/cc-monogram-gold-teal.png"
+# Linen ClearCode Reading lockup under Bethany's signature in HTML emails.
+BETHANY_SIGNATURE_LOGO = "/assets/logo/cc-lockup-linen-ui.png"
 
 
 class Mailbox(models.Model):
