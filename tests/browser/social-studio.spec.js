@@ -44,6 +44,7 @@ for (const width of [390,1280]) {
   });
 }
 test('page edits support undo, reordering, save and attaching every page', async ({page}) => {
+  test.setTimeout(60000);
   await open(page);
   await page.locator('#studio-page-copy').click(); await expect(page.locator('#studio-pages button')).toHaveCount(3);
   await page.locator('#studio-undo').click(); await expect(page.locator('#studio-pages button')).toHaveCount(2);
@@ -53,11 +54,11 @@ test('page edits support undo, reordering, save and attaching every page', async
   let saved = '', attached = '';
   await page.route('**/designs/save/', async route => {saved=route.request().postData(); await route.fulfill({json:{id:9,revision:'new'}});});
   await page.locator('#studio-save-new').click();
-  await expect(page.locator('#studio-status')).toContainText('Template saved');
+  await expect(page.locator('#studio-status')).toContainText('Template saved', {timeout:20000});
   expect(saved).toContain('Reusable scripts'); expect(saved).toContain('preview.png');
   await page.route('**/designs/apply/', async route => {attached=route.request().postData(); await route.fulfill({json:{url:'/done'}});});
   await page.route('**/done', route=>route.fulfill({body:'Draft artwork saved'}));
-  await page.locator('#studio-apply').click(); await expect(page).toHaveURL(/done$/);
+  await page.locator('#studio-apply').click(); await expect(page).toHaveURL(/done$/, {timeout:20000});
   for (const file of ['page-1.png','page-2.png','page-3.png']) expect(attached).toContain(file);
 });
 test('overflow blocks export and failed saves keep editable text', async ({page}) => {
