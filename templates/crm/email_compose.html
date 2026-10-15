@@ -2,6 +2,7 @@
 {% block title %}Compose email{% endblock %}
 {% block email_content %}
 <p><a href="{% url 'crm_contact_email' lead.pk %}">← Email for {{ lead.contact_name }}</a></p><h1>Compose email</h1><p class="subtle">From {{ mailbox.email|default:request.user.email }}</p>
+<p>Reusable messages are kept in <a href="{% url 'crm_email_templates' %}" target="_blank" rel="noopener">Email &amp; notifications → Email templates (opens in a new tab)</a>.</p>
 {% if templates %}<details class="card"><summary>Start with a template</summary><div class="actions">{% for item in templates %}<a class="btn" href="{% url 'crm_email_compose' lead.pk %}?template={{ item.pk }}">{{ item.name }}</a>{% endfor %}</div><p>Choosing a template opens a new draft. Save your current draft first.</p></details>{% endif %}
 <section class="card"><form method="post" enctype="multipart/form-data">{% csrf_token %}{{ form.non_field_errors }}
 {% for field in form %}{% if field.is_hidden %}{{ field }}{% else %}<div class="field">{{ field.label_tag }}

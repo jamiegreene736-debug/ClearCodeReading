@@ -1,0 +1,16 @@
+{% extends "crm/email_base.html" %}
+{% block title %}Email templates · Email & notification settings{% endblock %}
+{% block email_content %}
+<div class="page-head"><div><p class="eyebrow">Email &amp; notification settings</p><h1>Email templates</h1><p class="subtle">All the reusable messages available when you email a CRM contact. Choose a template from the contact card or email composer, review the draft, then send.</p></div><a class="btn btn-primary" href="{% url 'crm_email_template_new' %}">New personal template</a></div>
+{% include "crm/_email_settings_nav.html" %}
+<section class="card flush"><div class="section-head"><div><h2>Your personal templates</h2><p class="subtle">Only you can see, edit and use these messages. Changes apply the next time you choose the template.</p></div></div>
+<div class="table-wrap"><table><thead><tr><th>Template</th><th>Updated</th></tr></thead><tbody>
+{% for item in templates %}<tr><td><a class="row-title" href="{% url 'crm_email_template' item.pk %}" aria-label="Edit {{ item.name }}">{{ item.name }} · Edit</a><span class="row-meta">{{ item.subject }}</span></td><td>{{ item.updated_at|date:"M j, Y" }}</td></tr>{% empty %}<tr><td colspan="2" class="empty">No personal templates yet. Create one above or customize a referral template below.</td></tr>{% endfor %}
+</tbody></table></div></section>
+<section class="card"><h2>Shared pipeline templates</h2><p class="subtle">Available to the whole team. These use the same wording as pipeline notifications. Administrator edits also affect future automated emails; existing drafts are unchanged.</p>
+{% for item in pipeline_templates %}<details><summary>{{ item.spec.name }}</summary><p><strong>Subject:</strong> {{ item.subject }}</p><div style="white-space:pre-wrap">{{ item.body }}</div>{% if request.user.can_manage_crm_users %}<p><a class="btn btn-small" href="{% url 'crm_email_automated' item.spec.key %}">Edit shared wording</a></p>{% else %}<p class="subtle">Ask a CRM administrator to change the shared wording.</p>{% endif %}</details>{% endfor %}
+</section>
+<section class="card"><h2>Referral starter templates</h2><p class="subtle">Built-in messages available to everyone. Customize a copy to save your own wording in personal templates.</p>
+{% for item in referral_templates %}<details><summary>{{ item.name }}</summary><p><strong>Subject:</strong> {{ item.subject }}</p><p>{{ item.body_html|striptags }}</p><a class="btn btn-small" href="{% url 'crm_email_template_new' %}?source={{ item.pk }}">Customize a copy of {{ item.name }}</a></details>{% endfor %}
+</section>
+{% endblock %}

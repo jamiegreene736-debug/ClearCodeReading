@@ -199,7 +199,13 @@ The CRM sidebar entry is **Email & notifications** (`/crm/email/`). The page is 
 hub rendered by `templates/crm/_email_settings_nav.html`:
 
 - **Mailbox** (`crm_email_settings`, every CRM user): Google mailbox status and actions,
-  signature, personal templates, and for administrators the team connections table.
+  signature, and for administrators the team connections table.
+- **Email templates** (`crm_email_templates`, every CRM user): the complete library used
+  by contact cards and the composer. Personal templates stay owner-only and can be
+  created, edited or deleted here. Shared pipeline wording links to its existing
+  administrator editor; edits also affect future automated sends. Referral starters
+  can be previewed and copied into a personal template without changing the originals.
+  Save/delete returns to this library. Composer links open a new tab to preserve drafts.
 - **Notifications** (`crm_email_notifications`, administrators): stat tiles and one
   table of every email notification, grouped by category with filter chips; each row
   links to its editor.

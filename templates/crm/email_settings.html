@@ -2,7 +2,7 @@
 {% block title %}Email & notification settings{% endblock %}
 {% block email_content %}
 <div class="page-head"><div><p class="eyebrow">Your workspace</p><h1>Email &amp; notification settings</h1>
-<p class="subtle">Your connected mailbox, signature and personal templates. Administrators also manage automated notifications, newsletters and email tests from the tabs below.</p></div></div>
+<p class="subtle">Manage your connected mailbox and signature here. Find reusable CRM messages in the Email templates tab. Administrators also manage automated notifications, newsletters and email tests from the tabs below.</p></div></div>
 {% include "crm/_email_settings_nav.html" %}
 <div class="split">
 <section class="card flush">
@@ -24,10 +24,7 @@
 <div>
 <section class="card flush"><div class="section-head"><div><h2>Your signature</h2><p class="subtle">Added automatically when you start a new draft.</p></div></div>
 <div class="card-body"><form method="post">{% csrf_token %}{{ form.as_p }}<button class="btn btn-primary">Save signature</button></form></div></section>
-<section class="card flush"><div class="section-head"><div><h2>Your templates</h2><p class="subtle">Reusable messages visible only to you.</p></div><a class="btn btn-small" href="{% url 'crm_email_template_new' %}">New template</a></div>
-{% if templates %}<div class="table-wrap"><table><thead><tr><th>Template</th><th>Updated</th></tr></thead><tbody>
-{% for item in templates %}<tr><td><a class="row-title" href="{% url 'crm_email_template' item.pk %}">{{ item.name }}</a><span class="row-meta">{{ item.subject }}</span></td><td class="subtle">{{ item.updated_at|date:"M j, Y" }}</td></tr>{% endfor %}
-</tbody></table></div>{% else %}<p class="empty">No templates yet.</p>{% endif %}</section>
+<section class="card"><h2>Looking for an email template?</h2><p>Find every template available when emailing a CRM contact in <a href="{% url 'crm_email_templates' %}">Email templates</a>. Create and edit personal messages or find shared pipeline and referral templates there.</p></section>
 </div></div>
 {% if request.user.can_manage_crm_users %}
 <section class="card flush"><div class="section-head"><div><h2>Team email connections</h2><p class="subtle">Every CRM user's mailbox status. Disconnecting keeps their CRM history.</p></div></div>
