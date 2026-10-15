@@ -1,0 +1,30 @@
+<fieldset class="category-fields">
+  <legend>Internal category</legend>
+  <p>Organize posts and color your calendar. This is never added to the public caption.</p>
+  <label for="post-category">Category</label>
+  <select id="post-category" name="category">
+    <option value="">Uncategorized</option>
+    {% for category in category_choices %}<option value="{{ category.pk }}" data-color="{{ category.color }}" {% if category.pk == post.category_id %}selected{% endif %}>{{ category.name }}{% if category.archived %} (archived){% endif %}</option>{% endfor %}
+    <option value="new">Create category…</option>
+  </select>
+  <div id="new-category-fields"><label for="category-name">New category name <small>(only when creating a category)</small></label>
+  <input id="category-name" name="category_name" maxlength="80" placeholder="For example, Free resources"></div>
+  <label for="category-color">Category color</label>
+  <input id="category-color" type="color" name="category_color" value="{{ post.category.color|default:'#197B80' }}">
+  <label><input type="checkbox" name="change_category_color"> Change this category’s color everywhere</label>
+  <p>New categories use the selected color. For an existing category, check the box to update all its calendar entries.</p>
+  <a href="{% url 'social:categories' %}">Manage categories and organize older posts</a>
+</fieldset>
+<script>
+(() => {
+  const category = document.getElementById('post-category');
+  const update = () => {
+    document.getElementById('new-category-fields').hidden = category.value !== 'new';
+    document.getElementById('category-name').required = category.value === 'new';
+    const color = category.selectedOptions[0]?.dataset.color;
+    if (color) document.getElementById('category-color').value = color;
+  };
+  category.addEventListener('change', update);
+  update();
+})();
+</script>

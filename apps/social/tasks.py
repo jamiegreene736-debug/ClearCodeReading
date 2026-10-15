@@ -17,3 +17,11 @@ def publish_scheduled_social_posts():
         finally:
             maintain_blog_plan()
         return count
+
+
+@shared_task
+def sync_social_insights():
+    from apps.social.insights import sync_due_insights
+
+    with schema_context("public"):
+        return sync_due_insights()

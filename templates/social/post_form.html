@@ -31,6 +31,7 @@
     <input type="hidden" name="revision" value="{{ post.updated_at|date:'c' }}">
     <input type="hidden" name="mode" value="{{ mode }}">
     <section class="rounded-[1.75rem] bg-white p-5 ring-1 ring-ink/10">
+      {% include "social/_category_fields.html" %}
       {% if mode == "brief" %}
         <div class="mb-5 rounded-2xl bg-linen p-4">
           <h2 class="font-black">Start with an idea</h2>

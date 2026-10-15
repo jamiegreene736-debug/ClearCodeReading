@@ -7,7 +7,7 @@
 <div class="pb-10" data-testid="social-settings">
   <p class="text-xs font-black uppercase tracking-[0.16em] text-deepTeal">Marketing</p>
   <h1 class="mt-1 text-4xl font-black tracking-tight text-ink">Settings</h1>
-  <p class="mt-2 max-w-2xl text-ink/65">One click opens the network’s own sign-in, then brings you straight back. The portal asks only for permission to publish posts you approve.</p>
+  <p class="mt-2 max-w-2xl text-ink/65">One click opens the network’s own sign-in, then brings you straight back. Standard sign-in connects publishing. Choose Enable analytics access to also request permission to read post performance.</p>
   {% if not ready %}
     <p class="mt-4 rounded-2xl border border-gold/50 bg-white px-4 py-3 text-sm font-bold text-ink/75">Meta setup is not complete yet. Drafts and the schedule still work. Sign-in needs the Meta app id, secret, both callback addresses, and the encryption keys.</p>
   {% endif %}
@@ -25,6 +25,7 @@
       {% if accounts.facebook.last_error %}<p class="mt-2 text-sm font-bold text-amber-800">{{ accounts.facebook.last_error }}</p>{% endif %}
       <div class="mt-auto flex flex-wrap gap-2 pt-5">
         {% if ready %}
+          <form method="post" action="{% url 'social:facebook_connect' %}">{% csrf_token %}<input type="hidden" name="insights" value="on"><button class="rounded-full px-4 py-3 font-black text-deepTeal ring-1 ring-deepTeal/20">Enable Facebook analytics access</button></form>
           <form method="post" action="{% url 'social:facebook_connect' %}">{% csrf_token %}<button class="rounded-xl bg-[#1877F2] px-4 py-3 font-black text-white" type="submit">{% if accounts.facebook.is_connected %}Reconnect Facebook{% else %}Sign in with Facebook{% endif %}</button></form>
         {% endif %}
         {% if accounts.facebook and accounts.facebook.status != "disconnected" %}
@@ -44,6 +45,7 @@
       {% if accounts.instagram.last_error %}<p class="mt-2 text-sm font-bold text-amber-800">{{ accounts.instagram.last_error }}</p>{% endif %}
       <div class="mt-auto flex flex-wrap gap-2 pt-5">
         {% if ready %}
+          <form method="post" action="{% if accounts.instagram.via_facebook %}{% url 'social:facebook_connect' %}{% else %}{% url 'social:instagram_connect' %}{% endif %}">{% csrf_token %}<input type="hidden" name="insights" value="on"><button class="rounded-full px-4 py-3 font-black text-deepTeal ring-1 ring-deepTeal/20">Enable Instagram analytics access</button></form>
           <form method="post" action="{% url 'social:instagram_connect' %}">{% csrf_token %}<button class="rounded-xl bg-ink px-4 py-3 font-black text-white" type="submit">{% if accounts.instagram.is_connected %}Reconnect Instagram{% else %}Sign in with Instagram{% endif %}</button></form>
         {% endif %}
         {% if accounts.instagram and accounts.instagram.status != "disconnected" %}

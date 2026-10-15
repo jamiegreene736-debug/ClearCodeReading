@@ -5,3 +5,6 @@ class SocialConfig(AppConfig):
     default_auto_field = "django.db.models.BigAutoField"
     name = "apps.social"
     verbose_name = "Social media"
+
+    def ready(self) -> None:
+        from apps.social import signals  # noqa: F401

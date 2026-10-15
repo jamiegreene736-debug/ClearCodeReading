@@ -4,6 +4,8 @@ from typing import ClassVar
 
 from django.conf import settings
 from django.db import models
+from django.core.validators import RegexValidator
+from django.db.models.functions import Lower
 
 from apps.core.models import TimeStampedModel
 
@@ -61,6 +63,8 @@ class SocialAccount(TimeStampedModel):
     )
     connected_at = models.DateTimeField(null=True, blank=True)
     last_checked_at = models.DateTimeField(null=True, blank=True)
+    insights_retry_after = models.DateTimeField(null=True, blank=True)
+    insights_error = models.CharField(max_length=300, blank=True)
     last_error = models.CharField(max_length=300, blank=True)
 
     class Meta:
@@ -72,6 +76,20 @@ class SocialAccount(TimeStampedModel):
     @property
     def is_connected(self) -> bool:
         return self.status == self.Status.CONNECTED and bool(self.encrypted_token)
+
+
+class SocialCategory(TimeStampedModel):
+    name = models.CharField(max_length=80)
+    color = models.CharField(max_length=7, default="#197B80", validators=[RegexValidator(r"^#[0-9a-fA-F]{6}$", "Choose a valid color.")])
+    archived = models.BooleanField(default=False)
+    system_key = models.CharField(max_length=30, null=True, blank=True, unique=True)
+
+    class Meta:
+        ordering: ClassVar[list[str]] = ["name"]
+        constraints = [models.UniqueConstraint(Lower("name"), name="social_category_name_unique")]
+
+    def __str__(self) -> str:
+        return self.name
 
 
 class SocialPost(TimeStampedModel):
@@ -96,6 +114,8 @@ class SocialPost(TimeStampedModel):
         WARM = "warm", "Warm"
         PRACTICAL = "practical", "Practical"
         CELEBRATORY = "celebratory", "Celebratory"
+
+    category = models.ForeignKey(SocialCategory, null=True, blank=True, on_delete=models.PROTECT, related_name="posts")
 
     blog_post = models.OneToOneField("blog.BlogPost", on_delete=models.SET_NULL, null=True, blank=True, related_name="facebook_promotion")
     blog_auto_scheduled = models.BooleanField(default=False)
@@ -137,6 +157,11 @@ class SocialPost(TimeStampedModel):
         if len(line) > 90:
             return line[:87].rsplit(" ", 1)[0] + "…"
         return line or "Untitled post"
+
+    @property
+    def posted_at(self):
+        dates = [publication.published_at for publication in self.publications.all() if publication.published_at]
+        return min(dates) if dates else self.updated_at
 
     @property
     def has_image(self) -> bool:
@@ -276,3 +301,27 @@ class ContentWeek(TimeStampedModel):
 
     class Meta:
         ordering = ["planned_at"]
+
+
+class PublicationInsights(TimeStampedModel):
+    publication = models.OneToOneField(SocialPublication, on_delete=models.CASCADE, related_name="insights")
+    metrics = models.JSONField(default=dict)
+    metric_times = models.JSONField(default=dict)
+    unavailable = models.JSONField(default=dict)
+    checked_at = models.DateTimeField(null=True, blank=True)
+    synced_at = models.DateTimeField(null=True, blank=True)
+    next_sync_at = models.DateTimeField(null=True, blank=True, db_index=True)
+    lease_until = models.DateTimeField(null=True, blank=True)
+    failures = models.PositiveIntegerField(default=0)
+    last_error = models.CharField(max_length=300, blank=True)
+
+
+class InsightSnapshot(models.Model):
+    publication = models.ForeignKey(SocialPublication, on_delete=models.CASCADE, related_name="insight_snapshots")
+    day = models.DateField()
+    captured_at = models.DateTimeField()
+    metrics = models.JSONField(default=dict)
+
+    class Meta:
+        ordering: ClassVar[list[str]] = ["captured_at"]
+        constraints = [models.UniqueConstraint(fields=["publication", "day"], name="social_insight_daily_unique")]

@@ -73,26 +73,26 @@ def _version() -> str:
     return version if version.startswith("v") else f"v{version}"
 
 
-def facebook_authorization_url(state: str) -> str:
+def facebook_authorization_url(state: str, *, insights: bool = False) -> str:
     return f"https://www.facebook.com/{_version()}/dialog/oauth?" + urlencode(
         {
             "client_id": settings.SOCIAL_META_APP_ID,
             "redirect_uri": settings.SOCIAL_FACEBOOK_REDIRECT_URI,
             "state": state,
             "response_type": "code",
-            "scope": ",".join(FACEBOOK_SCOPES),
+            "scope": ",".join(FACEBOOK_SCOPES + (("read_insights", "instagram_manage_insights") if insights else ())),
         }
     )
 
 
-def instagram_authorization_url(state: str) -> str:
+def instagram_authorization_url(state: str, *, insights: bool = False) -> str:
     return "https://www.instagram.com/oauth/authorize?" + urlencode(
         {
             "client_id": settings.SOCIAL_META_APP_ID,
             "redirect_uri": settings.SOCIAL_INSTAGRAM_REDIRECT_URI,
             "state": state,
             "response_type": "code",
-            "scope": ",".join(INSTAGRAM_SCOPES),
+            "scope": ",".join(INSTAGRAM_SCOPES + (("instagram_business_manage_insights",) if insights else ())),
         }
     )
 

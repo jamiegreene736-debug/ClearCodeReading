@@ -29,6 +29,7 @@ for (const width of [320, 390, 1280]) {
       const url = new URL(route.request().url());
       if (pages[url.pathname]) return route.fulfill({ contentType: 'text/html', body: pages[url.pathname] });
       const assets = {
+        '/static/social/reports.css': 'apps/social/static/social/reports.css',
         '/static/social/navigation.css': 'apps/social/static/social/navigation.css',
         '/static/css/clearcode-tailwind.css': 'apps/core/static/css/clearcode-tailwind.css',
       };
@@ -42,7 +43,7 @@ for (const width of [320, 390, 1280]) {
       await nav.getByRole('link', { name: new RegExp('^' + label) }).click();
       await expect(page.getByRole('heading', { name: heading, exact: true })).toBeVisible();
       await expect(nav.locator('[aria-current=page]')).toContainText(label);
-      await expect(nav.getByRole('link')).toHaveCount(4);
+      await expect(nav.getByRole('link')).toHaveCount(6);
       await expect(page.getByRole('link', { name: 'Calendar view', exact: true })).toHaveCount(0);
       expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(width);
       await page.screenshot({ path: testInfo.outputPath(`${label.replaceAll(' ', '-')}-${width}.png`), fullPage: true });

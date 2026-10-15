@@ -1,5 +1,6 @@
 {% load static %}
 <link rel="stylesheet" href="{% static 'social/navigation.css' %}">
+<link rel="stylesheet" href="{% static 'social/reports.css' %}">
 <section class="social-workspace" aria-label="Social media workspace">
   <div class="social-workspace-heading"><strong>Social media</strong><span>Manage Facebook and Instagram posts, including blog features.</span></div>
   <nav class="social-workspace-links" aria-label="Social marketing">
@@ -7,6 +8,8 @@
     <a href="{% if nav.label == 'Calendar' %}{{ nav.url }}{% else %}{% url 'social:calendar' %}?return_to={{ nav.link_origin }}{% endif %}" {% if nav.active == 'calendar' %}aria-current="page"{% endif %}><strong>Social post calendar</strong><span>See dated posts by month</span></a>
     <a href="{% url 'social:planner' %}?return_to={{ nav.link_origin }}" {% if nav.active == 'planner' %}aria-current="page"{% endif %}><strong>AI content plan</strong><span>Prepare and automate weekly posts</span></a>
     <a href="{% url 'social:settings' %}?return_to={{ nav.link_origin }}" {% if nav.active == 'settings' or nav.active == 'choose_page' %}aria-current="page"{% endif %}><strong>Connections</strong><span>Facebook and Instagram accounts</span></a>
+    <a href="{% url 'social:performance' %}" {% if nav.active == 'performance' or nav.active == 'post_details' %}aria-current="page"{% endif %}><strong>Performance</strong><span>Results by post and category</span></a>
+    <a href="{% url 'social:categories' %}" {% if nav.active == 'categories' %}aria-current="page"{% endif %}><strong>Categories</strong><span>Colors and internal organization</span></a>
   </nav>
   <p class="social-workspace-related">Planning articles instead? <a href="{% url 'blog_manage:planner' %}">AI blog plan →</a></p>
 </section>

@@ -2,7 +2,7 @@
 .social-workspace-heading { display: flex; flex-wrap: wrap; align-items: baseline; gap: 6px 16px; margin-bottom: 14px; }
 .social-workspace-heading strong { color: #123039; font-size: 16px; }
 .social-workspace-heading span, .social-workspace-related { color: #52605c; font-size: 12px; line-height: 1.6; }
-.social-workspace-links { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 8px; }
+.social-workspace-links { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; }
 .social-workspace-links a { display: block; padding: 12px; border: 1px solid #d3dfdb; border-radius: 14px; color: #126b68; overflow-wrap: anywhere; }
 .social-workspace-links a strong { display: block; font-size: 14px; }
 .social-workspace-links a span { display: block; margin-top: 4px; font-size: 12px; line-height: 1.5; color: #52605c; }
