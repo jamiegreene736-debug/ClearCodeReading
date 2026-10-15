@@ -30,7 +30,7 @@
         {% endfor %}
       </div>
       <p class="mt-3 text-xs font-bold text-ink/55">Gold is the current date. Teal is the new date.</p>
-      <label class="mt-4 block text-sm font-black" for="time">Time · Eastern</label>
+      <label class="mt-4 block text-sm font-black" for="time">Time · Eastern (EST/EDT)</label>
       <input id="date" type="hidden" name="date" value="{{ selected_date }}">
       <input id="time" name="time" type="time" value="{{ selected_time }}" class="mt-2 w-full rounded-full border border-ink/15 px-4 py-3">
       <div class="mt-3 flex flex-wrap gap-2">
@@ -40,7 +40,8 @@
       </div>
     </section>
     <section class="rounded-[1.75rem] bg-white p-5 ring-1 ring-ink/10">
-      <div class="flex flex-wrap gap-2 text-xs font-black uppercase">
+      {% include "social/_posting_times.html" %}
+      <div class="mt-4 flex flex-wrap gap-2 text-xs font-black uppercase">
         {% if post.post_to_facebook %}<span class="rounded-full bg-linen px-3 py-1 text-deepTeal">Facebook</span>{% endif %}
         {% if post.post_to_instagram %}<span class="rounded-full bg-linen px-3 py-1 text-deepTeal">Instagram</span>{% endif %}
       </div>
