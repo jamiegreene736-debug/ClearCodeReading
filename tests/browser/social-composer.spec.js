@@ -29,6 +29,12 @@ for (const mode of ['manual', 'brief']) {
   test(`${mode} composer requires content only for selected platforms`, async ({ page }) => {
     await page.route('**/*', route => route.abort());
     await page.setContent(composer(mode, mode === 'brief'));
+    const suggestions = page.getByRole('complementary', { name: 'Suggested posting times' });
+    await expect(suggestions).toBeVisible();
+    await expect(suggestions).toContainText('EST in winter / EDT in summer');
+    await expect(suggestions).toContainText('Facebook');
+    await expect(suggestions).toContainText('Instagram');
+    await expect(suggestions).toContainText('Thursday at 9 AM Eastern');
     const schedule = page.getByRole('button', { name: 'Schedule', exact: true });
     const publish = page.getByRole('button', { name: 'Post now', exact: true });
     const facebook = page.locator('[name="post_to_facebook"]');
@@ -92,6 +98,8 @@ print(render_to_string('social/schedule.html', {
   await page.route('**/*', route => route.request().isNavigationRequest()
     ? route.fulfill({ contentType: 'text/html', body: html }) : route.abort());
   await page.goto('http://calendar.test/schedule/');
+  await expect(page.getByRole('complementary', { name: 'Suggested posting times' })).toBeVisible();
+  await expect(page.getByLabel('Time · Eastern (EST/EDT)')).toHaveValue('09:00');
   await page.locator('#time').fill('14:35');
   await page.getByRole('link', { name: 'Next month' }).click();
   await expect(page).toHaveURL(/month=2027-01&date=2026-12-31&time=14%3A35/);
