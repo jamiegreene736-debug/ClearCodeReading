@@ -116,8 +116,12 @@
       </div>
       <p id="publish-requirements" role="status" aria-live="polite" class="text-sm font-bold text-ink/70"></p>
     </section>
-    <p id="generation-status" role="status" aria-live="polite" class="hidden text-sm font-bold text-deepTeal lg:col-span-2"></p>
   </form>
+    <div id="generation-status" role="status" aria-live="polite" class="generation-status" hidden>
+      <strong id="generation-message"></strong>
+      <div class="generation-indicator" role="progressbar" aria-labelledby="generation-message"></div>
+      <p>Please keep this page open. Images can take a few minutes.</p>
+    </div>
   <script>
     const socialForm = document.getElementById('social-post-form');
     function updatePublishReadiness() {
@@ -159,7 +163,7 @@
       event.returnValue = '';
     });
     socialForm.addEventListener('submit', function (event) {
-      if (socialForm.dataset.busy === 'true') {
+      if (event.defaultPrevented || socialForm.dataset.photoError || socialForm.dataset.busy === 'true') {
         event.preventDefault();
         return;
       }
@@ -169,18 +173,26 @@
         return;
       }
       unsavedChanges = false;
-      if (!button || !(button.name === 'selected_idea' || ['ideas', 'draft_ai', 'new_image', 'plan_carousel'].includes(button.value))) return;
+      if (!button || !(button.name === 'selected_idea' || ['ideas', 'draft', 'draft_ai', 'new_image', 'plan_carousel'].includes(button.value))) return;
       socialForm.dataset.busy = 'true';
       socialForm.setAttribute('aria-busy', 'true');
       const status = document.getElementById('generation-status');
-      status.textContent = button.value === 'ideas' ? 'Finding fresh post ideas…' : 'Creating your draft. An image can take a few minutes…';
-      status.classList.remove('hidden');
+      const messages = {
+        ideas: 'Finding fresh post ideas…',
+        draft: 'Drafting your captions…',
+        new_image: 'Creating a photo for your post…',
+        plan_carousel: 'Planning your carousel…',
+      };
+      const withImage = socialForm.querySelector('[name="generate_image"]')?.checked;
+      document.getElementById('generation-message').textContent = messages[button.value] ||
+        (withImage ? 'Creating your captions and photo…' : 'Drafting your captions…');
+      status.hidden = false;
     });
     window.addEventListener('pageshow', function () {
       updatePublishReadiness();
       socialForm.dataset.busy = 'false';
       socialForm.removeAttribute('aria-busy');
-      document.getElementById('generation-status').classList.add('hidden');
+      document.getElementById('generation-status').hidden = true;
     });
   </script>
 </div>

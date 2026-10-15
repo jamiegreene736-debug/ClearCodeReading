@@ -122,6 +122,32 @@ class SocialNavigationTests(TestCase):
             self.post.refresh_from_db()
             self.assertEqual(self.post.facebook_caption, "Saved and returned")
 
+    def test_scheduled_list_edit_preserves_schedule_and_returns_to_list(self):
+        self.post.status = SocialPost.Status.SCHEDULED
+        self.post.scheduled_at = timezone.now() + timedelta(days=10)
+        self.post.save()
+        scheduled_at = self.post.scheduled_at
+        queue = reverse("social:queue") + "?tab=scheduled"
+        edit = reverse("social:edit", args=[self.post.pk]) + "?return_to=scheduled"
+        response = self.client.get(queue)
+        self.assertContains(response, f'href="{edit}"')
+        response = self.client.get(edit)
+        self.assertContains(response, "Back to Scheduled")
+        response = self.client.post(
+            edit,
+            {
+                "mode": "manual",
+                "caption": "Updated scheduled caption",
+                "post_to_facebook": "on",
+                "action": "save_return",
+            },
+        )
+        self.assertRedirects(response, queue)
+        self.post.refresh_from_db()
+        self.assertEqual(self.post.facebook_caption, "Updated scheduled caption")
+        self.assertEqual(self.post.status, SocialPost.Status.SCHEDULED)
+        self.assertEqual(self.post.scheduled_at, scheduled_at)
+
     def test_planner_origin_survives_modes_save_and_schedule(self):
         edit = reverse("social:edit", args=[self.post.pk]) + "?return_to=planner"
         response = self.client.get(edit)

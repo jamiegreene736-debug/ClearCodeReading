@@ -30,8 +30,8 @@ def plan_carousel(
         'Return JSON with "facebook" and "instagram" captions and a "slides" array of '
         "exactly the requested number of strings. Each slide is a distinct visual brief "
         "(12–500 characters) in a coherent photographic story about the subject. "
-        "Use real objects, cheerful daylight, a consistent linen/teal/gold palette, no people, "
-        "no text or logos. Explain the useful reading tips in the shared captions. "
+        "Depict the specific reading activity with fictional people or relevant materials, cheerful daylight, and natural colors. Use no text overlays "
+        "or logos. Avoid generic decorative still lifes. Explain the useful reading tips in the shared captions. "
         "Facebook caption: 20–5000 characters; Instagram: 10–2200 characters. "
         "These are photo slides, not separate posts.",
         {"subject": subject[:5000], "count": count, "audience": audience, "tone": tone},
