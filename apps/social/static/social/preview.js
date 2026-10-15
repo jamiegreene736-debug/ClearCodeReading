@@ -216,6 +216,9 @@
         const result = await response.json();
         if (!response.ok) throw new Error(result.error || 'Generation stopped. Resume to try the remaining slides.');
         progress.textContent = `${result.completed} of ${result.total} slides saved.`;
+        const meter = editor.querySelector('[data-slide-progress]');
+        meter.max = result.total;
+        meter.value = result.completed;
         if (result.completed >= result.total) { window.location.reload(); return; }
       }
     } catch (failure) {

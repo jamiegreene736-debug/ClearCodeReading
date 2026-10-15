@@ -252,7 +252,14 @@ def post_edit(request, pk=None):
                     notice = "Drafted with AI. Read both captions before you schedule or post."
                 if action == "new_image" or generate_image_checked:
                     try:
-                        raw, content_type = generate_image(subject=post.brief or post.facebook_caption or post.instagram_caption)
+                        image_context = [post.facebook_caption]
+                        if post.instagram_caption != post.facebook_caption:
+                            image_context.append(post.instagram_caption)
+                        if post.brief:
+                            image_context.append(f"Supporting brief: {post.brief}")
+                        raw, content_type = generate_image(
+                            subject="\n".join(filter(None, image_context))
+                        )
                     except SocialError as exc:
                         if action == "new_image" or not post.facebook_caption:
                             raise

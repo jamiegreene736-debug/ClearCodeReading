@@ -22,6 +22,7 @@
     <p class="social-preview-note">Uses your subject or caption to plan a coherent set of photos and shared captions. Review the plan, then generate the slides. Each slide uses one image-generation request. Existing photos are replaced when the first new slide succeeds.</p>
     {% if post.carousel_plan %}
       <ol class="carousel-plan">{% for brief in post.carousel_plan.slides %}<li>{{ brief }}</li>{% endfor %}</ol>
+      <progress data-slide-progress max="{{ post.carousel_plan.slides|length }}" value="{{ post.carousel_plan.completed }}" aria-label="Carousel slides generated"></progress>
       <p data-generation-progress role="status" aria-live="polite">{{ post.carousel_plan.completed }} of {{ post.carousel_plan.slides|length }} slides generated.</p>
       {% if carousel_pending %}<button type="button" data-generate-slides data-url="{% url 'social:carousel_generate' post.pk %}" class="carousel-button">Generate / resume slides</button>{% endif %}
       <button type="submit" name="action" value="discard_carousel" class="carousel-button">Discard AI plan, keep photos</button>

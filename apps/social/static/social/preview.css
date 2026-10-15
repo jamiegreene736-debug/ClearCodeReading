@@ -57,3 +57,20 @@
 .post-format-guide .post-format-detail { color: #52605c; font-size: .8rem; }
 #images, #image, #ai-carousel { scroll-margin-top: 2rem; }
 @media (max-width: 640px) { .post-format-options { grid-template-columns: 1fr; } }
+
+.generation-status {
+  position: fixed;
+  bottom: 1.5rem;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 100;
+  width: min(32rem, calc(100% - 2rem));
+  padding: 1.25rem;
+  border: 2px solid #197b80;
+  border-radius: 1rem;
+  background: white;
+  color: #14343e;
+  box-shadow: 0 8px 32px #14343e33;
+}
+.generation-status progress { display: block; width: 100%; margin: .75rem 0; accent-color: #197b80; }
+.generation-status p { margin: 0; font-size: .875rem; }

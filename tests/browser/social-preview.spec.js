@@ -193,6 +193,8 @@ test('AI carousel generates one slide per request, explains failure, and resumes
   await page.locator('[data-generate-slides]').click();
   await expect(page.locator('[data-generation-progress]')).toContainText('Completed slides are saved');
   expect(calls).toBe(2);
+  await expect(page.locator('[data-slide-progress]')).toHaveAttribute('value', '1');
+  await expect(page.locator('[data-slide-progress]')).toHaveAttribute('max', '2');
   await expect(page.locator('[data-generate-slides]')).toBeEnabled();
   await page.locator('[data-generate-slides]').click();
   await expect.poll(() => calls).toBe(3);
@@ -222,5 +224,24 @@ for (const mode of ['manual', 'brief']) {
       await page.setViewportSize({ width, height: 900 });
       expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(width);
     }
+  });
+}
+
+for (const width of [390, 1280]) {
+  test(`generation progress stays in view at ${width}px`, async ({ page }) => {
+    await page.setViewportSize({ width, height: 844 });
+    await openComposer(page, 'brief');
+    await page.locator('[name="generate_image"]').check();
+    await page.locator('#social-post-form').evaluate(form => {
+      form.addEventListener('submit', event => event.preventDefault());
+    });
+    await page.locator('[value="draft_ai"]').click();
+    await expect(page.locator('#generation-message')).toHaveText('Creating your captions and photo…');
+    const status = page.locator('#generation-status');
+    await expect(status).toBeInViewport();
+    const bounds = await status.boundingBox();
+    expect(bounds.x).toBeGreaterThanOrEqual(0);
+    expect(bounds.x + bounds.width).toBeLessThanOrEqual(width);
+    await page.screenshot({ path: `/tmp/clearcode-generation-${width}.png` });
   });
 }

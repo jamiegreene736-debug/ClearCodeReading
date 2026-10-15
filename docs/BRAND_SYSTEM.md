@@ -62,5 +62,7 @@ Blog covers and Facebook/Instagram images use lifelike, photorealistic photograp
 with cheerful warmth, natural daylight, realistic textures, and inviting compositions.
 Do not use cartoons, flat illustrations, vector art, or artificial-looking renders.
 Brand colors are subtle accents in physical objects, not flat background requirements.
-Keep images objects-only and free of text, letters, and logos. This style also applies
-when regenerating an image from an older illustration brief.
+Show the actual reading activity from the current caption or article, using fictional
+people or relevant materials. Avoid generic decorative still lifes. Allow small letters on
+teaching materials when essential; omit text overlays, logos, and readable book passages.
+The photographic style also applies when regenerating an image from an older illustration brief.

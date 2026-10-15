@@ -99,3 +99,27 @@ print(render_to_string('social/schedule.html', {
   await page.getByRole('link', { name: '15', exact: true }).click();
   await expect(page).toHaveURL(/date=2026-12-15&time=16%3A45/);
 });
+
+for (const [action, label] of [
+  ['ideas', 'Finding fresh post ideas'],
+  ['draft', 'Drafting your captions'],
+  ['draft_ai', 'Drafting your captions'],
+  ['new_image', 'Creating a photo for your post'],
+  ['plan_carousel', 'Planning your carousel'],
+]) {
+  test(`shows visible indeterminate progress for ${action}`, async ({ page }) => {
+    await page.route('**/*', route => route.abort());
+    await page.setContent(composer('brief', true));
+    await page.locator('#social-post-form').evaluate(form => {
+      form.addEventListener('submit', event => event.preventDefault());
+    });
+    await page.locator(`[name="action"][value="${action}"]`).click();
+    await expect(page.locator('#generation-status')).toBeVisible();
+    await expect(page.locator('#generation-message')).toContainText(label);
+    await expect(page.getByRole('progressbar')).not.toHaveAttribute('value');
+    await expect(page.locator('#social-post-form')).toHaveAttribute('aria-busy', 'true');
+    await page.evaluate(() => window.dispatchEvent(new PageTransitionEvent('pageshow')));
+    await expect(page.locator('#generation-status')).toBeHidden();
+    await expect(page.locator('#social-post-form')).not.toHaveAttribute('aria-busy');
+  });
+}

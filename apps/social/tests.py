@@ -468,8 +468,9 @@ class SocialMediaTests(TestCase):
                 self.assertEqual(payload["model"], "gpt-image-2")
                 self.assertNotIn("response_format", payload)
                 self.assertEqual(payload["output_format"], "jpeg")
-                self.assertIn("no people", payload["prompt"].lower())
-                self.assertIn("no text", payload["prompt"].lower())
+                self.assertIn("People must be fictional", payload["prompt"])
+                self.assertIn("text overlays", payload["prompt"])
+                self.assertEqual(payload["quality"], "high")
                 self.assertIn("photorealistic editorial photograph", payload["prompt"])
                 self.assertIn("cheerful", payload["prompt"])
                 self.assertIn("No cartoons, flat illustrations", payload["prompt"])
@@ -546,6 +547,29 @@ class SocialMediaTests(TestCase):
             self.client.post(reverse("social:new"), {"mode": "manual", "action": "new_image", "caption": "A calm reading routine for tonight."})
         generate.assert_called_once_with(subject="A calm reading routine for tonight.")
         self.assertEqual(SocialPost.objects.get().facebook_caption, "A calm reading routine for tonight.")
+
+    def test_new_image_uses_current_caption_and_supporting_brief(self):
+        self.client.force_login(self.admin)
+        with patch("apps.social.views.generate_image", return_value=(b"jpeg-image", "image/jpeg")) as generate:
+            self.client.post(reverse("social:new"), {
+                "mode": "brief", "action": "new_image",
+                "brief": "Reading support for families.",
+                "facebook_caption": "A parent and child clap syllables together.",
+                "instagram_caption": "Clap the sounds in a word together.",
+            })
+        subject = generate.call_args.kwargs["subject"]
+        self.assertTrue(subject.startswith("A parent and child clap syllables together."))
+        self.assertIn("Clap the sounds", subject)
+        self.assertIn("Supporting brief: Reading support", subject)
+
+    def test_image_prompt_keeps_specific_activity_after_long_caption(self):
+        from apps.social.ai import image_prompt
+
+        subject = "Reading support. " * 40 + "Clap syllables together at the kitchen table."
+        prompt = image_prompt(subject)
+        self.assertIn("Clap syllables together at the kitchen table.", prompt)
+        self.assertIn("current caption is the primary source", prompt)
+        self.assertNotIn("no people", prompt.lower())
 
     def test_scheduled_post_cannot_receive_unreviewed_ai_content(self):
         self.client.force_login(self.admin)
