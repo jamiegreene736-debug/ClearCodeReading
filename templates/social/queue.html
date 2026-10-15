@@ -60,6 +60,7 @@
           <div class="flex flex-wrap gap-2">
             {% if post.status == 'draft' or post.status == 'scheduled' %}<a href="{% url 'social:delete' post.pk %}?return_to={{ nav.origin }}" class="focus-ring inline-flex items-center rounded-full bg-white px-4 py-2 text-sm font-black text-red-700 ring-1 ring-red-200">Delete</a>{% endif %}
             {% if tab == "scheduled" %}
+              <a href="{% url 'social:edit' post.pk %}?return_to={{ nav.origin }}" class="focus-ring inline-flex items-center rounded-full bg-white px-4 py-2 text-sm font-black text-deepTeal ring-1 ring-deepTeal/20">Edit</a>
               <a href="{% url 'social:schedule' post.pk %}?return_to={{ nav.origin }}" class="focus-ring inline-flex items-center rounded-full bg-white px-4 py-2 text-sm font-black text-deepTeal ring-1 ring-deepTeal/20">Change date</a>
               <a href="{% url 'social:cancel' post.pk %}?return_to={{ nav.origin }}" class="focus-ring inline-flex items-center rounded-full bg-white px-4 py-2 text-sm font-black text-red-700 ring-1 ring-red-200">Cancel</a>
             {% elif tab == "posted" %}
