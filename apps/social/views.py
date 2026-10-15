@@ -314,6 +314,8 @@ def post_edit(request, pk=None):
                             review_note="Photos changed in the composer. Review and schedule this post manually.",
                             updated_at=timezone.now(),
                         )
+                if action == "design":
+                    return redirect("social:post_design", pk=post.pk)
                 if action == "schedule":
                     return redirect(f"{reverse('social:schedule', kwargs={'pk': post.pk})}?return_to={nav['origin']}&via=edit")
                 if action == "post_now":

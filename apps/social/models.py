@@ -115,6 +115,7 @@ class SocialPost(TimeStampedModel):
         PRACTICAL = "practical", "Practical"
         CELEBRATORY = "celebratory", "Celebratory"
 
+    image_design = models.JSONField(default=dict, blank=True)
     category = models.ForeignKey(SocialCategory, null=True, blank=True, on_delete=models.PROTECT, related_name="posts")
 
     blog_post = models.OneToOneField("blog.BlogPost", on_delete=models.SET_NULL, null=True, blank=True, related_name="facebook_promotion")
@@ -325,3 +326,13 @@ class InsightSnapshot(models.Model):
     class Meta:
         ordering: ClassVar[list[str]] = ["captured_at"]
         constraints = [models.UniqueConstraint(fields=["publication", "day"], name="social_insight_daily_unique")]
+
+
+class SocialImageTemplate(TimeStampedModel):
+    name = models.CharField(max_length=100)
+    document = models.JSONField(default=dict)
+    preview = models.BinaryField()
+    archived = models.BooleanField(default=False)
+
+    class Meta:
+        ordering = ["-updated_at", "pk"]
