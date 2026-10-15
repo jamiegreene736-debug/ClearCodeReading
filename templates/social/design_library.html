@@ -1,0 +1,12 @@
+{% extends 'portal/page.html' %}{% load static social_navigation %}
+{% block title %}Image templates{% endblock %}
+{% block content %}{% social_navigation as nav %}{% include 'social/_navigation.html' %}
+<link rel="stylesheet" href="{% static 'social/studio.css' %}">
+<section class="studio-library"><p class="studio-eyebrow">CREATE WITHOUT AI</p><h1>Image templates</h1><p>Keep the layout. Swap the words. Create a single image or a whole carousel, then add it to your post.</p>
+<h2>Start a design</h2><div class="studio-cards">
+<a class="studio-card starter-dark" href="{% url 'social:design_editor' %}?style=scripts"><small>PARENT SCRIPTS · 2 PAGES</small><strong>I’m just<br>bad at reading.</strong><span>Statement + “try this” layout →</span></a>
+<a class="studio-card starter-teal" href="{% url 'social:design_editor' %}?style=tip"><small>READING TIPS · 1 PAGE</small><strong>One small step.<br>A little more confidence.</strong><span>Simple headline layout →</span></a>
+<a class="studio-card starter-light" href="{% url 'social:design_editor' %}?style=blank"><small>YOUR OWN DESIGN</small><strong>Start with<br>a blank canvas.</strong><span>Add text, shapes, and a background →</span></a>
+</div><h2>Your saved templates</h2><div class="studio-cards">{% for item in templates %}<article class="studio-saved"><a href="{% url 'social:design_editor' %}?template={{ item.pk }}"><img src="{% url 'social:design_preview' item.pk %}" alt="{{ item.name }} preview" loading="lazy"><h3>{{ item.name }}</h3></a><small>Updated {{ item.updated_at|date:'M j, Y' }}</small><form method="post" action="{% url 'social:design_archive' item.pk %}">{% csrf_token %}<input type="hidden" name="revision" value="{{ item.updated_at|date:'c' }}"><button>Remove from library</button></form></article>{% empty %}<p>No saved templates yet. Open a starter design and choose “Save as new template.”</p>{% endfor %}</div>
+<p class="studio-note">Have a Canva design? Export an empty background as PNG or JPEG, upload it in the editor, then add editable text boxes. Text already inside an exported image stays part of that image.</p></section>
+{% endblock %}

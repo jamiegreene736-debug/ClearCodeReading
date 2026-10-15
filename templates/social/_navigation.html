@@ -10,6 +10,7 @@
     <a href="{% url 'social:settings' %}?return_to={{ nav.link_origin }}" {% if nav.active == 'settings' or nav.active == 'choose_page' %}aria-current="page"{% endif %}><strong>Connections</strong><span>Facebook and Instagram accounts</span></a>
     <a href="{% url 'social:performance' %}" {% if nav.active == 'performance' or nav.active == 'post_details' %}aria-current="page"{% endif %}><strong>Performance</strong><span>Results by post and category</span></a>
     <a href="{% url 'social:categories' %}" {% if nav.active == 'categories' %}aria-current="page"{% endif %}><strong>Categories</strong><span>Colors and internal organization</span></a>
+    <a href="{% url 'social:design_library' %}" {% if nav.active == 'design_library' or nav.active == 'design_editor' or nav.active == 'post_design' %}aria-current="page"{% endif %}><strong>Image templates</strong><span>Design artwork and swap the words</span></a>
   </nav>
   <p class="social-workspace-related">Planning articles instead? <a href="{% url 'blog_manage:planner' %}">AI blog plan →</a></p>
 </section>
