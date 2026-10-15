@@ -8,6 +8,7 @@ on:
       - 'tests/browser/social-composer.spec.js'
       - 'tests/browser/social-preview.spec.js'
       - 'tests/browser/social-navigation.spec.js'
+      - 'tests/browser/social-reporting.spec.js'
       - 'templates/portal/_header.html'
       - 'mypy-social.ini'
       - '.github/workflows/social.yml'
@@ -20,6 +21,7 @@ on:
       - 'tests/browser/social-composer.spec.js'
       - 'tests/browser/social-preview.spec.js'
       - 'tests/browser/social-navigation.spec.js'
+      - 'tests/browser/social-reporting.spec.js'
 permissions:
   contents: read
 jobs:
@@ -51,8 +53,8 @@ jobs:
       - run: pip install -r requirements-crm-email-dev.txt
       - run: python manage.py check
       - run: python manage.py makemigrations --check --dry-run
-      - run: ruff check apps/social/media.py apps/social/carousel_ai.py apps/social/test_carousels.py apps/social/navigation.py apps/social/templatetags apps/social/test_navigation.py apps/social/planner.py apps/social/planner_ai.py apps/social/planner_views.py apps/social/editorial.py apps/social/test_planner.py apps/social/schedule_views.py apps/social/test_schedule_views.py apps/blog/planner.py apps/blog/planner_ai.py apps/blog/planner_views.py apps/blog/promotion.py apps/blog/test_planner.py
-      - run: ruff format --check apps/social/media.py apps/social/carousel_ai.py apps/social/test_carousels.py apps/social/navigation.py apps/social/templatetags apps/social/test_navigation.py apps/social/planner.py apps/social/planner_ai.py apps/social/planner_views.py apps/social/editorial.py apps/social/test_planner.py apps/social/schedule_views.py apps/social/test_schedule_views.py apps/blog/planner.py apps/blog/planner_ai.py apps/blog/planner_views.py apps/blog/promotion.py apps/blog/test_planner.py
+      - run: ruff check apps/social/categories.py apps/social/category_views.py apps/social/reporting.py apps/social/report_views.py apps/social/insights_api.py apps/social/insights.py apps/social/signals.py apps/social/test_organization.py apps/social/test_insights.py apps/social/media.py apps/social/carousel_ai.py apps/social/test_carousels.py apps/social/navigation.py apps/social/templatetags apps/social/test_navigation.py apps/social/planner.py apps/social/planner_ai.py apps/social/planner_views.py apps/social/editorial.py apps/social/test_planner.py apps/social/schedule_views.py apps/social/test_schedule_views.py apps/blog/planner.py apps/blog/planner_ai.py apps/blog/planner_views.py apps/blog/promotion.py apps/blog/test_planner.py
+      - run: ruff format --check apps/social/categories.py apps/social/category_views.py apps/social/reporting.py apps/social/report_views.py apps/social/insights_api.py apps/social/insights.py apps/social/signals.py apps/social/test_organization.py apps/social/test_insights.py apps/social/media.py apps/social/carousel_ai.py apps/social/test_carousels.py apps/social/navigation.py apps/social/templatetags apps/social/test_navigation.py apps/social/planner.py apps/social/planner_ai.py apps/social/planner_views.py apps/social/editorial.py apps/social/test_planner.py apps/social/schedule_views.py apps/social/test_schedule_views.py apps/blog/planner.py apps/blog/planner_ai.py apps/blog/planner_views.py apps/blog/promotion.py apps/blog/test_planner.py
       - run: mypy --config-file mypy-social.ini
       - run: python manage.py test apps.social apps.blog apps.core.test_marketing --noinput
       - uses: actions/setup-node@v4
@@ -61,4 +63,4 @@ jobs:
           cache: npm
       - run: npm ci
       - run: npx playwright install --with-deps chromium
-      - run: npx playwright test tests/browser/social-preview.spec.js tests/browser/social-composer.spec.js tests/browser/social-navigation.spec.js --workers=2
+      - run: npx playwright test tests/browser/social-preview.spec.js tests/browser/social-composer.spec.js tests/browser/social-navigation.spec.js tests/browser/social-reporting.spec.js --workers=2

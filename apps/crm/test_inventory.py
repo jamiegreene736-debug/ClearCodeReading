@@ -1247,6 +1247,13 @@ class ConsultationAvailabilityTests(TestCase):
 
     def test_public_calendar_defaults_to_bethany_and_hides_unconfirmed_times(self):
         url = self.public_booking_url()
+        # Published campaign hours expire; this test needs its own future availability.
+        confirmed_slot = ConsultationSlot.objects.create(
+            host=self.bethany,
+            active=True,
+            starts_at=self.slot.starts_at + timedelta(hours=1),
+            ends_at=self.slot.ends_at + timedelta(hours=1),
+        )
         other_slot = ConsultationSlot.objects.create(
             host=self.other, starts_at=self.slot.starts_at, ends_at=self.slot.ends_at
         )
@@ -1256,7 +1263,7 @@ class ConsultationAvailabilityTests(TestCase):
         slots = list(response.context["slots"])
         self.assertNotIn(self.slot, slots)
         self.assertNotIn(other_slot, slots)
-        self.assertTrue(slots)
+        self.assertIn(confirmed_slot, slots)
         self.assertTrue(
             all(slot.host_id == self.bethany.pk and slot.active for slot in slots)
         )

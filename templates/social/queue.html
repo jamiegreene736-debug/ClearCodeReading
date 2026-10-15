@@ -50,14 +50,16 @@
               {% if post.post_to_facebook %}<span class="rounded-full bg-linen px-3 py-1 text-deepTeal">Facebook</span>{% endif %}
               {% if post.post_to_instagram %}<span class="rounded-full bg-linen px-3 py-1 text-deepTeal">Instagram</span>{% endif %}
             </div>
+            <span class="category-chip" style="--category-color:{{ post.category.color|default:'#64748B' }}"><i aria-hidden="true"></i>{{ post.category.name|default:"Uncategorized" }}</span>
             <h2 class="mt-2 text-xl font-black text-ink">{{ post.headline }}</h2>
             <p class="mt-1 text-sm font-bold text-ink/55">
-              {% if post.scheduled_at and tab == "scheduled" %}Posts {{ post.scheduled_at|date:"D, M j · g:i A" }} ET{% elif tab == "posted" %}Posted {{ post.updated_at|date:"D, M j · g:i A" }} ET{% else %}Edited {{ post.updated_at|date:"M j, Y" }}{% endif %}
+              {% if post.scheduled_at and tab == "scheduled" %}Posts {{ post.scheduled_at|date:"D, M j · g:i A" }} ET{% elif tab == "posted" %}Posted {{ post.posted_at|date:"D, M j · g:i A" }} ET{% else %}Edited {{ post.updated_at|date:"M j, Y" }}{% endif %}
               · {{ post.get_source_display }}{% if post.blog_post_id %} · <a href="{% url 'blog_manage:edit' post.blog_post_id %}" class="underline">{{ post.blog_post.title }}</a>{% endif %}
             </p>
             {% if post.last_error %}<p class="mt-1 text-sm font-bold text-amber-800">{{ post.last_error }}</p>{% endif %}
           </div>
           <div class="flex flex-wrap gap-2">
+            <a href="{% url 'social:post_details' post.pk %}" class="focus-ring underline">Category &amp; results</a>
             {% if post.status == 'draft' or post.status == 'scheduled' %}<a href="{% url 'social:delete' post.pk %}?return_to={{ nav.origin }}" class="focus-ring inline-flex items-center rounded-full bg-white px-4 py-2 text-sm font-black text-red-700 ring-1 ring-red-200">Delete</a>{% endif %}
             {% if tab == "scheduled" %}
               <a href="{% url 'social:edit' post.pk %}?return_to={{ nav.origin }}" class="focus-ring inline-flex items-center rounded-full bg-white px-4 py-2 text-sm font-black text-deepTeal ring-1 ring-deepTeal/20">Edit</a>

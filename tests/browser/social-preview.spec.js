@@ -32,6 +32,7 @@ async function openComposer(page, mode = 'manual') {
     if (url.pathname.includes('/image/') || url.pathname.includes('/slides/')) return route.fulfill({ contentType: 'image/png', body: png });
     const assets = {
       '/static/social/preview.js': ['apps/social/static/social/preview.js', 'application/javascript'],
+      '/static/social/reports.css': ['apps/social/static/social/reports.css', 'text/css'],
       '/static/social/navigation.css': ['apps/social/static/social/navigation.css', 'text/css'],
       '/static/social/preview.css': ['apps/social/static/social/preview.css', 'text/css'],
       '/static/css/clearcode-tailwind.css': ['apps/core/static/css/clearcode-tailwind.css', 'text/css'],

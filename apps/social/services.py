@@ -14,6 +14,7 @@ from apps.social.exceptions import SocialError
 from apps.social.models import (
     ContentPlan,
     ContentWeek,
+    PublicationInsights,
     SocialAccount,
     SocialPost,
     SocialPublication,
@@ -225,10 +226,12 @@ def save_facebook_page(page: dict[str, str], *, actor: CustomUser) -> None:
     account.encrypted_token = encrypt_text(page["token"])
     account.via_facebook = False
     account.connected_by = actor
+    account.insights_error, account.insights_retry_after = "", None
     account.connected_at = now
     account.last_error = ""
     account.last_checked_at = now
     account.save()
+    PublicationInsights.objects.filter(publication__network=account.network).update(next_sync_at=now)
     if page.get("instagram_id"):
         instagram, _ = SocialAccount.objects.get_or_create(network=SocialAccount.Network.INSTAGRAM)
         instagram.status = SocialAccount.Status.CONNECTED
@@ -239,10 +242,12 @@ def save_facebook_page(page: dict[str, str], *, actor: CustomUser) -> None:
         instagram.encrypted_token = encrypt_text(page["token"])
         instagram.via_facebook = True
         instagram.connected_by = actor
+        instagram.insights_error, instagram.insights_retry_after = "", None
         instagram.connected_at = now
         instagram.last_error = ""
         instagram.last_checked_at = now
         instagram.save()
+        PublicationInsights.objects.filter(publication__network=instagram.network).update(next_sync_at=now)
     AuditLog.objects.create(
         actor=actor,
         action="marketing.social.connected",
@@ -263,12 +268,14 @@ def save_instagram_account(profile: dict[str, str], *, actor: CustomUser) -> Non
     account.encrypted_token = encrypt_text(profile["token"])
     account.via_facebook = False
     account.connected_by = actor
+    account.insights_error, account.insights_retry_after = "", None
     account.connected_at = now
     account.last_error = ""
     account.last_checked_at = now
     expires_in = int(profile.get("expires_in") or 0)
     account.token_expires_at = timezone.now() + timedelta(seconds=expires_in) if expires_in else None
     account.save()
+    PublicationInsights.objects.filter(publication__network=account.network).update(next_sync_at=now)
     AuditLog.objects.create(
         actor=actor,
         action="marketing.social.connected",

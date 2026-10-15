@@ -1,10 +1,13 @@
 from django.urls import path
 
-from apps.social import planner_views, schedule_views, views
+from apps.social import category_views, report_views, planner_views, schedule_views, views
 
 app_name = "social"
 
 urlpatterns = [
+    path("performance/", report_views.performance, name="performance"),
+    path("posts/<int:pk>/details/", report_views.post_details, name="post_details"),
+    path("categories/", category_views.categories, name="categories"),
     path("", views.queue, name="queue"),
     path("calendar/", schedule_views.schedule_calendar, name="calendar"),
     path("posts/<int:pk>/delete/", schedule_views.delete_post, name="delete"),

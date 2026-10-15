@@ -1,0 +1,27 @@
+{% extends 'portal/page.html' %}{% load social_navigation %}
+{% block title %}Social performance{% endblock %}
+{% block content %}{% social_navigation post as nav %}{% include 'social/_navigation.html' %}
+<div class="social-report"><h1>Post performance</h1>
+<p>Compare categories and individual posts. The date range selects publication dates; results are lifetime counts as last collected, unless you choose the first-week snapshot.</p>
+<form method="get" class="category-row">
+<label>Published from <input type="date" name="start" value="{{ filters.start }}"></label><label>Through <input type="date" name="end" value="{{ filters.end }}"></label>
+<label>Category <select name="category"><option value="">All categories</option><option value="none" {% if filters.category == 'none' %}selected{% endif %}>Uncategorized</option>{% for category in categories %}<option value="{{ category.pk }}" {% if filters.category == category.pk|stringformat:'s' %}selected{% endif %}>{{ category.name }}</option>{% endfor %}</select></label>
+<label>Platform <select name="network"><option value="">Both platforms</option><option value="facebook" {% if filters.network == 'facebook' %}selected{% endif %}>Facebook</option><option value="instagram" {% if filters.network == 'instagram' %}selected{% endif %}>Instagram</option></select></label>
+<label>Measure <select name="period"><option value="lifetime">Lifetime as last collected</option><option value="week" {% if filters.period == 'week' %}selected{% endif %}>First week (day 7–8 snapshot)</option></select></label><button>Apply filters</button><a href="?{{ filter_query }}&amp;export=csv">Export CSV</a></form>
+<p>{{ content_count }} content items · {{ publication_count }} platform publications. A post shared to both platforms counts as one content item.</p>
+{% include 'social/_insights_notice.html' %}
+{% if filters.period == 'week' %}<p class="report-notice">Uses the earliest stored snapshot between 7 and 8 days after publication. Earlier posts cannot be reconstructed if no snapshot was collected. Capture time appears on each row.</p>{% endif %}
+<h2>By category</h2><p>Totals and averages use only available results. Coverage shows posts with data / posts published. Reach is never added across posts or platforms.</p>
+<div class="report-table"><table><thead><tr><th>Category</th><th>Platform</th><th>Posts</th><th>Views</th><th>Average views</th><th>Likes / reactions</th><th>Comments</th><th>Shares</th><th>Saves</th><th>Link clicks</th><th>Last posted</th><th>Top post by views</th></tr></thead><tbody>
+{% for summary in summaries %}<tr><td>{{ summary.name }}</td><td>{{ summary.network }}</td><td>{{ summary.posts }}</td>
+<td>{% if summary.coverage.views %}{{ summary.totals.views }}<small>{{ summary.coverage.views }}/{{ summary.posts }} posts</small>{% else %}Unavailable{% endif %}</td><td>{{ summary.average_views }}</td>
+<td>{% if summary.coverage.likes %}{{ summary.totals.likes }}<small>{{ summary.coverage.likes }}/{{ summary.posts }}</small>{% else %}Unavailable{% endif %}</td>
+<td>{% if summary.coverage.comments %}{{ summary.totals.comments }}<small>{{ summary.coverage.comments }}/{{ summary.posts }}</small>{% else %}Unavailable{% endif %}</td>
+<td>{% if summary.coverage.shares %}{{ summary.totals.shares }}<small>{{ summary.coverage.shares }}/{{ summary.posts }}</small>{% else %}Unavailable{% endif %}</td>
+<td>{% if summary.coverage.saves %}{{ summary.totals.saves }}<small>{{ summary.coverage.saves }}/{{ summary.posts }}</small>{% else %}Unavailable{% endif %}</td>
+<td>{% if summary.coverage.clicks %}{{ summary.totals.clicks }}<small>{{ summary.coverage.clicks }}/{{ summary.posts }}</small>{% else %}Unavailable{% endif %}</td>
+<td>{{ summary.latest|date:'M j, Y' }}</td><td>{% if summary.best %}<a href="{% url 'social:post_details' summary.best.publication.post_id %}">{{ summary.best.publication.post.headline }}</a>{% else %}Unavailable{% endif %}</td></tr>{% empty %}<tr><td colspan="12">No published posts match these filters.</td></tr>{% endfor %}</tbody></table></div>
+<h2>Individual posts</h2><div class="report-table"><table><thead><tr><th>Post</th><th>Platform</th><th>Views</th><th>Reach / viewers</th><th>Likes / reactions</th><th>Comments</th><th>Shares</th><th>Saves</th><th>Link clicks</th><th>Updated</th></tr></thead><tbody>
+{% for row in page %}<tr><td><a href="{% url 'social:post_details' row.publication.post_id %}">{{ row.publication.post.headline }}</a><small>{{ row.publication.post.category.name|default:'Uncategorized' }} · {{ row.publication.published_at|date:'M j, Y' }}</small>{% if row.error %}<small>{{ row.error }}</small>{% endif %}</td><td>{{ row.publication.get_network_display }}</td>{% for cell in row.cells %}<td>{{ cell.value|default_if_none:'Unavailable' }}{% if cell.note %}<small>{{ cell.note }}{% if cell.value != None %} Showing last known count.{% endif %}</small>{% endif %}</td>{% endfor %}<td>{{ row.updated|date:'M j, Y g:i A'|default:'Not yet collected' }}</td></tr>{% endfor %}</tbody></table></div>
+<div class="category-row">{% if page.has_previous %}<a href="?{{ filter_query }}&amp;page={{ page.previous_page_number }}">Previous</a>{% endif %}<span>Page {{ page.number }} of {{ page.paginator.num_pages }}</span>{% if page.has_next %}<a href="?{{ filter_query }}&amp;page={{ page.next_page_number }}">Next</a>{% endif %}</div>
+</div>{% endblock %}

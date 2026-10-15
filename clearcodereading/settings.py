@@ -256,6 +256,7 @@ CELERY_TASK_SERIALIZER = "json"
 CELERY_RESULT_SERIALIZER = "json"
 CELERY_TIMEZONE = TIME_ZONE
 CELERY_BEAT_SCHEDULE = {
+    "sync-social-insights": {"task": "apps.social.tasks.sync_social_insights", "schedule": 3600.0},
     "publish-scheduled-social-posts": {
         "task": "apps.social.tasks.publish_scheduled_social_posts",
         "schedule": 60.0,

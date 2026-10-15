@@ -13,6 +13,7 @@ from django.utils import timezone
 from django.utils.dateparse import parse_datetime
 from django.views.decorators.http import require_http_methods, require_POST
 
+from apps.social.categories import apply_category, category_choices
 from apps.social.access import can_manage_social, social_editor_required
 from apps.social.ai import (
     ai_configured,
@@ -158,7 +159,7 @@ def queue(request):
         posts = posts.filter(status=SocialPost.Status.DRAFT).order_by("-updated_at")
     else:
         posts = posts.filter(status=SocialPost.Status.ATTENTION).order_by("-updated_at")
-    posts = posts.select_related("blog_post").prefetch_related("publications")
+    posts = posts.select_related("blog_post", "category").prefetch_related("publications")
     return render(
         request,
         "social/queue.html",
@@ -301,6 +302,7 @@ def post_edit(request, pk=None):
                             raise SocialError("This post changed while you were editing. Reload it before saving.")
                     if any(week.auto_scheduled for week in weeks):
                         post.status, post.scheduled_at = SocialPost.Status.DRAFT, None
+                    apply_category(post, request.POST)
                     post.save()
                     if photos is not None:
                         save_slides(post, photos)
@@ -345,6 +347,7 @@ def post_edit(request, pk=None):
         "social/post_form.html",
         {
             "post": post,
+            "category_choices": category_choices(post),
             "slides": list(post.slides.all()) if post.pk else [],
             "carousel_pending": generation_pending(post),
             "ideas": ideas,
@@ -524,7 +527,8 @@ def _start_sign_in(request, network: str):
         network=network,
         expires_at=timezone.now() + timedelta(minutes=10),
     )
-    url = facebook_authorization_url(state) if network == SocialAccount.Network.FACEBOOK else instagram_authorization_url(state)
+    insights = request.POST.get("insights") == "on"
+    url = facebook_authorization_url(state, insights=insights) if network == SocialAccount.Network.FACEBOOK else instagram_authorization_url(state, insights=insights)
     return redirect(url)
 
 

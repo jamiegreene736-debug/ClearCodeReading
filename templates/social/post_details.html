@@ -1,0 +1,14 @@
+{% extends 'portal/page.html' %}{% load social_navigation %}
+{% block title %}Post category and results{% endblock %}
+{% block content %}{% social_navigation post as nav %}{% include 'social/_navigation.html' %}
+<div class="social-report"><h1>{{ post.headline }}</h1><p>{{ post.get_status_display }} · {{ post.category.name|default:'Uncategorized' }}</p>
+<form method="post">{% csrf_token %}{% include 'social/_category_fields.html' %}<button name="action" value="category">Save internal category</button></form>
+{% if post.status != 'posted' and post.status != 'publishing' %}<p><a href="{% url 'social:edit' post.pk %}">Edit post content</a></p>{% endif %}
+<h2>Performance</h2>{% include 'social/_insights_notice.html' %}
+<form method="post">{% csrf_token %}<button name="action" value="refresh">Request refresh</button></form>
+{% for row in rows %}<section><h2>{{ row.publication.get_network_display }}</h2><p>Published {{ row.publication.published_at|date:'M j, Y g:i A' }} · Last successful update: {{ row.updated|date:'M j, Y g:i A'|default:'Not yet collected' }}</p>{% if row.publication.permalink %}<a href="{{ row.publication.permalink }}" target="_blank" rel="noopener">View published post</a>{% endif %}
+{% if row.error %}<p class="report-notice">{{ row.error }}</p>{% endif %}
+<div class="metric-grid">{% for cell in row.cells %}<div>{{ cell.label }}<strong>{{ cell.value|default_if_none:'Unavailable' }}</strong>{% if cell.updated %}<small>Collected {{ cell.updated|date:"M j, Y g:i A" }}</small>{% endif %}{% if cell.note %}<small>{{ cell.note }}{% if cell.value != None %} Showing last known count.{% endif %}</small>{% endif %}</div>{% endfor %}</div>
+</section>{% empty %}<p>Performance becomes available after a post is published.</p>{% endfor %}
+<h2>Recent daily snapshots</h2><div class="report-table"><table><thead><tr><th>Captured</th><th>Platform</th><th>Views</th><th>Likes / reactions</th></tr></thead><tbody>{% for snapshot in snapshots %}<tr><td>{{ snapshot.captured_at|date:'M j, Y g:i A' }}</td><td>{{ snapshot.publication.get_network_display }}</td><td>{% if 'views' in snapshot.metrics %}{{ snapshot.metrics.views }}{% else %}Unavailable{% endif %}</td><td>{% if 'likes' in snapshot.metrics %}{{ snapshot.metrics.likes }}{% else %}Unavailable{% endif %}</td></tr>{% empty %}<tr><td colspan="4">No snapshots collected yet.</td></tr>{% endfor %}</tbody></table></div>
+</div>{% endblock %}

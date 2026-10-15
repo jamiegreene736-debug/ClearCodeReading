@@ -1,0 +1,21 @@
+{% extends 'portal/page.html' %}{% load social_navigation %}
+{% block title %}Post categories{% endblock %}
+{% block content %}{% social_navigation post as nav %}{% include 'social/_navigation.html' %}
+<div class="social-report">
+<h1>Post categories</h1><p>Categories and colors are internal. Renaming or recoloring a category updates its existing posts. Archiving keeps its history.</p>
+{% for category in categories %}
+<form method="post" class="category-row">{% csrf_token %}<input type="hidden" name="category_id" value="{{ category.pk }}">
+<label>Name <input name="name" maxlength="80" value="{{ category.name }}" required></label>
+<label>Color <input type="color" name="color" value="{{ category.color }}"></label>
+<button name="action" value="save">Save</button>
+<button name="action" value="{% if category.archived %}restore{% else %}archive{% endif %}">{% if category.archived %}Restore{% else %}Archive{% endif %}</button>
+{% if category.archived %}<span>Archived</span>{% endif %}</form>{% endfor %}
+<form method="post" class="category-row">{% csrf_token %}<label>New category <input name="name" maxlength="80" required></label><label>Color <input type="color" name="color" value="#197B80"></label><button name="action" value="save">Create category</button></form>
+<h2>Organize existing posts</h2>
+<form method="get" class="category-row"><label>Search captions <input name="q" value="{{ query }}"></label><label><input type="checkbox" name="uncategorized" value="1" {% if request.GET.uncategorized %}checked{% endif %}> Uncategorized only</label><button>Filter</button></form>
+<form method="post">{% csrf_token %}<input type="hidden" name="action" value="bulk">
+<label>Assign selected posts to <select name="category"><option value="">Uncategorized</option>{% for category in category_choices %}<option value="{{ category.pk }}">{{ category.name }}</option>{% endfor %}</select></label><button>Apply category</button>
+{% for item in page %}<label class="category-row"><input type="checkbox" name="posts" value="{{ item.pk }}"><span>{{ item.headline }}<small>{{ item.get_status_display }} · {{ item.category.name|default:'Uncategorized' }}</small></span><a href="{% url 'social:post_details' item.pk %}">Details</a></label>{% empty %}<p>No posts found.</p>{% endfor %}
+</form>
+<div class="category-row">{% if page.has_previous %}<a href="?page={{ page.previous_page_number }}&amp;q={{ query|urlencode }}{% if request.GET.uncategorized %}&amp;uncategorized=1{% endif %}">Previous</a>{% endif %}<span>Page {{ page.number }} of {{ page.paginator.num_pages }}</span>{% if page.has_next %}<a href="?page={{ page.next_page_number }}&amp;q={{ query|urlencode }}{% if request.GET.uncategorized %}&amp;uncategorized=1{% endif %}">Next</a>{% endif %}</div>
+</div>{% endblock %}

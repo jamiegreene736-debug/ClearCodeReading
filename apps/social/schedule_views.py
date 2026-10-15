@@ -4,9 +4,12 @@ from __future__ import annotations
 
 import calendar
 from datetime import date, datetime, time, timedelta
-from typing import TypedDict
+from typing import TypedDict, cast
+from urllib.parse import urlencode
 
 from django.contrib import messages
+from django.db.models import Min
+from django.db.models.functions import Coalesce
 from django.http import HttpResponse
 from django.shortcuts import get_object_or_404, redirect, render
 from django.utils import timezone
@@ -14,7 +17,7 @@ from django.views.decorators.http import require_http_methods
 
 from apps.social.access import SocialRequest, social_editor_required
 from apps.social.exceptions import SocialError
-from apps.social.models import ContentWeek, SocialPost
+from apps.social.models import ContentWeek, SocialCategory, SocialPost
 from apps.social.navigation import navigation
 from apps.social.services import EASTERN, delete_unpublished_post
 
@@ -35,26 +38,37 @@ def month_start(value: str, today: date) -> date:
     return parsed if 1901 <= parsed.year <= 9998 else today.replace(day=1)
 
 
-def calendar_days(focus: date, today: date) -> list[list[CalendarDay]]:
+def calendar_days(
+    focus: date, today: date, category: str = "", network: str = "", status: str = ""
+) -> list[list[CalendarDay]]:
     days = calendar.Calendar(firstweekday=calendar.SUNDAY).monthdatescalendar(
         focus.year, focus.month
     )
     start = datetime.combine(days[0][0], time.min, EASTERN)
     end = datetime.combine(days[-1][-1] + timedelta(days=1), time.min, EASTERN)
     posts = (
-        SocialPost.objects.filter(scheduled_at__gte=start, scheduled_at__lt=end)
+        SocialPost.objects.annotate(
+            calendar_at=Coalesce("scheduled_at", Min("publications__published_at"))
+        )
+        .filter(calendar_at__gte=start, calendar_at__lt=end)
         .exclude(status=SocialPost.Status.DRAFT)
-        .select_related("blog_post")
+        .select_related("blog_post", "category")
         .defer("image_data", "blog_post__cover_data", "blog_post__body")
         .prefetch_related("publications")
-        .order_by("scheduled_at", "pk")
+        .order_by("calendar_at", "pk")
     )
+    if category == "none":
+        posts = posts.filter(category__isnull=True)
+    elif category.isdecimal() and len(category) <= 18:
+        posts = posts.filter(category_id=int(category))
+    if network in {"facebook", "instagram"}:
+        posts = posts.filter(**{f"post_to_{network}": True})
+    if status in SocialPost.Status.values:
+        posts = posts.filter(status=status)
     grouped: dict[date, list[SocialPost]] = {}
     for post in posts:
-        if post.scheduled_at is not None:
-            grouped.setdefault(post.scheduled_at.astimezone(EASTERN).date(), []).append(
-                post
-            )
+        at = cast(datetime, post.__dict__["calendar_at"])
+        grouped.setdefault(at.astimezone(EASTERN).date(), []).append(post)
     return [
         [
             {
@@ -76,6 +90,23 @@ def schedule_calendar(request: SocialRequest) -> HttpResponse:
     focus = month_start(request.GET.get("month", ""), today)
     previous = focus - timedelta(days=1)
     following = (focus + timedelta(days=32)).replace(day=1)
+    category, network, status = (
+        request.GET.get(key, "") for key in ("category", "network", "status")
+    )
+    weeks = calendar_days(focus, today, category, network, status)
+    totals: dict[str, dict[str, int | str]] = {}
+    for week in weeks:
+        for day in week:
+            if not day["in_month"]:
+                continue
+            for post in day["posts"]:
+                label = post.category.name if post.category else "Uncategorized"
+                row = totals.setdefault(
+                    label, {"name": label, "posted": 0, "scheduled": 0}
+                )
+                if post.status in {"posted", "scheduled"}:
+                    row[post.status] = int(row[post.status]) + 1
+    filters = {"category": category, "network": network, "status": status}
     return render(
         request,
         "social/calendar.html",
@@ -84,7 +115,14 @@ def schedule_calendar(request: SocialRequest) -> HttpResponse:
             "previous": previous.strftime("%Y-%m"),
             "following": following.strftime("%Y-%m"),
             "today_month": today.strftime("%Y-%m"),
-            "weeks": calendar_days(focus, today),
+            "weeks": weeks,
+            "categories": SocialCategory.objects.all(),
+            "selected_category": category,
+            "selected_network": network,
+            "selected_status": status,
+            "statuses": SocialPost.Status.choices,
+            "summaries": list(totals.values()),
+            "filter_query": urlencode(filters),
             "weekdays": ("Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"),
         },
     )
