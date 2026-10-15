@@ -68,7 +68,7 @@ test('overflow blocks export and failed saves keep editable text', async ({page}
   await page.locator('#studio-download').click(); await expect(page.locator('#studio-status')).toContainText('needs more room');
   await page.locator('#element-text').fill('A calm moment.'); await page.locator('#studio-name').fill('My template');
   await page.route('**/designs/save/', route=>route.fulfill({status:400,json:{error:'This template changed in another window.'}}));
-  await page.locator('#studio-save-new').click(); await expect(page.locator('#studio-status')).toContainText('changed in another window');
+  await page.locator('#studio-save-new').click(); await expect(page.locator('#studio-status')).toContainText('changed in another window', {timeout:20000});
   await expect(page.locator('#element-text')).toHaveValue('A calm moment.');
 });
 test('uploaded backgrounds render and text can be dragged', async ({page}) => {

@@ -160,7 +160,13 @@
   async function exportPage(sheet) {
     const output = document.createElement('canvas');
     if ((await draw(output, sheet)).length) throw new Error('Some text needs more room. Check each page for an overflow warning before saving or exporting.');
-    return new Promise((resolve, reject) => output.toBlob(blob => blob ? resolve(blob) : reject(new Error('Could not export the image.')), 'image/png'));
+    // Encode directly: background tabs can defer Chrome's toBlob callback for seconds.
+    await new Promise(resolve => setTimeout(resolve, 0));
+    const encoded = output.toDataURL('image/png').split(',')[1];
+    if (!encoded) throw new Error('Could not export the image.');
+    const raw = atob(encoded), bytes = new Uint8Array(raw.length);
+    for (let i = 0; i < raw.length; i++) bytes[i] = raw.charCodeAt(i);
+    return new Blob([bytes], {type: 'image/png'});
   }
   async function run(callback) {
     if (busy) return; busy = true;
