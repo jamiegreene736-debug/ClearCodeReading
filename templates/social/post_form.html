@@ -35,10 +35,10 @@
       {% if mode == "brief" %}
         <div class="mb-5 rounded-2xl bg-linen p-4">
           <h2 class="font-black">Start with an idea</h2>
-          <p class="mt-2 text-sm text-ink/70">Get three fresh ideas for Facebook and Instagram using ClearCode Reading’s brand guidelines. No subject needed. Choose an idea to create editable captions.</p>
+          <p class="mt-2 text-sm text-ink/70">Get three fresh ideas for Facebook and Instagram using ClearCode Reading’s brand guidelines. No title needed. Choose an idea to create editable captions.</p>
           <button name="action" value="ideas" data-testid="generate-post-ideas" class="mt-3 rounded-full bg-deepTeal px-4 py-2 font-black text-white" type="submit">Generate post ideas</button>
         </div>
-        <label class="block text-sm font-black" for="brief">Subject</label>
+        <label class="block text-sm font-black" for="brief">Title</label>
         <textarea id="brief" name="brief" rows="6" class="mt-2 w-full rounded-2xl border border-ink/15 px-4 py-3" placeholder="The idea for this post. A sentence or two is enough.">{{ post.brief }}</textarea>
         <p class="mt-4 text-sm font-black">Audience</p>
         <div class="mt-2 flex flex-wrap gap-2">
