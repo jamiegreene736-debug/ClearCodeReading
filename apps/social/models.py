@@ -115,6 +115,7 @@ class SocialPost(TimeStampedModel):
         PRACTICAL = "practical", "Practical"
         CELEBRATORY = "celebratory", "Celebratory"
 
+    image_prompt = models.TextField(blank=True, default="")
     image_design = models.JSONField(default=dict, blank=True)
     category = models.ForeignKey(SocialCategory, null=True, blank=True, on_delete=models.PROTECT, related_name="posts")
 

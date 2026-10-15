@@ -72,6 +72,9 @@
       <input id="link_url" name="link_url" value="{{ post.link_url }}" placeholder="https://www.clearcodereading.com" aria-describedby="link-help" class="mt-2 w-full rounded-full border border-ink/15 px-4 py-3">
       <p id="link-help" class="mt-2 text-sm text-ink/70">Add the webpage you want readers to visit, such as a blog article or program page. Facebook uses this for a link preview when the post has no photos. For photo or carousel posts, include the URL in your Facebook caption too. Generated drafts include the same Facebook URLs in the Instagram caption as text. Review both captions before posting. This does not add a link button or change your bio link.</p>
       {% include "social/_carousel_editor.html" %}
+      <label class="mt-4 block text-sm font-black" for="image_prompt">Single image prompt (optional)</label>
+      <textarea id="image_prompt" name="image_prompt" rows="4" maxlength="4000" class="mt-2 w-full rounded-2xl border border-ink/15 px-4 py-3" placeholder="Describe the scene, people, objects, colors, and composition you want.">{{ post.image_prompt }}</textarea>
+      <p class="social-preview-note">Used by Generate image / New image and the optional single image with Draft with AI. Leave blank to use the post captions. Carousel images use their individual prompts above. Saving a prompt does not generate or replace a photo.</p>
       {% if mode == "brief" %}
         <label class="mt-4 flex items-start gap-3 rounded-2xl bg-linen px-4 py-3 text-sm font-bold text-ink/80">
           <input type="checkbox" name="generate_image" class="mt-1" {% if generate_image and not generate_carousel %}checked{% endif %}>
