@@ -32,6 +32,7 @@ from apps.social.carousel_ai import (
 from apps.social.crypto import decrypt_json, digest, encrypt_json
 from apps.social.drafts import draft_captions
 from apps.social.exceptions import SocialError
+from apps.social.prompts import carousel_prompts, image_prompt_text, update_prompts
 from apps.social.media import edited_photos, save_slides, set_cover
 from apps.social.meta import (
     exchange_facebook_code,
@@ -200,6 +201,8 @@ def post_edit(request, pk=None):
                 photos = []  # The legacy single-photo input replaces the whole set.
                 post.carousel_plan = {}
             mode = _apply_post(post, request)
+            if "image_prompt" in request.POST:
+                post.image_prompt = image_prompt_text(request.POST.get("image_prompt", ""))
             action = request.POST.get("action") or "save"
             selected_idea = request.POST.get("selected_idea", "").strip()
             if selected_idea:
@@ -210,10 +213,18 @@ def post_edit(request, pk=None):
             if action in {"ideas", "draft_ai", "new_image", "plan_carousel"} and post.status == SocialPost.Status.SCHEDULED:
                 raise SocialError("Cancel this post’s schedule before generating new content for review.")
             uploaded_images = bool(request.FILES.getlist("images") or request.FILES.get("image"))
+            custom_prompts = None
+            if not uploaded_images and photos is None and action not in {"discard_carousel", "new_image"}:
+                custom_prompts = carousel_prompts(request.POST.getlist("carousel_prompt"), request.POST.get("slide_count", str(len(post.carousel_plan.get("slides", [])) or 3)))
+            prompts_changed = False
+            if custom_prompts:
+                prompts_changed = update_prompts(post, custom_prompts)
+            if action == "save_prompts" and not custom_prompts and not post.image_prompt:
+                raise SocialError("Enter an image prompt or prompts for your carousel slides first.")
             auto_generate = action == "draft_ai" and generate_carousel_checked and not uploaded_images
             if auto_generate:
                 action = "plan_carousel"
-            notice = "Draft saved."
+            notice = "Image prompts saved. Current photos are kept until you generate replacements." if action == "save_prompts" or prompts_changed else "Draft saved."
             if action == "plan_carousel":
                 if post.is_blog_promotion:
                     raise SocialError("Blog features publish a link card. Create a separate social post for a carousel.")
@@ -223,11 +234,16 @@ def post_edit(request, pk=None):
                     count = int(request.POST.get("slide_count", "3"))
                 except ValueError as exc:
                     raise SocialError("Choose between 2 and 10 slides.") from exc
-                plan = plan_carousel(subject=post.brief or post.facebook_caption, count=count, audience=post.audience, tone=post.tone)
-                post.facebook_caption = str(plan.pop("facebook"))
+                if custom_prompts:
+                    plan = {"slides": custom_prompts, "completed": 0}
+                    if auto_generate:
+                        post.facebook_caption, post.instagram_caption = write_captions(subject=post.brief, audience=post.audience, tone=post.tone, link=post.link_url)
+                else:
+                    plan = plan_carousel(subject=post.brief or post.facebook_caption, count=count, audience=post.audience, tone=post.tone)
+                    post.facebook_caption = str(plan.pop("facebook"))
+                    post.instagram_caption = str(plan.pop("instagram"))
                 if auto_generate and post.link_url and post.link_url not in post.facebook_caption:
                     post.facebook_caption += f"\n\n{post.link_url}"
-                post.instagram_caption = str(plan.pop("instagram"))
                 post.carousel_plan = plan
                 notice = "Carousel planned. Review the slide ideas, then choose Generate slides."
             elif action == "discard_carousel":
@@ -265,9 +281,8 @@ def post_edit(request, pk=None):
                             image_context.append(post.instagram_caption)
                         if post.brief:
                             image_context.append(f"Supporting brief: {post.brief}")
-                        raw, content_type = generate_image(
-                            subject="\n".join(filter(None, image_context))
-                        )
+                        post.image_prompt = post.image_prompt or "\n".join(filter(None, image_context))[:4000]
+                        raw, content_type = generate_image(subject=post.image_prompt)
                     except SocialError as exc:
                         if action == "new_image" or not post.facebook_caption:
                             raise
@@ -287,7 +302,7 @@ def post_edit(request, pk=None):
                     post.created_by = request.user
                 if post.status not in {SocialPost.Status.SCHEDULED, SocialPost.Status.ATTENTION}:
                     post.status = SocialPost.Status.DRAFT
-                changing_media = photos is not None or action == "plan_carousel"
+                changing_media = photos is not None or action == "plan_carousel" or prompts_changed
                 with transaction.atomic():
                     weeks = []
                     if changing_media and post.pk:
@@ -352,6 +367,7 @@ def post_edit(request, pk=None):
             "category_choices": category_choices(post),
             "slides": list(post.slides.all()) if post.pk else [],
             "carousel_pending": generation_pending(post),
+            "carousel_prompt_values": request.POST.getlist("carousel_prompt") if request.method == "POST" and "carousel_prompt" in request.POST else post.carousel_plan.get("slides", ["", "", ""]),
             "ideas": ideas,
             "mode": mode,
             "accounts": _accounts(),

@@ -213,6 +213,29 @@
   form.addEventListener('submit', (event) => {
     if (form.dataset.photoError) event.preventDefault();
   });
+  const promptFields = editor.querySelector('[data-carousel-prompts]');
+  const slideCount = editor.querySelector('[name=slide_count]');
+  if (promptFields && slideCount) {
+    const existing = promptFields.querySelectorAll('textarea').length;
+    if (existing >= 2 && existing <= 10) slideCount.value = String(existing);
+    const resizePrompts = () => {
+      const count = Number(slideCount.value);
+      while (promptFields.children.length < count) {
+        const label = document.createElement('label');
+        label.className = 'block mt-3 text-sm font-black';
+        label.textContent = `Slide ${promptFields.children.length + 1} image prompt`;
+        const input = document.createElement('textarea');
+        input.name = 'carousel_prompt'; input.rows = 4; input.maxLength = 2000;
+        input.className = 'mt-2 w-full rounded-2xl border border-ink/15 px-4 py-3';
+        label.append(input); promptFields.append(label);
+      }
+      [...promptFields.children].forEach((label, i) => {
+        label.hidden = i >= count; label.querySelector('textarea').disabled = i >= count;
+      });
+    };
+    slideCount.addEventListener('change', resizePrompts);
+    resizePrompts();
+  }
   const generate = editor.querySelector('[data-generate-slides]');
   generate?.addEventListener('click', async () => {
     const progress = editor.querySelector('[data-generation-progress]');

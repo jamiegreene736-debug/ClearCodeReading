@@ -19,7 +19,7 @@ post = SocialPost(pk=123, source='${mode}', facebook_caption='Saved Facebook cap
 from types import SimpleNamespace
 slides = [SimpleNamespace(pk=456, image_name='second.jpg')] if ${carousel ? 'True' : 'False'} else []
 if slides: post.carousel_plan = {'slides': ['A warm reading corner', 'A sunny reading lamp'], 'completed': 0}
-print(render_to_string('social/post_form.html', {'request': request, 'post': post, 'mode': '${mode}', 'accounts': {}, 'ai_ready': False, 'csrf_token': 'test-csrf', 'slides': slides, 'carousel_pending': bool(slides), 'auto_generate': ${auto ? 'True' : 'False'}}))
+print(render_to_string('social/post_form.html', {'request': request, 'post': post, 'mode': '${mode}', 'accounts': {}, 'ai_ready': False, 'csrf_token': 'test-csrf', 'slides': slides, 'carousel_pending': bool(slides), 'carousel_prompt_values': post.carousel_plan.get('slides', ['', '', '']), 'auto_generate': ${auto ? 'True' : 'False'}}))
 `], { encoding: 'utf8' });
 const png = Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+aX1kAAAAASUVORK5CYII=', 'base64');
 const html = { manual: render('manual'), brief: render('brief'), saved: render('manual', true), carousel: render('manual', true, true), auto: render('brief', true, true, true) };
@@ -277,4 +277,28 @@ test('integrated draft starts slide generation automatically and can resume a fa
   await expect(page.locator('[data-generate-slides]')).toBeEnabled();
   await page.locator('[data-generate-slides]').click();
   await expect.poll(() => calls).toBe(2);
+});
+
+
+test('image prompts can be edited and slide count preserves entered text', async ({ page }) => {
+  await openComposer(page, 'carousel');
+  const prompts = page.locator('[name=carousel_prompt]');
+  await expect(prompts).toHaveCount(2);
+  await expect(prompts.first()).toHaveValue('A warm reading corner');
+  await prompts.first().fill('My custom reading image with a family on a porch.');
+  await page.locator('[name=slide_count]').selectOption('3');
+  await prompts.nth(2).fill('Children building words with colorful letter tiles.');
+  await page.locator('[name=slide_count]').selectOption('2');
+  await expect(prompts.nth(2)).toBeDisabled();
+  await page.locator('[name=slide_count]').selectOption('3');
+  await expect(prompts.nth(2)).toHaveValue('Children building words with colorful letter tiles.');
+  await page.locator('[data-generate-slides]').click();
+  await expect(page.locator('[data-generation-progress]')).toHaveText('Save your draft before generating slides.');
+  await page.locator('#image_prompt').fill('My own photo direction for the cover image.');
+  await expect(page.getByRole('button', { name: 'Save image prompts' })).toBeVisible();
+  const values = await page.locator('#social-post-form').evaluate(form => {
+    const data = new FormData(form);
+    return [data.get('image_prompt'), ...data.getAll('carousel_prompt')];
+  });
+  expect(values).toEqual(['My own photo direction for the cover image.', 'My custom reading image with a family on a porch.', 'A sunny reading lamp', 'Children building words with colorful letter tiles.']);
 });
