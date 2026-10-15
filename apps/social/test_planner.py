@@ -155,6 +155,21 @@ class ContentPlannerTests(TestCase):
         response = self.client.get(reverse("social:planner"))
         self.assertContains(response, CONTENT["title"], count=8)
 
+    @patch("apps.social.planner.generate_image", return_value=(b"image", "image/jpeg"))
+    @patch("apps.social.planner.review_content", return_value=(True, "Supported."))
+    @patch("apps.social.planner.generate_content", return_value=CONTENT)
+    def test_weekly_website_link_appears_in_both_captions(
+        self, writer, reviewer, image
+    ):
+        week = self.week()
+        week.pillar = "clearcode_approach"
+        week.save(update_fields=["pillar"])
+        _generate_week(self.plan, week)
+        week.refresh_from_db()
+        self.assertTrue(week.post.link_url)
+        self.assertIn(week.post.link_url, week.post.facebook_caption)
+        self.assertIn(week.post.link_url, week.post.instagram_caption)
+
     @patch("apps.social.planner.generate_image")
     @patch(
         "apps.social.planner.review_content", return_value=(False, "Unsupported claim.")

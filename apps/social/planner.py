@@ -12,6 +12,7 @@ from django.utils import timezone
 
 from apps.social.access import can_manage_social
 from apps.social.ai import ai_configured, generate_image
+from apps.social.drafts import share_caption_links
 from apps.social.editorial import CTA_URL, PILLAR_DIRECTIONS, pillar_for, source_context
 from apps.social.exceptions import SocialError
 from apps.social.models import ContentPlan, ContentWeek, SocialPost
@@ -295,7 +296,9 @@ def _generate_week(plan: ContentPlan, week: ContentWeek) -> None:
         locked.post = SocialPost.objects.create(
             brief=str(week.content["brief"]),
             facebook_caption=facebook,
-            instagram_caption=str(week.content["instagram"]),
+            instagram_caption=share_caption_links(
+                facebook, str(week.content["instagram"])
+            ),
             audience=str(week.context["audience"]),
             tone=SocialPost.Tone.WARM,
             source=SocialPost.Source.BRIEF,
