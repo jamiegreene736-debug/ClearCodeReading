@@ -116,7 +116,7 @@ for (const [action, label] of [
     await page.locator(`[name="action"][value="${action}"]`).click();
     await expect(page.locator('#generation-status')).toBeVisible();
     await expect(page.locator('#generation-message')).toContainText(label);
-    await expect(page.getByRole('progressbar')).not.toHaveAttribute('value');
+    await expect(page.getByRole('progressbar')).not.toHaveAttribute('aria-valuenow');
     await expect(page.locator('#social-post-form')).toHaveAttribute('aria-busy', 'true');
     await page.evaluate(() => window.dispatchEvent(new PageTransitionEvent('pageshow')));
     await expect(page.locator('#generation-status')).toBeHidden();

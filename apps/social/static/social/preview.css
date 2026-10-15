@@ -72,5 +72,16 @@
   color: #14343e;
   box-shadow: 0 8px 32px #14343e33;
 }
-.generation-status progress { display: block; width: 100%; margin: .75rem 0; accent-color: #197b80; }
+.generation-indicator { overflow: hidden; height: .625rem; margin: .75rem 0; border-radius: 1rem; background: #dceceb; }
+.generation-indicator::after {
+  content: '';
+  display: block;
+  width: 35%;
+  height: 100%;
+  border-radius: inherit;
+  background: #197b80;
+  animation: generation-sweep 1.4s ease-in-out infinite alternate;
+}
+@keyframes generation-sweep { from { transform: translateX(0); } to { transform: translateX(185%); } }
+@media (prefers-reduced-motion: reduce) { .generation-indicator::after { animation: none; } }
 .generation-status p { margin: 0; font-size: .875rem; }
