@@ -15,6 +15,7 @@ import requests
 from django.conf import settings
 from PIL import Image, UnidentifiedImageError
 
+from apps.social.drafts import share_caption_links
 from apps.social.exceptions import SocialError
 
 logger = logging.getLogger(__name__)
@@ -205,7 +206,7 @@ def write_captions(
         'Return only JSON with two string keys: "facebook" and "instagram". '
         "Write new sentences. Facebook: two to four warm sentences, no more than 5000 characters. "
         "Include the supplied link on its own line. Instagram: under 280 characters, then "
-        "two hashtags including #ClearCodeReading; do not include a link.",
+        "two hashtags including #ClearCodeReading. Include the same URLs as Facebook, unchanged, on their own lines. Do not claim the link is in the bio.",
         {
             "subject": text,
             "audience": audience or "families",
@@ -221,7 +222,7 @@ def write_captions(
         raise SocialError("The captions were not the right length. Please try again.")
     _guard(facebook)
     _guard(instagram)
-    return facebook, instagram
+    return facebook, share_caption_links(facebook, instagram)
 
 
 def image_prompt(subject: str) -> str:

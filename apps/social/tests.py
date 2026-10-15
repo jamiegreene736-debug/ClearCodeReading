@@ -135,7 +135,7 @@ class SocialMediaTests(TestCase):
         )
         self.assertIn("https://clearcodereading.com/blog/calmer", facebook)
         self.assertIn("#ClearCodeReading", instagram)
-        self.assertNotIn("https://", instagram)
+        self.assertIn("https://clearcodereading.com/blog/calmer", instagram)
         with self.assertRaises(SocialError):
             draft_captions(brief="This child scored 12 on the inventory today.", audience="families", tone="warm", link="")
 
