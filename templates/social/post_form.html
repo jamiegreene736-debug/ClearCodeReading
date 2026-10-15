@@ -67,8 +67,9 @@
           <textarea id="instagram_caption" name="instagram_caption" rows="6" class="mt-2 w-full rounded-2xl border border-ink/15 px-4 py-3">{{ post.instagram_caption }}</textarea>
         </div>
       {% endif %}
-      <label class="mt-4 block text-sm font-black" for="link_url">Link</label>
-      <input id="link_url" name="link_url" value="{{ post.link_url }}" class="mt-2 w-full rounded-full border border-ink/15 px-4 py-3">
+      <label class="mt-4 block text-sm font-black" for="link_url">Website link (optional)</label>
+      <input id="link_url" name="link_url" value="{{ post.link_url }}" placeholder="https://www.clearcodereading.com" aria-describedby="link-help" class="mt-2 w-full rounded-full border border-ink/15 px-4 py-3">
+      <p id="link-help" class="mt-2 text-sm text-ink/70">Add the webpage you want readers to visit, such as a blog article or program page. Facebook uses this for a link preview when the post has no photos. For photo or carousel posts, include the URL in your Facebook caption too. This field does not add a link to Instagram or change your bio link.</p>
       {% include "social/_carousel_editor.html" %}
       {% if mode == "brief" %}
         <label class="mt-4 flex items-start gap-3 rounded-2xl bg-linen px-4 py-3 text-sm font-bold text-ink/80">
