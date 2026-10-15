@@ -4,6 +4,7 @@ from apps.crm_email import views
 from apps.crm_email.stage_views import first_stage
 
 urlpatterns = [
+    path("email/templates/", views.templates_view, name="crm_email_templates"),
     path("email/first-stage/", first_stage, name="crm_first_stage_emails"),
     path("email/", views.settings_view, name="crm_email_settings"),
     path(

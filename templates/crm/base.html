@@ -172,7 +172,7 @@
             <p class="nav-label">Settings</p>
             {% nav_state 'crm_calendar_settings' 'crm_google_calendar_connect' as nav_calendar %}
             <a class="nav-link {{ nav_calendar.class }}" {% if nav_calendar.current %}aria-current="page"{% endif %} href="{% url 'crm_calendar_settings' %}">{% include "crm/_nav_icon.html" with icon="calendar" %}My calendar</a>
-            {% nav_state 'crm_email_settings' 'crm_email_notifications' 'crm_email_connect' 'crm_email_sync' 'crm_email_disconnect' 'crm_email_template' 'crm_email_template_new' 'crm_email_automated' 'crm_email_automated_image_upload' 'crm_first_stage_emails' as nav_email %}
+            {% nav_state 'crm_email_settings' 'crm_email_notifications' 'crm_email_connect' 'crm_email_sync' 'crm_email_disconnect' 'crm_email_template' 'crm_email_template_new' 'crm_email_templates' 'crm_email_automated' 'crm_email_automated_image_upload' 'crm_first_stage_emails' as nav_email %}
             <a class="nav-link {{ nav_email.class }}" {% if nav_email.current %}aria-current="page"{% endif %} href="{% url 'crm_email_settings' %}">{% include "crm/_nav_icon.html" with icon="email" %}Email &amp; notifications</a>
             {% if request.user.can_manage_crm_users %}
               <a class="nav-link" href="{% url 'manage_users' %}">{% include "crm/_nav_icon.html" with icon="users" %}Add user &amp; invitations</a>

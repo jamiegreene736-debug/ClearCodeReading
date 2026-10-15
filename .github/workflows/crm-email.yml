@@ -6,6 +6,7 @@ on:
       - 'apps/crm/**'
       - 'apps/users/**'
       - 'templates/crm/**'
+      - 'tests/browser/crm-template-library.spec.js'
       - 'clearcodereading/**'
       - 'requirements*.txt'
       - 'mypy-crm-email.ini'
@@ -50,3 +51,10 @@ jobs:
       - run: ruff format --check apps/crm_email
       - run: mypy --config-file mypy-crm-email.ini
       - run: python manage.py test --noinput
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - run: npm ci
+      - run: npx playwright install --with-deps chromium
+      - run: npx playwright test tests/browser/crm-template-library.spec.js --workers=2

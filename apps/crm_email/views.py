@@ -53,6 +53,7 @@ from apps.crm_email.contact_templates import (
     apply_pipeline_template,
     apply_template,
     contact_templates,
+    pipeline_template_keys,
 )
 from apps.crm_email.forms import (
     AutomatedEmailForm,
@@ -143,8 +144,30 @@ def settings_view(request: EmailRequest) -> HttpResponse:
             )
             if request.user.can_manage_crm_users
             else [],
-            "templates": EmailTemplate.objects.filter(owner=request.user),
             "active_tab": "mailbox",
+            **hub_context(request),
+        },
+    )
+
+
+@crm_view
+@require_GET
+def templates_view(request: EmailRequest) -> HttpResponse:
+    return render(
+        request,
+        "crm/email_templates.html",
+        {
+            "active_tab": "templates",
+            "templates": EmailTemplate.objects.filter(owner=request.user),
+            "pipeline_templates": [
+                {
+                    "spec": copy.spec,
+                    "subject": copy["subject"],
+                    "body": copy.text("body"),
+                }
+                for copy in automated.all_copies(pipeline_template_keys())
+            ],
+            "referral_templates": REFERRAL_TEMPLATES.values(),
             **hub_context(request),
         },
     )
@@ -986,12 +1009,24 @@ def template_view(
     )
     if request.method == "POST" and request.POST.get("action") == "delete" and template:
         template.delete()
-        return redirect("crm_email_settings")
+        return redirect("crm_email_templates")
     initial = (
         {name: getattr(template, name) for name in ["name", "subject", "body_html"]}
         if template
         else {}
     )
+    source = request.GET.get("source", "")
+    if source and template is None:
+        starter = REFERRAL_TEMPLATES.get(source)
+        if starter is None:
+            raise Http404("Unknown starter template")
+        initial = {
+            "name": starter.name + " (my copy)",
+            "subject": starter.subject,
+            "body_html": starter.body_html.replace(
+                "{{contact.doctor_name}}", "{{contact.name}}"
+            ),
+        }
     form = TemplateForm(request.POST or None, initial=initial)
     if request.method == "POST" and form.is_valid():
         template = template or EmailTemplate(owner=request.user)
@@ -999,11 +1034,13 @@ def template_view(
             setattr(template, name, value)
         template.save()
         messages.success(request, "Email template saved.")
-        return redirect("crm_email_settings")
+        return redirect("crm_email_templates")
     return render(
         request,
         "crm/email_template.html",
         {
+            "active_tab": "templates",
+            **hub_context(request),
             "form": form,
             "template": template,
             "placeholders": TEMPLATE_PLACEHOLDERS,
