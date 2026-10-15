@@ -145,6 +145,9 @@
     form.dataset.photoError = message;
     error.textContent = message;
     error.hidden = !message;
+    editor.querySelector('[data-photo-summary]').textContent = message ? 'Resolve the photo error before saving.' : photos.length > 1
+      ? `${photos.length}-image carousel ready. Save or draft to keep these slides in this order.`
+      : photos.length === 1 ? '1 image selected. Add another photo to make a carousel.' : 'No photos selected.';
     const list = editor.querySelector('[data-photo-list]');
     list.replaceChildren();
     photos.forEach((photo, index) => {
@@ -180,13 +183,27 @@
       if (!activeUrls.has(url)) { URL.revokeObjectURL(url); urls.delete(url); }
     }
   }
+  function useUploadedPhotos() {
+    const carousel = form.elements.generate_carousel;
+    const single = form.elements.generate_image;
+    if (carousel) carousel.checked = false;
+    if (single) single.checked = false;
+  }
+  form.elements.generate_carousel?.addEventListener('change', () => {
+    if (form.elements.generate_carousel.checked && form.elements.generate_image) form.elements.generate_image.checked = false;
+  });
+  form.elements.generate_image?.addEventListener('change', () => {
+    if (form.elements.generate_image.checked && form.elements.generate_carousel) form.elements.generate_carousel.checked = false;
+  });
   input.addEventListener('change', () => {
+    useUploadedPhotos();
     photos = photos.concat([...input.files].map(makePhoto));
     replacement.value = '';
     dirty = true;
     sync();
   });
   replacement.addEventListener('change', () => {
+    useUploadedPhotos();
     photos = replacement.files.length ? [makePhoto(replacement.files[0])] : [...saved];
     dirty = true;
     sync();
@@ -203,6 +220,7 @@
       progress.textContent = 'Save your draft before generating slides.';
       return;
     }
+    progress.scrollIntoView({ block: 'center' });
     const controls = [...form.querySelectorAll('button, input, select, textarea')];
     const states = controls.map((control) => control.disabled);
     controls.forEach((control) => { control.disabled = true; });
@@ -233,4 +251,9 @@
     if (!event.persisted) urls.forEach((url) => URL.revokeObjectURL(url));
   });
   sync();
+  window.addEventListener('pageshow', () => {
+    if (editor.dataset.autoGenerate !== 'true' || !generate) return;
+    editor.dataset.autoGenerate = 'false';
+    generate.click();
+  }, { once: true });
 })();

@@ -1,4 +1,4 @@
-<div class="carousel-editor" data-carousel-editor>
+<div class="carousel-editor" data-carousel-editor data-auto-generate="{{ auto_generate|yesno:'true,false' }}">
   <h2 class="font-black">Your images &amp; carousel</h2>
   <p class="social-preview-note">Add up to 10 photos. The first is the cover. Multiple photos become an Instagram carousel and a Facebook multi-photo post; Facebook controls its layout. Carousel photos fit on a square linen background without cropping.</p>
   <input type="hidden" name="photo_order" value="[]" disabled>
@@ -6,20 +6,26 @@
     {% if post.pk and post.has_image %}<span data-key="cover" data-url="{% url 'social:image' post.pk %}" data-name="{{ post.image_name }}"></span>{% endif %}
     {% for slide in slides %}<span data-key="{{ slide.pk }}" data-url="{% url 'social:slide_image' post.pk slide.pk %}" data-name="{{ slide.image_name }}"></span>{% endfor %}
   </div>
+  <p data-photo-summary role="status" class="social-preview-note"></p>
   <ol data-photo-list class="carousel-photo-list" aria-label="Photos in publishing order"></ol>
   <label class="mt-4 block text-sm font-black" for="images">Upload carousel images (2–10 photos)</label>
   <input id="images" name="images" type="file" multiple accept="image/jpeg,image/png,image/webp" class="mt-2 block w-full text-sm">
   <label class="mt-4 block text-sm font-black" for="image">Replace all photos with one image</label>
   <input id="image" name="image" type="file" accept="image/jpeg,image/png,image/webp" class="mt-2 block w-full text-sm">
   <p data-photo-error role="alert" class="social-preview-warning" hidden></p>
-  <noscript><p>Enable JavaScript to upload, arrange, or remove carousel photos.</p></noscript>
+  <noscript><p>Enable JavaScript to preview, arrange, or remove carousel photos.</p></noscript>
   <div class="carousel-ai" id="ai-carousel" tabindex="-1">
     <h3 class="font-black">Create an AI carousel</h3>
-    <p class="social-preview-note">1. Enter a subject or caption above. 2. Choose your slide count and plan the carousel. 3. Review the plan, then generate the slides.</p>
+    {% if mode == "brief" %}
+    <label class="font-black"><input type="checkbox" name="generate_carousel" {% if generate_carousel %}checked{% endif %}> Create an AI carousel with Draft with AI</label>
+    <p class="social-preview-note">Turn this on to create captions and all your slides in one step. Choose the slide count, then click Draft with AI. Leave it off for captions and an optional single image. Uploaded photos are used instead of AI images.</p>
+    {% else %}
+    <p class="social-preview-note">Enter a caption, choose your slide count, then plan and generate the carousel.</p>
+    {% endif %}
     <label for="slide_count" class="font-black">Number of slides</label>
     <select id="slide_count" name="slide_count"><option>2</option><option selected>3</option><option>4</option><option>5</option><option>6</option><option>7</option><option>8</option><option>9</option><option>10</option></select>
-    <button type="submit" name="action" value="plan_carousel" class="carousel-button">Plan AI carousel</button>
-    <p class="social-preview-note">Uses your subject or caption to plan a coherent set of photos and shared captions. Review the plan, then generate the slides. Each slide uses one image-generation request. Existing photos are replaced when the first new slide succeeds.</p>
+    {% if mode != "brief" %}<button type="submit" name="action" value="plan_carousel" class="carousel-button">Plan AI carousel</button>{% endif %}
+    <p class="social-preview-note">Creates a coherent set of photos and shared captions. Review the completed carousel before scheduling. Generating several slides can take a few minutes. Existing photos are replaced when the first new slide succeeds.</p>
     {% if post.carousel_plan %}
       <ol class="carousel-plan">{% for brief in post.carousel_plan.slides %}<li>{{ brief }}</li>{% endfor %}</ol>
       <progress data-slide-progress max="{{ post.carousel_plan.slides|length }}" value="{{ post.carousel_plan.completed }}" aria-label="Carousel slides generated"></progress>

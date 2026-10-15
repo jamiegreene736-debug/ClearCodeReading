@@ -177,6 +177,7 @@ def post_edit(request, pk=None):
     nav = navigation(request, post)
     ideas: list[str] = []
     generate_image_checked = request.method != "POST" or request.POST.get("generate_image") == "on"
+    generate_carousel_checked = request.POST.get("generate_carousel") == "on" if request.method == "POST" else bool(post.carousel_plan)
     if request.method == "POST":
         try:
             revision = request.POST.get("revision")
@@ -207,6 +208,10 @@ def post_edit(request, pk=None):
                 action = "draft_ai"
             if action in {"ideas", "draft_ai", "new_image", "plan_carousel"} and post.status == SocialPost.Status.SCHEDULED:
                 raise SocialError("Cancel this post’s schedule before generating new content for review.")
+            uploaded_images = bool(request.FILES.getlist("images") or request.FILES.get("image"))
+            auto_generate = action == "draft_ai" and generate_carousel_checked and not uploaded_images
+            if auto_generate:
+                action = "plan_carousel"
             notice = "Draft saved."
             if action == "plan_carousel":
                 if post.is_blog_promotion:
@@ -219,6 +224,8 @@ def post_edit(request, pk=None):
                     raise SocialError("Choose between 2 and 10 slides.") from exc
                 plan = plan_carousel(subject=post.brief or post.facebook_caption, count=count, audience=post.audience, tone=post.tone)
                 post.facebook_caption = str(plan.pop("facebook"))
+                if auto_generate and post.link_url and post.link_url not in post.facebook_caption:
+                    post.facebook_caption += f"\n\n{post.link_url}"
                 post.instagram_caption = str(plan.pop("instagram"))
                 post.carousel_plan = plan
                 notice = "Carousel planned. Review the slide ideas, then choose Generate slides."
@@ -250,7 +257,7 @@ def post_edit(request, pk=None):
                     post.instagram_caption = instagram
                     post.source = SocialPost.Source.BLOG if post.is_blog_promotion else SocialPost.Source.BRIEF
                     notice = "Drafted with AI. Read both captions before you schedule or post."
-                if action == "new_image" or generate_image_checked:
+                if action == "new_image" or (generate_image_checked and not post.has_image):
                     try:
                         image_context = [post.facebook_caption]
                         if post.instagram_caption != post.facebook_caption:
@@ -315,6 +322,9 @@ def post_edit(request, pk=None):
                         return redirect(f"{reverse('social:queue')}?tab=posted")
                     messages.error(request, post.last_error or "The post needs attention.")
                     return redirect(f"{reverse('social:queue')}?tab=attention")
+                if auto_generate:
+                    request.session[f"social_auto_generate_{post.pk}"] = True
+                    notice = "Captions saved. Creating your carousel slides now."
                 messages.success(request, notice)
                 if action == "save_return":
                     return redirect(nav["url"])
@@ -341,6 +351,8 @@ def post_edit(request, pk=None):
             "mode": mode,
             "accounts": _accounts(),
             "generate_image": generate_image_checked,
+            "generate_carousel": generate_carousel_checked,
+            "auto_generate": request.method == "GET" and request.session.pop(f"social_auto_generate_{post.pk}", False) and generation_pending(post),
             "ai_ready": ai_configured(),
             "ai_text_model": text_model(),
             "ai_image_model": image_model(),

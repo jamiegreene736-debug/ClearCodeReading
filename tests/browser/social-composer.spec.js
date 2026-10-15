@@ -109,7 +109,7 @@ for (const [action, label] of [
 ]) {
   test(`shows visible indeterminate progress for ${action}`, async ({ page }) => {
     await page.route('**/*', route => route.abort());
-    await page.setContent(composer('brief', true));
+    await page.setContent(composer(action === 'plan_carousel' ? 'manual' : 'brief', true));
     await page.locator('#social-post-form').evaluate(form => {
       form.addEventListener('submit', event => event.preventDefault());
     });
