@@ -531,15 +531,16 @@ class SocialMediaTests(TestCase):
         self.assertEqual(picture.content, b"jpeg-picture")
         self.assertEqual(picture["Content-Type"], "image/jpeg")
 
-    def test_image_failure_keeps_generated_captions_and_previous_image(self):
+    def test_drafting_preserves_existing_image_without_generating_a_replacement(self):
         self.client.force_login(self.admin)
         post = SocialPost.objects.create(brief="A calm shared reading routine.", source="brief", image_data=b"old-image", image_content_type="image/jpeg", created_by=self.admin)
-        with patch("apps.social.views.write_captions", return_value=("Fresh Facebook caption for review.", "Fresh Instagram caption.")), patch("apps.social.views.generate_image", side_effect=SocialError("Image service timed out.")):
+        with patch("apps.social.views.write_captions", return_value=("Fresh Facebook caption for review.", "Fresh Instagram caption.")), patch("apps.social.views.generate_image", side_effect=SocialError("Image service timed out.")) as image:
             response = self.client.post(reverse("social:edit", args=[post.pk]), {"mode": "brief", "action": "draft_ai", "brief": post.brief, "generate_image": "on"}, follow=True)
         post.refresh_from_db()
         self.assertEqual(post.facebook_caption, "Fresh Facebook caption for review.")
         self.assertEqual(bytes(post.image_data), b"old-image")
-        self.assertContains(response, "Image service timed out.")
+        image.assert_not_called()
+        self.assertNotContains(response, "Image service timed out.")
 
     def test_manual_caption_can_generate_an_image_without_a_brief(self):
         self.client.force_login(self.admin)

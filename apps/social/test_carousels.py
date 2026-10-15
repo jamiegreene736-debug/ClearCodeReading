@@ -306,6 +306,107 @@ class CarouselTests(TestCase):
         self.post.refresh_from_db()
         self.assertEqual(self.post.status, "posted")
 
+    def test_integrated_draft_plans_carousel_and_auto_starts_once(self) -> None:
+        plan = {
+            "facebook": "A shared reading activity.",
+            "instagram": "Read together.",
+            "slides": ["A family sharing a book", "A child practicing sounds"],
+            "completed": 0,
+        }
+        with (
+            patch("apps.social.views.plan_carousel", return_value=plan) as planner,
+            patch("apps.social.views.generate_image") as image,
+        ):
+            response = self.client.post(
+                self.url,
+                {
+                    "mode": "brief",
+                    "brief": "A shared reading activity.",
+                    "action": "draft_ai",
+                    "generate_carousel": "on",
+                    "generate_image": "on",
+                    "slide_count": "2",
+                    "link_url": "https://example.com/reading",
+                },
+            )
+        self.assertEqual(response.status_code, 302)
+        planner.assert_called_once()
+        image.assert_not_called()
+        first = self.client.get(response.url)
+        self.assertTrue(first.context["auto_generate"])
+        self.assertFalse(self.client.get(response.url).context["auto_generate"])
+        self.post.refresh_from_db()
+        self.assertEqual(len(self.post.carousel_plan["slides"]), 2)
+        self.assertIn("https://example.com/reading", self.post.facebook_caption)
+        with patch(
+            "apps.social.carousel_ai.generate_image",
+            return_value=(picture(), "image/png"),
+        ):
+            self.assertEqual(generate_next_slide(self.post.pk), (1, 2))
+            self.assertEqual(generate_next_slide(self.post.pk), (2, 2))
+        self.post.refresh_from_db()
+        self.assertTrue(self.post.has_image)
+        self.assertEqual(self.post.slides.count(), 1)
+
+    def test_ai_draft_preserves_uploaded_carousel_with_or_without_order(self) -> None:
+        for ordered in (False, True):
+            with self.subTest(ordered=ordered):
+                data = {
+                    "mode": "brief",
+                    "brief": "A shared reading activity.",
+                    "action": "draft_ai",
+                    "generate_image": "on",
+                    "generate_carousel": "on",
+                    "images": [upload("first.png"), upload("second.png")],
+                }
+                if ordered:
+                    data["photo_order"] = json.dumps(["upload:1", "upload:0"])
+                with (
+                    patch(
+                        "apps.social.views.write_captions",
+                        return_value=("A useful caption.", "A useful caption."),
+                    ),
+                    patch("apps.social.views.generate_image") as image,
+                    patch("apps.social.views.plan_carousel") as planner,
+                ):
+                    response = self.client.post(self.url, data)
+                self.assertEqual(response.status_code, 302)
+                image.assert_not_called()
+                planner.assert_not_called()
+                self.post.refresh_from_db()
+                self.assertEqual(
+                    self.post.image_name, "second.jpg" if ordered else "first.jpg"
+                )
+                self.assertEqual(
+                    self.post.slides.get().image_name,
+                    "first.jpg" if ordered else "second.jpg",
+                )
+                self.assertFalse(self.post.carousel_plan)
+
+    def test_draft_with_carousel_off_preserves_saved_slides(self) -> None:
+        self.attach()
+        with (
+            patch(
+                "apps.social.views.write_captions",
+                return_value=("A useful caption.", "A useful caption."),
+            ),
+            patch("apps.social.views.generate_image") as image,
+            patch("apps.social.views.plan_carousel") as planner,
+        ):
+            response = self.client.post(
+                self.url,
+                {
+                    "mode": "brief",
+                    "brief": "A shared reading activity.",
+                    "action": "draft_ai",
+                    "generate_image": "on",
+                },
+            )
+        self.assertEqual(response.status_code, 302)
+        image.assert_not_called()
+        planner.assert_not_called()
+        self.assertEqual(self.post.slides.count(), 2)
+
     def test_ai_plan_validation_and_no_image_requests_during_planning(self) -> None:
         valid = {
             "facebook": "Make reading a warm daily habit.",

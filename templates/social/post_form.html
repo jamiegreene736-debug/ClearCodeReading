@@ -17,7 +17,7 @@
     <div class="post-format-options">
       <a href="#image"><strong>Single image</strong><span>Upload one photo for your post.</span></a>
       <a href="#images"><strong>Upload carousel images</strong><span>Choose 2–10 photos, then arrange their order.</span></a>
-      <a href="#ai-carousel"><strong>Create an AI carousel</strong><span>Enter a subject or caption below, then plan and generate your slides.</span></a>
+      <a href="#ai-carousel"><strong>Create an AI carousel</strong><span>Choose carousel images as part of your AI draft.</span></a>
     </div>
     <p class="post-format-detail">The number of images determines the format. Instagram shows swipeable slides; Facebook chooses the photo layout. Review both previews before publishing.</p>
   </section>
@@ -73,8 +73,8 @@
       {% include "social/_carousel_editor.html" %}
       {% if mode == "brief" %}
         <label class="mt-4 flex items-start gap-3 rounded-2xl bg-linen px-4 py-3 text-sm font-bold text-ink/80">
-          <input type="checkbox" name="generate_image" class="mt-1" {% if generate_image %}checked{% endif %}>
-          <span><span class="font-black text-ink">Also generate one image</span><br>Leave this off to draft words only. For multiple slides, use Create an AI carousel above. The AI-generated picture has a lifelike, cheerful photography style, and you can replace it.</span>
+          <input type="checkbox" name="generate_image" class="mt-1" {% if generate_image and not generate_carousel %}checked{% endif %}>
+          <span><span class="font-black text-ink">Also generate one image</span><br>Leave this off to draft words only. The AI carousel option above takes priority. Your uploaded or saved photos are kept. The AI-generated picture has a lifelike, cheerful photography style, and you can replace it.</span>
         </label>
       {% endif %}
       <div class="mt-4 flex flex-wrap gap-3 text-sm font-black">
@@ -185,8 +185,9 @@
         plan_carousel: 'Planning your carousel…',
       };
       const withImage = socialForm.querySelector('[name="generate_image"]')?.checked;
+      const withCarousel = socialForm.querySelector('[name="generate_carousel"]')?.checked;
       document.getElementById('generation-message').textContent = messages[button.value] ||
-        (withImage ? 'Creating your captions and photo…' : 'Drafting your captions…');
+        (withCarousel ? 'Creating your captions and carousel plan…' : withImage ? 'Creating your captions and photo…' : 'Drafting your captions…');
       status.hidden = false;
     });
     window.addEventListener('pageshow', function () {

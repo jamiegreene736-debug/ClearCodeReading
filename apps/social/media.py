@@ -87,7 +87,10 @@ def edited_photos(post: SocialPost, request: HttpRequest) -> list[Photo] | None:
     """Only accept this post's saved IDs and each uploaded file exactly once."""
     order = request.POST.get("photo_order")
     if order is None:
-        return None
+        uploads = request.FILES.getlist("images")
+        if len(uploads) > MAX_IMAGES:
+            raise SocialError("A post can have up to 10 photos.")
+        return [uploaded_photo(upload) for upload in uploads] if uploads else None
     try:
         keys = json.loads(order)
         if (

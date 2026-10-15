@@ -4,7 +4,7 @@ const fs = require('node:fs');
 const path = require('node:path');
 
 // Render the real Django composer without accounts, credentials, or a database.
-const render = (mode, image = false, carousel = false) => execFileSync(process.env.PYTHON || 'python', ['-c', `
+const render = (mode, image = false, carousel = false, auto = false) => execFileSync(process.env.PYTHON || 'python', ['-c', `
 import os
 os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'clearcodereading.settings')
 import django
@@ -19,10 +19,10 @@ post = SocialPost(pk=123, source='${mode}', facebook_caption='Saved Facebook cap
 from types import SimpleNamespace
 slides = [SimpleNamespace(pk=456, image_name='second.jpg')] if ${carousel ? 'True' : 'False'} else []
 if slides: post.carousel_plan = {'slides': ['A warm reading corner', 'A sunny reading lamp'], 'completed': 0}
-print(render_to_string('social/post_form.html', {'request': request, 'post': post, 'mode': '${mode}', 'accounts': {}, 'ai_ready': False, 'csrf_token': 'test-csrf', 'slides': slides, 'carousel_pending': bool(slides)}))
+print(render_to_string('social/post_form.html', {'request': request, 'post': post, 'mode': '${mode}', 'accounts': {}, 'ai_ready': False, 'csrf_token': 'test-csrf', 'slides': slides, 'carousel_pending': bool(slides), 'auto_generate': ${auto ? 'True' : 'False'}}))
 `], { encoding: 'utf8' });
 const png = Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+aX1kAAAAASUVORK5CYII=', 'base64');
-const html = { manual: render('manual'), brief: render('brief'), saved: render('manual', true), carousel: render('manual', true, true) };
+const html = { manual: render('manual'), brief: render('brief'), saved: render('manual', true), carousel: render('manual', true, true), auto: render('brief', true, true, true) };
 test.use({ channel: 'chromium' });
 
 async function openComposer(page, mode = 'manual') {
@@ -38,6 +38,7 @@ async function openComposer(page, mode = 'manual') {
     };
     const asset = assets[url.pathname];
     if (asset) return route.fulfill({ contentType: asset[1], body: fs.readFileSync(path.resolve(asset[0])) });
+    if (url.pathname.endsWith('/generate-slide/')) return route.fallback();
     return route.abort();
   });
   await page.goto('http://preview.test/');
@@ -245,3 +246,34 @@ for (const width of [390, 1280]) {
     await page.screenshot({ path: `/tmp/clearcode-generation-${width}.png` });
   });
 }
+
+test('AI carousel option and uploads choose the intended image source', async ({ page }) => {
+  await openComposer(page, 'brief');
+  const carousel = page.locator('[name=generate_carousel]');
+  const single = page.locator('[name=generate_image]');
+  await single.check();
+  await carousel.check();
+  await expect(single).not.toBeChecked();
+  await page.locator('#images').setInputFiles([
+    { name: 'one.png', mimeType: 'image/png', buffer: png },
+    { name: 'two.png', mimeType: 'image/png', buffer: png },
+  ]);
+  await expect(carousel).not.toBeChecked();
+  await expect(single).not.toBeChecked();
+  await expect(page.locator('[data-photo-summary]')).toContainText('2-image carousel ready');
+  await expect(page.locator('[name=photo_order]')).toHaveValue('["upload:0","upload:1"]');
+});
+
+test('integrated draft starts slide generation automatically and can resume a failure', async ({ page }) => {
+  let calls = 0;
+  await page.route('**/generate-slide/', route => {
+    calls += 1;
+    return route.fulfill({ status: 429, contentType: 'application/json', body: JSON.stringify({ error: 'Try again later.' }) });
+  });
+  await openComposer(page, 'auto');
+  await expect(page.locator('[data-generation-progress]')).toContainText('Try again later.');
+  expect(calls).toBe(1);
+  await expect(page.locator('[data-generate-slides]')).toBeEnabled();
+  await page.locator('[data-generate-slides]').click();
+  await expect.poll(() => calls).toBe(2);
+});
