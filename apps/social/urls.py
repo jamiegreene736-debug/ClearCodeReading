@@ -1,10 +1,14 @@
 from django.urls import path
 
-from apps.social import design_views, category_views, report_views, planner_views, schedule_views, views
+from apps.social import reel_views, design_views, category_views, report_views, planner_views, schedule_views, views
 
 app_name = "social"
 
 urlpatterns = [
+    path("reels/new/", reel_views.editor, name="reel_new"),
+    path("reels/<int:pk>/", reel_views.editor, name="reel_edit"),
+    path("reels/<int:pk>/generate/", reel_views.generate, name="reel_generate"),
+    path("reels/<int:pk>/video/", reel_views.video, name="video"),
     path("designs/", design_views.library, name="design_library"),
     path("designs/new/", design_views.editor, name="design_editor"),
     path("posts/<int:pk>/design/", design_views.editor, name="post_design"),

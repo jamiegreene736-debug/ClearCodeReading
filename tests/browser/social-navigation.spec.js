@@ -43,7 +43,7 @@ for (const width of [320, 390, 1280]) {
       await nav.getByRole('link', { name: new RegExp('^' + label) }).click();
       await expect(page.getByRole('heading', { name: heading, exact: true })).toBeVisible();
       await expect(nav.locator('[aria-current=page]')).toContainText(label);
-      await expect(nav.getByRole('link')).toHaveCount(7);
+      await expect(nav.getByRole('link')).toHaveCount(8);
       await expect(page.getByRole('link', { name: 'Calendar view', exact: true })).toHaveCount(0);
       expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(width);
       await page.screenshot({ path: testInfo.outputPath(`${label.replaceAll(' ', '-')}-${width}.png`), fullPage: true });

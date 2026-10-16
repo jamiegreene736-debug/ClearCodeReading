@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from django.db import transaction
 from django.http import HttpResponse, JsonResponse
-from django.shortcuts import get_object_or_404, render
+from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse
 from django.utils import timezone
 from django.views.decorators.http import require_http_methods
@@ -41,6 +41,8 @@ def library(request: SocialRequest) -> HttpResponse:
 @require_http_methods(["GET"])
 def editor(request: SocialRequest, pk: int | None = None) -> HttpResponse:
     post = get_object_or_404(SocialPost, pk=pk) if pk else None
+    if post is not None and post.is_reel:
+        return redirect("social:reel_edit", pk=post.pk)
     template = None
     template_id = request.GET.get("template", "")
     if template_id:
@@ -197,6 +199,10 @@ def apply_design(request: SocialRequest) -> HttpResponse:
                 ):
                     raise SocialError(
                         "Artwork can only be added to unpublished drafts. Cancel the schedule first."
+                    )
+                if post.is_reel:
+                    raise SocialError(
+                        "Use the Reel studio to edit a video. Image templates apply to photo posts."
                     )
                 if generation_active(post):
                     raise SocialError(

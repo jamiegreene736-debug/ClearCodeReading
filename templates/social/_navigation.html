@@ -6,6 +6,7 @@
   <nav class="social-workspace-links" aria-label="Social marketing">
     <a href="{% url 'social:queue' %}?tab=scheduled" {% if nav.active == 'drafts' or nav.active == 'scheduled' or nav.active == 'posted' or nav.active == 'attention' %}aria-current="page"{% endif %}><strong>Posts</strong><span>Drafts, scheduled, and published</span></a>
     <a href="{% if nav.label == 'Calendar' %}{{ nav.url }}{% else %}{% url 'social:calendar' %}?return_to={{ nav.link_origin }}{% endif %}" {% if nav.active == 'calendar' %}aria-current="page"{% endif %}><strong>Social post calendar</strong><span>See dated posts by month</span></a>
+    <a href="{% url 'social:reel_new' %}" {% if nav.active == 'reel_new' or nav.active == 'reel_edit' %}aria-current="page"{% endif %}><strong>AI Reel studio</strong><span>Create moving videos for both accounts</span></a>
     <a href="{% url 'social:planner' %}?return_to={{ nav.link_origin }}" {% if nav.active == 'planner' %}aria-current="page"{% endif %}><strong>AI content plan</strong><span>Prepare and automate weekly posts</span></a>
     <a href="{% url 'social:settings' %}?return_to={{ nav.link_origin }}" {% if nav.active == 'settings' or nav.active == 'choose_page' %}aria-current="page"{% endif %}><strong>Connections</strong><span>Facebook and Instagram accounts</span></a>
     <a href="{% url 'social:performance' %}" {% if nav.active == 'performance' or nav.active == 'post_details' %}aria-current="page"{% endif %}><strong>Performance</strong><span>Results by post and category</span></a>

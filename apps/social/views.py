@@ -151,7 +151,7 @@ def queue(request):
     tab = request.GET.get("tab") or "scheduled"
     if tab not in {key for key, _label in TABS}:
         tab = "scheduled"
-    posts = SocialPost.objects.all()
+    posts = SocialPost.objects.defer("video_data")
     if tab == "scheduled":
         posts = posts.filter(status=SocialPost.Status.SCHEDULED).order_by("scheduled_at")
     elif tab == "posted":
@@ -172,6 +172,8 @@ def queue(request):
 @require_http_methods(["GET", "POST"])
 def post_edit(request, pk=None):
     post = SocialPost() if pk is None else get_object_or_404(SocialPost, pk=pk)
+    if post.is_reel:
+        return redirect("social:reel_edit", pk=post.pk)
     if pk and post.status in {SocialPost.Status.POSTED, SocialPost.Status.PUBLISHING}:
         messages.error(request, "A post that is already sending or posted cannot be edited here.")
         return redirect("social:queue")

@@ -85,3 +85,14 @@
 @keyframes generation-sweep { from { transform: translateX(0); } to { transform: translateX(185%); } }
 @media (prefers-reduced-motion: reduce) { .generation-indicator::after { animation: none; } }
 .generation-status p { margin: 0; font-size: .875rem; }
+
+/* Keep the video entry point visible before the photo composer choices. */
+.reel-entry { display: flex; align-items: center; justify-content: space-between; gap: 1.5rem; margin-top: 1.25rem; padding: 1.5rem; border-radius: 1.5rem; border: 2px solid #d6a74c; background: #145b5b; color: #fff; }
+.reel-entry-copy { max-width: 44rem; min-width: 0; }
+.reel-entry-label { display: block; color: #f8dda1; font-size: .75rem; font-weight: 900; letter-spacing: .08em; }
+.reel-entry h2 { margin-top: .5rem; font-size: 1.5rem; font-weight: 900; line-height: 1.25; }
+.reel-entry p { margin-top: .65rem; color: #e6f1ed; font-size: .95rem; line-height: 1.6; }
+.reel-entry-action { display: inline-flex; justify-content: center; align-items: center; gap: .75rem; flex-shrink: 0; padding: 1rem 1.25rem; border-radius: 999px; background: #f8dda1; color: #12343b; font-weight: 900; text-align: center; }
+.reel-entry-action:hover { background: #ffecc2; }
+.reel-entry-action:focus-visible { outline: 3px solid white; outline-offset: 4px; }
+@media (max-width: 760px) { .reel-entry { flex-direction: column; align-items: stretch; padding: 1.25rem; gap: 1rem; } .reel-entry-action { width: 100%; } }
