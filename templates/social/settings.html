@@ -55,4 +55,12 @@
     </article>
   </div>
 </div>
+<section id="video-generation" class="mt-6 rounded-[1.75rem] bg-white p-5 ring-1 ring-ink/10">
+  <h2 class="text-2xl font-black">AI video connection · Google Veo</h2>
+  <p class="mt-3">{% if video_ready %}API key configured. Google project billing and Veo access are required to render.{% else %}Not connected. Video generation is disabled until a key is added.{% endif %}</p>
+  <p class="mt-3">OpenAI retired Sora video generation on September 24, 2026. Reels now use Google Veo with a separate paid Gemini API connection.</p>
+  <p class="mt-3">An administrator must add <code>SOCIAL_GEMINI_API_KEY</code> to the app's server settings. Use a Google AI Studio project with billing and Veo access. Never put the key in a caption or storyboard.</p>
+  <p class="mt-3"><a href="https://aistudio.google.com/apikey" target="_blank" rel="noopener">Manage Google AI Studio API keys</a> · <a href="https://ai.google.dev/gemini-api/docs/veo" target="_blank" rel="noopener">Veo setup and availability</a></p>
+  <p class="mt-3">Veo creates 8-second vertical videos with sound. Planning captions continues to use the existing OpenAI connection. Generation stays disabled until the video key is configured.</p>
+</section>
 {% endblock %}

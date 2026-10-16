@@ -1,6 +1,5 @@
-from unittest.mock import MagicMock, patch
+from unittest.mock import patch
 
-import requests
 from django.test import TestCase, override_settings
 from django.urls import reverse
 from django.utils import timezone
@@ -11,15 +10,7 @@ from apps.social.crypto import encrypt_text
 from apps.social.exceptions import SocialError
 from apps.social.models import SocialAccount, SocialPost
 from apps.social.reel_publishing import publish_reel
-from apps.social.reels import (
-    MAX_VIDEO_BYTES,
-    VideoRejected,
-    _download,
-    _request,
-    plan_reel,
-    refresh_reel,
-    start_reel,
-)
+from apps.social.reels import VideoRejected, plan_reel, refresh_reel, start_reel
 from apps.social.services import (
     delete_unpublished_post,
     publish_post,
@@ -32,7 +23,9 @@ MP4 = b"\x00\x00\x00\x18ftypisom" + b"video-data" * 10
 STORY = "0–3s: A fictional child turns away from a visible tablet. 3–8s: They bring a book to a caregiver. 8–12s: Both settle in and read together."
 
 
-@override_settings(**META, SOCIAL_OPENAI_API_KEY="test-key")
+@override_settings(
+    **META, SOCIAL_OPENAI_API_KEY="test-key", SOCIAL_GEMINI_API_KEY="test-video-key"
+)
 class ReelTests(TestCase):
     def setUp(self):
         self.user = CustomUser.objects.create_user(
@@ -107,23 +100,19 @@ class ReelTests(TestCase):
             plan_reel(subject=self.post.brief, audience="families", tone="warm")
 
     def test_start_saves_job_and_blocks_duplicate_paid_request(self):
-        with patch("apps.social.reels._request") as call:
-            call.return_value.json.return_value = {
-                "id": "video_test",
-                "status": "queued",
-            }
+        with patch("apps.social.reels.start_video") as call:
+            call.return_value = "operations/video_test"
             start_reel(self.post.pk)
             with self.assertRaises(SocialError):
                 start_reel(self.post.pk)
         self.assertEqual(call.call_count, 1)
-        self.assertEqual(call.call_args.kwargs["data"]["size"], "720x1280")
-        self.assertEqual(call.call_args.kwargs["data"]["seconds"], "12")
+        self.assertIn("8 seconds", call.call_args.args[0])
         self.post.refresh_from_db()
-        self.assertEqual(self.post.reel_job["id"], "video_test")
+        self.assertEqual(self.post.reel_job["id"], "operations/video_test")
 
     def test_timeout_holds_submission_and_keeps_existing_draft(self):
         with (
-            patch("apps.social.reels._request", side_effect=SocialError("timeout")),
+            patch("apps.social.reels.start_video", side_effect=SocialError("timeout")),
             self.assertRaisesMessage(SocialError, "second charge"),
         ):
             start_reel(self.post.pk)
@@ -131,51 +120,72 @@ class ReelTests(TestCase):
         self.assertEqual(self.post.reel_job["status"], "uncertain")
         self.assertEqual(self.post.reel_prompt, STORY)
         with (
-            patch("apps.social.reels._request") as call,
+            patch("apps.social.reels.start_video") as call,
             self.assertRaises(SocialError),
         ):
             start_reel(self.post.pk)
         call.assert_not_called()
 
     def test_refresh_persists_video_and_throttles_polling(self):
-        self.post.reel_job = {"id": "video_test", "status": "queued", "checked": 0}
+        self.post.reel_job = {
+            "id": "operations/video_test",
+            "provider": "veo",
+            "status": "queued",
+            "checked": 0,
+        }
         self.post.save()
         with (
-            patch("apps.social.reels._request") as call,
-            patch("apps.social.reels._download", return_value=MP4),
+            patch(
+                "apps.social.reels.poll_video",
+                return_value={
+                    "status": "completed",
+                    "uri": "https://generativelanguage.googleapis.com/v1beta/files/1:download",
+                },
+            ) as poll,
+            patch("apps.social.reels.download_video", return_value=MP4),
         ):
-            call.return_value.json.return_value = {
-                "status": "completed",
-                "progress": 100,
-            }
             self.assertEqual(refresh_reel(self.post.pk)["status"], "completed")
             refresh_reel(self.post.pk)
-        self.assertEqual(call.call_count, 1)
+        self.assertEqual(poll.call_count, 1)
         self.post.refresh_from_db()
         self.assertEqual(bytes(self.post.video_data), MP4)
         self.post.reel_job = {
-            "id": "video_test",
+            "id": "operations/video_test",
+            "provider": "veo",
             "status": "queued",
             "checked": timezone.now().timestamp(),
         }
         self.post.save()
-        with patch("apps.social.reels._request") as call:
+        with patch("apps.social.reels.poll_video") as poll:
             refresh_reel(self.post.pk)
-        call.assert_not_called()
+        poll.assert_not_called()
 
     def test_download_failure_resumes_same_job(self):
-        self.post.reel_job = {"id": "video_test", "status": "queued", "checked": 0}
+        self.post.reel_job = {
+            "id": "operations/video_test",
+            "provider": "veo",
+            "status": "queued",
+            "checked": 0,
+        }
         self.post.save()
         with (
-            patch("apps.social.reels._request") as call,
-            patch("apps.social.reels._download", side_effect=requests.Timeout),
+            patch(
+                "apps.social.reels.poll_video",
+                return_value={
+                    "status": "completed",
+                    "uri": "https://generativelanguage.googleapis.com/v1beta/files/1:download",
+                },
+            ),
+            patch(
+                "apps.social.reels.download_video",
+                side_effect=SocialError("download interrupted"),
+            ),
+            self.assertRaises(SocialError),
         ):
-            call.return_value.json.return_value = {"status": "completed"}
-            with self.assertRaises(SocialError):
-                refresh_reel(self.post.pk)
+            refresh_reel(self.post.pk)
         self.post.refresh_from_db()
         self.assertEqual(self.post.reel_job["status"], "downloading")
-        self.assertEqual(self.post.reel_job["id"], "video_test")
+        self.assertEqual(self.post.reel_job["id"], "operations/video_test")
 
     def test_editor_plan_save_redirect_and_stale_protection(self):
         self.assertContains(
@@ -332,42 +342,29 @@ class ReelTests(TestCase):
         self.assertEqual(publish.call_count, 2)
         self.assertEqual(result.publications.count(), 2)
 
-    def test_video_transport_rejects_auth_quota_and_network_errors(self):
-        for status in [401, 403, 429, 500, 302]:
-            response = MagicMock(status_code=status)
-            with (
-                self.subTest(status=status),
-                patch("apps.social.reels.requests.request", return_value=response),
-                self.assertRaises(SocialError),
-            ):
-                _request("GET", "/video_test")
-            response.close.assert_called_once()
+    @override_settings(SOCIAL_GEMINI_API_KEY="")
+    def test_missing_provider_key_blocks_request_without_changing_draft(self):
         with (
-            patch("apps.social.reels.requests.request", side_effect=requests.Timeout),
-            self.assertRaises(SocialError),
+            patch("apps.social.reels.start_video") as start,
+            self.assertRaisesMessage(SocialError, "Google Veo connection"),
         ):
-            _request("GET", "/video_test")
-
-    def test_invalid_job_response_is_held_without_duplicate_generation(self):
-        with (
-            patch("apps.social.reels._request") as call,
-            self.assertRaises(SocialError),
-        ):
-            call.return_value.json.return_value = {"id": "../../bad"}
             start_reel(self.post.pk)
+        start.assert_not_called()
         self.post.refresh_from_db()
-        self.assertEqual(self.post.reel_job["status"], "uncertain")
+        self.assertEqual(self.post.reel_job, {})
+        self.assertEqual(self.post.reel_prompt, STORY)
+        response = self.client.get(reverse("social:reel_edit", args=[self.post.pk]))
+        self.assertContains(response, 'value="start" disabled')
+        self.assertContains(response, "Google Veo connection")
 
-    def test_download_rejects_non_mp4_and_oversized_response(self):
-        for chunks in [[b"not a video"], [b"x" * (MAX_VIDEO_BYTES + 1)]]:
-            response = MagicMock()
-            response.__enter__.return_value = response
-            response.iter_content.return_value = iter(chunks)
-            with (
-                patch("apps.social.reels._request", return_value=response),
-                self.assertRaises(SocialError),
-            ):
-                _download("video_test")
+    def test_old_sora_job_is_not_sent_to_google(self):
+        self.post.reel_job = {"id": "video_old", "status": "queued", "checked": 0}
+        self.post.save()
+        with patch("apps.social.reels.poll_video") as poll:
+            result = refresh_reel(self.post.pk)
+        self.assertEqual(result["status"], "failed")
+        self.assertIn("retired Sora", result["error"])
+        poll.assert_not_called()
 
     def test_non_admin_cannot_generate_and_csrf_is_enforced(self):
         user = CustomUser.objects.create_user(
@@ -417,7 +414,7 @@ class ReelTests(TestCase):
         self.post.status = "scheduled"
         self.post.save()
         with (
-            patch("apps.social.reels._request") as call,
+            patch("apps.social.reels.start_video") as call,
             self.assertRaises(SocialError),
         ):
             start_reel(self.post.pk)
@@ -425,7 +422,7 @@ class ReelTests(TestCase):
 
     def test_explicit_provider_rejection_allows_retry_after_fixing_access(self):
         with (
-            patch("apps.social.reels._request", side_effect=VideoRejected("quota")),
+            patch("apps.social.reels.start_video", side_effect=VideoRejected("quota")),
             self.assertRaisesMessage(SocialError, "quota"),
         ):
             start_reel(self.post.pk)

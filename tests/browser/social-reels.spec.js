@@ -13,7 +13,7 @@ from apps.social.models import SocialPost
 request = RequestFactory().get('/portal/marketing/reels/new/')
 post = SocialPost(is_reel=True, brief='A child wants shared reading instead of a tablet.', reel_prompt='A child turns away from a tablet, brings a book to a caregiver and settles in to read.')
 if sys.argv[1] == 'saved': post.pk = 123
-print(render_to_string('social/reel_form.html', {'request': request, 'post': post, 'ai_ready': True, 'busy': False, 'nav': {}}))
+print(render_to_string('social/reel_form.html', {'request': request, 'post': post, 'ai_ready': True, 'video_ready': True, 'video_seconds': 8, 'busy': False, 'nav': {}}))
 `, saved ? 'saved' : 'new'], { env: { ...process.env, DJANGO_SETTINGS_MODULE: 'clearcodereading.settings' }, encoding: 'utf8' });
 }
 

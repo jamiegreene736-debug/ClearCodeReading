@@ -523,10 +523,11 @@ def slide_image(request: HttpRequest, pk: int, slide_id: int) -> HttpResponse:
 
 @social_editor_required
 def settings_page(request):
+    from apps.social.veo import configured
     return render(
         request,
         "social/settings.html",
-        {"accounts": _accounts(), "ready": meta_ready(), "facebook_connected": connected_account("facebook"), "instagram_connected": connected_account("instagram")},
+        {"accounts": _accounts(), "ready": meta_ready(), "video_ready": configured(), "facebook_connected": connected_account("facebook"), "instagram_connected": connected_account("instagram")},
     )
 
 

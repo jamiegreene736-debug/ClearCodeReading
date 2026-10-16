@@ -1,7 +1,7 @@
 {% extends 'portal/page.html' %}{% load social_navigation %}
 {% block title %}Post category and results{% endblock %}
 {% block content %}
-{% if post.is_reel and post.video_data %}<video controls playsinline preload="metadata" style="max-width:280px;width:100%;aspect-ratio:9/16" src="{% url 'social:video' post.pk %}"></video><p>AI-generated Reel · 12 seconds · Facebook / Instagram</p>{% endif %}{% social_navigation post as nav %}{% include 'social/_navigation.html' %}
+{% if post.is_reel and post.video_data %}<video controls playsinline preload="metadata" style="max-width:280px;width:100%;aspect-ratio:9/16" src="{% url 'social:video' post.pk %}"></video><p>AI-generated Reel · Facebook / Instagram</p>{% endif %}{% social_navigation post as nav %}{% include 'social/_navigation.html' %}
 <div class="social-report"><h1>{{ post.headline }}</h1><p>{{ post.get_status_display }} · {{ post.category.name|default:'Uncategorized' }}</p>
 <form method="post">{% csrf_token %}{% include 'social/_category_fields.html' %}<button name="action" value="category">Save internal category</button></form>
 {% if post.status != 'posted' and post.status != 'publishing' %}<p><a href="{% url 'social:edit' post.pk %}">Edit post content</a></p>{% endif %}

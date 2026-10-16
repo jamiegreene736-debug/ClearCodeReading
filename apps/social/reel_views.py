@@ -25,6 +25,7 @@ from apps.social.reels import (
     refresh_reel,
     start_reel,
 )
+from apps.social.veo import DURATION, SETUP_MESSAGE, configured
 
 
 @social_editor_required
@@ -95,6 +96,9 @@ def editor(request: SocialRequest, pk: int | None = None) -> HttpResponse:
             "post": post,
             "nav": navigation(request, post),
             "ai_ready": ai_configured(),
+            "video_ready": configured(),
+            "video_setup_message": SETUP_MESSAGE,
+            "video_seconds": DURATION,
             "busy": post.reel_job.get("status")
             in {"submitting", "queued", "in_progress", "downloading", "uncertain"},
         },
