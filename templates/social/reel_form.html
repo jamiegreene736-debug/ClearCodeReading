@@ -40,6 +40,7 @@
           {% if not busy and not post.video_data %}<button type="submit" name="action" value="start" {% if not ai_ready %}disabled{% endif %}>Generate moving video</button><p class="reel-hint">Starts a paid AI render of the saved storyboard. Generation may take several minutes.</p>{% endif %}
           {% if busy %}<button type="submit" name="action" value="refresh">Check progress</button>{% endif %}
           <p role="status" aria-live="polite" data-reel-status>{% if post.reel_job.status == 'uncertain' %}Submission was not confirmed. Generation is held to avoid another charge; ask an administrator to check the provider.{% elif post.reel_job.status == 'failed' %}The provider could not generate this video. Revise the storyboard and try again.{% elif busy %}Your video is being prepared. You can leave this page and return to check progress.{% endif %}</p>
+          <a data-reel-reload hidden href="{% url 'social:reel_edit' post.pk %}">Reload saved draft</a>
         </form>
       {% else %}{% if not post.pk %}<p class="reel-hint">Save a storyboard first to unlock video generation.</p>{% endif %}{% endif %}
       {% if post.status == 'scheduled' %}<p>This Reel is scheduled.</p><a href="{% url 'social:cancel' post.pk %}">Cancel schedule to edit</a>{% endif %}
