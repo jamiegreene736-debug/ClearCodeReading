@@ -43,3 +43,43 @@ test('unsaved edits prevent generating an older storyboard', async ({ page }) =>
   await page.getByRole('button', { name: 'Generate moving video' }).click();
   await expect(page.locator('[data-reel-status]')).toHaveText('Save your storyboard and captions before generating.');
 });
+
+for (const browserName of ['chromium', 'webkit']) {
+  test.describe(`${browserName} generation requests`, () => {
+    for (const responseType of ['json', 'html']) {
+      test(`Generate uses the saved endpoint and recovers from ${responseType} errors`, async () => {
+        const browser = await require('@playwright/test')[browserName].launch({ channel: browserName === 'chromium' ? 'chromium' : '' });
+        try {
+          const page = await browser.newPage();
+          const submitted = [];
+          await page.route('**/*', route => route.abort());
+          await page.route('https://reels.test/**', async route => {
+            const request = route.request();
+            if (request.method() === 'POST') {
+              submitted.push({ url: request.url(), body: request.postData() });
+              return route.fulfill(responseType === 'json'
+                ? { status: 400, contentType: 'application/json', body: JSON.stringify({ error: 'Test provider rejection; no video was generated.' }) }
+                : { status: 502, contentType: 'text/html', body: '<h1>Server temporarily unavailable</h1>' });
+            }
+            return route.fulfill({ contentType: 'text/html', body: studio(true) });
+          });
+          await page.goto('https://reels.test/portal/marketing/reels/123/');
+          await page.addScriptTag({ path: 'apps/social/static/social/reels.js' });
+          // HTML's named controls mask the property; production must read the attribute.
+          expect(await page.locator('[data-reel-generation]').evaluate(form => form.action.tagName)).toBe('BUTTON');
+          await page.getByRole('button', { name: 'Generate moving video' }).click();
+          await expect(page.locator('[data-reel-status]')).toHaveText(responseType === 'json'
+            ? 'Test provider rejection; no video was generated.'
+            : 'The server could not confirm the video request. Reload this draft to check its saved progress before trying again.');
+          expect(submitted).toHaveLength(1);
+          expect(submitted[0].url).toBe('https://reels.test/portal/marketing/reels/123/generate/');
+          expect(submitted[0].body).toContain('name="action"\r\n\r\nstart');
+          await expect(page.getByRole('link', { name: 'Reload saved draft' })).toBeVisible();
+          await expect(page.getByRole('button', { name: 'Generate moving video' })).toBeDisabled();
+        } finally {
+          await browser.close();
+        }
+      });
+    }
+  });
+}
