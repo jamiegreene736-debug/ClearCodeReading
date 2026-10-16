@@ -53,7 +53,7 @@ def calendar_days(
         .filter(calendar_at__gte=start, calendar_at__lt=end)
         .exclude(status=SocialPost.Status.DRAFT)
         .select_related("blog_post", "category")
-        .defer("image_data", "blog_post__cover_data", "blog_post__body")
+        .defer("video_data", "image_data", "blog_post__cover_data", "blog_post__body")
         .prefetch_related("publications")
         .order_by("calendar_at", "pk")
     )

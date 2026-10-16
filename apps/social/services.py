@@ -89,7 +89,9 @@ def require_post_content(post: SocialPost) -> None:
         raise SocialError("Write the Facebook caption before scheduling or posting.")
     if post.post_to_instagram and not post.instagram_caption.strip():
         raise SocialError("Write the Instagram caption before scheduling or posting.")
-    if post.post_to_instagram and not post.has_image:
+    if post.is_reel and (not post.video_data or post.reel_job.get("status") != "completed"):
+        raise SocialError("Finish generating and preview your Reel before scheduling or posting.")
+    if post.post_to_instagram and not post.has_image and not post.is_reel:
         raise SocialError("Instagram needs a photo.")
 
 
@@ -345,7 +347,10 @@ def publish_post(post: SocialPost, *, request=None) -> SocialPost:
             failures.append(message)
             continue
         try:
-            if network == SocialAccount.Network.FACEBOOK:
+            if post.is_reel:
+                from apps.social.reel_publishing import publish_reel
+                result = publish_reel(post, account)
+            elif network == SocialAccount.Network.FACEBOOK:
                 result = publish_facebook(post, account, image_url=image_url, **({"image_urls": image_urls} if len(image_urls) > 1 else {}))
             else:
                 result = publish_instagram(post, account, image_url=image_url, **({"image_urls": image_urls} if len(image_urls) > 1 else {}))
@@ -499,6 +504,10 @@ def delete_unpublished_post(pk: int, *, actor: CustomUser) -> None:
             raise SocialError(
                 "Only unpublished drafts and scheduled posts can be deleted. A post already sending or posted cannot be removed here."
             )
+        if post.is_reel:
+            from apps.social.reels import ACTIVE
+            if post.reel_job.get("status") in ACTIVE:
+                raise SocialError("Wait for the video render to finish or reconcile its held request before deleting this Reel.")
         for week in weeks:
             week.status, week.auto_scheduled = ContentWeek.Status.SKIPPED, False
             week.content = {"title": "Deleted post"}

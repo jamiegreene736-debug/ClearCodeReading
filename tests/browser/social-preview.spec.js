@@ -206,7 +206,7 @@ for (const mode of ['manual', 'brief']) {
   test(`carousel shortcuts are clear and reach their controls in ${mode} mode`, async ({ page }) => {
     await page.setViewportSize({ width: 390, height: 844 });
     await openComposer(page, mode);
-    const guide = page.getByRole('region', { name: 'Create a single image or a carousel' });
+    const guide = page.getByRole('region', { name: 'Create a single image, carousel, or Reel' });
     await expect(guide).toBeVisible();
     await expect(guide).toContainText('Instagram carousel and a Facebook multi-photo post');
     const formTop = await page.locator('#social-post-form').evaluate(element => element.getBoundingClientRect().top);

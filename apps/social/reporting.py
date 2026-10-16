@@ -70,7 +70,7 @@ def publications_in_range(
             ),
         )
         .select_related("post__category", "insights")
-        .defer("post__image_data")
+        .defer("post__image_data", "post__video_data")
         .order_by("-published_at", "pk")
     )
     if category == "none":

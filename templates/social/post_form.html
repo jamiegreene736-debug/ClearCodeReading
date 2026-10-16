@@ -12,9 +12,10 @@
   <h1 class="mt-1 text-4xl font-black tracking-tight text-ink">{% if post.pk %}Edit post{% else %}New post{% endif %}</h1>
   {% if post.pk and post.status == 'draft' or post.pk and post.status == 'scheduled' %}<a href="{% url 'social:delete' post.pk %}?return_to={{ nav.origin }}&amp;via=edit" class="focus-ring mt-3 inline-flex rounded-full bg-white px-4 py-2 text-sm font-black text-red-700 ring-1 ring-red-200">Delete post</a>{% endif %}
   <section class="post-format-guide" aria-labelledby="post-format-heading">
-    <h2 id="post-format-heading">Create a single image or a carousel</h2>
+    <h2 id="post-format-heading">Create a single image, carousel, or Reel</h2>
     <p>Upload your own photos or let AI create the slides. Adding 2–10 images creates an Instagram carousel and a Facebook multi-photo post.</p>
     <div class="post-format-options">
+      <a href="{% url 'social:reel_new' %}"><strong>Create an AI Reel</strong><span>Generate a moving vertical video for Facebook and Instagram.</span></a>
       <a href="#image"><strong>Single image</strong><span>Upload one photo for your post.</span></a>
       <a href="#images"><strong>Upload carousel images</strong><span>Choose 2–10 photos, then arrange their order.</span></a>
       <a href="#ai-carousel"><strong>Create an AI carousel</strong><span>Choose carousel images as part of your AI draft.</span></a>

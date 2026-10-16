@@ -472,7 +472,7 @@ class SocialMediaTests(TestCase):
                 self.assertIn("text overlays", payload["prompt"])
                 self.assertEqual(payload["quality"], "high")
                 self.assertIn("photorealistic editorial photograph", payload["prompt"])
-                self.assertIn("cheerful", payload["prompt"])
+                self.assertIn("respectful everyday emotions", payload["prompt"])
                 self.assertIn("No cartoons, flat illustrations", payload["prompt"])
                 self.assertIn("take precedence over any style", payload["prompt"])
                 self.assertNotIn("or a photograph", payload["prompt"])

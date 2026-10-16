@@ -115,6 +115,12 @@ class SocialPost(TimeStampedModel):
         PRACTICAL = "practical", "Practical"
         CELEBRATORY = "celebratory", "Celebratory"
 
+    is_reel = models.BooleanField(default=False)
+    reel_prompt = models.TextField(blank=True, default="")
+    reel_job = models.JSONField(default=dict, blank=True)
+    reel_publications = models.JSONField(default=dict, blank=True)
+    video_data = models.BinaryField(null=True, blank=True)
+
     image_prompt = models.TextField(blank=True, default="")
     image_design = models.JSONField(default=dict, blank=True)
     category = models.ForeignKey(SocialCategory, null=True, blank=True, on_delete=models.PROTECT, related_name="posts")

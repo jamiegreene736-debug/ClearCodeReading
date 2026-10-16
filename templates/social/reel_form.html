@@ -1,0 +1,50 @@
+{% extends "portal/page.html" %}
+{% load static %}
+{% block title %}AI Reel studio{% endblock %}
+{% block content %}
+{% include "social/_navigation.html" %}
+<link rel="stylesheet" href="{% static 'social/reels.css' %}">
+<script src="{% static 'social/reels.js' %}" defer></script>
+<div class="reel-studio">
+  <header><p class="text-sm font-black text-deepTeal">FACEBOOK + INSTAGRAM</p><h1 class="text-4xl font-black">Turn an idea into a moving story</h1><p>Create a 12-second vertical Reel with a visual hook, real movement, and a memorable ending.</p></header>
+  <div class="reel-layout">
+    <form method="post" class="reel-panel" id="reel-editor">
+      {% csrf_token %}<input type="hidden" name="revision" value="{{ post.updated_at|date:'c' }}">
+      <fieldset {% if busy or post.status != 'draft' %}disabled{% endif %}>
+        <legend class="text-xl font-black">1. Shape your story</legend>
+        <label for="brief">What should this Reel say?</label>
+        <textarea id="brief" name="brief" rows="4" minlength="12" maxlength="5000" required placeholder="A child is tired of reading on a tablet and wants someone to read with them.">{{ post.brief }}</textarea>
+        <button name="action" value="plan" {% if not ai_ready %}disabled{% endif %}>Plan a creative Reel</button>
+        <p class="reel-hint">AI drafts the shots and both captions. You can change every word before generating.</p>
+        <label for="reel_prompt">Storyboard · hook → action → payoff</label>
+        <textarea id="reel_prompt" name="reel_prompt" rows="10" maxlength="6000" placeholder="0–3s: A close-up reveals a child turning away from a tablet…">{{ post.reel_prompt }}</textarea>
+        <label for="facebook_caption">Facebook caption</label><textarea id="facebook_caption" name="facebook_caption" rows="4" maxlength="5000">{{ post.facebook_caption }}</textarea>
+        <label for="instagram_caption">Instagram caption</label><textarea id="instagram_caption" name="instagram_caption" rows="4" maxlength="2200">{{ post.instagram_caption }}</textarea>
+        <div class="reel-networks"><label><input type="checkbox" name="post_to_facebook" {% if post.post_to_facebook %}checked{% endif %}> Facebook Reel</label><label><input type="checkbox" name="post_to_instagram" {% if post.post_to_instagram %}checked{% endif %}> Instagram Reel</label></div>
+        <button name="action" value="save">Save storyboard & captions</button>
+        {% if post.video_data %}<p class="reel-hint">Changing the storyboard removes the current video so you can generate a replacement.</p>{% endif %}
+      </fieldset>
+    </form>
+    <section class="reel-panel" aria-labelledby="reel-preview-heading">
+      <h2 id="reel-preview-heading" class="text-xl font-black">2. Bring it to life</h2>
+      {% if not ai_ready %}<p>AI generation needs to be configured in Settings before you can begin.</p>{% endif %}
+      {% if post.video_data %}
+        <video class="reel-video" controls playsinline preload="metadata" src="{% url 'social:video' post.pk %}"><a href="{% url 'social:video' post.pk %}">Open your Reel</a></video>
+        <a href="{% url 'social:video' post.pk %}" download>Download MP4</a>
+        <p>Preview with sound, then schedule the Reel for your selected accounts.</p>
+        {% if post.status == 'draft' %}<a class="reel-button" href="{% url 'social:schedule' post.pk %}?via=edit">Review & schedule</a>{% endif %}
+      {% else %}<div class="reel-placeholder"><strong>Your story, in motion</strong><span>9:16 · 12 seconds · AI-generated video</span></div>{% endif %}
+      {% if post.pk and post.status == 'draft' %}
+        <form data-reel-generation action="{% url 'social:reel_generate' post.pk %}" data-busy="{{ busy|yesno:'true,false' }}" data-poll="{% if post.reel_job.status == 'queued' or post.reel_job.status == 'in_progress' or post.reel_job.status == 'downloading' %}true{% else %}false{% endif %}" method="post">
+          {% csrf_token %}
+          {% if not busy and not post.video_data %}<button type="submit" name="action" value="start" {% if not ai_ready %}disabled{% endif %}>Generate moving video</button><p class="reel-hint">Starts a paid AI render of the saved storyboard. Generation may take several minutes.</p>{% endif %}
+          {% if busy %}<button type="submit" name="action" value="refresh">Check progress</button>{% endif %}
+          <p role="status" aria-live="polite" data-reel-status>{% if post.reel_job.status == 'uncertain' %}Submission was not confirmed. Generation is held to avoid another charge; ask an administrator to check the provider.{% elif post.reel_job.status == 'failed' %}The provider could not generate this video. Revise the storyboard and try again.{% elif busy %}Your video is being prepared. You can leave this page and return to check progress.{% endif %}</p>
+        </form>
+      {% else %}{% if not post.pk %}<p class="reel-hint">Save a storyboard first to unlock video generation.</p>{% endif %}{% endif %}
+      {% if post.status == 'scheduled' %}<p>This Reel is scheduled.</p><a href="{% url 'social:cancel' post.pk %}">Cancel schedule to edit</a>{% endif %}
+      {% if post.status == 'attention' %}<p>{{ post.last_error }}</p><form method="post" action="{% url 'social:retry' post.pk %}">{% csrf_token %}<button type="submit">Retry / check publication</button></form>{% endif %}
+    </section>
+  </div>
+</div>
+{% endblock %}
