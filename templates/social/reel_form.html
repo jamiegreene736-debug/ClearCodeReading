@@ -6,7 +6,7 @@
 <link rel="stylesheet" href="{% static 'social/reels.css' %}">
 <script src="{% static 'social/reels.js' %}" defer></script>
 <div class="reel-studio">
-  <header><p class="text-sm font-black text-deepTeal">FACEBOOK + INSTAGRAM</p><h1 class="text-4xl font-black">Turn an idea into a moving story</h1><p>Create a 12-second vertical Reel with a visual hook, real movement, and a memorable ending.</p></header>
+  <header><p class="text-sm font-black text-deepTeal">FACEBOOK + INSTAGRAM</p><h1 class="text-4xl font-black">Turn an idea into a moving story</h1><p>Create a {{ video_seconds }}-second vertical Reel with a visual hook, real movement, and a memorable ending.</p></header>
   <div class="reel-layout">
     <form method="post" class="reel-panel" id="reel-editor">
       {% csrf_token %}<input type="hidden" name="revision" value="{{ post.updated_at|date:'c' }}">
@@ -27,19 +27,19 @@
     </form>
     <section class="reel-panel" aria-labelledby="reel-preview-heading">
       <h2 id="reel-preview-heading" class="text-xl font-black">2. Bring it to life</h2>
-      {% if not ai_ready %}<p>AI generation needs to be configured in Settings before you can begin.</p>{% endif %}
+      {% if not video_ready %}<p class="reel-hint" role="status">{{ video_setup_message }}</p><a href="{% url 'social:settings' %}#video-generation">Video connection settings</a>{% endif %}
       {% if post.video_data %}
         <video class="reel-video" controls playsinline preload="metadata" src="{% url 'social:video' post.pk %}"><a href="{% url 'social:video' post.pk %}">Open your Reel</a></video>
         <a href="{% url 'social:video' post.pk %}" download>Download MP4</a>
         <p>Preview with sound, then schedule the Reel for your selected accounts.</p>
         {% if post.status == 'draft' %}<a class="reel-button" href="{% url 'social:schedule' post.pk %}?via=edit">Review & schedule</a>{% endif %}
-      {% else %}<div class="reel-placeholder"><strong>Your story, in motion</strong><span>9:16 · 12 seconds · AI-generated video</span></div>{% endif %}
+      {% else %}<div class="reel-placeholder"><strong>Your story, in motion</strong><span>9:16 · {{ video_seconds }} seconds · AI-generated video</span></div>{% endif %}
       {% if post.pk and post.status == 'draft' %}
         <form data-reel-generation action="{% url 'social:reel_generate' post.pk %}" data-busy="{{ busy|yesno:'true,false' }}" data-poll="{% if post.reel_job.status == 'queued' or post.reel_job.status == 'in_progress' or post.reel_job.status == 'downloading' %}true{% else %}false{% endif %}" method="post">
           {% csrf_token %}
-          {% if not busy and not post.video_data %}<button type="submit" name="action" value="start" {% if not ai_ready %}disabled{% endif %}>Generate moving video</button><p class="reel-hint">Starts a paid AI render of the saved storyboard. Generation may take several minutes.</p>{% endif %}
+          {% if not busy and not post.video_data %}<button type="submit" name="action" value="start" {% if not video_ready %}disabled{% endif %}>Generate moving video</button><p class="reel-hint">Starts a paid AI render of the saved storyboard. Generation may take several minutes.</p>{% endif %}
           {% if busy %}<button type="submit" name="action" value="refresh">Check progress</button>{% endif %}
-          <p role="status" aria-live="polite" data-reel-status>{% if post.reel_job.status == 'uncertain' %}Submission was not confirmed. Generation is held to avoid another charge; ask an administrator to check the provider.{% elif post.reel_job.status == 'failed' %}The provider could not generate this video. Revise the storyboard and try again.{% elif busy %}Your video is being prepared. You can leave this page and return to check progress.{% endif %}</p>
+          <p role="status" aria-live="polite" data-reel-status>{% if post.reel_job.status == 'uncertain' %}Submission was not confirmed. Generation is held to avoid another charge; ask an administrator to check the provider.{% elif post.reel_job.status == 'failed' %}{{ post.reel_job.error|default:"The provider could not generate this video. Review the storyboard or provider settings before trying again." }}{% elif busy %}Your video is being prepared. You can leave this page and return to check progress.{% endif %}</p>
           <a data-reel-reload hidden href="{% url 'social:reel_edit' post.pk %}">Reload saved draft</a>
         </form>
       {% else %}{% if not post.pk %}<p class="reel-hint">Save a storyboard first to unlock video generation.</p>{% endif %}{% endif %}

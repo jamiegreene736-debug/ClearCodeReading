@@ -1,7 +1,7 @@
 {% extends "portal/page.html" %}
 {% block title %}Schedule{% endblock %}
 {% block content %}
-{% if post.is_reel and post.video_data %}<video controls playsinline preload="metadata" style="max-width:280px;width:100%;aspect-ratio:9/16" src="{% url 'social:video' post.pk %}"></video><p>AI-generated Reel · 12 seconds · Facebook / Instagram</p>{% endif %}
+{% if post.is_reel and post.video_data %}<video controls playsinline preload="metadata" style="max-width:280px;width:100%;aspect-ratio:9/16" src="{% url 'social:video' post.pk %}"></video><p>AI-generated Reel · Facebook / Instagram</p>{% endif %}
 {% load social_navigation %}
 {% social_navigation post as nav %}
 {% include "social/_navigation.html" %}
