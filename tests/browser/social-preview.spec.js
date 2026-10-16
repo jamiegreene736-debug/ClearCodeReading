@@ -302,3 +302,22 @@ test('image prompts can be edited and slide count preserves entered text', async
   });
   expect(values).toEqual(['My own photo direction for the cover image.', 'My custom reading image with a family on a porch.', 'A sunny reading lamp', 'Children building words with colorful letter tiles.']);
 });
+
+for (const width of [320, 390, 1280]) {
+  test(`AI Reel entry is prominent above photo choices at ${width}px`, async ({ page }, testInfo) => {
+    await page.setViewportSize({ width, height: 900 });
+    await openComposer(page, 'brief');
+    const entry = page.getByRole('region', { name: 'Bring your idea to life with an AI Reel' });
+    const action = entry.getByRole('link', { name: 'Generate an AI Reel', exact: true });
+    await expect(entry).toBeVisible();
+    await expect(action).toBeVisible();
+    await expect(action).toHaveAttribute('href', '/portal/marketing/reels/new/');
+    await expect(entry).toContainText('FACEBOOK + INSTAGRAM');
+    const bottom = await entry.evaluate(element => element.getBoundingClientRect().bottom);
+    const photoTop = await page.locator('.post-format-guide').evaluate(element => element.getBoundingClientRect().top);
+    expect(bottom).toBeLessThanOrEqual(photoTop);
+    expect(await action.evaluate(element => element.getBoundingClientRect().height)).toBeGreaterThanOrEqual(44);
+    expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(width);
+    await page.screenshot({ path: testInfo.outputPath('new-post-reel-entry.png'), fullPage: true });
+  });
+}
