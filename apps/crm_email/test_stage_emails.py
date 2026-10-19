@@ -186,23 +186,10 @@ class StageEmailTests(TestCase):
         self.assertNotIn("<img", family.body)
         logo = (
             'Blog: <a href="https://clearcodereading.com/blog/">https://clearcodereading.com/blog/</a>'
-            '<br><table role="presentation" cellpadding="0" cellspacing="0" border="0" '
-            'style="margin:8px 0 0;background-color:#0F2B35;border-collapse:collapse;">'
-            "<tr>"
-            '<td style="padding:8px 10px 8px 8px;vertical-align:middle;">'
-            '<img src="https://clearcodereading.com/assets/logo/cc-monogram-gold-teal.png" '
-            'alt="" width="44" height="44" '
-            'style="display:block;width:44px;height:44px;border:0;">'
-            "</td>"
-            '<td style="padding:8px 14px 8px 0;vertical-align:middle;'
-            'font-family:Arial,Helvetica,sans-serif;">'
-            '<p style="margin:0;font-size:16px;line-height:18px;font-weight:bold;'
-            'letter-spacing:-0.4px;">'
-            '<span style="color:#F7F2EA;">CLEAR</span>'
-            '<span style="color:#F5A623;"> CODE</span></p>'
-            '<p style="margin:3px 0 0;color:#2EB8B8;font-size:9px;line-height:12px;'
-            'font-weight:bold;letter-spacing:3px;">READING</p>'
-            "</td></tr></table></p>"
+            '<br><img src="https://clearcodereading.com/assets/logo/cc-lockup-linen-ui.png" '
+            'alt="ClearCode Reading" width="280" height="102" '
+            'style="display:block;width:280px;max-width:100%;height:auto;border:0;'
+            'margin:8px 0 0;"></p>'
         )
         self.assertIn(logo, family.body_html)
         self.assertNotIn("clear-code-reading-logo", family.body_html)

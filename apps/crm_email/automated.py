@@ -36,7 +36,7 @@ OPTIONAL_FIELDS = frozenset({"next_step", "action_label", "action_url"})
 # Fields edited with the rich (HTML) editor; every other field is one line of text.
 RICH_FIELDS = frozenset({"body", "next_step"})
 TOKEN = re.compile(r"{{\s*([^{}]+?)\s*}}")
-# The placeholder whose HTML rendering carries the website header lockup.
+# The placeholder whose HTML rendering carries the linen lockup.
 SIGNATURE_TOKEN = "Bethany’s email signature"
 
 
@@ -116,34 +116,21 @@ def html_value(value: str) -> str:
 
 
 def signature_logo_html() -> str:
-    """The website header lockup at the bottom of Bethany's signature in HTML emails.
+    """The linen ClearCode Reading lockup under Bethany's signature in HTML emails.
 
-    The mark is the same gold-and-teal monogram as the public site header, with
-    CLEAR in linen, CODE in gold, and READING in medium teal on the ink bar.
-    Mail clients load the monogram from the public site, so the lockup is only
-    included when ``PUBLIC_APP_URL`` is an HTTPS address.
+    The artwork is the supplied light lockup: forest-teal channel on linen, CLEAR
+    in gray, CODE in ink, and READING in gray. Mail clients load it from the
+    public site, so it is included only when ``PUBLIC_APP_URL`` is HTTPS.
     """
     public = settings.PUBLIC_APP_URL.rstrip("/")
     if not public.startswith("https://"):
         return ""
     mark = escape(public + BETHANY_SIGNATURE_LOGO)
+    # Source artwork is 560×204; display at half size so the lockup stays sharp.
     return (
-        '<br><table role="presentation" cellpadding="0" cellspacing="0" border="0" '
-        'style="margin:8px 0 0;background-color:#0F2B35;border-collapse:collapse;">'
-        "<tr>"
-        '<td style="padding:8px 10px 8px 8px;vertical-align:middle;">'
-        f'<img src="{mark}" alt="" width="44" height="44" '
-        'style="display:block;width:44px;height:44px;border:0;">'
-        "</td>"
-        '<td style="padding:8px 14px 8px 0;vertical-align:middle;'
-        'font-family:Arial,Helvetica,sans-serif;">'
-        '<p style="margin:0;font-size:16px;line-height:18px;font-weight:bold;'
-        'letter-spacing:-0.4px;">'
-        '<span style="color:#F7F2EA;">CLEAR</span>'
-        '<span style="color:#F5A623;"> CODE</span></p>'
-        '<p style="margin:3px 0 0;color:#2EB8B8;font-size:9px;line-height:12px;'
-        'font-weight:bold;letter-spacing:3px;">READING</p>'
-        "</td></tr></table>"
+        f'<br><img src="{mark}" alt="ClearCode Reading" width="280" height="102" '
+        'style="display:block;width:280px;max-width:100%;height:auto;border:0;'
+        'margin:8px 0 0;">'
     )
 
 
