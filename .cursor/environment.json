@@ -1,0 +1,12 @@
+{
+  "name": "Clear Code Reading",
+  "install": "bash .cursor/install.sh",
+  "start": "bash .cursor/start.sh",
+  "terminals": [
+    {
+      "name": "web",
+      "command": "bash .cursor/run-web.sh"
+    }
+  ],
+  "ports": [8000]
+}
