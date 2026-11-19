@@ -109,6 +109,16 @@ urlpatterns = [
     ),
     path("how-it-works/", TemplateView.as_view(template_name="how-it-works.html"), name="marketing_how_it_works"),
     path("families/", RedirectView.as_view(pattern_name="marketing_how_it_works", permanent=True), name="marketing_families"),
+    path(
+        "gift-guide",
+        TemplateView.as_view(
+            template_name="gift-guide.html",
+            extra_context={"public_canonical_url": "https://www.clearcodereading.com/gift-guide"},
+        ),
+        name="marketing_gift_guide",
+    ),
+    path("gift-guide/", RedirectView.as_view(pattern_name="marketing_gift_guide", permanent=True)),
+    re_path(r"^consult/?$", RedirectView.as_view(url="/contact/#consultation-form"), name="consult_short_link"),
     path("resources/", FamilyResourcesView.as_view(template_name="resources.html"), name="marketing_resources"),
     path("resources/", include("apps.resources.urls")),
     path(

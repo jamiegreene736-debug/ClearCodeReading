@@ -1,0 +1,144 @@
+{% extends "base_marketing.html" %}
+{% load bot_protection %}
+{% block title %}Gifts That Grow Readers | ClearCode Reading Holiday Gift Guide{% endblock %}
+{% block meta_description %}Find books and word games for readers in grades K–8. Browse the free 2026 holiday gift guide or download the printable PDF.{% endblock %}
+{% block og_title %}Gifts That Grow Readers 🎁{% endblock %}
+{% block og_description %}Find books and word games for your K–8 reader in ClearCode Reading’s free holiday gift guide.{% endblock %}
+{% block extra_head %}
+  <meta property="og:image" content="https://www.clearcodereading.com/assets/gift-guide/holiday-gift-guide-2026.webp">
+  <style>
+    .gift-list h3 { margin-top: 1.5rem; font-size: .8rem; font-weight: 800; letter-spacing: .06em; text-transform: uppercase; color: #2c4a45; }
+    .gift-list ul { list-style: disc; padding-left: 1.25rem; }
+    .gift-list li { margin-top: .45rem; }
+    .gift-list a { text-decoration: underline; text-underline-offset: .2em; }
+    .gift-list a:hover { color: #1a7a7a; }
+  </style>
+{% endblock %}
+{% block content %}
+<section class="bg-ink px-4 py-12 text-linen sm:px-6 lg:px-8">
+  <div class="mx-auto grid max-w-6xl items-center gap-8 md:grid-cols-[2fr_1fr]">
+    <div>
+      <p class="text-sm font-black uppercase tracking-[.18em] text-seafoam">2026 Holiday Gift Guide</p>
+      <h1 class="mt-4 text-4xl font-black leading-tight sm:text-6xl">Gifts That Grow Readers 🎁</h1>
+      <p class="mt-5 max-w-2xl text-xl">Looking for gifts that actually help your kid read? We've got you covered from K–8.</p>
+      <p class="mt-4 max-w-2xl leading-7">Find your child's grade, pick one thing from each row and click any title to shop. For decodable books, just grab the set that matches where your child is right now.</p>
+      <a href="/assets/gift-guide/holiday-gift-guide-2026.pdf" download class="focus-ring mt-6 inline-flex rounded-full bg-gold px-6 py-3 font-black text-ink">Download the PDF</a>
+    </div>
+    <a class="focus-ring mx-auto hidden max-w-64 md:block" href="/assets/gift-guide/holiday-gift-guide-2026.pdf" aria-label="Open the printable holiday gift guide">
+      <img src="/assets/gift-guide/holiday-gift-guide-2026.webp" alt="" width="734" height="950" class="rounded-lg shadow-2xl">
+    </a>
+  </div>
+</section>
+<div class="bg-linen px-4 py-10 sm:px-6 lg:px-8">
+  <div class="gift-list mx-auto grid max-w-6xl items-start gap-5 md:grid-cols-3">
+    <section class="overflow-hidden rounded-2xl border border-ink/10 bg-white">
+      <h2 class="bg-forest px-6 py-4 text-2xl font-black text-white">Grades K–2</h2>
+      <div class="px-6 pb-7">
+        <h3>Decodable</h3>
+        <ul>
+          <li><a href="https://bobbooks.com/">Bob Books (Sets 1–5)</a></li>
+          <li><a href="https://whole-phonics.com/">Whole Phonics Decodable Readers</a></li>
+          <li><a href="https://dogonalogbooks.com/books/">Dog on a Log (Pup and Dog Books)</a></li>
+        </ul>
+        <h3>Chapter series</h3>
+        <ul>
+          <li><a href="https://www.penguinrandomhouse.com/series/MER/mercy-watson/">Mercy Watson</a></li>
+          <li><a href="https://www.penguinrandomhouse.com/series/PIB/princess-in-black/">The Princess in Black</a></li>
+          <li><a href="https://www.amazon.com/dp/B08HZ2XKXM?binding=paperback">Yasmin</a></li>
+          <li><a href="https://www.amazon.com/s?k=owl+diaries+series">Owl Diaries</a></li>
+        </ul>
+        <h3>Nonfiction series</h3>
+        <ul>
+          <li><a href="https://bookshop.org/lists/national-geographic-readers-level-1">Nat Geo Kids Readers</a></li>
+          <li><a href="https://www.amazon.com/s?k=who+would+win+series">Who Would Win?</a></li>
+          <li><a href="https://www.amazon.com/s?k=lets+read+and+find+out+science">Let’s-Read-and-Find-Out Science</a></li>
+        </ul>
+        <h3>Word games</h3>
+        <ul>
+          <li><a href="https://www.walmart.com/ip/ThinkFun-Zingo-Word-Builder-Reading-Skills-Game/166291905">Zingo! Word Builder</a></li>
+          <li><a href="https://www.walmart.com/ip/My-First-Bananagrams/663513954">My First Bananagrams</a></li>
+          <li>Magnetic letters + a cookie sheet</li>
+        </ul>
+      </div>
+    </section>
+    <section class="overflow-hidden rounded-2xl border border-ink/10 bg-white">
+      <h2 class="bg-forest px-6 py-4 text-2xl font-black text-white">Grades 3–5</h2>
+      <div class="px-6 pb-7">
+        <h3>Decodable</h3>
+        <ul>
+          <li><a href="https://shop.simplewordsbooks.com/">Simple Words Books</a></li>
+          <li><a href="https://dogonalogbooks.com/books/">Dog on a Log Chapter Books</a></li>
+          <li><a href="https://store.imaginelearning.com/collections/phonicbooks">Phonic Books catch-up readers</a></li>
+        </ul>
+        <h3>Chapter series</h3>
+        <ul>
+          <li><a href="https://www.penguinrandomhouse.com/series/MT0/magic-tree-house/">Magic Tree House</a></li>
+          <li><a href="https://www.penguinrandomhouse.com/series/OMR/planet-omar/">Planet Omar</a></li>
+          <li><a href="https://www.amazon.com/dp/B08CJ2Z7B3">Slug Days</a></li>
+          <li><a href="https://www.amazon.com/s?k=zoey+and+sassafras+series">Zoey and Sassafras</a></li>
+        </ul>
+        <h3>Nonfiction series</h3>
+        <ul>
+          <li><a href="https://www.penguinrandomhouse.com/series/DWY/who-was/">Who Was?</a> / <a href="https://www.penguinrandomhouse.com/series/DWW/what-was/">What Was?</a></li>
+          <li><a href="https://www.penguinrandomhouse.com/series/WBT/weird-but-true/">Weird But True!</a></li>
+          <li><a href="https://www.amazon.com/s?k=magic+tree+house+fact+tracker">Magic Tree House Fact Trackers</a></li>
+        </ul>
+        <h3>Word games</h3>
+        <ul>
+          <li><a href="https://www.walmart.com/ip/Bananagrams-Classic-Family-Tile-Game-for-Ages-7-and-up-from-Asmodee/16533021">Bananagrams</a></li>
+          <li><a href="https://www.walmart.com/ip/Classic-Boggle-Word-Search-Game-for-kids-Ages-8-and-up/678611322">Boggle</a></li>
+          <li><a href="https://www.amazon.com/s?k=tapple+word+game">Tapple</a></li>
+        </ul>
+      </div>
+    </section>
+    <section class="overflow-hidden rounded-2xl border border-ink/10 bg-white">
+      <h2 class="bg-forest px-6 py-4 text-2xl font-black text-white">Grades 6–8</h2>
+      <div class="px-6 pb-7">
+        <h3>Decodable</h3>
+        <ul>
+          <li><a href="https://store.imaginelearning.com/collections/phonicbooks">Phonic Books teen series (Talisman, Rescue, Alba)</a></li>
+          <li><a href="https://www.highnoonbooks.com/">High Noon Sound Out Chapter Books</a></li>
+          <li><a href="https://shop.simplewordsbooks.com/">Simple Words Books</a></li>
+        </ul>
+        <h3>Chapter series</h3>
+        <ul>
+          <li><a href="https://bookshop.org/p/books/the-lightning-thief-rick-riordan/17416447">Percy Jackson</a></li>
+          <li><a href="https://bookshop.org/p/books/ghost-jason-reynolds/f1530f137f290914">Track (Jason Reynolds)</a></li>
+          <li><a href="https://www.amazon.com/Last-Kids-Earth-Monster-Box/dp/0451481089">The Last Kids on Earth</a></li>
+          <li><a href="https://www.amazon.com/s?k=amulet+kazu+kibuishi">Amulet</a></li>
+        </ul>
+        <h3>Nonfiction series</h3>
+        <ul>
+          <li><a href="https://www.amazon.com/s?k=science+comics+series">Science Comics</a></li>
+          <li><a href="https://www.amazon.com/dp/B075V1PCSV">Nathan Hale’s Hazardous Tales</a></li>
+          <li><a href="https://www.penguinrandomhouse.com/series/DWW/what-was/">Who HQ (Where Is? / What Was?)</a></li>
+        </ul>
+        <h3>Word games</h3>
+        <ul>
+          <li><a href="https://www.walmart.com/ip/Spin-Master-Games-Upwords-Stackable-Word-Game-2023-Edition-Includes-Rotating-Board-Letter-Tiles-Classic-Crossword-Activity-Kids-Family-3-6-Players-Ag/5194521805">Upwords</a></li>
+          <li><a href="https://www.walmart.com/ip/Codenames-CGE-Board-Game-Secret-Agent-Deduction-Game-for-4-Players/49094484">Codenames</a></li>
+          <li><a href="https://www.amazon.com/s?k=quiddler+card+game">Quiddler</a></li>
+        </ul>
+      </div>
+    </section>
+  </div>
+</div>
+<div class="mx-auto grid max-w-6xl gap-8 px-4 py-12 sm:px-6 md:grid-cols-2">
+  <section class="rounded-2xl bg-seafoam p-6 sm:p-8">
+    <h2 class="text-3xl font-black">Reading still feeling tough?</h2>
+    <p class="mt-4 leading-7">We get it. ClearCode Reading helps K–8 kids in Orlando build real reading skills, one-on-one or in small groups of up to 3. We're now welcoming early-access families!</p>
+    <a href="{% url 'marketing_contact' %}#consultation-form" class="focus-ring mt-5 inline-flex rounded-full bg-ink px-6 py-3 font-black text-white">Let's talk</a>
+  </section>
+  <section id="newsletter-signup" class="scroll-mt-24 rounded-2xl bg-linen p-6 sm:p-8">
+    <h2 class="text-3xl font-black">Want more freebies like this?</h2>
+    <p class="mt-4 leading-7">Drop your email and we'll send new reading tips and resources your way. Totally optional!</p>
+    <form class="mt-5" action="{% url 'newsletter_signup' %}" method="post">
+      {% csrf_token %}{% bot_fields "newsletter" %}
+      <input type="hidden" name="redirect_to" value="{% url 'marketing_gift_guide' %}">
+      <label for="gift-email" class="block font-bold">Email address</label>
+      <input class="focus-ring mt-2 w-full rounded-xl border border-ink/20 bg-white px-4 py-3" type="email" id="gift-email" name="email" autocomplete="email" maxlength="254" required>
+      <button class="focus-ring mt-4 rounded-full bg-ink px-6 py-3 font-black text-white" type="submit" name="consent" value="yes">Count me in</button>
+    </form>
+  </section>
+</div>
+{% endblock %}

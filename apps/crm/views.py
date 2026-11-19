@@ -444,6 +444,7 @@ class NewsletterSignupView(View):
             return redirect(f"{redirect_path}?newsletter=consent#newsletter-signup")
 
         now = timezone.now()
+        from_gift_guide = redirect_path == reverse("marketing_gift_guide")
         submitted_name = request.POST.get("name", "").strip()[:255]
         existing_name = (
             NewsletterSubscription.objects.filter(email=email).values_list("name", flat=True).first()
@@ -459,18 +460,26 @@ class NewsletterSignupView(View):
                     "source_path": redirect_path,
                 },
             )
-            link_subscription_to_contact(subscription)
-            record_form_submission(
+            lead, _submission = record_form_submission(
                 intake=LeadIntake(
                     contact_email=email,
                     contact_name=submitted_name or existing_name or email.split("@", 1)[0],
                     school_name="Newsletter subscriber",
                     audience=Lead.PipelineCategory.OTHER,
                 ),
+                update_existing_contact=not from_gift_guide,
                 form_type=FormSubmission.FormType.NEWSLETTER,
                 source_path=redirect_path,
                 submitted_data=sanitized_submission_data(request.POST),
             )
+
+            link_subscription_to_contact(subscription, lead)
+
+        if from_gift_guide:
+            request.session[FAMILY_RESOURCES_SESSION_KEY] = True
+            request.session.pop("family_resource_return_to", None)
+            messages.success(request, "You’re subscribed. Your free family resources are unlocked.")
+            return redirect("marketing_resources")
 
         messages.success(request, "You’re subscribed. Look for ClearCode Reading updates in your inbox.")
         return redirect(f"{redirect_path}?newsletter=thanks#newsletter-signup")
