@@ -20,6 +20,7 @@ MARKETING_SITEMAP_ROUTES = (
     "marketing_about",
     "marketing_how_it_works",
     "marketing_resources",
+    "marketing_gift_guide",
     "marketing_faq",
     "marketing_foundation",
     "marketing_careers",

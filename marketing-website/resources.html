@@ -18,6 +18,9 @@
     </div>
   </section>
 
+  <div class="mx-auto max-w-6xl px-4 py-8">
+    {% include "_gift_guide_card.html" %}
+  </div>
   {% include "_comprehension_packs.html" %}
 
 {% else %}
@@ -43,7 +46,7 @@
     data-testid="family-resources-gate"
     aria-labelledby="resource-gate-title"
     aria-describedby="resource-gate-description"
-    class="m-auto w-[calc(100%-2rem)] max-w-lg overflow-hidden rounded-[2rem] bg-white p-0 text-ink shadow-2xl backdrop:bg-ink/80 backdrop:backdrop-blur-sm"
+    class="m-auto w-[calc(100%-2rem)] max-w-lg overflow-y-auto rounded-[2rem] bg-white p-0 text-ink shadow-2xl backdrop:bg-ink/80 backdrop:backdrop-blur-sm"
   >
     <div class="relative border-t-8 border-gold p-6 sm:p-9">
       <p class="text-xs font-black uppercase tracking-[.18em] text-deepTeal">Your free toolkit is ready</p>
@@ -72,6 +75,7 @@
         <button type="submit" class="focus-ring flex min-h-12 w-full items-center justify-center rounded-full bg-deepTeal px-6 py-4 text-center font-black text-white shadow-glow transition hover:-translate-y-0.5 hover:bg-[#176a6a]">Unlock My Free Resources</button>
         <p class="text-center text-xs leading-5 text-ink/55">We’ll use your details to provide access and understand family interest. See our <a href="/privacy/" class="focus-ring rounded font-bold text-deepTeal underline decoration-gold decoration-2 underline-offset-2">Privacy Policy</a>.</p>
       </form>
+      {% include "_gift_guide_card.html" %}
     </div>
   </dialog>
 {% endif %}

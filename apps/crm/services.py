@@ -1,3 +1,4 @@
+from collections.abc import Mapping
 from dataclasses import dataclass, field
 
 from django.db import transaction
@@ -72,7 +73,14 @@ def normalize_relationship_interests(values) -> list[str]:
 
 
 @transaction.atomic
-def record_form_submission(*, intake, form_type, source_path, submitted_data):
+def record_form_submission(
+    *,
+    intake: LeadIntake,
+    form_type: str,
+    source_path: str,
+    submitted_data: Mapping[str, object],
+    update_existing_contact: bool = True,
+) -> tuple[Lead, FormSubmission]:
     lead = Lead.objects.select_for_update().filter(
         contact_email=intake.contact_email,
         is_deleted=False,
@@ -117,7 +125,7 @@ def record_form_submission(*, intake, form_type, source_path, submitted_data):
             entity_id=str(lead.id),
             after={"email": intake.contact_email, "audience": intake.audience},
         )
-    else:
+    elif update_existing_contact:
         lead.contact_name = intake.contact_name or lead.contact_name
         lead.school_name = intake.school_name or lead.school_name
         lead.audience = intake.audience or lead.audience

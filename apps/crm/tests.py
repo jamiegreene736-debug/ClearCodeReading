@@ -173,6 +173,57 @@ class NewsletterSignupTests(TestCase):
         self.assertNotIn("csrfmiddlewaretoken", submission.submitted_data)
         self.assertNotIn("website", submission.submitted_data)
 
+    def test_gift_guide_opt_in_creates_contact_and_unlocks_library(self) -> None:
+        email = "gift-reader@example.com"
+        form = {"email": email, "consent": "yes", "redirect_to": "/gift-guide"}
+        response = self.client.post(reverse("newsletter_signup"), form, follow=True)
+        self.assertRedirects(response, "/resources/")
+        self.assertNotContains(response, 'data-testid="family-resources-gate"')
+        self.assertContains(response, 'href="/gift-guide"')
+        lead = Lead.objects.get(contact_email=email)
+        subscription = NewsletterSubscription.objects.get(email=email)
+        self.assertEqual(subscription.lead_id, lead.pk)
+        self.assertEqual(lead.form_submissions.get().source_path, "/gift-guide")
+
+        lead.contact_name = "Original Family Name"
+        lead.audience = Lead.PipelineCategory.FAMILY_ENROLLMENT
+        lead.save()
+        self.client.post(reverse("newsletter_signup"), form)
+        lead.refresh_from_db()
+        self.assertEqual(lead.contact_name, "Original Family Name")
+        self.assertEqual(lead.audience, Lead.PipelineCategory.FAMILY_ENROLLMENT)
+        self.assertEqual(Lead.objects.filter(contact_email=email).count(), 1)
+
+    def test_gift_guide_failed_opt_ins_keep_resources_locked(self) -> None:
+        for values in (
+            {"email": "broken", "consent": "yes"},
+            {"email": "reader@example.com"},
+            {"email": "bot@example.com", "consent": "yes", "website": "filled"},
+        ):
+            with self.subTest(values=values):
+                response = self.client.post(reverse("newsletter_signup"), {"redirect_to": "/gift-guide", **values})
+                self.assertTrue(response.url.startswith("/gift-guide?newsletter="))
+                self.assertFalse(self.client.session.get("family_resources_unlocked"))
+        self.assertFalse(Lead.objects.exists())
+        self.assertFalse(NewsletterSubscription.objects.exists())
+
+    def test_gift_guide_is_public_and_consult_shortcut_reaches_form(self) -> None:
+        response = self.client.get("/gift-guide")
+        self.assertContains(response, "Grades K–2")
+        self.assertContains(response, "Grades 3–5")
+        self.assertContains(response, "Grades 6–8")
+        self.assertContains(response, 'name="consent" value="yes">Count me in')
+        self.assertNotContains(response, 'data-testid="family-resources-gate"')
+        self.assertContains(self.client.get("/resources/"), 'href="/gift-guide"')
+        self.assertRedirects(self.client.get("/gift-guide/"), "/gift-guide", status_code=301)
+        pdf = self.client.get("/assets/gift-guide/holiday-gift-guide-2026.pdf")
+        self.assertEqual(pdf.status_code, 200)
+        self.assertEqual(pdf["Content-Type"], "application/pdf")
+        self.assertTrue(b"".join(pdf.streaming_content).startswith(b"%PDF-"))
+        for path in ("/consult", "/consult/"):
+            self.assertRedirects(self.client.get(path), "/contact/#consultation-form")
+        self.assertContains(self.client.get("/contact/"), 'id="consultation-form"')
+
     def test_signup_rejects_invalid_email_or_missing_consent(self):
         invalid_email = self.client.post(
             reverse("newsletter_signup"),
