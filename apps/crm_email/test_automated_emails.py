@@ -43,7 +43,7 @@ class AutomatedEmailTests(TestCase):
         self.client.force_login(self.admin)
 
     def submission(self, kind: str = "consultation") -> FormSubmission:
-        return record_form_submission(  # type: ignore[no-untyped-call,no-any-return]
+        return record_form_submission(
             intake=LeadIntake(
                 contact_email="parent@example.com",
                 contact_name="Jordan Rivera",
@@ -275,7 +275,7 @@ class RichAutomatedEmailTests(TestCase):
         self.client.force_login(self.admin)
 
     def submission(self) -> FormSubmission:
-        return record_form_submission(  # type: ignore[no-untyped-call,no-any-return]
+        return record_form_submission(
             intake=LeadIntake(
                 contact_email="parent@example.com",
                 contact_name="Jordan Rivera",
@@ -329,7 +329,7 @@ class RichAutomatedEmailTests(TestCase):
             body="<p>Hello {{name}}</p>",
             action_url="/how-it-works/",
         )
-        submission = record_form_submission(  # type: ignore[no-untyped-call]
+        submission = record_form_submission(
             intake=LeadIntake(
                 contact_email="x@example.com",
                 contact_name="<img src=x onerror=alert(1)>",
