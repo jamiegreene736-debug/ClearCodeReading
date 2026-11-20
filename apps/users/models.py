@@ -47,6 +47,15 @@ class CustomUser(AbstractUser, TimestampedModel, SoftDeleteModel):
     hiring_enabled = models.BooleanField(default=False, help_text="Access private teacher hiring records in the CRM.")
 
     @property
+    def is_family_teacher(self) -> bool:
+        if self.role == self.Role.TEACHER:
+            return True
+        if self.role not in {self.Role.SUPER_ADMIN, self.Role.SCHOOL_ADMIN}:
+            return False
+        profile = getattr(self, "profile", None)
+        return bool(profile and not profile.is_deleted and profile.teaches_families)
+
+    @property
     def has_hiring_access(self) -> bool:
         return bool(self.is_active and not self.is_deleted and self.has_crm_access and (
             self.is_staff or self.can_manage_crm_users or self.hiring_enabled
@@ -151,6 +160,12 @@ class Profile(TimestampedModel, SoftDeleteModel):
         TEXT = "text", "Text message"
 
     user = models.OneToOneField(CustomUser, on_delete=models.CASCADE, related_name="profile")
+    family_teacher = models.ForeignKey(
+        CustomUser, null=True, blank=True, on_delete=models.SET_NULL,
+        related_name="assigned_families", help_text="Default teacher for this parent's new readers.",
+    )
+    teaches_families = models.BooleanField(default=False, db_default=False, help_text="Allow an administrator who teaches to take family assignments.")
+
     display_name = models.CharField(max_length=255, blank=True)
     avatar = models.ImageField(upload_to="profiles/avatars/", blank=True)
     timezone = models.CharField(max_length=64, default="America/New_York")

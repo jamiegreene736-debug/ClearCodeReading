@@ -49,6 +49,15 @@ class MeetingTests(TestCase):
             self.teacher, self.family.pk, self.start, self.end, "Room 211"
         )
 
+    def test_teaching_admin_can_schedule_for_assigned_families(self) -> None:
+        self.teacher.role = CustomUser.Role.SUPER_ADMIN
+        self.teacher.save()
+        self.assertEqual(self.client.get(reverse("new_family_meeting")).status_code, 403)
+        self.teacher.profile.teaches_families = True
+        self.teacher.profile.save()
+        self.assertContains(self.client.get(reverse("new_family_meeting")), self.parent.email)
+        self.assertEqual(self.book().teacher_id, self.teacher.pk)
+
     def test_normal_entry_points_and_email_lifecycle(self) -> None:
         self.assertContains(
             self.client.get(reverse("portal_dashboard")), reverse("family_meetings")

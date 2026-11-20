@@ -15,6 +15,7 @@ from django.views.decorators.cache import never_cache
 from django.views.decorators.http import require_http_methods
 
 from apps.crm.parent_contacts import ensure_parent_contact
+from apps.users.family_teachers import inherited_teacher_fields
 from apps.users.models import (
     AuditLog,
     ChildProfile,
@@ -101,7 +102,9 @@ class ReaderForms(forms.Form):
             if previous:
                 return previous.relationship.child_id
             ensure_parent_contact(parent)
-            child = ChildProfile.objects.create(first_name=data["first_name"])
+            child = ChildProfile.objects.create(
+                first_name=data["first_name"], learning_profile=inherited_teacher_fields(parent)
+            )
             relationship = GuardianRelationship.objects.create(
                 guardian=parent,
                 child=child,

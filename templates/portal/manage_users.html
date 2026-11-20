@@ -1,5 +1,8 @@
 {% extends "portal/onboarding_base.html" %}
 
+{% load static %}
+{% block scripts %}<script src="{% static 'users/family_teacher.js' %}" defer></script>{% endblock %}
+
 {% block title %}
 Add user
 {% endblock %}
@@ -11,8 +14,9 @@ Add user
 <section class="card">
 <form method="post">{% csrf_token %}{{ form.non_field_errors }}<div class="form-grid">
 {% for field in form %}
-<div>
-<label for="{{ field.id_for_label }}">{{ field.label }}</label>{{ field }}{{ field.errors }}</div>
+<div{% if field.name == "family_teacher" %} data-family-teacher{% endif %}>
+<label for="{{ field.id_for_label }}">{{ field.label }}</label>{{ field }}{{ field.errors }}
+{% if field.name == "family_teacher" %}<small>The parent will add their child and sign the family forms. Each new reader starts with this teacher.</small>{% endif %}</div>
 {% endfor %}
 </div>
 <p class="subtle">Use a work Google Workspace email for backend employees. Backend employees get CRM access and a first-login Gmail connection prompt. Teachers and parents get their own portal tools. No administrator privileges are granted.</p>

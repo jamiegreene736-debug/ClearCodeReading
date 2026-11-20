@@ -87,6 +87,19 @@ class ReaderBoardTests(TestCase):
         )
         self.assertContains(self.client.get(self.board), "Avery loved it.")
 
+    def test_teaching_admin_can_exchange_notes_with_assigned_family(self) -> None:
+        self.teacher.role = CustomUser.Role.SUPER_ADMIN
+        self.teacher.save()
+        self.teacher.profile.teaches_families = True
+        self.teacher.profile.save()
+        self.client.force_login(self.teacher)
+        self.assertContains(self.client.get(reverse("portal_dashboard")), self.board)
+        self.client.post(self.board, {"submission_id": str(uuid4()), "body": "Today's practice"})
+        self.client.force_login(self.parent)
+        self.assertContains(self.client.get(reverse("portal_dashboard")), "Today&#x27;s practice")
+        self.client.post(self.board, {"submission_id": str(uuid4()), "body": "Thank you"})
+        self.assertTrue(ReaderBoardNotification.objects.filter(recipient=self.teacher).exists())
+
     def test_private_notes_and_counts_require_current_access(self) -> None:
         self.client.force_login(self.teacher)
         self.client.post(

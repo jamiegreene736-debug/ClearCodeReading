@@ -29,6 +29,7 @@ from apps.curriculum.models import StudentPlacement
 from apps.progress.dashboard import build_parent_dashboard
 from apps.scheduling.services import operations_metrics, ranked_group_suggestions
 from apps.sessions.models import Session
+from apps.users.family_teachers import current_family_teacher, reader_teacher_fields, teaching_accounts
 from apps.users.reader_board import board_dashboard_context
 from apps.users.models import ChildProfile, CustomUser, GuardianRelationship
 
@@ -59,10 +60,12 @@ def program_children(user):
     return children.distinct().order_by("last_name", "first_name")
 
 
-def program_teachers(user):
-    teachers = CustomUser.objects.filter(role=CustomUser.Role.TEACHER, is_active=True, is_deleted=False)
+def program_teachers(user: CustomUser, *, include_teaching_admins: bool = False):
+    teachers = teaching_accounts() if include_teaching_admins else CustomUser.objects.filter(role=CustomUser.Role.TEACHER)
+    teachers = teachers.filter(is_active=True, is_deleted=False)
     if not user.is_superuser and user.role != CustomUser.Role.SUPER_ADMIN:
         teachers = teachers.filter(
+            school_memberships__is_deleted=False,
             school_memberships__school__memberships__user=user,
             school_memberships__school__memberships__is_deleted=False,
         ).distinct()
@@ -89,7 +92,7 @@ def reader_assignment(child, teachers_by_id):
 
 
 def instruction_workspace_summary(user):
-    teachers_by_id = {str(teacher.id): teacher for teacher in program_teachers(user)}
+    teachers_by_id = {str(teacher.id): teacher for teacher in program_teachers(user, include_teaching_admins=True)}
     roster = [reader_assignment(child, teachers_by_id) for child in program_children(user)]
     assigned_reader_count = sum(1 for row in roster if row["assigned"])
     lesson_count = LessonTemplate.objects.filter(is_deleted=False, is_active=True).count()
@@ -208,10 +211,11 @@ class PortalDashboardView(PortalAuthMixin, TemplateView):
         context["is_teacher"] = user.role == CustomUser.Role.TEACHER
         context["is_child"] = user.role == CustomUser.Role.STUDENT
 
-        if context["is_parent"] or context["is_teacher"]:
+        if context["is_parent"] or user.is_family_teacher:
             context.update(board_dashboard_context(user, self.request.GET.get("resource_page")))
 
         if context["is_parent"]:
+            context["family_teacher"] = current_family_teacher(user)
             relationships = GuardianRelationship.objects.filter(
                 guardian=user,
                 is_deleted=False,
@@ -452,7 +456,7 @@ class TeacherAssignmentsView(PortalAuthMixin, TemplateView):
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         user = self.request.user
-        teachers = list(program_teachers(user))
+        teachers = list(program_teachers(user, include_teaching_admins=True))
         teachers_by_id = {str(teacher.id): teacher for teacher in teachers}
         roster = [reader_assignment(child, teachers_by_id) for child in program_children(user)]
         query = self.request.GET.get("q", "").strip()
@@ -597,18 +601,15 @@ class AssignTeacherView(PortalAuthMixin, View):
         child_id = request.POST.get("child_id")
         teacher_id = request.POST.get("teacher_id")
         child = program_children(request.user).filter(id=child_id).first()
-        teacher = program_teachers(request.user).filter(id=teacher_id).first()
+        teacher = program_teachers(request.user, include_teaching_admins=True).filter(id=teacher_id).first()
         if child is None or teacher is None:
             messages.error(request, "Choose a valid reader and teacher.")
             return redirect("portal_teacher_assignments")
 
         child.learning_profile = {
             **(child.learning_profile or {}),
-            "assigned_teacher_id": teacher.id,
-            "assigned_teacher_name": teacher.get_full_name() or teacher.email,
-            "assigned_teacher_email": teacher.email,
+            **reader_teacher_fields(teacher),
             "assigned_by_admin_id": request.user.id,
-            "assigned_at": timezone.now().isoformat(),
         }
         child.save(update_fields=["learning_profile", "updated_at"])
         messages.success(request, f"Assigned {teacher.get_full_name() or teacher.email} to {child}.")

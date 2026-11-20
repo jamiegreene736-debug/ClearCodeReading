@@ -38,7 +38,7 @@ def save_meeting(
     cancel: bool = False,
 ) -> FamilyMeeting:
     if (
-        teacher.role != CustomUser.Role.TEACHER
+        not teacher.is_family_teacher
         or not teacher.is_active
         or teacher.is_deleted
     ):

@@ -1,13 +1,26 @@
+from django import forms
 from django.contrib import admin
 from django.contrib.auth.admin import UserAdmin
+from django.contrib.auth.forms import AdminUserCreationForm
 from django.utils import timezone
 
 from apps.crm.parent_contacts import ensure_parent_contact
-from apps.users.models import AuditLog, ChildProfile, ConsentLog, ConsentRecord, CustomUser, GuardianRelationship, Profile, SignedReaderForms
+from apps.users.family_teachers import family_teacher_choices
+from apps.users.models import (
+    AuditLog,
+    ChildProfile,
+    ConsentLog,
+    ConsentRecord,
+    CustomUser,
+    GuardianRelationship,
+    Profile,
+    SignedReaderForms,
+)
 
 
 class ProfileInline(admin.StackedInline):
     model = Profile
+    fk_name = "user"
     extra = 0
     can_delete = False
     fields = (
@@ -23,6 +36,7 @@ class ProfileInline(admin.StackedInline):
         "about",
         "preferences",
         "onboarding_completed_at",
+        "teaches_families",
     )
 
 
@@ -53,11 +67,35 @@ def reactivate_users(modeladmin, request, queryset):
     queryset.update(is_active=True, is_deleted=False, deleted_at=None)
 
 
+class FamilyUserCreationForm(AdminUserCreationForm):
+    family_teacher = forms.ModelChoiceField(queryset=CustomUser.objects.none(), required=False, label="Family teacher")
+
+    def clean(self):
+        data = super().clean()
+        if data.get("role") == CustomUser.Role.GUARDIAN and not data.get("family_teacher") and "family_teacher" not in self.errors:
+            self.add_error("family_teacher", "Choose a teacher for this parent.")
+        return data
+
+
 @admin.register(CustomUser)
 class CustomUserAdmin(UserAdmin):
+    add_form = FamilyUserCreationForm
+
+    class Media:
+        js = ("users/family_teacher.js",)
+
+    def get_form(self, request, obj=None, **kwargs):
+        form = super().get_form(request, obj, **kwargs)
+        if obj is None and "family_teacher" in form.base_fields:
+            form.base_fields["family_teacher"].queryset = family_teacher_choices(request.user)
+        return form
+
     def save_model(self, request, obj, form, change):
         super().save_model(request, obj, form, change)
         if not change:
+            if obj.role == CustomUser.Role.GUARDIAN:
+                obj.profile.family_teacher = form.cleaned_data["family_teacher"]
+                obj.profile.save(update_fields=["family_teacher", "updated_at"])
             ensure_parent_contact(obj)
 
     inlines = (ProfileInline,)
@@ -71,12 +109,17 @@ class CustomUserAdmin(UserAdmin):
         ("Clear Code Reading", {"fields": ("role", "phone_number", "metadata", "is_deleted", "deleted_at", "created_at", "updated_at")}),
     )
     add_fieldsets = UserAdmin.add_fieldsets + (
-        ("Clear Code Reading", {"fields": ("email", "role", "phone_number")}),
+        ("Clear Code Reading", {"fields": ("email", "role", "family_teacher", "phone_number")}),
     )
 
 
 @admin.register(Profile)
 class ProfileAdmin(admin.ModelAdmin):
+    def formfield_for_foreignkey(self, db_field, request, **kwargs):
+        if db_field.name == "family_teacher":
+            kwargs["queryset"] = family_teacher_choices(request.user)
+        return super().formfield_for_foreignkey(db_field, request, **kwargs)
+
     list_display = (
         "user",
         "display_name",

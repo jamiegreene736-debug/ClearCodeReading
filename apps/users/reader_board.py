@@ -19,6 +19,7 @@ from django.views.decorators.cache import never_cache
 from django.views.decorators.http import require_GET, require_http_methods
 
 from apps.api.permissions import models_consent_filter
+from apps.users.family_teachers import teaching_accounts
 from apps.users.models import (
     BoardTextAccount,
     ChildProfile,
@@ -49,7 +50,7 @@ def board_readers(user: CustomUser) -> QuerySet[ChildProfile]:
         return readers.filter(
             pk__in=active_families().filter(guardian=user).values("child_id")
         )
-    if user.role == CustomUser.Role.TEACHER:
+    if user.is_family_teacher:
         return readers.filter(
             Q(learning_profile__assigned_teacher_id=user.pk)
             | Q(learning_profile__assigned_teacher_id=str(user.pk))
@@ -65,9 +66,8 @@ def assigned_teacher(child: ChildProfile) -> CustomUser | None:
         or len(str(teacher_id)) > 18
     ):
         return None
-    return CustomUser.objects.filter(
+    return teaching_accounts().filter(
         pk=int(str(teacher_id)),
-        role=CustomUser.Role.TEACHER,
         is_active=True,
         is_deleted=False,
     ).first()
@@ -106,7 +106,7 @@ class BoardNoteForm(forms.Form):
 @transaction.atomic
 def post_note(user: CustomUser, child_id: int, form: BoardNoteForm) -> None:
     child = get_object_or_404(board_readers(user).select_for_update(), pk=child_id)
-    if user.role == CustomUser.Role.TEACHER:
+    if user.is_family_teacher:
         recipients = list(
             active_families().filter(child=child).values_list("guardian_id", flat=True)
         )
@@ -146,7 +146,7 @@ def reader_board(request: PortalRequest, child_id: int) -> HttpResponse:
     user = request.user
     child = get_object_or_404(board_readers(user), pk=child_id)
     form = BoardNoteForm(request.POST if request.method == "POST" else None)
-    if user.role != CustomUser.Role.TEACHER:
+    if not user.is_family_teacher:
         form.fields.pop("resource_url")
     if form.is_bound and form.is_valid():
         post_note(user, child_id, form)
@@ -155,7 +155,7 @@ def reader_board(request: PortalRequest, child_id: int) -> HttpResponse:
             return redirect("portal_reader_board", child_id=child_id)
     notes = Paginator(
         ReaderBoardPost.objects.filter(child=child)
-        .select_related("author")
+        .select_related("author__profile")
         .prefetch_related("notifications__text_deliveries"),
         20,
     ).get_page(request.GET.get("page"))
@@ -166,7 +166,7 @@ def reader_board(request: PortalRequest, child_id: int) -> HttpResponse:
         ).update(read_at=timezone.now())
     can_post = (
         active_families().filter(child=child).exists()
-        if user.role == CustomUser.Role.TEACHER
+        if user.is_family_teacher
         else assigned_teacher(child) is not None
     )
     account = BoardTextAccount.objects.filter(user=user).first()
@@ -199,7 +199,7 @@ def reader_board(request: PortalRequest, child_id: int) -> HttpResponse:
 @never_cache
 @require_GET
 def board_notifications(request: PortalRequest) -> JsonResponse:
-    if not (request.user.can_add_child or request.user.role == CustomUser.Role.TEACHER):
+    if not (request.user.can_add_child or request.user.is_family_teacher):
         raise PermissionDenied
     return JsonResponse(
         {"unread": unread_counts(request.user, board_readers(request.user))}
@@ -216,9 +216,9 @@ def board_dashboard_context(
     latest_notes = {
         post.child_id: post
         for post in ReaderBoardPost.objects.filter(
-            child__in=readers, author__role=CustomUser.Role.TEACHER
+            child__in=readers, author__in=teaching_accounts()
         )
-        .select_related("author")
+        .select_related("author__profile")
         .order_by("child_id", "-created_at", "-pk")
         .distinct("child_id")
     }

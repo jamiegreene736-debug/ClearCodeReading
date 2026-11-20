@@ -20,7 +20,6 @@ from apps.crm_email.sync import provider_id
 from apps.crm_email.worker import backoff
 from apps.meetings.access import teacher_families
 from apps.meetings.models import FamilyMeeting, MeetingNotice
-from apps.users.models import CustomUser
 
 logger = logging.getLogger(__name__)
 State = MeetingNotice.State
@@ -87,7 +86,7 @@ def claim(notice_id: int) -> MeetingNotice | None:
         valid = (
             notice.revision == meeting.revision
             and meeting.parent.can_add_child
-            and meeting.teacher.role == CustomUser.Role.TEACHER
+            and meeting.teacher.is_family_teacher
             and meeting.teacher.is_active
             and not meeting.teacher.is_deleted
             and teacher_families(meeting.teacher)

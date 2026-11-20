@@ -17,7 +17,6 @@ from apps.meetings.access import (
 from apps.meetings.forms import MeetingForm
 from apps.meetings.models import FamilyMeeting, MeetingNotice
 from apps.meetings.services import save_meeting
-from apps.users.models import CustomUser
 from apps.users.onboarding_views import PortalRequest
 from apps.users.portal_views import user_can_manage_instruction
 
@@ -35,7 +34,7 @@ def schedule(request: PortalRequest) -> HttpResponse:
         if history
         else meetings.filter(current)
     )
-    staff = user_can_manage_instruction(user) or user.role == CustomUser.Role.TEACHER
+    staff = user_can_manage_instruction(user) or user.is_family_teacher
     if staff:
         meetings = meetings.prefetch_related(
             Prefetch(
@@ -52,7 +51,7 @@ def schedule(request: PortalRequest) -> HttpResponse:
         {
             "page": Paginator(meetings, 25).get_page(request.GET.get("page")),
             "history": history,
-            "teacher": user.role == CustomUser.Role.TEACHER,
+            "teacher": user.is_family_teacher,
             "staff": staff,
             "now": timezone.now(),
         },
@@ -70,7 +69,7 @@ def owned_meeting(request: PortalRequest, pk: int) -> FamilyMeeting:
 @require_http_methods(["GET", "POST"])
 def meeting_form(request: PortalRequest, pk: int | None = None) -> HttpResponse:
     require_schedule_access(request.user)
-    if request.user.role != CustomUser.Role.TEACHER:
+    if not request.user.is_family_teacher:
         raise PermissionDenied
     meeting = owned_meeting(request, pk) if pk is not None else None
     if meeting and meeting.starts_at <= timezone.now():
@@ -112,7 +111,7 @@ def meeting_form(request: PortalRequest, pk: int | None = None) -> HttpResponse:
 @never_cache
 @require_POST
 def cancel_meeting(request: PortalRequest, pk: int) -> HttpResponse:
-    if request.user.role != CustomUser.Role.TEACHER:
+    if not request.user.is_family_teacher:
         raise PermissionDenied
     meeting = owned_meeting(request, pk)
     try:

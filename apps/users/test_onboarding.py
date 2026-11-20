@@ -19,8 +19,9 @@ from apps.crm_email.models import (
     Mailbox,
     Message,
 )
+from apps.schools.models import School, SchoolMembership
 from apps.users.invitations import deliver_invitation
-from apps.users.models import CustomUser, UserInvitation
+from apps.users.models import ChildProfile, CustomUser, UserInvitation
 
 
 @override_settings(
@@ -39,13 +40,20 @@ class UserOnboardingTests(TestCase):
             password="Owner-Password-123!",
         )
 
+        cls.teacher = CustomUser.objects.create_user(
+            username="assigned", email="assigned@example.com", role="teacher", first_name="Taylor"
+        )
+
     def setUp(self):
         self.client.force_login(self.admin)
 
     def invite(self, role="crm_user", email="new@example.com"):
+        data = {"first_name": "New", "email": email, "role": role}
+        if role == "guardian":
+            data["family_teacher"] = self.teacher.pk
         response = self.client.post(
             reverse("manage_users"),
-            {"first_name": "New", "email": email, "role": role},
+            data,
             follow=True,
         )
         self.assertEqual(response.status_code, 200)
@@ -72,6 +80,7 @@ class UserOnboardingTests(TestCase):
 
     def test_parent_invitation_to_first_child(self):
         user = self.invite(role="guardian")
+        self.assertEqual(user.profile.family_teacher, self.teacher)
         lead = Lead.objects.get(linked_user=user)
         self.assertEqual(lead.contact_email, user.email)
         self.assertEqual(lead.contact_name, "New")
@@ -82,6 +91,7 @@ class UserOnboardingTests(TestCase):
         self.client.post(setup.url, {"new_password1": password, "new_password2": password})
         dashboard = self.client.post(reverse("login"), {"username": user.email, "password": password}, follow=True)
         self.assertContains(dashboard, "Add your first child")
+        self.assertContains(dashboard, "Your family’s teacher is Taylor.")
         form_page = self.client.get(reverse("portal_add_child"))
         data = {
             "first_name": "Avery", "relationship_type": "parent", "data_processing": "on",
@@ -89,12 +99,61 @@ class UserOnboardingTests(TestCase):
             "submission_id": form_page.context["form"]["submission_id"].value(),
         }
         dashboard = self.client.post(reverse("portal_add_child"), data, follow=True)
+        self.assertEqual(ChildProfile.objects.get().learning_profile["assigned_teacher_id"], self.teacher.pk)
         self.assertContains(dashboard, "Avery")
         self.assertContains(dashboard, "Reader Profile")
         profile_url = dashboard.redirect_chain[-1][0]
         saved = self.client.post(profile_url, {"first_name": "Avery", "favorites": "Hello Kitty"}, follow=True)
         self.assertContains(saved, "Add another child")
         self.assertEqual(Lead.objects.filter(linked_user=user).count(), 1)
+
+    def test_parent_invitation_requires_an_eligible_teacher_before_delivery(self):
+        data = {"first_name": "New", "email": "new@example.com", "role": "guardian"}
+        self.teacher.is_active = False
+        self.teacher.save()
+        for value in ("", self.admin.pk, self.teacher.pk):
+            with self.subTest(value=value):
+                page = self.client.post(reverse("manage_users"), {**data, "family_teacher": value})
+                self.assertEqual(page.status_code, 400)
+                self.assertIn("family_teacher", page.context["form"].errors)
+        self.assertFalse(CustomUser.objects.filter(email=data["email"]).exists())
+        self.assertEqual(len(mail.outbox), 0)
+        self.admin.profile.teaches_families = True
+        self.admin.profile.save()
+        page = self.client.post(reverse("manage_users"), {**data, "family_teacher": self.admin.pk})
+        self.assertEqual(page.status_code, 302)
+        self.assertEqual(CustomUser.objects.get(email=data["email"]).profile.family_teacher, self.admin)
+
+    def test_school_admin_can_only_choose_a_current_teacher_from_their_school(self):
+        school = School(schema_name="invite_scope", name="Invite School", slug="invite-school")
+        school.auto_create_schema = False
+        school.save()
+        manager = CustomUser.objects.create_user(username="school-admin", email="manager@example.com", role="school_admin")
+        SchoolMembership.objects.create(user=manager, school=school, role="admin")
+        membership = SchoolMembership.objects.create(user=self.teacher, school=school, role="teacher", is_deleted=True)
+        self.client.force_login(manager)
+        data = {"first_name": "Parent", "email": "schoolparent@example.com", "role": "guardian", "family_teacher": self.teacher.pk}
+        self.assertEqual(self.client.post(reverse("manage_users"), data).status_code, 400)
+        membership.is_deleted = False
+        membership.save()
+        self.assertEqual(self.client.post(reverse("manage_users"), data).status_code, 302)
+
+    def test_django_admin_parent_creation_requires_and_saves_teacher(self):
+        self.admin.is_staff = self.admin.is_superuser = True
+        self.admin.save()
+        path = reverse("admin:users_customuser_add")
+        form = self.client.get(path)
+        self.assertContains(form, 'name="family_teacher"')
+        data = {
+            "email": "admin-parent@example.com", "username": "admin-parent", "role": "guardian",
+            "usable_password": "false", "profile-TOTAL_FORMS": 0, "profile-INITIAL_FORMS": 0,
+        }
+        missing = self.client.post(path, data)
+        self.assertContains(missing, "Choose a teacher for this parent.")
+        self.assertFalse(CustomUser.objects.filter(email=data["email"]).exists())
+        saved = self.client.post(path, {**data, "family_teacher": self.teacher.pk})
+        self.assertEqual(saved.status_code, 302)
+        self.assertEqual(CustomUser.objects.get(email=data["email"]).profile.family_teacher, self.teacher)
 
     def test_parent_invitation_links_existing_contact_and_keeps_history(self):
         lead = Lead.objects.create(
@@ -405,6 +464,7 @@ class UserOnboardingTests(TestCase):
                 "first_name": "Parent",
                 "email": "parent@example.com",
                 "role": "guardian",
+                "family_teacher": self.teacher.pk,
                 "password": "Ignored-Password-123!",
             },
         )

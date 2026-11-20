@@ -34,6 +34,7 @@
 
     {% if is_admin %}
       {% include "portal/_admin_workspace.html" %}
+      {% if board_rows %}{% include "portal/_family_board_links.html" %}{% endif %}
     {% else %}
     <section class="grid min-w-0 gap-6 lg:grid-cols-[.85fr_1.15fr] lg:items-start">
       <aside id="portal-overview" class="min-w-0 scroll-mt-40 rounded-[2rem] bg-white/90 p-6 shadow-2xl shadow-deepTeal/10 ring-1 ring-deepTeal/10 lg:sticky lg:top-28">
@@ -56,6 +57,7 @@
         </p>
         {% if is_parent %}
           <section class="mt-5" aria-label="Your family">
+            {% if family_teacher %}<p class="font-black text-deepTeal">Your family’s teacher is {{ family_teacher }}.</p>{% endif %}
             {% if children %}
               <h2 class="text-xl font-black">Your children</h2>
               <p class="mt-2 text-sm leading-6 text-ink/70">{% if request.user.can_add_child %}Choose a reader to update their school, photo and interests or view their signed forms.{% else %}These are the readers linked to your account.{% endif %}</p>
