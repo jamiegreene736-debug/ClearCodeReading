@@ -34,6 +34,7 @@ from apps.crm.models import (
     NewsletterCampaign,
     NewsletterDelivery,
     NewsletterSubscription,
+    WebsiteReceipt,
 )
 from apps.crm.newsletters import (
     NewsletterSendError,
@@ -1000,6 +1001,10 @@ def _cancel_message(
             ):
                 message.status = Message.Status.CANCELLED
                 message.save(update_fields=["status", "updated_at"])
+                # The retention purge can delete this message and clear the receipt's link.
+                WebsiteReceipt.objects.filter(customer_message=message).update(
+                    customer_cancelled=True, updated_at=timezone.now()
+                )
                 AuditLog.objects.create(
                     actor=request.user,
                     action="crm.email.cancelled",

@@ -119,6 +119,10 @@ class WebsiteEmailTests(TestCase):
         receipt.refresh_from_db()
         self.assertEqual(receipt.customer_message.status, Message.Status.CANCELLED)
         self.assertEqual(receipt.team_message.status, Message.Status.QUEUED)
+        receipt.customer_message.delete()
+        enqueue_pending_receipts()
+        receipt.refresh_from_db()
+        self.assertIsNone(receipt.customer_message_id)
 
     def test_each_form_has_two_independent_branded_messages(self):
         for kind in FormSubmission.FormType.values:
