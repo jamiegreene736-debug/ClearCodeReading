@@ -1,5 +1,6 @@
 <section id="family-boards" class="scroll-mt-40 rounded-[2rem] bg-white p-6 shadow-xl ring-1 ring-deepTeal/10">
   <h2 class="text-3xl font-black">{% if is_parent %}Notes from the teacher{% else %}Family notes{% endif %}</h2>
+  <p class="mt-2 text-sm leading-6 text-ink/70">{% if is_parent %}Open your reader’s board to ask a question, share a reading win or reply to the teacher.{% else %}Open a reader’s board to send their family a note or share a practice link.{% endif %} The unread count shows how many new notes are waiting.</p>
   {% for row in board_rows %}
     <article class="mt-4 rounded-3xl bg-linen p-5">
       <div class="flex flex-wrap items-center justify-between gap-2">

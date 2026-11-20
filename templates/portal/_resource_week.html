@@ -13,5 +13,6 @@
 {% endif %}
 {% if week.library %}
   <h3 class="mt-5 text-xl font-black">From the family library</h3>
+  <p class="mt-2 text-sm leading-6 text-ink/70">Open a guide for more ideas to use during reading time.</p>
   <ul class="mt-2 grid gap-2">{% for resource in week.library %}<li><a class="font-bold text-deepTeal underline" href="{{ resource.resource.get_absolute_url }}">{{ resource.title }}</a></li>{% endfor %}</ul>
 {% endif %}

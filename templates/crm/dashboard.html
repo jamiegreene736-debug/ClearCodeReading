@@ -111,6 +111,7 @@
     <div class="queue-stack">
       <section class="card section-card" id="routing">
         <div class="section-head"><h2>Needs routing</h2><a href="{% url 'crm_triage_list' %}">Open queue</a></div>
+        <p class="subtle">Choose the right pipeline for each contact waiting for a decision.</p>
         <div class="action-list">
           {% for person in routing_people %}
             <a class="action-row" href="{% url 'crm_triage_list' %}?lead={{ person.lead.pk }}">
@@ -126,6 +127,7 @@
 
       <section class="card section-card" id="reviews">
         <div class="section-head"><h2>Inventories to review</h2><a href="{% url 'inventory_list' %}?queue=review">Open queue</a></div>
+        <p class="subtle">Open a completed inventory to read the results and decide how to follow up.</p>
         <div class="action-list">
           {% for person in assessment_review %}
             <a class="action-row" href="{% url 'inventory_detail' person.invitation.pk %}">
@@ -142,6 +144,7 @@
       {% if hiring_counts %}
       <section class="card section-card" id="intake">
         <div class="section-head"><h2>Teacher intake</h2><a href="{% url 'crm_hiring' %}?owner=all&amp;stage=application">Open queue</a></div>
+        <p class="subtle">Review new teacher applications and move each candidate to the next hiring step.</p>
         <p class="subtle" style="margin-top:-6px">
           {{ hiring_counts.pending_intake }} waiting for a first review.
           {% if hiring_counts.needs_attention %}<a href="{% url 'crm_hiring' %}?owner=all&amp;stage=active&amp;attention=1">{{ hiring_counts.needs_attention }} need attention</a>.{% endif %}
@@ -160,6 +163,7 @@
 
       <section class="card section-card quiet-card" id="waiting">
         <div class="section-head"><h2>Waiting to finish an inventory</h2><a href="{% url 'inventory_list' %}">Open queue</a></div>
+        <p class="subtle">Check which families still have an open reading inventory.</p>
         {% if assessment_email_attention %}
           <p class="subtle" style="margin-top:-6px"><a href="{% url 'inventory_list' %}?queue=attention">{% if assessment_email_attention == 1 %}1 inventory email needs attention{% else %}{{ assessment_email_attention }} inventory emails need attention{% endif %}</a></p>
         {% endif %}
@@ -183,6 +187,7 @@
           <a href="{% url 'crm_contact_list' %}">See all</a>
         </span>
       </div>
+      <p class="subtle">Open a contact to see their history, owner and next follow-up.</p>
       <table class="dashboard-table" aria-label="Recent contacts">
         <thead><tr><th scope="col">Contact</th><th scope="col">Lead status</th><th scope="col">Priority status</th></tr></thead>
         <tbody>
@@ -200,6 +205,7 @@
 
   <section style="margin-top:18px">
     <div class="section-head"><h2>Open deals</h2><span class="section-links"><a href="{% url 'crm_deal_list' %}?view=all">All deals</a><a href="{% url 'crm_deal_list' %}">Pipeline board</a></span></div>
+        <p class="subtle">See how active deals are distributed across each pipeline.</p>
     <div class="pipeline-grid">
       {% for pipeline in pipeline_summaries %}
         <a class="card pipeline-card" href="{% url 'crm_deal_list' %}?pipeline={{ pipeline.value }}">

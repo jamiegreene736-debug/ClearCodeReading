@@ -58,6 +58,7 @@
           <section class="mt-5" aria-label="Your family">
             {% if children %}
               <h2 class="text-xl font-black">Your children</h2>
+              <p class="mt-2 text-sm leading-6 text-ink/70">{% if request.user.can_add_child %}Choose a reader to update their school, photo and interests or view their signed forms.{% else %}These are the readers linked to your account.{% endif %}</p>
               <ul class="mt-2">{% for child in children %}<li>{% if request.user.can_add_child %}<a class="font-black text-deepTeal underline" href="{% url 'portal_reader_profile' child.pk %}">{{ child }} · Reader Profile</a>{% else %}{{ child }}{% endif %}{% if child.grade_level %} · {{ child.get_grade_level_display }}{% endif %}</li>{% endfor %}</ul>
             {% endif %}
             {% if request.user.can_add_child %}
@@ -92,7 +93,7 @@
             <p class="mt-2 text-4xl font-black">{% if average_reading_age %}{{ average_reading_age|floatformat:1 }}{% else %}--{% endif %}</p>
           </div>
           <div class="rounded-3xl bg-white p-5 ring-1 ring-ink/10">
-            <p class="text-sm font-black text-ink/65">KPI areas</p>
+            <p class="text-sm font-black text-ink/65">Reading skill areas</p>
             <p class="mt-2 text-4xl font-black">{{ kpi_count }}</p>
           </div>
         </div>
@@ -102,7 +103,7 @@
         <nav class="sticky top-[4.75rem] z-30 flex gap-2 overflow-x-auto rounded-2xl bg-white/95 p-2 shadow-lg ring-1 ring-ink/10 backdrop-blur" aria-label="Workspace sections">
           {% if is_parent %}<a class="focus-ring shrink-0 rounded-xl bg-linen px-4 py-3 text-sm font-black text-deepTeal" href="#weekly-resources">Weekly resources</a>{% endif %}
           {% if is_parent or is_teacher %}<a class="focus-ring shrink-0 rounded-xl bg-linen px-4 py-3 text-sm font-black text-deepTeal" href="#family-boards">Family board</a>{% endif %}
-          {% if is_parent and children or is_child %}<a class="focus-ring min-h-11 shrink-0 rounded-xl bg-linen px-4 py-3 text-sm font-black text-deepTeal" href="#progress-overview">Progress</a>{% endif %}
+          {% if is_parent and children %}<a class="focus-ring min-h-11 shrink-0 rounded-xl bg-linen px-4 py-3 text-sm font-black text-deepTeal" href="#progress-overview">Progress</a>{% endif %}
           {% if is_teacher or is_admin %}<a class="focus-ring min-h-11 shrink-0 rounded-xl bg-linen px-4 py-3 text-sm font-black text-deepTeal" href="{% url 'portal_readers' %}">Readers</a>{% endif %}
           {% if is_teacher or is_admin %}<a class="focus-ring min-h-11 shrink-0 rounded-xl bg-linen px-4 py-3 text-sm font-black text-deepTeal" href="{% url 'portal_sessions' %}">Sessions</a>{% endif %}
           {% if is_teacher or is_admin %}<a class="focus-ring min-h-11 shrink-0 rounded-xl bg-linen px-4 py-3 text-sm font-black text-deepTeal" href="{% url 'portal_placements' %}">Placement</a>{% endif %}
@@ -117,7 +118,8 @@
         {% if is_teacher %}{% include "portal/_family_board_links.html" %}{% endif %}
         <section id="program-workspaces" class="rounded-[2rem] bg-white p-6 shadow-xl ring-1 ring-deepTeal/10">
           <p class="text-sm font-black uppercase tracking-[0.18em] text-deepTeal">Open a workspace</p>
-          <h2 class="mt-2 text-3xl font-black">Each job has its own page</h2>
+          <h2 class="mt-2 text-3xl font-black">Workspaces</h2>
+          <p class="mt-2 text-sm leading-6 text-ink/70">{% if is_child %}Open Reading results to see your reading activity.{% else %}Choose a workspace to review a reader’s sessions, placement or results.{% endif %}</p>
           <div class="mt-5 grid gap-3 sm:grid-cols-2">
             {% if is_teacher or is_admin %}
               <a class="rounded-3xl bg-seafoam p-5" href="{% url 'portal_readers' %}"><p class="text-sm font-black text-deepTeal">Readers</p><p class="mt-2 text-4xl font-black">{{ child_count }}</p></a>
@@ -139,12 +141,14 @@
               <div class="mt-2 flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
                 <div>
                   <h2 class="text-3xl font-black">{{ dashboard.child.first_name }}’s progress report</h2>
+                  <p class="mt-2 text-sm leading-6 text-ink/70">See what your reader practiced this week and how their reading has changed across sessions.</p>
                   <p class="mt-1 text-sm text-ink/60">Week of {{ dashboard.week_start|date:"F j" }} · {{ dashboard.weekly_sessions }} completed session{{ dashboard.weekly_sessions|pluralize }}{% if dashboard.weekly_latest_accuracy != None %} · Latest weekly accuracy {{ dashboard.weekly_latest_accuracy|floatformat:0 }}%{% endif %}</p>
                 </div>
                 <span class="rounded-full bg-seafoam px-4 py-2 text-sm font-black text-deepTeal">{{ dashboard.summary.mastered_skills }} skills mastered</span>
               </div>
 
               <h3 class="mt-5 font-black">Progress to date</h3>
+              <p class="mt-2 text-sm leading-6 text-ink/70">These totals include all completed sessions recorded for your reader.</p>
               <div class="mt-2 grid gap-4 sm:grid-cols-3">
                 <article class="rounded-3xl bg-seafoam p-5"><p class="text-xs font-black uppercase text-deepTeal">Latest accuracy</p><p class="mt-2 text-4xl font-black">{% if dashboard.summary.latest_accuracy != None %}{{ dashboard.summary.latest_accuracy|floatformat:0 }}%{% else %}--{% endif %}</p></article>
                 <article class="rounded-3xl bg-linen p-5"><p class="text-xs font-black uppercase text-ink/60">Tracked skills</p><p class="mt-2 text-4xl font-black">{{ dashboard.summary.tracked_skills }}</p></article>
@@ -154,6 +158,7 @@
               <div class="mt-6 grid gap-5 lg:grid-cols-2">
                 <article class="rounded-3xl border border-ink/10 p-5">
                   <h3 class="text-xl font-black">Skill mastery</h3>
+                  <p class="mt-2 text-sm leading-6 text-ink/70">See which skills your reader is practicing and which they have mastered.</p>
                   <div class="mt-4 space-y-3">
                     {% for skill in dashboard.skills %}
                       <div class="flex items-center justify-between gap-3 rounded-2xl bg-linen px-4 py-3">
@@ -165,11 +170,12 @@
                 </article>
                 <article class="rounded-3xl border border-ink/10 p-5">
                   <h3 class="text-xl font-black">Progress over time</h3>
+                  <p class="mt-2 text-sm leading-6 text-ink/70">Each bar shows reading accuracy for one session. Read from left to right to see how it changes.</p>
                   <div class="mt-5 flex h-40 items-end gap-2" role="img" aria-label="Session accuracy trend">
                     {% for point in dashboard.progress_over_time %}
                       <div class="flex min-w-0 flex-1 flex-col items-center justify-end gap-2">
-                        <span class="text-[10px] font-black">{{ point.accuracy|default:"--" }}</span>
-                        <div class="w-full rounded-t-xl bg-deepTeal" style="height: {% if point.accuracy %}{{ point.accuracy }}{% else %}4{% endif %}%"></div>
+                        <span class="text-[10px] font-black">{{ point.accuracy|default_if_none:"--" }}</span>
+                        <div class="w-full rounded-t-xl bg-deepTeal" style="height: {% if point.accuracy != None %}{{ point.accuracy }}{% else %}4{% endif %}%"></div>
                         <span class="text-[9px] text-ink/50">{{ point.date|date:"M j" }}</span>
                       </div>
                     {% empty %}<p class="self-center text-sm text-ink/60">A trend appears after completed sessions.</p>{% endfor %}
@@ -182,9 +188,11 @@
                 <article class="rounded-3xl bg-linen p-5"><p class="text-xs font-black uppercase text-mediumTeal">Practice at home</p><p class="mt-3 leading-7">{{ dashboard.home_practice|default:"A practice suggestion will appear after the next session." }}</p></article>
               </div>
               <div class="mt-5 grid gap-4 md:grid-cols-2">
-                <article class="rounded-3xl border border-ink/10 p-5"><h3 class="font-black">Fluency (WCPM)</h3><div class="mt-3 flex flex-wrap gap-2">{% for point in dashboard.fluency_trend %}<span class="rounded-full bg-seafoam px-3 py-2 text-sm font-black">{{ point.date|date:"M j" }} · {{ point.wcpm }}</span>{% empty %}<span class="text-sm text-ink/60">Shown when WCPM is captured.</span>{% endfor %}</div></article>
+                <article class="rounded-3xl border border-ink/10 p-5"><h3 class="font-black">Fluency (WCPM)</h3>
+                <p class="mt-2 text-sm leading-6 text-ink/70">See how many words your reader read correctly in one minute on each recorded date.</p><div class="mt-3 flex flex-wrap gap-2">{% for point in dashboard.fluency_trend %}<span class="rounded-full bg-seafoam px-3 py-2 text-sm font-black">{{ point.date|date:"M j" }} · {{ point.wcpm }}</span>{% empty %}<span class="text-sm text-ink/60">Shown when WCPM is captured.</span>{% endfor %}</div></article>
                 <article class="rounded-3xl border border-ink/10 p-5">
                   <h3 class="font-black">Next milestone</h3>
+                  <p class="mt-2 text-sm leading-6 text-ink/70">See the next reading goal and any estimate of when your reader may reach it.</p>
                   <p class="mt-2 text-sm leading-6">
                     {% if dashboard.milestone.plain_language_timeline %}
                       {{ dashboard.milestone.plain_language_timeline }}
@@ -212,6 +220,7 @@
               <div>
                 <p class="text-sm font-black uppercase tracking-[0.18em] text-deepTeal">Assigned students</p>
                 <h2 class="mt-2 text-3xl font-black">Assign lessons from your templates</h2>
+                <p class="mt-2 text-sm leading-6 text-ink/70">Choose a reader and a lesson, then add any instructions or due date for the family.</p>
               </div>
               <p class="rounded-full bg-seafoam px-4 py-2 text-sm font-black text-deepTeal">{{ child_count }} readers</p>
             </div>
@@ -277,6 +286,7 @@
               <div>
                 <p class="text-sm font-black uppercase tracking-[0.18em] text-mediumTeal">Human review queue</p>
                 <h2 class="mt-2 text-3xl font-black">Inventories needing evaluator notes</h2>
+                <p class="mt-2 text-sm leading-6 text-ink/70">Review the completed reading inventories that are waiting for a written interpretation.</p>
               </div>
               <p class="rounded-full bg-sand px-4 py-2 text-sm font-black text-mediumTeal">{{ pending_review_count }} pending</p>
             </div>
@@ -303,7 +313,8 @@
         {% if is_parent or is_child %}
           <section id="teacher-plan" class="scroll-mt-36 rounded-[2rem] bg-white p-6 shadow-xl shadow-ink/8 ring-1 ring-ink/10">
             <p class="text-sm font-black uppercase tracking-[0.18em] text-deepTeal">Assigned lessons</p>
-            <h2 class="mt-2 text-3xl font-black">Your child's teacher plan</h2>
+            <h2 class="mt-2 text-3xl font-black">{% if is_child %}Your teacher’s plan{% else %}Your child's teacher plan{% endif %}</h2>
+            <p class="mt-2 text-sm leading-6 text-ink/70">Find the goal, practice time and due date for each lesson your teacher has assigned.</p>
             <div class="mt-5 grid gap-3">
               {% for assignment in child_lesson_assignments %}
                 <article class="rounded-3xl bg-linen p-5">
