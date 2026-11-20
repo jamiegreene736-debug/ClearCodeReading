@@ -658,6 +658,7 @@ class WebsiteReceipt(TimestampedModel):
         "crm_email.Message", null=True, blank=True, on_delete=models.SET_NULL,
         related_name="website_customer_receipt",
     )
+    customer_cancelled = models.BooleanField(default=False)
     team_message = models.OneToOneField(
         "crm_email.Message", null=True, blank=True, on_delete=models.SET_NULL,
         related_name="website_team_receipt",

@@ -226,7 +226,7 @@ def enqueue_receipt(pk: int) -> None:
             for team, field in ((False, "customer_message"), (True, "team_message")):
                 if getattr(receipt, field + "_id"):
                     continue
-                if not team and kind in TEAM_ONLY_KINDS:
+                if not team and (receipt.customer_cancelled or kind in TEAM_ONLY_KINDS):
                     continue
                 context = receipt_context(submission, team=team)
                 email = str(submission.submitted_data["email"]).strip().lower()
@@ -266,7 +266,7 @@ def enqueue_pending_receipts() -> None:
         WebsiteReceipt.objects.filter(
             Q(team_message__isnull=True)
             | (
-                Q(customer_message__isnull=True)
+                Q(customer_message__isnull=True, customer_cancelled=False)
                 & ~Q(submission__form_type__in=TEAM_ONLY_KINDS)
             )
         )

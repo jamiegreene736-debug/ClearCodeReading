@@ -1,5 +1,5 @@
 {% extends "crm/base.html" %}
-{% load crm_display %}
+{% load crm_display tz %}
 {% block title %}{{ lead.contact_name }}{% endblock %}
 {% block extra_style %}
   .delete-dialog { width:min(480px, calc(100vw - 40px)); padding:24px; border:1px solid var(--line); border-radius:12px; color:var(--navy); }
@@ -247,6 +247,7 @@
         <a href="#assessments">Inventories <span class="section-count">{{ assessment_count }}</span></a>
         <a href="#deals">Deals <span class="section-count">{{ deals|length }}</span></a>
         <a href="#tasks">Tasks <span class="section-count">{{ open_tasks|length }}</span></a>
+        <a href="#automated-emails">Automated emails <span class="section-count">{{ pending_emails|length }}</span></a>
         <a href="#activity">Activity <span class="section-count">{{ timeline|length }}</span></a>
       </nav>
 
@@ -337,6 +338,26 @@
           <div class="field"><label for="task-owner">Assigned to</label><select id="task-owner" name="assigned_to">{% for owner in owners %}<option value="{{ owner.pk }}" {% if owner.pk == request.user.pk %}selected{% endif %}>{{ owner.get_full_name|default:owner.email }}</option>{% endfor %}</select></div>
           <div><button class="btn btn-primary" type="submit">Create task</button></div>
         </form>
+      </section>
+
+      <section class="card record-card record-section" id="automated-emails" style="margin-top:18px">
+        <div class="section-head"><h2>Automated emails</h2></div>
+        {% for email in pending_emails %}
+          <div class="task-row">
+            <div>
+              <strong>{{ email.subject }}</strong>
+              <div class="event-meta">
+                {% if email.scheduled_at %}Scheduled for <time datetime="{{ email.scheduled_at|date:'c' }}">{{ email.scheduled_at|timezone:"America/New_York"|date:"M j, Y, g:i A T" }}</time>{% endif %}
+                {% if email.retry_at %}{% if email.scheduled_at %} · {% endif %}Retry after <time datetime="{{ email.retry_at|date:'c' }}">{{ email.retry_at|timezone:"America/New_York"|date:"M j, Y, g:i A T" }}</time>
+                {% elif email.preparation_error %}Waiting for setup · {{ email.preparation_error }}{% elif not email.scheduled_at %}Queued for the next send{% endif %}
+              </div>
+            </div>
+            <form method="post" action="{{ email.cancel_url }}">
+              {% csrf_token %}<input type="hidden" name="return_to" value="contact_profile">
+              <button class="btn btn-small" type="submit" aria-label="Cancel email: {{ email.subject }}">Cancel</button>
+            </form>
+          </div>
+        {% empty %}<p class="subtle">No upcoming emails to manage for this contact.</p>{% endfor %}
       </section>
 
       <section class="record-section" id="activity" style="margin-top:18px">

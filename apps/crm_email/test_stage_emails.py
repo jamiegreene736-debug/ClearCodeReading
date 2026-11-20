@@ -75,6 +75,21 @@ class StageEmailTests(TestCase):
             self.assertEqual(message.status, "queued")
             self.assertTrue(stage_send_allowed(message))
 
+    def test_cancel_stage_from_contact_before_outbox_preparation(self) -> None:
+        deal = self.make_deal()
+        delivery = StageEmailDelivery.objects.get(deal=deal)
+        profile = reverse("crm_contact_detail", args=[deal.lead_id])
+        cancel = reverse(
+            "crm_email_cancel_waiting", args=[deal.lead_id, "stage", delivery.pk]
+        )
+        self.assertContains(self.client.get(profile), cancel)
+        self.client.post(cancel)
+        enqueue_stage_emails()
+        delivery.refresh_from_db()
+        self.assertTrue(delivery.cancelled)
+        self.assertIsNone(delivery.message_id)
+        self.assertNotContains(self.client.get(profile), cancel)
+
     def test_customer_deals_never_trigger(self) -> None:
         lead = Lead.objects.create(
             contact_name="Customer",

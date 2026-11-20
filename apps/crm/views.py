@@ -58,6 +58,7 @@ from apps.crm.assessment_queue import assessment_summary, review_preview, waitin
 from apps.crm.routing import pending_routing_people_count, pending_routing_queryset, routing_queue
 from apps.crm.serializers import CompanySerializer, LeadSerializer, OpportunitySerializer
 from apps.crm_email.contact_templates import contact_templates
+from apps.crm_email.contact_schedule import pending_contact_emails
 from apps.crm.services import (
     LeadIntake,
     TERMINAL_DEAL_STAGES,
@@ -1781,6 +1782,7 @@ class CrmContactDetailView(CrmAccessMixin, TemplateView):
                 "list_return_url": safe_contact_list_url(self.request),
                 "newsletter_subscription": subscription_for_email(lead.contact_email),
                 "email_templates": contact_templates(self.request.user),
+                "pending_emails": pending_contact_emails(self.request.user, lead),
             }
         )
         return context

@@ -16,7 +16,7 @@ from django.core.exceptions import PermissionDenied, ValidationError
 from django.core.paginator import Paginator
 from django.core.validators import validate_email
 from django.db import connection, transaction
-from django.db.models import Q
+from django.db.models import Model, Q, QuerySet
 from django.http import Http404, HttpRequest, HttpResponse, JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse
@@ -34,6 +34,7 @@ from apps.crm.models import (
     NewsletterCampaign,
     NewsletterDelivery,
     NewsletterSubscription,
+    WebsiteReceipt,
 )
 from apps.crm.newsletters import (
     NewsletterSendError,
@@ -48,6 +49,12 @@ from apps.crm.newsletters import (
 )
 from apps.crm_email import automated
 from apps.crm_email.automated import text_to_html
+from apps.crm_email.contact_schedule import (
+    contact_scheduled_emails,
+    waiting_inventory,
+    waiting_receipts,
+    waiting_stage,
+)
 from apps.crm_email.contact_templates import (
     TEMPLATE_PLACEHOLDERS,
     apply_pipeline_template,
@@ -905,30 +912,111 @@ def compose(request: EmailRequest, pk: int) -> HttpResponse:
 
 @crm_view
 @require_POST
+def cancel_waiting(
+    request: EmailRequest, pk: int, kind: str, delivery_id: int
+) -> HttpResponse:
+    lead = lead_for(pk)
+    pending: QuerySet[Model]
+    changes: dict[str, object]
+    if kind == "stage":
+        pending = waiting_stage(request.user, lead)
+        relation, changes = "stage_delivery", {"cancelled": True}
+    elif kind == "receipt":
+        pending = waiting_receipts(request.user, lead)
+        relation, changes = (
+            "website_customer_receipt",
+            {"customer_cancelled": True, "updated_at": timezone.now()},
+        )
+    elif kind == "inventory":
+        pending = waiting_inventory(request.user, lead)
+        relation, changes = "inventory_delivery", {"status": "cancelled"}
+    else:
+        raise Http404
+    # The worker takes this same row lock before creating the outbox message.
+    with transaction.atomic():
+        row = (
+            pending.filter(pk=delivery_id)
+            .select_for_update(of=("self",))
+            .only("pk")
+            .first()
+        )
+        if row:
+            pending.filter(pk=delivery_id).update(**changes)
+            AuditLog.objects.create(
+                actor=request.user,
+                action="crm.email.cancelled",
+                entity_type=type(row).__name__,
+                entity_id=str(delivery_id),
+            )
+            messages.success(request, "Email cancelled.")
+    if row is None:
+        # The worker can prepare an outbox message between page load and click.
+        prepared = (
+            contact_scheduled_emails(request.user, lead)
+            .filter(**{relation: delivery_id})
+            .first()
+        )
+        if prepared:
+            return _cancel_message(request, lead, prepared.pk, from_profile=True)
+        messages.info(request, "This email is no longer available to cancel.")
+    return redirect(reverse("crm_contact_detail", args=[pk]) + "#automated-emails")
+
+
+@crm_view
+@require_POST
 def cancel_message(
     request: EmailRequest, pk: int, message_id: uuid.UUID
 ) -> HttpResponse:
-    lead = lead_for(pk)
-    message = get_object_or_404(
-        Message, pk=message_id, lead=lead, mailbox__user=request.user
+    return _cancel_message(
+        request,
+        lead_for(pk),
+        message_id,
+        from_profile=request.POST.get("return_to") == "contact_profile",
     )
-    with mailbox_lock(message.mailbox_id):
-        cancelled = Message.objects.filter(
-            pk=message.pk, status__in=[Message.Status.DRAFT, Message.Status.QUEUED]
-        ).update(status=Message.Status.CANCELLED)
-    if cancelled:
-        AuditLog.objects.create(
-            actor=request.user,
-            action="crm.email.cancelled",
-            entity_type="Message",
-            entity_id=str(message.pk),
-        )
-        messages.success(request, "Email cancelled.")
-    else:
-        messages.error(
-            request, "This email has already started sending and cannot be cancelled."
-        )
-    return redirect("crm_contact_email", pk=pk)
+
+
+def _cancel_message(
+    request: EmailRequest, lead: Lead, message_id: uuid.UUID, *, from_profile: bool
+) -> HttpResponse:
+    allowed = (
+        contact_scheduled_emails(request.user, lead)
+        if from_profile
+        else Message.objects.filter(lead=lead, mailbox__user=request.user)
+    )
+    message = get_object_or_404(allowed, pk=message_id)
+    destination = (
+        reverse("crm_contact_detail", args=[lead.pk]) + "#automated-emails"
+        if from_profile
+        else reverse("crm_contact_email", args=[lead.pk])
+    )
+    try:
+        with mailbox_lock(message.mailbox_id), transaction.atomic():
+            message = get_object_or_404(
+                allowed.select_for_update(of=("self",)), pk=message_id
+            )
+            if message.status == Message.Status.CANCELLED:
+                messages.info(request, "This email was already cancelled.")
+            elif message.status == Message.Status.QUEUED or (
+                not from_profile and message.status == Message.Status.DRAFT
+            ):
+                message.status = Message.Status.CANCELLED
+                message.save(update_fields=["status", "updated_at"])
+                # The retention purge can delete this message and clear the receipt's link.
+                WebsiteReceipt.objects.filter(customer_message=message).update(
+                    customer_cancelled=True, updated_at=timezone.now()
+                )
+                AuditLog.objects.create(
+                    actor=request.user,
+                    action="crm.email.cancelled",
+                    entity_type="Message",
+                    entity_id=str(message.pk),
+                )
+                messages.success(request, "Email cancelled.")
+            else:
+                messages.error(request, "This email is no longer available to cancel.")
+    except EmailError as exc:
+        messages.error(request, str(exc))
+    return redirect(destination)
 
 
 @crm_view

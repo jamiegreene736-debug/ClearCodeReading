@@ -19,6 +19,16 @@ Current CRM contacts are shared among active CRM-authorized users. Linked email 
 that same access rule. Drafts, outbox, BCC and personal templates are private to their owner.
 Built-in referral templates are shared with authorized CRM users. No user can
 send through another user's mailbox. Email endpoints operate only on the public schema.
+
+The **Automated emails** section on a contact profile lists upcoming survey and
+pipeline introductions, customer form confirmations, parent inventory emails and
+the viewer’s scheduled messages. It shows scheduled times in Eastern time and
+identifies sends waiting for the next worker pass or a retry. CRM administrators
+can manage contact-facing automations across mailboxes. Other CRM users can manage
+emails from their own mailbox. Each cancellation applies to one delivery, including
+a delivery awaiting preparation. The customer and team copies of a website receipt
+are independent.
+
 Connection grants read access to the mailbox but imports only linked threads or explicitly
 selected historical threads. Matching a contact email alone never automatically publishes a
 thread. Google identity must match the signed-in CRM email and verified Workspace hosted domain.

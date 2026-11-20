@@ -1,7 +1,8 @@
 import base64
 import json
 import uuid
-from datetime import timedelta
+from datetime import datetime, timedelta
+from datetime import timezone as dt_timezone
 from typing import Any
 from unittest.mock import MagicMock, patch
 from urllib.parse import parse_qs, urlparse
@@ -30,7 +31,7 @@ from apps.crm_email.security import EmailError, clean_html, decrypt, encrypt
 from apps.crm_email.services import build_mime, save_message
 from apps.crm_email.sync import store_thread, sync_history, synchronize
 from apps.crm_email.worker import run_pass, send
-from apps.users.models import CustomUser
+from apps.users.models import AuditLog, CustomUser
 
 KEY = Fernet.generate_key().decode()
 CONFIG = {
@@ -389,6 +390,91 @@ class EmailTests(TestCase):
         self.assertEqual(response.status_code, 302)
         message.refresh_from_db()
         self.assertEqual(message.status, Message.Status.CANCELLED)
+
+    @patch("apps.crm_email.worker.Gmail")
+    def test_profile_schedule_time_cancellation_and_worker(
+        self, provider: MagicMock
+    ) -> None:
+        when = datetime(2035, 1, 12, 17, 30, tzinfo=dt_timezone.utc)
+        message = self.draft(
+            subject="Scheduled introduction", scheduled_at=when.isoformat()
+        )
+        another = self.draft(
+            subject="Later email", scheduled_at=(when + timedelta(days=1)).isoformat()
+        )
+        self.draft(subject="Private draft", action="draft")
+        profile = reverse("crm_contact_detail", args=[self.lead.pk])
+        page = self.client.get(profile)
+        self.assertContains(page, "Jan 12, 2035, 12:30 PM EST")
+        self.assertContains(page, message.subject)
+        self.assertNotContains(page, "Private draft")
+        self.assertLess(
+            page.content.index(message.subject.encode()),
+            page.content.index(another.subject.encode()),
+        )
+        cancel = reverse("crm_email_cancel", args=[self.lead.pk, message.pk])
+        self.assertEqual(self.client.get(cancel).status_code, 405)
+        for _ in range(2):
+            response = self.client.post(cancel, {"return_to": "contact_profile"})
+            self.assertRedirects(
+                response, profile + "#automated-emails", fetch_redirect_response=False
+            )
+        self.assertEqual(
+            AuditLog.objects.filter(
+                action="crm.email.cancelled", entity_id=str(message.pk)
+            ).count(),
+            1,
+        )
+        page = self.client.get(profile)
+        self.assertNotContains(page, message.subject)
+        self.assertContains(page, another.subject)
+        Message.objects.filter(pk=message.pk).update(
+            scheduled_at=timezone.now() - timedelta(minutes=1)
+        )
+        self.mailbox.last_sync_at = timezone.now()
+        self.mailbox.save()
+        self.assertEqual(run_pass(), 0)
+        provider.return_value.request.assert_not_called()
+
+    def test_profile_shows_retry_time_after_original_send_time(self) -> None:
+        when = datetime(2035, 7, 12, 17, 30, tzinfo=dt_timezone.utc)
+        message = self.draft(scheduled_at=when.isoformat())
+        Message.objects.filter(pk=message.pk).update(
+            next_attempt_at=when + timedelta(hours=1)
+        )
+        page = self.client.get(reverse("crm_contact_detail", args=[self.lead.pk]))
+        self.assertContains(page, "Jul 12, 2035, 1:30 PM EDT")
+        self.assertContains(page, "Retry after")
+        self.assertContains(page, "Jul 12, 2035, 2:30 PM EDT")
+
+    def test_profile_rejects_stale_or_unauthorized_cancellation(self) -> None:
+        when = timezone.now() + timedelta(hours=1)
+        message = self.draft(
+            scheduled_at=when.isoformat(), subject="Owner's private outbox"
+        )
+        other_lead = Lead.objects.create(contact_name="Different contact")
+        payload = {"return_to": "contact_profile"}
+        wrong_contact = reverse("crm_email_cancel", args=[other_lead.pk, message.pk])
+        cancel = reverse("crm_email_cancel", args=[self.lead.pk, message.pk])
+        self.assertEqual(self.client.post(wrong_contact, payload).status_code, 404)
+        self.other.role = CustomUser.Role.SUPER_ADMIN
+        self.other.save()
+        self.client.force_login(self.other)
+        page = self.client.get(reverse("crm_contact_detail", args=[self.lead.pk]))
+        self.assertContains(page, "No upcoming emails")
+        self.assertEqual(self.client.post(cancel, payload).status_code, 404)
+        self.client.force_login(self.parent)
+        self.assertEqual(self.client.post(cancel, payload).status_code, 403)
+        self.client.force_login(self.owner)
+        for status in (
+            Message.Status.SENDING,
+            Message.Status.SENT,
+            Message.Status.UNCERTAIN,
+        ):
+            Message.objects.filter(pk=message.pk).update(status=status)
+            self.client.post(cancel, payload)
+            message.refresh_from_db()
+            self.assertEqual(message.status, status)
 
     @patch("apps.crm_email.services.revoke", return_value=False)
     @patch("apps.crm_email.services.Gmail")
