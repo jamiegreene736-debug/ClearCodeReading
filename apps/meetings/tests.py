@@ -202,7 +202,7 @@ class MeetingTests(TestCase):
     ) -> None:
         self.setup_mailbox()
         meeting = self.book()
-        gmail.return_value.request.return_value = {"id": "accepted"}
+        gmail.return_value.request.return_value = {"id": "abcd1234"}
         process_due_notices()
         process_due_notices()
         gmail.return_value.request.assert_called_once()
@@ -232,14 +232,22 @@ class MeetingTests(TestCase):
         self.setup_mailbox()
         notice = self.book().notices.get(kind="invite")
         provider = gmail.return_value.request
-        provider.side_effect = [ProviderError(), {"messages": [{"id": "found"}]}]
+        provider.side_effect = [
+            ProviderError(),
+            {"messages": 42},
+            {"messages": [{"id": "beef1234"}]},
+        ]
+        process_due_notices()
+        notice.refresh_from_db()
+        self.assertEqual(notice.state, "checking")
+        MeetingNotice.objects.filter(pk=notice.pk).update(due_at=timezone.now())
         process_due_notices()
         notice.refresh_from_db()
         self.assertEqual(notice.state, "checking")
         MeetingNotice.objects.filter(pk=notice.pk).update(due_at=timezone.now())
         process_due_notices()
         self.assertEqual(
-            [call.args[0] for call in provider.call_args_list], ["POST", "GET"]
+            [call.args[0] for call in provider.call_args_list], ["POST", "GET", "GET"]
         )
         notice.refresh_from_db()
         self.assertEqual(notice.state, "sent")

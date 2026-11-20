@@ -16,6 +16,7 @@ from apps.crm_email.google import Gmail, ProviderError
 from apps.crm_email.models import BETHANY_EMAIL, Mailbox
 from apps.crm_email.security import EmailError, mailbox_lock
 from apps.crm_email.services import active_mailbox
+from apps.crm_email.sync import provider_id
 from apps.crm_email.worker import backoff
 from apps.meetings.access import teacher_families
 from apps.meetings.models import FamilyMeeting, MeetingNotice
@@ -60,8 +61,11 @@ def send_notice(client: Gmail, notice: MeetingNotice) -> None:
         "messages/send",
         json={"raw": base64.urlsafe_b64encode(message.as_bytes()).decode()},
     )
-    if not result.get("id"):
-        raise ProviderError()
+    try:
+        provider_id(result.get("id"))
+    except EmailError as exc:
+        # The POST may already have succeeded even when its receipt is malformed.
+        raise ProviderError() from exc
 
 
 def claim(notice_id: int) -> MeetingNotice | None:
@@ -126,10 +130,16 @@ def process_notice(client: Gmail, notice: MeetingNotice) -> None:
                     "maxResults": 2,
                 },
             )
+            matches = result.get("messages")
+            if (
+                not isinstance(matches, list)
+                or len(matches) != 1
+                or not isinstance(matches[0], dict)
+            ):
+                defer(notice, State.CHECKING)
+                return
+            provider_id(matches[0].get("id"))
         except EmailError:
-            defer(notice, State.CHECKING)
-            return
-        if len(result.get("messages") or []) != 1:
             defer(notice, State.CHECKING)
             return
     else:
