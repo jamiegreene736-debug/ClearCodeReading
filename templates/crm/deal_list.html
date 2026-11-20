@@ -13,6 +13,7 @@
   .pipeline-count { margin-left:6px; padding:1px 7px; border-radius:999px; background:rgba(33,51,67,.08); font-size:11px; }
   .pipeline-tab.active .pipeline-count { background:rgba(255,255,255,.22); }
   .board { display:grid; grid-auto-flow:column; grid-auto-columns:minmax(272px,1fr); gap:14px; overflow:auto; padding-bottom:16px; min-width:0; }
+  .board-enrollment { grid-auto-flow:row; grid-template-columns:repeat(auto-fit,minmax(min(100%,272px),1fr)); }
   .stage { min-height:280px; min-width:0; padding:0 0 12px; background:#f3f7f8; border:1px solid var(--line); border-top:4px solid #8aa0b0; border-radius:12px; }
   .stage-open { border-top-color:var(--teal); }
   .stage-won { border-top-color:#1f8a4c; background:#f4fbf6; }
@@ -20,8 +21,8 @@
   .stage-head { display:flex; align-items:flex-start; justify-content:space-between; gap:8px; padding:12px 12px 8px; position:sticky; top:0; background:inherit; border-radius:8px 8px 0 0; }
   .stage-head strong { display:block; color:var(--navy); }
   .stage-value { color:var(--muted); font-size:12px; font-weight:600; }
-  .stage-body { display:grid; gap:10px; padding:0 10px; }
-  .deal-card { padding:14px; margin:0; }
+  .stage-body { display:grid; grid-template-columns:minmax(0,1fr); gap:10px; padding:0 10px; }
+  .deal-card { min-width:0; padding:14px; margin:0; overflow-wrap:anywhere; }
   .deal-card h3 { margin:0; font-size:15px; line-height:1.35; }
   .deal-card-top { display:flex; align-items:flex-start; justify-content:space-between; gap:10px; }
   .deal-title { color:var(--navy); font-weight:800; text-decoration:none; overflow-wrap:anywhere; }
@@ -68,7 +69,7 @@
     .mobile-pipeline-picker label { grid-column:1/-1; }
     .stage-jumps { display:flex; gap:8px; overflow:auto; position:sticky; top:0; z-index:5; margin:0 0 12px; padding:8px 0; background:var(--bg); }
     .stage-jump { display:inline-flex; align-items:center; gap:6px; min-height:44px; padding:8px 12px; border:1px solid var(--line); border-radius:999px; background:white; color:var(--navy); font-weight:700; text-decoration:none; white-space:nowrap; }
-    .board { display:grid; grid-auto-flow:row; grid-auto-columns:auto; overflow:visible; }
+    .board { display:grid; grid-auto-flow:row; grid-auto-columns:auto; grid-template-columns:minmax(0,1fr); overflow:visible; }
     .stage { min-height:0; scroll-margin-top:64px; }
     .deal-move-row { grid-template-columns:1fr; }
     .deal-card .btn { width:100%; }
@@ -116,7 +117,7 @@
     <nav class="stage-jumps" aria-label="Jump to stage">
       {% for column in stage_columns %}<a class="stage-jump" href="#stage-{{ column.stage }}">{{ column.label }} <span class="badge badge-neutral">{{ column.deals|length }}</span></a>{% endfor %}
     </nav>
-    <div class="board">
+    <div class="board{% if pipeline == 'family_enrollment' %} board-enrollment{% endif %}">
       {% for column in stage_columns %}
         <section class="stage stage-{{ column.tone }}" id="stage-{{ column.stage }}">
           <div class="stage-head">
