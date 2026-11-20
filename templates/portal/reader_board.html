@@ -26,7 +26,7 @@
   </details>
   {% for note in notes %}
     <article class="receipt">
-      <strong>{{ note.author.get_full_name|default:note.author.email }}</strong> · {% if note.author.role == "teacher" %}Teacher{% else %}Family{% endif %}
+      <strong>{{ note.author.get_full_name|default:note.author.email }}</strong> · {% if note.author.is_family_teacher %}Teacher{% else %}Family{% endif %}
       <br><time datetime="{{ note.created_at|date:'c' }}">{{ note.created_at|date:"D, M j, Y · g:i a T" }}</time>
       <p style="white-space:pre-wrap">{{ note.body }}</p>
       {% if note.resource_url %}<a href="{{ note.resource_url }}" target="_blank" rel="noopener noreferrer">Open shared resource</a>{% endif %}

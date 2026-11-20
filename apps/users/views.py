@@ -7,6 +7,7 @@ from rest_framework.response import Response
 
 from apps.api.permissions import IsSchoolAdmin, ParentReadOnly
 from apps.crm.parent_contacts import ensure_parent_contact
+from apps.users.family_teachers import inherited_teacher_fields
 from apps.users.models import AuditLog, ChildProfile, ConsentLog, ConsentRecord, CustomUser, GuardianRelationship, Profile
 from apps.users.serializers import (
     AuditLogSerializer,
@@ -88,7 +89,7 @@ class UserViewSet(viewsets.ModelViewSet):
                 date_of_birth=child_data.get("date_of_birth"),
                 grade_level=child_data.get("grade_level", ""),
                 school_id=child_data.get("school_id"),
-                learning_profile=child_data.get("learning_profile", {}),
+                learning_profile={**child_data.get("learning_profile", {}), **inherited_teacher_fields(parent)},
                 accommodations=child_data.get("accommodations", []),
             )
             relationship = GuardianRelationship.objects.create(

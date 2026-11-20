@@ -4,6 +4,12 @@ Administrators use **Manage → Add user** (`/portal/users/`) to invite backend 
 
 Backend employee maps to the existing least-privilege `CRM_USER` role. It does not grant staff, superuser, or teacher-hiring access. Hiring access remains a separate Team control. School administrators can invite only teachers/parents and see/resend only invitations they created. Super administrators manage all invitations. No account is granted administrator access by this form.
 
+## Parent setup
+
+Choose **Parent** and select the family’s teacher before sending the invitation. An administrator who also teaches can take family assignments when **Teaches families** is enabled on their profile. School administrators choose from teachers at their schools.
+
+The parent signs in, sees the teacher’s name, and selects **Add your first child**. They sign the family forms and complete the Reader Profile. Each new reader starts with the family’s teacher. Staff can change one reader’s teacher under **Teacher assignments** when siblings need different instruction.
+
 ## Password setup
 
 New accounts have unusable passwords until the recipient follows the emailed setup link and chooses a password. Email contains their name, email/login, role, setup link, and regular login link. No raw password appears in email, admin messages, or CRM history.

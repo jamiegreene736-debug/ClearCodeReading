@@ -9,7 +9,6 @@ from typing import Any, cast
 from django import forms
 from django.conf import settings
 from django.contrib import messages
-from django.contrib.auth.base_user import AbstractBaseUser
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.forms import SetPasswordForm
 from django.contrib.auth.views import PasswordResetConfirmView
@@ -26,6 +25,7 @@ from apps.crm.models import Lead
 from apps.crm.parent_contacts import ensure_parent_contact
 from apps.crm_email.models import Mailbox
 from apps.crm_email.security import configuration_errors
+from apps.users.family_teachers import family_teacher_choices
 from apps.users.invitations import (
     create_invitation,
     deliver_invitation,
@@ -50,16 +50,30 @@ class InviteUserForm(forms.Form):
             (CustomUser.Role.GUARDIAN, "Parent"),
         ],
     )
+    family_teacher = forms.ModelChoiceField(
+        queryset=CustomUser.objects.none(), required=False, label="Who is the family’s teacher?",
+        empty_label="Choose a teacher",
+    )
     phone_number = forms.CharField(max_length=32, required=False, label="Phone number")
 
     def __init__(self, *args: Any, actor: CustomUser, **kwargs: Any) -> None:
         super().__init__(*args, **kwargs)
+        cast("forms.ModelChoiceField[CustomUser]", self.fields["family_teacher"]).queryset = family_teacher_choices(actor)
         if not actor.can_manage_crm_users:
             role_field = cast(forms.ChoiceField, self.fields["role"])
             role_field.choices = [
                 (CustomUser.Role.TEACHER, "Teacher"),
                 (CustomUser.Role.GUARDIAN, "Parent"),
             ]
+
+    def clean(self) -> dict[str, Any]:
+        data = super().clean() or {}
+        if data.get("role") == CustomUser.Role.GUARDIAN:
+            if not data.get("family_teacher") and "family_teacher" not in self.errors:
+                self.add_error("family_teacher", "Choose a teacher for this parent.")
+        else:
+            data["family_teacher"] = None
+        return data
 
     def clean_email(self) -> str:
         email = str(self.cleaned_data["email"]).strip().lower()
@@ -102,10 +116,12 @@ def manage_users(request: PortalRequest) -> HttpResponse:
         if form.is_valid():
             try:
                 with transaction.atomic():
+                    user_fields = form.cleaned_data.copy()
+                    teacher = user_fields.pop("family_teacher")
                     user = CustomUser.objects.create_user(
                         username="invited-" + secrets.token_hex(16),
                         password=None,
-                        **form.cleaned_data,
+                        **user_fields,
                         metadata={
                             "created_by_admin_id": request.user.pk,
                             "created_from_portal": True,
@@ -113,6 +129,8 @@ def manage_users(request: PortalRequest) -> HttpResponse:
                     )
                     invitation = create_invitation(user, request.user)
                     if user.role == CustomUser.Role.GUARDIAN:
+                        user.profile.family_teacher = teacher
+                        user.profile.save(update_fields=["family_teacher", "updated_at"])
                         ensure_parent_contact(user)
                     else:
                         Lead.objects.filter(
@@ -123,7 +141,7 @@ def manage_users(request: PortalRequest) -> HttpResponse:
                         action="user.invited",
                         entity_type="CustomUser",
                         entity_id=str(user.pk),
-                        after={"role": user.role},
+                        after={"role": user.role, "family_teacher_id": teacher.pk if teacher else None},
                     )
             except IntegrityError:
                 if not CustomUser.objects.filter(email__iexact=form.cleaned_data["email"]).exists():
@@ -186,7 +204,7 @@ class AcceptInvitationView(PasswordResetConfirmView):
     success_url = reverse_lazy("login")
 
     def get_user(self, uidb64: str) -> CustomUser | None:
-        user = cast(CustomUser | None, super().get_user(uidb64))
+        user = super().get_user(uidb64)
         if (
             user
             and user.is_active
@@ -201,12 +219,12 @@ class AcceptInvitationView(PasswordResetConfirmView):
     def post(self, request: HttpRequest, *args: object, **kwargs: object) -> HttpResponse:
         from apps.core.bot_protection import redirect_if_blocked
 
-        blocked = redirect_if_blocked(request, "invitation", request.path)
+        blocked: HttpResponse | None = redirect_if_blocked(request, "invitation", request.path)
         if blocked is not None:
             return blocked
         return super().post(request, *args, **kwargs)
 
-    def form_valid(self, form: SetPasswordForm[AbstractBaseUser]) -> HttpResponse:
+    def form_valid(self, form: SetPasswordForm[CustomUser]) -> HttpResponse:
         with transaction.atomic():
             invitation = (
                 UserInvitation.objects.select_for_update()
