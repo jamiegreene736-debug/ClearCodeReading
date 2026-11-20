@@ -115,7 +115,7 @@ def sync_delivery(sender: type[Message], instance: Message, **kwargs: object) ->
         "uncertain": "sending",
         "sent": "sent",
         "failed": "failed",
-        "cancelled": "failed",
+        "cancelled": "cancelled",
     }.get(instance.status)
     if not status:
         return

@@ -171,6 +171,24 @@ class InventoryWorkflowTests(TestCase):
         )
         self.assertContains(self.client.get(reverse("inventory_list")), "Avery")
 
+    def test_contact_cancels_inventory_mail_without_cancelling_team_notice(self):
+        delivery = queue_mail(self.invitation, "reminder-1", self.parent.contact_email, "Family reminder", "Hello")
+        team = queue_mail(self.invitation, "owner", self.staff.email, "Staff review needed", "Review")
+        profile = reverse("crm_contact_detail", args=[self.parent.pk])
+        cancel = reverse("crm_email_cancel_waiting", args=[self.parent.pk, "inventory", delivery.pk])
+        page = self.client.get(profile)
+        self.assertContains(page, delivery.subject)
+        self.assertNotContains(page, team.subject)
+        self.client.post(cancel)
+        deliver_mail(delivery.pk)
+        delivery.refresh_from_db()
+        team.refresh_from_db()
+        self.assertEqual(delivery.status, InventoryMail.Status.CANCELLED)
+        self.assertIsNone(delivery.provider_message_id)
+        self.assertEqual(team.status, InventoryMail.Status.PENDING)
+        self.assertNotContains(self.client.get(profile), delivery.subject)
+        self.assertContains(self.client.get(reverse("inventory_detail", args=[self.invitation.pk])), "Reminder cancelled")
+
     def test_inventory_wording_across_workspace_and_preview(self):
         from django.utils.html import strip_tags
 

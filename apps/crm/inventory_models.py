@@ -78,6 +78,7 @@ class InventoryMail(models.Model):
         SENDING = "sending", "Sending / delivery uncertain"
         SENT = "sent", "Sent"
         FAILED = "failed", "Failed"
+        CANCELLED = "cancelled", "Cancelled"
 
     invitation = models.ForeignKey(
         InventoryInvitation, on_delete=models.CASCADE, related_name="emails"

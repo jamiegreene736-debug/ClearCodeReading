@@ -83,6 +83,11 @@ urlpatterns = [
         name="crm_email_thread",
     ),
     path(
+        "contacts/<int:pk>/email/waiting/<slug:kind>/<int:delivery_id>/cancel/",
+        views.cancel_waiting,
+        name="crm_email_cancel_waiting",
+    ),
+    path(
         "contacts/<int:pk>/email/messages/<uuid:message_id>/cancel/",
         views.cancel_message,
         name="crm_email_cancel",

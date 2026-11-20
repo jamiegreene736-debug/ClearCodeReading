@@ -120,6 +120,8 @@ class FormSubmissionAdmin(admin.ModelAdmin):
             return "No automatic confirmation (historical submission)"
         if obj.form_type == FormSubmission.FormType.SURVEY:
             customer = "Not sent (website confirmation only)"
+        elif receipt.customer_cancelled:
+            customer = "Cancelled"
         else:
             customer = receipt.customer_message.get_status_display() if receipt.customer_message else "Waiting for sender"
         team = receipt.team_message.get_status_display() if receipt.team_message else "Waiting for sender"

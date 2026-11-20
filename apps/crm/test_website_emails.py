@@ -76,6 +76,50 @@ class WebsiteEmailTests(TestCase):
             submitted_data={"name": "Parent", "email": "parent@example.com", **data},
         )[1]
 
+    def test_contact_cancels_only_customer_receipt_before_preparation(self):
+        submission = self.submit()
+        lead = submission.lead
+        receipt = WebsiteReceipt.objects.get(submission=submission)
+        self.client.force_login(self.mailbox.user)
+        profile = reverse("crm_contact_detail", args=[lead.pk])
+        cancel = reverse("crm_email_cancel_waiting", args=[lead.pk, "receipt", receipt.pk])
+        self.assertContains(self.client.get(profile), cancel)
+        self.client.post(cancel)
+        enqueue_pending_receipts()
+        enqueue_pending_receipts()
+        receipt.refresh_from_db()
+        self.assertTrue(receipt.customer_cancelled)
+        self.assertIsNone(receipt.customer_message_id)
+        self.assertEqual(receipt.team_message.status, Message.Status.QUEUED)
+        self.assertNotContains(self.client.get(profile), receipt.team_message.subject)
+
+    def test_admin_can_cancel_prepared_receipt_from_earlier_profile_form(self):
+        submission = self.submit()
+        lead = submission.lead
+        admin = CustomUser.objects.create_user(username="crm-manager", email="manager@example.com", role=CustomUser.Role.SUPER_ADMIN)
+        self.client.force_login(admin)
+        receipt = WebsiteReceipt.objects.get(submission=submission)
+        profile = reverse("crm_contact_detail", args=[lead.pk])
+        cancel = reverse("crm_email_cancel_waiting", args=[lead.pk, "receipt", receipt.pk])
+        self.assertContains(self.client.get(profile), cancel)
+        colleague = CustomUser.objects.create_user(username="other-sender", email="colleague@example.com", role=CustomUser.Role.CRM_USER)
+        self.client.force_login(colleague)
+        self.assertNotContains(self.client.get(profile), cancel)
+        self.client.post(cancel)
+        receipt.refresh_from_db()
+        self.assertFalse(receipt.customer_cancelled)
+        enqueue_pending_receipts()
+        receipt.refresh_from_db()
+        self.assertNotContains(self.client.get(profile), receipt.customer_message.subject)
+        self.client.force_login(admin)
+        page = self.client.get(profile)
+        self.assertContains(page, receipt.customer_message.subject)
+        self.assertNotContains(page, receipt.team_message.subject)
+        self.client.post(cancel)
+        receipt.refresh_from_db()
+        self.assertEqual(receipt.customer_message.status, Message.Status.CANCELLED)
+        self.assertEqual(receipt.team_message.status, Message.Status.QUEUED)
+
     def test_each_form_has_two_independent_branded_messages(self):
         for kind in FormSubmission.FormType.values:
             if kind == "survey":

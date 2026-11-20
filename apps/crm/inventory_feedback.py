@@ -39,6 +39,10 @@ def delivery_feedback(invitation: InventoryInvitation) -> DeliveryFeedback:
             "success",
             mail=mail,
         )
+    if mail.status == InventoryMail.Status.CANCELLED:
+        return DeliveryFeedback(
+            f"{label} cancelled", "This email was removed from the send queue.", "neutral", mail=mail
+        )
     if mail.status == InventoryMail.Status.FAILED:
         return DeliveryFeedback(
             f"{label} not sent",
