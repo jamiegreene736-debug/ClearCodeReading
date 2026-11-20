@@ -6,10 +6,11 @@ from django.db import models
 
 # Bethany's signature on every automated email sent in her name. The HTML part
 # shows the website header lockup (BETHANY_SIGNATURE_LOGO) below these lines.
+BETHANY_EMAIL = "bethany@clearcodereading.com"
 BETHANY_SIGNATURE = (
     "Bethany Fleming, M.Ed.\n"
     "Founder & CEO\n"
-    "bethany@clearcodereading.com\n"
+    f"{BETHANY_EMAIL}\n"
     "Website: https://clearcodereading.com\n"
     "Blog: https://clearcodereading.com/blog/"
 )

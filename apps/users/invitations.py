@@ -3,6 +3,7 @@
 import base64
 import secrets
 from email.message import EmailMessage
+from email.utils import formataddr
 from smtplib import SMTPException
 from urllib.parse import urlsplit
 
@@ -16,8 +17,15 @@ from django.utils import timezone
 from django.utils.encoding import force_bytes
 from django.utils.http import urlsafe_base64_encode
 
-from apps.crm_email.automated import copy_for, fill, fill_html
+from apps.crm_email.automated import (
+    copy_for,
+    fill,
+    fill_html,
+    html_value,
+    signature_logo_html,
+)
 from apps.crm_email.google import Gmail, ProviderError
+from apps.crm_email.models import BETHANY_EMAIL, BETHANY_SIGNATURE, Mailbox
 from apps.crm_email.security import EmailError, mailbox_lock, require_configured
 from apps.crm_email.services import active_mailbox
 from apps.users.models import CustomUser, UserInvitation
@@ -39,7 +47,7 @@ def create_invitation(user: CustomUser, actor: CustomUser) -> UserInvitation:
     )
 
 
-def deliver_invitation(invitation_id: int, actor: CustomUser) -> UserInvitation:
+def deliver_invitation(invitation_id: int) -> UserInvitation:
     # Claim delivery before external I/O. A second click cannot send in parallel.
     with transaction.atomic():
         invitation = (
@@ -60,22 +68,22 @@ def deliver_invitation(invitation_id: int, actor: CustomUser) -> UserInvitation:
         invitation.error = ""
         invitation.save()
     try:
-        _send(invitation, actor)
+        _send(invitation)
     except ProviderError as exc:
         invitation.status = (
             "uncertain" if exc.status == 0 or exc.status >= 500 else "failed"
         )
         invitation.error = (
-            "Delivery could not be confirmed. Check your Gmail Sent folder before sending another invitation."
+            "Delivery could not be confirmed. Check Bethany’s Gmail Sent folder before sending another invitation."
             if invitation.status == "uncertain"
-            else "Google rejected the invitation. Check your email connection and try again."
+            else "Google rejected the invitation. Check Bethany’s mailbox connection and try again."
         )
     except (SMTPException, OSError):
         invitation.status = "uncertain"
-        invitation.error = "Delivery could not be confirmed. Check your sent mail before sending another invitation."
+        invitation.error = "Delivery could not be confirmed. Check Bethany’s sent mail before sending another invitation."
     except (PermissionDenied, ImproperlyConfigured):
         invitation.status = "failed"
-        invitation.error = "The sender cannot send invitations. Ask an administrator with a connected work mailbox to resend."
+        invitation.error = "Bethany’s mailbox cannot send invitations. Check her account access before resending."
     except EmailError as exc:
         invitation.status = "failed"
         invitation.error = str(exc)
@@ -86,12 +94,23 @@ def deliver_invitation(invitation_id: int, actor: CustomUser) -> UserInvitation:
     return invitation
 
 
-def _send(invitation: UserInvitation, actor: CustomUser) -> None:
-    base = settings.PUBLIC_APP_URL.rstrip("/")
-    parsed = urlsplit(base)
-    if parsed.scheme != "https" or not parsed.netloc or parsed.query or parsed.fragment:
+def _send(invitation: UserInvitation) -> None:
+    base = (settings.ACCOUNT_INVITATION_BASE_URL or settings.PUBLIC_APP_URL).rstrip("/")
+    try:
+        parsed = urlsplit(base)
+    except ValueError as exc:
+        raise EmailError("The account invitation domain is invalid.") from exc
+    if (
+        parsed.scheme != "https"
+        or not parsed.hostname
+        or parsed.hostname.endswith(".up.railway.app")
+        or parsed.username is not None
+        or parsed.path
+        or parsed.query
+        or parsed.fragment
+    ):
         raise EmailError(
-            "Set the public HTTPS website address before sending invitations."
+            "Set the branded HTTPS account invitation domain before sending invitations."
         )
     user = invitation.user
     path = reverse(
@@ -122,15 +141,32 @@ def _send(invitation: UserInvitation, actor: CustomUser) -> None:
         ),
     }
     subject = fill(copy["subject"], values)
-    body = fill(copy.text("body"), values)
-    body_html = fill_html(copy.html("body"), values)
+    body = fill(copy.text("body"), values).rstrip() + "\n\n" + BETHANY_SIGNATURE
+    body_html = (
+        fill_html(copy.html("body"), values)
+        + f"<p>{html_value(BETHANY_SIGNATURE)}</p>"
+        + signature_logo_html(base)
+    )
+    sender = formataddr(("Bethany Fleming", BETHANY_EMAIL))
     if settings.CRM_EMAIL_ENABLED or not getattr(
         settings, "USER_INVITATIONS_ALLOW_TEST_EMAIL", False
     ):
         require_configured()
-        mailbox = active_mailbox(actor)
+        mailbox = (
+            Mailbox.objects.select_related("user")
+            .filter(
+                email__iexact=BETHANY_EMAIL,
+                user__email__iexact=BETHANY_EMAIL,
+                status=Mailbox.Status.CONNECTED,
+            )
+            .first()
+        )
+        if mailbox is None:
+            raise EmailError(
+                "Connect Bethany Fleming’s ClearCode Gmail mailbox before resending."
+            )
         message = EmailMessage()
-        message["From"] = mailbox.email
+        message["From"] = sender
         message["To"] = user.email
         message["Subject"] = subject
         message["Message-ID"] = (
@@ -140,7 +176,8 @@ def _send(invitation: UserInvitation, actor: CustomUser) -> None:
         message.add_alternative(body_html, subtype="html")
         # Do not create a CRM Message: it would expose the setup link to colleagues.
         with mailbox_lock(mailbox.pk):
-            result = Gmail(mailbox).request(
+            connected = active_mailbox(mailbox.user)
+            result = Gmail(connected).request(
                 "POST",
                 "messages/send",
                 json={"raw": base64.urlsafe_b64encode(message.as_bytes()).decode()},
@@ -148,20 +185,11 @@ def _send(invitation: UserInvitation, actor: CustomUser) -> None:
         if not result.get("id"):
             raise ProviderError()
     else:
-        if settings.EMAIL_BACKEND in {
-            "django.core.mail.backends.locmem.EmailBackend",
-            "django.core.mail.backends.console.EmailBackend",
-            "django.core.mail.backends.dummy.EmailBackend",
-            "django.core.mail.backends.filebased.EmailBackend",
-        } and not getattr(settings, "USER_INVITATIONS_ALLOW_TEST_EMAIL", False):
-            raise EmailError(
-                "Email delivery is not configured. Connect your work Gmail or configure outgoing email, then resend."
-            )
         if (
             send_mail(
                 subject,
                 body,
-                settings.DEFAULT_FROM_EMAIL,
+                sender,
                 [user.email],
                 fail_silently=False,
                 html_message=body_html,

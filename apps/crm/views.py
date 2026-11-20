@@ -1443,7 +1443,7 @@ class CrmTeamView(CrmAccessMixin, View):
             form.add_error("email", "A user with this email or username already exists.")
             return self._render(request, form, status=400)
 
-        invitation_feedback(request, deliver_invitation(invitation.pk, request.user))
+        invitation_feedback(request, deliver_invitation(invitation.pk))
         return redirect("crm_team")
 
     def _render(self, request, form, *, status=200):
