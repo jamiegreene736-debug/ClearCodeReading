@@ -1,0 +1,36 @@
+{% extends "portal/page.html" %}
+{% block title %}Family meetings{% endblock %}
+{% block content %}
+<section class="mx-auto max-w-4xl rounded-3xl bg-white p-6 shadow-xl sm:p-8">
+  <div class="flex flex-wrap items-center justify-between gap-4">
+    <h1 class="text-3xl font-black">Family meetings</h1>
+    {% if teacher %}<a class="focus-ring rounded-full bg-deepTeal px-5 py-3 font-bold text-white" href="{% url 'new_family_meeting' %}">Schedule a meeting</a>{% endif %}
+  </div>
+  <nav aria-label="Meeting lists" class="my-6 flex gap-4">
+    <a href="{% url 'family_meetings' %}" class="focus-ring font-bold {% if not history %}underline{% endif %}" {% if not history %}aria-current="page"{% endif %}>Upcoming</a>
+    <a href="?view=history" class="focus-ring font-bold {% if history %}underline{% endif %}" {% if history %}aria-current="page"{% endif %}>Past and cancelled</a>
+  </nav>
+  <ul class="grid gap-4">
+    {% for meeting in page %}
+    <li class="rounded-2xl bg-linen p-5">
+      <h2 class="text-lg font-black">{{ meeting.starts_at|date:"D, M j, Y · g:i A T" }} – {{ meeting.ends_at|date:"M j, g:i A T" }}</h2>
+      {% if meeting.cancelled %}<p class="font-bold">Cancelled</p>{% endif %}
+      <p class="mt-2">{{ meeting.family.child }} · Teacher {{ meeting.teacher }}</p>
+      <p>Invited parent · {{ meeting.family.guardian }}</p>
+      <p class="mt-2 break-words"><strong>Where</strong> · {% if meeting.location|slice:":8" == "https://" %}<a href="{{ meeting.location }}" class="underline" rel="noreferrer">{{ meeting.location }}</a>{% else %}{{ meeting.location }}{% endif %}</p>
+      {% if staff %}<details class="mt-3"><summary class="cursor-pointer font-bold">Parent emails</summary><ul>
+        {% for notice in meeting.delivery_history %}<li>{{ notice.get_kind_display }} · {{ notice.get_state_display }}{% if notice.sent_at %} · {{ notice.sent_at|date:"M j, g:i A T" }}{% elif notice.state == 'pending' %} · Due {{ notice.due_at|date:"M j, g:i A T" }}{% endif %}</li>{% empty %}<li>No current notices.</li>{% endfor %}
+      </ul></details>{% endif %}
+      {% if teacher and meeting.teacher_id == request.user.pk and not meeting.cancelled and meeting.starts_at > now %}
+        <a class="focus-ring mt-3 inline-block font-bold underline" href="{% url 'edit_family_meeting' meeting.pk %}">Manage meeting</a>
+      {% endif %}
+    </li>
+    {% empty %}<li>{% if history %}No past or cancelled meetings.{% else %}No upcoming family meetings.{% endif %}</li>{% endfor %}
+  </ul>
+  {% if page.has_other_pages %}<nav aria-label="Schedule pages" class="mt-5 flex gap-4">
+    {% if page.has_previous %}<a href="?page={{ page.previous_page_number }}{% if history %}&amp;view=history{% endif %}" class="underline">Previous</a>{% endif %}
+    <span>Page {{ page.number }} of {{ page.paginator.num_pages }}</span>
+    {% if page.has_next %}<a href="?page={{ page.next_page_number }}{% if history %}&amp;view=history{% endif %}" class="underline">Next</a>{% endif %}
+  </nav>{% endif %}
+</section>
+{% endblock %}

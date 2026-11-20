@@ -28,6 +28,7 @@
           <div id="program-navigation-panel" class="absolute left-4 right-4 top-[calc(100%+.65rem)] z-50 hidden max-h-[70vh] overflow-y-auto rounded-3xl bg-white p-3 shadow-2xl shadow-ink/20 ring-1 ring-ink/10 lg:left-0 lg:right-auto lg:w-[21rem]" aria-labelledby="program-navigation-button">
             <p class="px-3 pb-2 text-xs font-black uppercase tracking-[0.16em] text-mediumTeal">Program workspace</p>
             <ul class="grid gap-1">
+              <li><a href="{% url 'family_meetings' %}" class="focus-ring block rounded-2xl px-3 py-3 font-black hover:bg-linen">Family meetings</a></li>
               <li><a data-testid="readers-nav-link" href="{% url 'portal_readers' %}" class="focus-ring block rounded-2xl px-3 py-3 hover:bg-linen"><span class="block font-black">Readers</span><span class="mt-1 block text-xs text-ink/60">Roster, placement, and latest session</span></a></li>
               <li><a data-testid="sessions-nav-link" href="{% url 'portal_sessions' %}" class="focus-ring block rounded-2xl px-3 py-3 hover:bg-linen"><span class="block font-black">Sessions</span><span class="mt-1 block text-xs text-ink/60">Upcoming work and completed logs</span></a></li>
               <li><a data-testid="placements-nav-link" href="{% url 'portal_placements' %}" class="focus-ring block rounded-2xl px-3 py-3 hover:bg-linen"><span class="block font-black">Placement review</span><span class="mt-1 block text-xs text-ink/60">Confirm or adjust recommendations</span></a></li>
@@ -101,6 +102,7 @@
           <div id="teaching-navigation-panel" class="absolute left-4 right-4 top-[calc(100%+.65rem)] z-50 hidden max-h-[70vh] overflow-y-auto rounded-3xl bg-white p-3 shadow-2xl shadow-ink/20 ring-1 ring-ink/10 lg:left-0 lg:right-auto lg:w-[22rem]" aria-labelledby="teaching-navigation-button">
             <p class="px-3 pb-2 text-xs font-black uppercase tracking-[0.16em] text-mediumTeal">Teacher workspace</p>
             <ul class="grid gap-1">
+              <li><a href="{% url 'family_meetings' %}" class="focus-ring block rounded-2xl px-3 py-3 font-black hover:bg-linen">Family meetings</a></li>
               <li><a href="{% url 'portal_readers' %}" class="focus-ring block rounded-2xl px-3 py-3 hover:bg-linen"><span class="block font-black">Readers</span><span class="mt-1 block text-xs text-ink/60">Your assigned readers</span></a></li>
               <li><a href="{% url 'portal_sessions' %}" class="focus-ring block rounded-2xl px-3 py-3 hover:bg-linen"><span class="block font-black">Sessions</span><span class="mt-1 block text-xs text-ink/60">Schedule and completed logs</span></a></li>
               <li><a href="{% url 'rapid_session_log' %}" class="focus-ring block rounded-2xl px-3 py-3 hover:bg-linen"><span class="block font-black">Rapid session log</span><span class="mt-1 block text-xs text-ink/60">Record a completed lesson</span></a></li>
@@ -123,6 +125,7 @@
               {% if request.user.can_add_child %}
                 <li><a href="{% url 'portal_add_child' %}" class="focus-ring block rounded-2xl px-3 py-3 font-black hover:bg-linen">Add a child</a></li>
               {% endif %}
+              <li><a href="{% url 'family_meetings' %}" class="focus-ring block rounded-2xl px-3 py-3 font-black hover:bg-linen">Family meetings</a></li>
               <li><a href="{% url 'portal_dashboard' %}#progress-overview" class="focus-ring block rounded-2xl px-3 py-3 hover:bg-linen"><span class="block font-black">Weekly progress</span><span class="mt-1 block text-xs text-ink/60">Growth, fluency, and specialist notes</span></a></li>
               <li><a href="{% url 'portal_dashboard' %}#teacher-plan" class="focus-ring block rounded-2xl px-3 py-3 font-black hover:bg-linen">Teacher plan</a></li>
               <li><a href="{% url 'portal_results' %}" class="focus-ring block rounded-2xl px-3 py-3 font-black hover:bg-linen">Reading results</a></li>
