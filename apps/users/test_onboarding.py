@@ -1,6 +1,8 @@
 import base64
 import re
 from datetime import timedelta
+from email import policy
+from email.parser import BytesParser
 from unittest.mock import patch
 
 from django.core import mail
@@ -9,7 +11,13 @@ from django.urls import reverse
 from django.utils import timezone
 
 from apps.crm_email.google import ProviderError
-from apps.crm_email.models import Mailbox, Message
+from apps.crm_email.models import (
+    BETHANY_SIGNATURE,
+    BETHANY_SIGNATURE_LOGO,
+    AutomatedEmail,
+    Mailbox,
+    Message,
+)
 from apps.users.invitations import deliver_invitation
 from apps.users.models import CustomUser, UserInvitation
 
@@ -253,29 +261,90 @@ class UserOnboardingTests(TestCase):
         user = self.invite()
         self.assertEqual(user.invitation.status, "uncertain")
         self.assertNotIn("private error", user.invitation.error)
-        deliver_invitation(user.invitation.pk, self.admin)
+        deliver_invitation(user.invitation.pk)
         self.assertEqual(send.call_count, 1)
 
-    @override_settings(CRM_EMAIL_ENABLED=True)
+    @override_settings(
+        CRM_EMAIL_ENABLED=True,
+        PUBLIC_APP_URL="https://clearcodereading-production.up.railway.app",
+        ACCOUNT_INVITATION_BASE_URL="https://www.clearcodereading.com/",
+    )
     @patch("apps.users.invitations.require_configured")
     @patch("apps.users.invitations.Gmail")
-    def test_google_delivery_is_private_and_uses_creator_mailbox(
+    def test_google_creation_and_resend_use_bethany_and_branded_links(
         self, gmail, configured
     ):
         Mailbox.objects.create(
-            user=self.admin,
-            email=self.admin.email,
-            status="connected",
-            encrypted_refresh_token="test",
+            user=self.admin, email=self.admin.email, status="connected"
+        )
+        bethany = CustomUser.objects.create_user(
+            username="bethany", email="bethany@clearcodereading.com", role="crm_user"
+        )
+        mailbox = Mailbox.objects.create(
+            user=bethany, email=bethany.email, status="connected"
         )
         gmail.return_value.request.return_value = {"id": "message-1"}
         user = self.invite()
         self.assertEqual(user.invitation.status, "sent")
-        raw = gmail.return_value.request.call_args.kwargs["json"]["raw"]
-        decoded = base64.urlsafe_b64decode(raw).decode()
-        self.assertIn("To: new@example.com", decoded)
-        self.assertIn("From: owner@example.com", decoded)
+        UserInvitation.objects.filter(user=user).update(
+            attempted_at=timezone.now() - timedelta(minutes=3)
+        )
+        self.client.post(reverse("resend_user_invitation", args=[user.invitation.pk]))
+        self.assertEqual(gmail.call_count, 2)
+        for call in gmail.call_args_list:
+            self.assertEqual(call.args, (mailbox,))
+        self.assertEqual(gmail.return_value.request.call_count, 2)
+        for call in gmail.return_value.request.call_args_list:
+            message = BytesParser(policy=policy.default).parsebytes(
+                base64.urlsafe_b64decode(call.kwargs["json"]["raw"])
+            )
+            self.assertEqual(message["To"], user.email)
+            self.assertEqual(
+                message["From"], "Bethany Fleming <bethany@clearcodereading.com>"
+            )
+            plain = message.get_body(preferencelist=("plain",)).get_content()
+            html = message.get_body(preferencelist=("html",)).get_content()
+            for part in (plain, html):
+                self.assertNotIn("railway.app", part)
+                self.assertIn("https://www.clearcodereading.com/account/setup/", part)
+                self.assertIn("https://www.clearcodereading.com/login/", part)
+            self.assertIn(BETHANY_SIGNATURE, plain)
+            self.assertIn(
+                'src="https://www.clearcodereading.com' + BETHANY_SIGNATURE_LOGO + '"',
+                html,
+            )
         self.assertEqual(Message.objects.count(), 0)
+
+    @override_settings(CRM_EMAIL_ENABLED=True)
+    @patch("apps.users.invitations.require_configured")
+    @patch("apps.users.invitations.Gmail")
+    def test_missing_bethany_mailbox_does_not_use_inviter(self, gmail, configured):
+        Mailbox.objects.create(
+            user=self.admin, email=self.admin.email, status="connected"
+        )
+        invitation = self.invite().invitation
+        self.assertEqual(invitation.status, "failed")
+        self.assertIn("Bethany", invitation.error)
+        gmail.assert_not_called()
+
+    @override_settings(
+        PUBLIC_APP_URL="https://clearcodereading-production.up.railway.app",
+        ACCOUNT_INVITATION_BASE_URL="",
+    )
+    def test_provider_host_is_rejected_without_branded_domain(self):
+        self.assertEqual(self.invite().invitation.status, "failed")
+        self.assertEqual(len(mail.outbox), 0)
+
+    def test_saved_invitation_copy_includes_signature(self):
+        AutomatedEmail.objects.create(
+            key="account_invitation",
+            subject="Welcome",
+            body="<p>Custom invitation {{setup_link}}</p>",
+        )
+        self.invite()
+        self.assertIn("Custom invitation", mail.outbox[0].body)
+        self.assertIn(BETHANY_SIGNATURE, mail.outbox[0].body)
+        self.assertIn(BETHANY_SIGNATURE_LOGO, mail.outbox[0].alternatives[0].content)
 
     @override_settings(CRM_EMAIL_ENABLED=True)
     @patch("apps.users.invitations._send", side_effect=ProviderError())

@@ -115,15 +115,15 @@ def html_value(value: str) -> str:
     return "<br>".join(lines)
 
 
-def signature_logo_html() -> str:
+def signature_logo_html(public_url: str | None = None) -> str:
     """The website header lockup at the bottom of Bethany's signature in HTML emails.
 
     The mark is the same gold-and-teal monogram as the public site header, with
     CLEAR in linen, CODE in gold, and READING in medium teal on the ink bar.
     Mail clients load the monogram from the public site, so the lockup is only
-    included when ``PUBLIC_APP_URL`` is an HTTPS address.
+    included when the public site uses HTTPS.
     """
-    public = settings.PUBLIC_APP_URL.rstrip("/")
+    public = (public_url or settings.PUBLIC_APP_URL).rstrip("/")
     if not public.startswith("https://"):
         return ""
     mark = escape(public + BETHANY_SIGNATURE_LOGO)
@@ -619,9 +619,9 @@ def _build_specs() -> tuple[AutomatedEmailSpec, ...]:
                 "first_name": "Jordan",
                 "email": "jordan@clearcodereading.com",
                 "role": "Backend employee",
-                "setup_link": "https://clearcodereading.com/accounts/invitation/…",
+                "setup_link": "https://www.clearcodereading.com/account/setup/…",
                 "expires_hours": "24",
-                "login_link": "https://clearcodereading.com/accounts/login/",
+                "login_link": "https://www.clearcodereading.com/login/",
                 "crm_note": "\nOn your first login, we will help you connect your work Gmail account.\n",
             },
         ),

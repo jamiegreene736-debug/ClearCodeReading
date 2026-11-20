@@ -124,9 +124,7 @@ def manage_users(request: PortalRequest) -> HttpResponse:
             except IntegrityError:
                 form.add_error("email", "A user with this email already exists.")
             else:
-                invitation_feedback(
-                    request, deliver_invitation(invitation.pk, request.user)
-                )
+                invitation_feedback(request, deliver_invitation(invitation.pk))
                 return redirect("manage_users")
         status = 400
     return render(
@@ -172,7 +170,7 @@ def resend_invitation(request: PortalRequest, pk: int) -> HttpResponse:
         invitation.status = "pending"
         invitation.sent_at = None
         invitation.save()
-    invitation_feedback(request, deliver_invitation(invitation.pk, request.user))
+    invitation_feedback(request, deliver_invitation(invitation.pk))
     return redirect("portal_invitations")
 
 
