@@ -25,6 +25,18 @@ class ParentChildRegistrationSerializer(serializers.Serializer):
     relationship_type = serializers.ChoiceField(choices=GuardianRelationship.RelationshipType.choices)
     consents = serializers.ListField(child=serializers.DictField(), allow_empty=False)
 
+    def validate_parent(self, value):
+        email = serializers.EmailField().run_validation(value.get("email"))
+        return {**value, "email": email.strip().lower()}
+
+    def validate_child(self, value):
+        profile = value.get("learning_profile", {})
+        if not isinstance(profile, dict):
+            raise serializers.ValidationError("Enter reader details as an object.")
+        if {"assigned_teacher_id", "assigned_teacher_name", "assigned_teacher_email"} & profile.keys():
+            raise serializers.ValidationError("The school assigns your reader’s teacher.")
+        return value
+
 
 class UserViewSet(viewsets.ModelViewSet):
     queryset = CustomUser.objects.filter(is_deleted=False).select_related("profile")
@@ -51,8 +63,9 @@ class UserViewSet(viewsets.ModelViewSet):
         with transaction.atomic():
             password = parent_data.pop("password", None)
             parent, created = CustomUser.objects.get_or_create(
-                email=parent_data["email"],
+                email__iexact=parent_data["email"],
                 defaults={
+                    "email": parent_data["email"],
                     "username": parent_data.get("username", parent_data["email"]),
                     "first_name": parent_data.get("first_name", ""),
                     "last_name": parent_data.get("last_name", ""),

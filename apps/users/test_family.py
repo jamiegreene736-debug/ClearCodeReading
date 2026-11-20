@@ -222,3 +222,22 @@ class ParentPortalTests(TestCase):
             201,
         )
         self.assertEqual(Lead.objects.get().linked_user.email, "signup@example.com")
+
+    def test_public_registration_leaves_teacher_assignment_to_staff(self) -> None:
+        self.client.logout()
+        payload = {
+            "parent": {"email": "newfamily@example.com"},
+            "child": {
+                "first_name": "Alex",
+                "learning_profile": {"assigned_teacher_id": 42},
+            },
+            "relationship_type": "parent",
+            "consents": [{"consent_type": "data_processing"}],
+        }
+        response = self.client.post(
+            reverse("api:users:user-register-parent-child"),
+            payload,
+            content_type="application/json",
+        )
+        self.assertEqual(response.status_code, 400)
+        self.assertFalse(ChildProfile.objects.exists())
