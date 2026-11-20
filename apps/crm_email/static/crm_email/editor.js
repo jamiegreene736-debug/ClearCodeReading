@@ -1,10 +1,17 @@
 (() => {
   const tags = new Set(['P', 'DIV', 'BR', 'STRONG', 'B', 'EM', 'I', 'U', 'UL', 'OL', 'LI', 'BLOCKQUOTE', 'A']);
-  function safeFragment(value) {
+  function safeFragment(value, signatureLogo) {
     const parsed = new DOMParser().parseFromString(value, 'text/html');
     function copy(node) {
       if (node.nodeType === Node.TEXT_NODE) return document.createTextNode(node.textContent);
       if (node.nodeType !== Node.ELEMENT_NODE) return document.createDocumentFragment();
+      if (node.tagName === 'IMG' && signatureLogo && node.getAttribute('src') === signatureLogo) {
+        const logo = document.createElement('img');
+        logo.src = signatureLogo;
+        logo.alt = 'ClearCode Reading';
+        logo.width = 224;
+        return logo;
+      }
       if (['SCRIPT', 'STYLE', 'IMG', 'IFRAME', 'OBJECT', 'SVG', 'MATH'].includes(node.tagName)) return document.createDocumentFragment();
       const result = tags.has(node.tagName) ? document.createElement(node.tagName.toLowerCase()) : document.createDocumentFragment();
       if (node.tagName === 'A') {
@@ -26,7 +33,7 @@
     editor.setAttribute('role', 'textbox');
     editor.setAttribute('aria-multiline', 'true');
     editor.setAttribute('aria-label', textarea.name === 'signature' ? 'Signature' : 'Message');
-    editor.append(safeFragment(textarea.value));
+    editor.append(safeFragment(textarea.value, textarea.dataset.signatureLogo));
     const toolbar = document.createElement('div');
     toolbar.className = 'toolbar';
     toolbar.setAttribute('aria-label', 'Text formatting');

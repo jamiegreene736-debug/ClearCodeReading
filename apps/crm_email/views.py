@@ -814,7 +814,7 @@ def compose(request: EmailRequest, pk: int) -> HttpResponse:
     initial: dict[str, Any] = {
         "draft_id": uuid.uuid4(),
         "to": lead.contact_email,
-        "body_html": "<p></p>" + clean_html(mailbox.signature),
+        "body_html": "<p></p>" + clean_html(mailbox.signature, signature_logo=True),
         "follow_up_days": 0,
     }
     draft = None

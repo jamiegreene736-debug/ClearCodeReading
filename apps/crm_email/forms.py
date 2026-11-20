@@ -13,6 +13,7 @@ from apps.crm_email.automated import (
     AutomatedEmailSpec,
     tokens,
 )
+from apps.crm_email.models import SIGNATURE_LOGO_URL
 from apps.crm_email.security import clean_html, clean_rich_html, plain_text
 
 
@@ -42,7 +43,11 @@ class ComposeForm(forms.Form):
     bcc = RecipientsField(label="BCC (visible only to you)", required=False)
     subject = forms.CharField(max_length=998)
     body_html = forms.CharField(
-        label="Message", max_length=100000, widget=forms.Textarea(attrs={"rows": 10})
+        label="Message",
+        max_length=100000,
+        widget=forms.Textarea(
+            attrs={"rows": 10, "data-signature-logo": SIGNATURE_LOGO_URL}
+        ),
     )
     scheduled_at = forms.DateTimeField(
         label="Send later (Eastern time)",
@@ -63,7 +68,7 @@ class ComposeForm(forms.Form):
         return subject
 
     def clean_body_html(self) -> str:
-        value = clean_html(self.cleaned_data["body_html"])
+        value = clean_html(self.cleaned_data["body_html"], signature_logo=True)
         if not plain_text(value).strip():
             raise ValidationError("Enter a message.")
         return value
@@ -161,11 +166,15 @@ class AutomatedEmailForm(forms.Form):
 
 class SignatureForm(forms.Form):
     signature = forms.CharField(
-        max_length=10000, required=False, widget=forms.Textarea(attrs={"rows": 4})
+        max_length=10000,
+        required=False,
+        widget=forms.Textarea(
+            attrs={"rows": 4, "data-signature-logo": SIGNATURE_LOGO_URL}
+        ),
     )
 
     def clean_signature(self) -> str:
-        return clean_html(self.cleaned_data["signature"])
+        return clean_html(self.cleaned_data["signature"], signature_logo=True)
 
 
 class NewsletterForm(forms.Form):
