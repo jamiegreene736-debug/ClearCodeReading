@@ -571,3 +571,39 @@ class UserInvitation(TimestampedModel):
     sent_at = models.DateTimeField(null=True, blank=True)
     accepted_at = models.DateTimeField(null=True, blank=True)
     error = models.CharField(max_length=255, blank=True)
+
+
+class BoardTextAccount(models.Model):
+    user = models.OneToOneField(CustomUser, on_delete=models.CASCADE, related_name="board_text_account")
+    phone = models.CharField(max_length=16, null=True, unique=True)
+    verified_at = models.DateTimeField(null=True)
+    code_digest = models.CharField(max_length=64, null=True, unique=True)
+    code_expires_at = models.DateTimeField(null=True)
+
+
+class BoardTextDelivery(models.Model):
+    class Status(models.TextChoices):
+        QUEUED = "queued", "Queued"
+        SENDING = "sending", "Sending"
+        ACCEPTED = "accepted", "Accepted by Quo"
+        FAILED = "failed", "Failed"
+        UNCERTAIN = "uncertain", "Delivery unconfirmed"
+        CANCELLED = "cancelled", "Cancelled"
+
+    notification = models.ForeignKey(ReaderBoardNotification, on_delete=models.CASCADE, related_name="text_deliveries")
+    part = models.PositiveSmallIntegerField()
+    verified_at = models.DateTimeField()
+    status = models.CharField(max_length=12, choices=Status.choices, default=Status.QUEUED)
+    attempts = models.PositiveSmallIntegerField(default=0)
+    next_attempt = models.DateTimeField(default=timezone.now)
+    updated_at = models.DateTimeField(auto_now=True)
+    provider_id = models.CharField(max_length=120, blank=True)
+
+    class Meta:
+        constraints = [models.UniqueConstraint(fields=["notification", "part"], name="reader_sms_delivery_part")]
+        indexes = [models.Index(fields=["status", "next_attempt"])]
+
+
+class BoardTextReceipt(models.Model):
+    message_id = models.CharField(primary_key=True, max_length=120)
+    received_at = models.DateTimeField(auto_now_add=True)

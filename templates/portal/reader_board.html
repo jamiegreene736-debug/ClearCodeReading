@@ -12,12 +12,25 @@
       <button type="submit">Post note</button>
     </form>
   {% else %}<p>Posting opens when a teacher and a participating family are connected to this reader.</p>{% endif %}
+  <details class="receipt"><summary class="font-black">Text messages{% if texting_active %} · On{% endif %}</summary>
+    {% if texting_active %}
+      <p>Board notes are sent from (407) 449-7941. To post to this board, text <strong>R{{ child.pk }}</strong> followed by your message. Reply STOP to turn off board texts.</p>
+      <form method="post" action="{% url 'portal_board_text_settings' child.pk %}">{% csrf_token %}<button type="submit" name="action" value="disable">Turn off texts</button></form>
+    {% elif join_code %}
+      <p>From your own phone, text <strong>JOIN {{ join_code }}</strong> to <strong>(407) 449-7941</strong> within 15 minutes. Then refresh this page.</p>
+      <a href="sms:+14074497941?body=JOIN%20{{ join_code }}">Open texting app</a>
+    {% elif texting_configured %}
+      <p>Get family board notes by text and reply through (407) 449-7941. Turning this on applies to all your reader boards. Message and data rates may apply. You can stop at any time.</p>
+      <form method="post" action="{% url 'portal_board_text_settings' child.pk %}">{% csrf_token %}<button type="submit" name="action" value="enable">Connect my phone</button></form>
+    {% else %}<p>Board texting is awaiting the school’s Quo connection. You can post and read notes here.</p>{% endif %}
+  </details>
   {% for note in notes %}
     <article class="receipt">
       <strong>{{ note.author.get_full_name|default:note.author.email }}</strong> · {% if note.author.role == "teacher" %}Teacher{% else %}Family{% endif %}
       <br><time datetime="{{ note.created_at|date:'c' }}">{{ note.created_at|date:"D, M j, Y · g:i a T" }}</time>
       <p style="white-space:pre-wrap">{{ note.body }}</p>
       {% if note.resource_url %}<a href="{{ note.resource_url }}" target="_blank" rel="noopener noreferrer">Open shared resource</a>{% endif %}
+      {% if note.author_id == request.user.pk %}{% for notice in note.notifications.all %}{% for delivery in notice.text_deliveries.all %}<small class="block">Text · {{ delivery.get_status_display }}</small>{% endfor %}{% endfor %}{% endif %}
     </article>
   {% empty %}<p class="subtle">No notes yet. This is a place to share a reading win, ask a question, or follow up on practice.</p>{% endfor %}
   {% if notes.has_other_pages %}<nav aria-label="Board history">{% if notes.has_previous %}<a href="?page={{ notes.previous_page_number }}">Newer notes</a>{% endif %} · Page {{ notes.number }} of {{ notes.paginator.num_pages }} · {% if notes.has_next %}<a href="?page={{ notes.next_page_number }}">Older notes</a>{% endif %}</nav>{% endif %}

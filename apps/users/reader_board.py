@@ -5,6 +5,7 @@ from urllib.parse import urlsplit
 from uuid import uuid4
 
 from django import forms
+from django.conf import settings
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.core.exceptions import PermissionDenied
@@ -19,6 +20,7 @@ from django.views.decorators.http import require_GET, require_http_methods
 
 from apps.api.permissions import models_consent_filter
 from apps.users.models import (
+    BoardTextAccount,
     ChildProfile,
     CustomUser,
     GuardianRelationship,
@@ -64,7 +66,10 @@ def assigned_teacher(child: ChildProfile) -> CustomUser | None:
     ):
         return None
     return CustomUser.objects.filter(
-        pk=int(str(teacher_id)), role=CustomUser.Role.TEACHER, is_active=True, is_deleted=False
+        pk=int(str(teacher_id)),
+        role=CustomUser.Role.TEACHER,
+        is_active=True,
+        is_deleted=False,
     ).first()
 
 
@@ -122,12 +127,16 @@ def post_note(user: CustomUser, child_id: int, form: BoardNoteForm) -> None:
         defaults={"body": data["body"], "resource_url": data.get("resource_url", "")},
     )
     if created:
-        ReaderBoardNotification.objects.bulk_create(
+        notices = ReaderBoardNotification.objects.bulk_create(
             [
                 ReaderBoardNotification(post=post, recipient_id=recipient)
                 for recipient in recipients
             ]
         )
+
+        from apps.notifications.board_sms import queue_texts
+
+        queue_texts(post, notices)
 
 
 @login_required
@@ -145,7 +154,10 @@ def reader_board(request: PortalRequest, child_id: int) -> HttpResponse:
             messages.success(request, "Your note is on the board.")
             return redirect("portal_reader_board", child_id=child_id)
     notes = Paginator(
-        ReaderBoardPost.objects.filter(child=child).select_related("author"), 20
+        ReaderBoardPost.objects.filter(child=child)
+        .select_related("author")
+        .prefetch_related("notifications__text_deliveries"),
+        20,
     ).get_page(request.GET.get("page"))
     if request.method == "GET":
         displayed = [note.pk for note in notes]
@@ -157,10 +169,29 @@ def reader_board(request: PortalRequest, child_id: int) -> HttpResponse:
         if user.role == CustomUser.Role.TEACHER
         else assigned_teacher(child) is not None
     )
+    account = BoardTextAccount.objects.filter(user=user).first()
+    pending_code = request.session.get("reader_sms_join", "")
+    if (
+        not account
+        or not account.code_expires_at
+        or account.code_expires_at <= timezone.now()
+    ):
+        pending_code = ""
+        request.session.pop("reader_sms_join", None)
     return render(
         request,
         "portal/reader_board.html",
-        {"child": child, "notes": notes, "form": form, "can_post": can_post},
+        {
+            "child": child,
+            "notes": notes,
+            "form": form,
+            "can_post": can_post,
+            "texting_configured": bool(
+                settings.QUO_API_KEY and settings.QUO_WEBHOOK_KEY
+            ),
+            "texting_active": bool(account and account.verified_at),
+            "join_code": pending_code,
+        },
     )
 
 

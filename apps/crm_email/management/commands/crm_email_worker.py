@@ -7,6 +7,7 @@ from django.db import close_old_connections
 from django_tenants.utils import schema_context
 
 from apps.crm_email.worker import run_pass
+from apps.notifications.board_sms import drain_board_texts
 
 logger = logging.getLogger(__name__)
 
@@ -27,6 +28,18 @@ class Command(BaseCommand):
                 # credentials, provider response bodies or exception strings from external libraries.
                 logger.error(
                     "crm_email_worker_pass_failed error_type=%s", type(exc).__name__
+                )
+                if options["once"]:
+                    raise
+            finally:
+                close_old_connections()
+            try:
+                with schema_context("public"):
+                    drain_board_texts()
+            except Exception as exc:
+                # Keep both queues running independently if a provider or database pass fails.
+                logger.error(
+                    "reader_sms_worker_pass_failed error_type=%s", type(exc).__name__
                 )
                 if options["once"]:
                     raise

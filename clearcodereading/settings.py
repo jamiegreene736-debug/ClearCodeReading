@@ -281,6 +281,8 @@ NEWSLETTER_FROM_EMAIL = os.getenv(
     "ClearCode Reading <hello@clearcodereading.com>",
 ).strip()
 RECRUITING_OWNER_EMAIL = os.getenv("RECRUITING_OWNER_EMAIL", "").strip().lower()
+QUO_API_KEY = os.getenv("QUO_API_KEY", "").strip()
+QUO_WEBHOOK_KEY = os.getenv("QUO_WEBHOOK_KEY", "").strip()
 SMS_PROVIDER = os.getenv("SMS_PROVIDER", "stub")
 INSTRUCTIONAL_AI_SERVICE = os.getenv(
     "INSTRUCTIONAL_AI_SERVICE",

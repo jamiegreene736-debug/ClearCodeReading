@@ -746,3 +746,11 @@ Run the browser regression suite with
 `npx playwright test tests/browser/human-verification.spec.js` (set `PYTHON` to the
 project Python environment if needed). The tests mock Cloudflare callbacks and
 render the real templates without sending submissions to the live site.
+
+### Family boards and Quo texting
+
+Each reader’s board connects their participating guardians and assigned teacher. Dashboard notifications and dated notes work independently of texting. Teachers can attach a resource to a note. On Monday, the previous week’s activities and shared resources move to **Earlier resources**.
+
+To activate SMS, use the Quo workspace that owns **(407) 449-7941**. Set `QUO_API_KEY` on the web service and the CRM Email Worker. Subscribe to `message.received` at `https://www.clearcodereading.com/webhooks/quo/reader-board/` using API version `2026-03-30`. Save the returned signing key as `QUO_WEBHOOK_KEY` on the web service. [Quo webhook setup](https://www.quo.com/docs/2026-03-30/webhooks-quickstart)
+
+From **Family board → Text messages → Connect my phone**, each participant texts the displayed one-time code from their own phone. The school number sends each verified recipient a separate SMS. To post by text, start the message with the reader code shown on the board and in every outbound text. Reply STOP or turn off texting on the board to disconnect. The board shows whether Quo accepted each outbound text. If delivery is uncertain, the original note remains available on the board.
