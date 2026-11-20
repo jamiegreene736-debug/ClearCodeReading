@@ -1,8 +1,10 @@
+from django.db import transaction
 from rest_framework import serializers
 from rest_framework.exceptions import PermissionDenied
 
 from apps.api.permissions import has_coppa_consent
 from apps.api.serializers import SchoolSummarySerializer, UserSummarySerializer
+from apps.crm.parent_contacts import ensure_parent_contact
 from apps.schools.models import School
 from apps.users.models import (
     AuditLog,
@@ -94,6 +96,7 @@ class CustomUserSerializer(serializers.ModelSerializer):
         ]
         extra_kwargs = {"metadata": {"write_only": True, "required": False}}
 
+    @transaction.atomic
     def create(self, validated_data):
         password = validated_data.pop("password", None)
         user = CustomUser(**validated_data)
@@ -102,6 +105,7 @@ class CustomUserSerializer(serializers.ModelSerializer):
         else:
             user.set_unusable_password()
         user.save()
+        ensure_parent_contact(user)
         return user
 
     def update(self, instance, validated_data):

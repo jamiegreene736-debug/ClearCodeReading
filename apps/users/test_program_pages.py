@@ -96,6 +96,11 @@ class ProgramPageAccessTests(TestCase):
             child=self.child,
             relationship_type=GuardianRelationship.RelationshipType.PARENT,
         )
+        GuardianRelationship.objects.create(
+            guardian=guardian,
+            child=ChildProfile.objects.create(first_name="Sibling"),
+            relationship_type=GuardianRelationship.RelationshipType.PARENT,
+        )
         lead = Lead.objects.create(
             school_name="ClearCode",
             contact_name="Family Guardian",
@@ -103,7 +108,7 @@ class ProgramPageAccessTests(TestCase):
         )
         self.client.force_login(self.admin)
         response = self.client.get(reverse("portal_readers"))
-        self.assertContains(response, reverse("crm_contact_detail", args=[lead.pk]))
+        self.assertContains(response, reverse("crm_contact_detail", args=[lead.pk]), count=2)
 
     @override_settings(
         EMAIL_BACKEND="django.core.mail.backends.locmem.EmailBackend",

@@ -45,7 +45,7 @@
         </h1>
         <p class="mt-5 text-lg leading-8 text-ink/70">
           {% if is_parent %}
-            Track your child's reading age, strengths, growth areas, and next steps after human review.
+            {% if request.user.can_add_child and not children %}Add your child to start their reading profile.{% else %}Track your child's reading age, strengths, growth areas, and next steps after human review.{% endif %}
           {% elif is_child %}
             See the reading lessons your teacher assigned and what to practice next.
           {% elif is_admin %}
@@ -54,6 +54,30 @@
             Review student KPIs, completed surveys, and inventories waiting for human evaluator notes.
           {% endif %}
         </p>
+        {% if is_parent %}
+          <section class="mt-5" aria-label="Your family">
+            {% if children %}
+              <h2 class="text-xl font-black">Your children</h2>
+              <ul class="mt-2">{% for child in children %}<li>{% if request.user.can_add_child %}<a class="font-black text-deepTeal underline" href="{% url 'portal_reader_profile' child.pk %}">{{ child }} · Reader Profile</a>{% else %}{{ child }}{% endif %}{% if child.grade_level %} · {{ child.get_grade_level_display }}{% endif %}</li>{% endfor %}</ul>
+            {% endif %}
+            {% if request.user.can_add_child %}
+              <a id="start-reader-setup" class="focus-ring mt-3 inline-flex rounded-full bg-deepTeal px-5 py-3 font-black text-white" href="{% url 'portal_add_child' %}">{% if children %}Add another child{% else %}Add your first child{% endif %}</a>
+              <dialog id="reader-welcome" aria-labelledby="reader-welcome-heading" class="rounded-3xl bg-white p-6 shadow-xl" style="margin:auto;max-width:min(28rem,92vw)">
+                <form method="post" action="{% url 'portal_add_child' %}">
+                  {% csrf_token %}<input type="hidden" name="step" value="start">
+                  <h2 id="reader-welcome-heading" class="text-2xl font-black">Add a reader</h2>
+                  <p class="mt-2">First, sign the family forms. Then add a photo, school and favorite things.</p>
+                  <label class="mt-4 block font-black">Reader’s first name <input class="mt-2 w-full rounded-xl border p-3" name="first_name" maxlength="120" required></label>
+                  <div class="mt-4 flex gap-3"><button class="rounded-full bg-deepTeal px-4 py-2 font-black text-white" type="submit">Continue to forms</button><button type="button" onclick="this.closest('dialog').close()">Cancel</button></div>
+                </form>
+              </dialog>
+              <script>document.getElementById('start-reader-setup').addEventListener('click', event => {
+                const dialog = document.getElementById('reader-welcome');
+                if (dialog.showModal) { event.preventDefault(); dialog.showModal(); }
+              });</script>
+            {% endif %}
+          </section>
+        {% endif %}
         <div class="mt-7 grid gap-3 sm:grid-cols-2 lg:grid-cols-1 xl:grid-cols-2">
           <div class="rounded-3xl bg-seafoam p-5">
             <p class="text-sm font-black text-deepTeal">Readers</p>
@@ -76,7 +100,7 @@
 
       <section class="min-w-0 space-y-6">
         <nav class="sticky top-[4.75rem] z-30 flex gap-2 overflow-x-auto rounded-2xl bg-white/95 p-2 shadow-lg ring-1 ring-ink/10 backdrop-blur" aria-label="Workspace sections">
-          {% if is_parent or is_child %}<a class="focus-ring min-h-11 shrink-0 rounded-xl bg-linen px-4 py-3 text-sm font-black text-deepTeal" href="#progress-overview">Progress</a>{% endif %}
+          {% if is_parent and children or is_child %}<a class="focus-ring min-h-11 shrink-0 rounded-xl bg-linen px-4 py-3 text-sm font-black text-deepTeal" href="#progress-overview">Progress</a>{% endif %}
           {% if is_teacher or is_admin %}<a class="focus-ring min-h-11 shrink-0 rounded-xl bg-linen px-4 py-3 text-sm font-black text-deepTeal" href="{% url 'portal_readers' %}">Readers</a>{% endif %}
           {% if is_teacher or is_admin %}<a class="focus-ring min-h-11 shrink-0 rounded-xl bg-linen px-4 py-3 text-sm font-black text-deepTeal" href="{% url 'portal_sessions' %}">Sessions</a>{% endif %}
           {% if is_teacher or is_admin %}<a class="focus-ring min-h-11 shrink-0 rounded-xl bg-linen px-4 py-3 text-sm font-black text-deepTeal" href="{% url 'portal_placements' %}">Placement</a>{% endif %}
@@ -169,7 +193,7 @@
               </div>
             </section>
           {% empty %}
-            <section id="progress-overview" class="scroll-mt-40 rounded-[2rem] bg-white p-6 shadow-xl ring-1 ring-mediumTeal/15"><h2 class="text-2xl font-black">Progress dashboard unavailable</h2><p class="mt-2 text-ink/65">Active guardian consent and dashboard access are required. Contact your center if this looks unexpected.</p></section>
+            {% if children %}<section id="progress-overview" class="scroll-mt-40 rounded-[2rem] bg-white p-6 shadow-xl ring-1 ring-mediumTeal/15"><h2 class="text-2xl font-black">Progress dashboard unavailable</h2><p class="mt-2 text-ink/65">Active guardian consent and dashboard access are required. Contact your center if this looks unexpected.</p></section>{% endif %}
           {% endfor %}
         {% endif %}
 

@@ -1,0 +1,37 @@
+{% extends "portal/reader_form_base.html" %}
+{% block title %}Reader Profile{% endblock %}
+{% block content %}
+<form method="post" enctype="multipart/form-data" class="reader-card">
+  <p class="step">Step 2 of 2 · <a href="{% url 'portal_reader_forms' child.pk %}">View signed forms</a></p>
+  <h1>{{ child.first_name }}’s Reader Profile</h1>
+  {% csrf_token %}{{ form.non_field_errors }}
+  <fieldset><legend>About your reader</legend>
+    {% if has_photo %}<img src="{% url 'portal_reader_photo' child.pk %}" width="96" height="96" alt="Current reader photo"><label class="choice">{{ form.remove_photo }}{{ form.remove_photo.label }}</label>{% endif %}
+    <div class="field">{{ form.photo.label_tag }}{{ form.photo }}{{ form.photo.errors }}<small>Optional · JPG, PNG or WebP · up to 5 MB</small></div>
+    <div class="form-grid">
+      <div>{{ form.first_name.label_tag }}{{ form.first_name }}{{ form.first_name.errors }}</div>
+      <div>{{ form.last_name.label_tag }}{{ form.last_name }}{{ form.last_name.errors }}</div>
+      <div>{{ form.school_name.label_tag }}{{ form.school_name }}{{ form.school_name.errors }}</div>
+      <div>{{ form.grade_level.label_tag }}{{ form.grade_level }}{{ form.grade_level.errors }}</div>
+      <div>{{ form.date_of_birth.label_tag }}{{ form.date_of_birth }}{{ form.date_of_birth.errors }}</div>
+      <div><label for="reader-age">Age</label><output id="reader-age" for="id_date_of_birth" aria-live="polite"></output></div>
+    </div>
+  </fieldset>
+  <fieldset><legend>Interests and favorites</legend>
+    <div class="field">{{ form.activities.label_tag }}{{ form.activities }}{{ form.activities.errors }}</div>
+    <div class="field">{{ form.favorites.label_tag }}{{ form.favorites }}{{ form.favorites.errors }}</div>
+  </fieldset>
+  <footer><button type="submit">Save Reader Profile</button><a href="{% url 'portal_dashboard' %}">Back to dashboard</a></footer>
+</form>
+<script>
+(() => {
+  const input = document.getElementById('id_date_of_birth'), output = document.getElementById('reader-age');
+  const today = '{{ today|date:"Y-m-d" }}';
+  function showAge() {
+    const dob = input.value;
+    output.textContent = dob && dob <= today ? String(Number(today.slice(0,4)) - Number(dob.slice(0,4)) - Number(today.slice(5) < dob.slice(5))) + ' years' : 'Enter a birthday';
+  }
+  input.max = today; input.addEventListener('input', showAge); showAge();
+})();
+</script>
+{% endblock %}

@@ -29,6 +29,8 @@ class SoftDeleteModel(models.Model):
 
 
 class CustomUser(AbstractUser, TimestampedModel, SoftDeleteModel):
+    DEMO_PARENT_EMAIL = "parent@clearcodereading.com"
+
     class Role(models.TextChoices):
         SUPER_ADMIN = "super_admin", "Super Admin"
         CRM_USER = "crm_user", "CRM User"
@@ -74,6 +76,17 @@ class CustomUser(AbstractUser, TimestampedModel, SoftDeleteModel):
         except Profile.DoesNotExist:
             preferred = ""
         return (preferred or self.first_name or "").strip()
+
+    @property
+    def can_add_child(self) -> bool:
+        return (
+            self.role == self.Role.GUARDIAN
+            and self.is_active
+            and not self.is_deleted
+            and not self.is_superuser
+            and self.email.lower() != self.DEMO_PARENT_EMAIL
+            and not (isinstance(self.metadata, dict) and self.metadata.get("demo"))
+        )
 
     @property
     def has_resource_access(self) -> bool:
@@ -397,6 +410,31 @@ class GuardianRelationship(TimestampedModel, SoftDeleteModel):
 
     def __str__(self):
         return f"{self.guardian} -> {self.child}"
+
+
+class SignedReaderForms(models.Model):
+    """Snapshot of the exact forms and choices signed by one guardian for one reader."""
+
+    relationship = models.OneToOneField(GuardianRelationship, on_delete=models.PROTECT, related_name="signed_forms")
+    submission_id = models.UUIDField()
+    signed_name = models.CharField(max_length=200)
+    signer_email = models.EmailField()
+    reader_name = models.CharField(max_length=241)
+    signed_at = models.DateTimeField(auto_now_add=True)
+    version = models.CharField(max_length=32)
+    statements = models.JSONField()
+    assessment_allowed = models.BooleanField()
+    school_sharing_allowed = models.BooleanField()
+    filming_allowed = models.BooleanField()
+
+
+class ReaderDetails(models.Model):
+    child = models.OneToOneField(ChildProfile, on_delete=models.CASCADE, related_name="reader_details")
+    school_name = models.CharField(max_length=200, blank=True)
+    activities = models.CharField(max_length=500, blank=True)
+    favorites = models.CharField(max_length=500, blank=True)
+    photo = models.BinaryField(blank=True, default=bytes)
+    updated_at = models.DateTimeField(auto_now=True)
 
 
 class ConsentLog(TimestampedModel):

@@ -34,7 +34,7 @@ from apps.users.models import ChildProfile, CustomUser, GuardianRelationship
 
 DEMO_LOGINS = {
     "admin": "admin@clearcodereading.com",
-    "parent": "parent@clearcodereading.com",
+    "parent": CustomUser.DEMO_PARENT_EMAIL,
     "teacher": "teacher@clearcodereading.com",
 }
 

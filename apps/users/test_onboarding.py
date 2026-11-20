@@ -8,6 +8,7 @@ from django.test import Client, TestCase, override_settings
 from django.urls import reverse
 from django.utils import timezone
 
+from apps.crm.models import Lead
 from apps.crm_email.google import ProviderError
 from apps.crm_email.models import Mailbox, Message
 from apps.users.invitations import deliver_invitation
@@ -60,6 +61,45 @@ class UserOnboardingTests(TestCase):
         self.assertNotIn("Temporary password", body)
         self.assertEqual(user.invitation.status, "sent")
         self.assertEqual(Message.objects.count(), 0)
+
+    def test_parent_invitation_to_first_child(self):
+        user = self.invite(role="guardian")
+        lead = Lead.objects.get(linked_user=user)
+        self.assertEqual(lead.contact_email, user.email)
+        self.assertEqual(lead.contact_name, "New")
+        self.assertEqual(lead.audience, Lead.PipelineCategory.FAMILY_ENROLLMENT)
+        self.client.logout()
+        setup = self.client.get(self.setup_path())
+        password = "Choose-A-Password-749!"
+        self.client.post(setup.url, {"new_password1": password, "new_password2": password})
+        dashboard = self.client.post(reverse("login"), {"username": user.email, "password": password}, follow=True)
+        self.assertContains(dashboard, "Add your first child")
+        form_page = self.client.get(reverse("portal_add_child"))
+        data = {
+            "first_name": "Avery", "relationship_type": "parent", "data_processing": "on",
+            "filming":"allow", "electronic_signature":"on", "signed_name":"New Parent",
+            "submission_id": form_page.context["form"]["submission_id"].value(),
+        }
+        dashboard = self.client.post(reverse("portal_add_child"), data, follow=True)
+        self.assertContains(dashboard, "Avery")
+        self.assertContains(dashboard, "Reader Profile")
+        profile_url = dashboard.redirect_chain[-1][0]
+        saved = self.client.post(profile_url, {"first_name": "Avery", "favorites": "Hello Kitty"}, follow=True)
+        self.assertContains(saved, "Add another child")
+        self.assertEqual(Lead.objects.filter(linked_user=user).count(), 1)
+
+    def test_parent_invitation_links_existing_contact_and_keeps_history(self):
+        lead = Lead.objects.create(
+            contact_email="NEW@example.com", contact_name="Known parent", notes="Prior conversation",
+            school_name="Family inquiry", status=Lead.Status.QUALIFIED, assigned_to=self.admin,
+        )
+        user = self.invite(role="guardian")
+        lead.refresh_from_db()
+        self.assertEqual(Lead.objects.count(), 1)
+        self.assertEqual(lead.linked_user_id, user.pk)
+        self.assertEqual(lead.notes, "Prior conversation")
+        self.assertEqual(lead.status, Lead.Status.QUALIFIED)
+        self.assertEqual(lead.assigned_to_id, self.admin.pk)
 
     def test_setup_link_is_single_use_and_sets_password(self):
         user = self.invite()

@@ -453,7 +453,9 @@ and the parent dashboard uses the current prediction when one is available.
 See `docs/decision_support.md` for rule behavior, on-demand commands, endpoints,
 configuration, and example flag and prediction payloads.
 
-- Parent/guardian registration creates a child profile and guardian relationship.
+- Inviting a parent in **Manage users** creates a linked **Families / Enrollment** CRM contact or links an existing active contact with the same email.
+- On the parent dashboard, **Add your first child** and **Add another child** open the family setup form. Parents sign the reader forms, including a single opt-in or decline for internal filming and public marketing. The portal stores the wording, choices, signer and timestamp, then opens the private Reader Profile for a photo, school, grade, birthday and interests.
+- Parent/guardian API registration also creates a child profile and guardian relationship.
 - Consent logs track consent type, status, version, source, IP, user agent, and expiry.
 - Formal `ConsentRecord` history is the IDEA/IEP authorization source of truth;
   legacy child-profile approvals remain a fallback only when no record exists.
