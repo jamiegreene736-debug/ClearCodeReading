@@ -6,7 +6,8 @@ from datetime import timedelta
 from email.message import EmailMessage
 
 from django.conf import settings
-from django.core.exceptions import PermissionDenied
+from django.core.exceptions import PermissionDenied, ValidationError
+from django.core.validators import validate_email
 from django.db import transaction
 from django.urls import reverse
 from django.utils import timezone
@@ -32,26 +33,33 @@ def send_notice(client: Gmail, notice: MeetingNotice) -> None:
     meeting = notice.meeting
     local_start = timezone.localtime(meeting.starts_at)
     local_end = timezone.localtime(meeting.ends_at)
+    validate_email(meeting.parent.email)
     message = EmailMessage()
     message["Message-ID"] = message_id(notice)
     message["From"] = BETHANY_EMAIL
-    message["To"] = meeting.family.guardian.email
-    message["Subject"] = f"Family meeting {notice.get_kind_display().lower()} | ClearCode Reading"
+    message["To"] = meeting.parent.email
+    message["Subject"] = (
+        f"Family meeting {notice.get_kind_display().lower()} | ClearCode Reading"
+    )
     intro = {
         MeetingNotice.Kind.INVITE: "You are invited to a family meeting.",
         MeetingNotice.Kind.UPDATE: "Your family meeting details have changed.",
         MeetingNotice.Kind.REMINDER: "This is a reminder about your upcoming family meeting.",
         MeetingNotice.Kind.CANCEL: "Your family meeting has been cancelled.",
-    }[notice.kind]
+    }[MeetingNotice.Kind(notice.kind)]
     message.set_content(
-        f"Hello {meeting.family.guardian},\n\n{intro}\n\n"
-        f"Reader: {meeting.family.child}\nTeacher: {meeting.teacher}\n"
+        f"Hello {meeting.parent},\n\n{intro}\n\n"
+        f"Reader: {meeting.child}\nTeacher: {meeting.teacher}\n"
         f"Start: {local_start:%A, %B %d, %Y at %I:%M %p %Z}\n"
         f"End: {local_end:%A, %B %d, %Y at %I:%M %p %Z}\n"
         f"Meeting location: {meeting.location}\n\n"
         f"View your schedule: {settings.PUBLIC_APP_URL.rstrip('/')}{reverse('family_meetings')}\n"
     )
-    result = client.request("POST", "messages/send", json={"raw": base64.urlsafe_b64encode(message.as_bytes()).decode()})
+    result = client.request(
+        "POST",
+        "messages/send",
+        json={"raw": base64.urlsafe_b64encode(message.as_bytes()).decode()},
+    )
     if not result.get("id"):
         raise ProviderError()
 
@@ -60,21 +68,32 @@ def claim(notice_id: int) -> MeetingNotice | None:
     # Edits and dispatch lock the meeting before touching notices. Commit the
     # checking state before external I/O so a worker restart reconciles first.
     with transaction.atomic():
-        meeting_id = MeetingNotice.objects.values_list("meeting_id", flat=True).get(pk=notice_id)
+        meeting_id = MeetingNotice.objects.values_list("meeting_id", flat=True).get(
+            pk=notice_id
+        )
         FamilyMeeting.objects.select_for_update().get(pk=meeting_id)
-        notice = MeetingNotice.objects.select_for_update(of=("self",)).select_related(
-            "meeting__teacher", "meeting__family__child", "meeting__family__guardian"
-        ).get(pk=notice_id)
+        notice = (
+            MeetingNotice.objects.select_for_update(of=("self",))
+            .select_related("meeting__teacher", "meeting__child", "meeting__parent")
+            .get(pk=notice_id)
+        )
         if notice.state != State.PENDING:
             return None
         meeting = notice.meeting
         valid = (
             notice.revision == meeting.revision
+            and meeting.parent.can_add_child
             and meeting.teacher.role == CustomUser.Role.TEACHER
-            and meeting.teacher.is_active and not meeting.teacher.is_deleted
-            and teacher_families(meeting.teacher).filter(pk=meeting.family_id).exists()
-            and (meeting.cancelled if notice.kind == MeetingNotice.Kind.CANCEL
-                 else not meeting.cancelled and meeting.starts_at > timezone.now())
+            and meeting.teacher.is_active
+            and not meeting.teacher.is_deleted
+            and teacher_families(meeting.teacher)
+            .filter(child_id=meeting.child_id, guardian_id=meeting.parent_id)
+            .exists()
+            and (
+                meeting.cancelled
+                if notice.kind == MeetingNotice.Kind.CANCEL
+                else not meeting.cancelled and meeting.starts_at > timezone.now()
+            )
         )
         if not valid:
             notice.state = State.SKIPPED
@@ -99,7 +118,14 @@ def process_notice(client: Gmail, notice: MeetingNotice) -> None:
     if notice.state == State.CHECKING:
         notice.attempts += 1
         try:
-            result = client.request("GET", "messages", params={"q": f"in:sent rfc822msgid:{message_id(notice)}", "maxResults": 2})
+            result = client.request(
+                "GET",
+                "messages",
+                params={
+                    "q": f"in:sent rfc822msgid:{message_id(notice)}",
+                    "maxResults": 2,
+                },
+            )
         except EmailError:
             defer(notice, State.CHECKING)
             return
@@ -121,8 +147,12 @@ def process_notice(client: Gmail, notice: MeetingNotice) -> None:
             else:
                 defer(notice, State.CHECKING)
             return
+        except ValidationError:
+            defer(notice, State.REVIEW)
+            return
         except EmailError:
-            defer(notice, State.CHECKING)
+            # Gmail rejected its setup or token before submitting the message.
+            defer(notice, State.PENDING)
             return
 
     notice.state = State.SENT
@@ -132,11 +162,17 @@ def process_notice(client: Gmail, notice: MeetingNotice) -> None:
 
 def process_due_notices() -> None:
     # The email worker holds its global advisory lock for the entire pass.
-    due = MeetingNotice.objects.filter(state__in=[State.PENDING, State.CHECKING], due_at__lte=timezone.now())
+    due = MeetingNotice.objects.filter(
+        state__in=[State.PENDING, State.CHECKING], due_at__lte=timezone.now()
+    )
     batch = list(due.order_by("due_at", "pk")[:5])
     if not batch:
         return
-    mailbox = Mailbox.objects.select_related("user").filter(email__iexact=BETHANY_EMAIL, user__email__iexact=BETHANY_EMAIL).first()
+    mailbox = (
+        Mailbox.objects.select_related("user")
+        .filter(email__iexact=BETHANY_EMAIL, user__email__iexact=BETHANY_EMAIL)
+        .first()
+    )
     try:
         if mailbox is None:
             raise EmailError("Meeting mailbox unavailable.")
@@ -148,5 +184,7 @@ def process_due_notices() -> None:
         # No send was attempted without the connected mailbox. Back off the
         # affected rows, retaining any state changed by a simultaneous edit.
         for notice in batch:
-            due.filter(pk=notice.pk, state=notice.state).update(due_at=timezone.now() + timedelta(minutes=5))
+            due.filter(pk=notice.pk, state=notice.state).update(
+                due_at=timezone.now() + timedelta(minutes=5)
+            )
         logger.warning("family_meeting_mailbox_unavailable")

@@ -40,7 +40,7 @@ GROUP_DEFINITIONS = (
     (
         "operations",
         "Scheduling & payments",
-        frozenset({"billing", "notifications", "scheduling", "workforce"}),
+        frozenset({"billing", "meetings", "notifications", "scheduling", "workforce"}),
     ),
     (
         "business",
