@@ -9,7 +9,6 @@ from typing import Any, cast
 from django import forms
 from django.conf import settings
 from django.contrib import messages
-from django.contrib.auth.base_user import AbstractBaseUser
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.forms import SetPasswordForm
 from django.contrib.auth.views import PasswordResetConfirmView
@@ -59,7 +58,7 @@ class InviteUserForm(forms.Form):
 
     def __init__(self, *args: Any, actor: CustomUser, **kwargs: Any) -> None:
         super().__init__(*args, **kwargs)
-        cast(forms.ModelChoiceField, self.fields["family_teacher"]).queryset = family_teacher_choices(actor)
+        cast("forms.ModelChoiceField[CustomUser]", self.fields["family_teacher"]).queryset = family_teacher_choices(actor)
         if not actor.can_manage_crm_users:
             role_field = cast(forms.ChoiceField, self.fields["role"])
             role_field.choices = [
@@ -205,7 +204,7 @@ class AcceptInvitationView(PasswordResetConfirmView):
     success_url = reverse_lazy("login")
 
     def get_user(self, uidb64: str) -> CustomUser | None:
-        user = cast(CustomUser | None, super().get_user(uidb64))
+        user = super().get_user(uidb64)
         if (
             user
             and user.is_active
@@ -220,12 +219,12 @@ class AcceptInvitationView(PasswordResetConfirmView):
     def post(self, request: HttpRequest, *args: object, **kwargs: object) -> HttpResponse:
         from apps.core.bot_protection import redirect_if_blocked
 
-        blocked = redirect_if_blocked(request, "invitation", request.path)
+        blocked: HttpResponse | None = redirect_if_blocked(request, "invitation", request.path)
         if blocked is not None:
             return blocked
         return super().post(request, *args, **kwargs)
 
-    def form_valid(self, form: SetPasswordForm[AbstractBaseUser]) -> HttpResponse:
+    def form_valid(self, form: SetPasswordForm[CustomUser]) -> HttpResponse:
         with transaction.atomic():
             invitation = (
                 UserInvitation.objects.select_for_update()

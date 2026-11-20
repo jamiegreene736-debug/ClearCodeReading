@@ -5,7 +5,7 @@ from typing import Any
 from django.db.models import Q, QuerySet
 from django.utils import timezone
 
-from apps.users.models import CustomUser
+from apps.users.models import CustomUser, Profile
 
 
 def teaching_accounts() -> QuerySet[CustomUser]:
@@ -49,7 +49,7 @@ def reader_teacher_fields(teacher: CustomUser) -> dict[str, Any]:
 
 
 def current_family_teacher(parent: CustomUser) -> CustomUser | None:
-    profile = getattr(parent, "profile", None)
+    profile: Profile | None = getattr(parent, "profile", None)
     if not profile or profile.is_deleted:
         return None
     teacher = profile.family_teacher
