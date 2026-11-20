@@ -53,6 +53,7 @@ from apps.decision_support.models import (
 )
 from apps.outcomes.models import DeIdentifiedOutcomeSnapshot, build_center_key
 from apps.progress.models import MasteryRecord, Progress
+from apps.meetings.models import FamilyMeeting
 from apps.scheduling.models import (
     Group,
     ProviderAvailability,
@@ -262,7 +263,7 @@ class Command(BaseCommand):
             assessment,
         )
         self._seed_scheduling(
-            admin_user, teacher, child, center, curriculum, first, second
+            admin_user, teacher, parent, child, center, curriculum, first, second
         )
         self._seed_workforce(admin_user, teacher, center, session)
         self._seed_outcomes(center, curriculum)
@@ -861,9 +862,14 @@ class Command(BaseCommand):
         )
 
     def _seed_scheduling(
-        self, admin_user, teacher, child, center, curriculum, first, second
+        self, admin_user, teacher, parent, child, center, curriculum, first, second
     ):
         start = timezone.make_aware(datetime(2026, 9, 8, 15, 30))
+        # The demo fixture exercises the register without creating outbound mail.
+        FamilyMeeting.objects.get_or_create(
+            teacher=teacher, parent=parent, child=child, school=center, starts_at=start,
+            defaults={"ends_at": start + timedelta(minutes=30), "location": "Demo family meeting room"},
+        )
         ProviderAvailability.objects.update_or_create(
             center=center,
             specialist=teacher,
