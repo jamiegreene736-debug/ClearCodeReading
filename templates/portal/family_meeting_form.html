@@ -1,0 +1,31 @@
+{% extends "portal/page.html" %}
+{% block title %}{% if meeting %}Manage{% else %}Schedule{% endif %} a family meeting{% endblock %}
+{% block extra_head %}<style>
+.meeting-form label {display:block;font-weight:700;margin-bottom:.35rem}
+.meeting-form input:not([type=hidden]),.meeting-form select {width:100%;padding:.7rem;border:1px solid #728782;border-radius:.65rem}
+.meeting-form .errorlist {color:#8e251e;font-weight:600}
+</style>{% endblock %}
+{% block content %}
+<section class="mx-auto max-w-2xl rounded-3xl bg-white p-6 shadow-xl sm:p-8">
+  <a href="{% url 'family_meetings' %}" class="focus-ring font-bold underline">Family meetings</a>
+  <h1 class="my-4 text-3xl font-black">{% if meeting %}Manage meeting{% else %}Schedule a meeting{% endif %}</h1>
+  {% if not has_families %}
+    <p>You need an assigned reader with a linked parent who has granted consent. A program administrator can check the reader’s assignment and family account.</p>
+  {% else %}
+  <form method="post" class="meeting-form grid gap-4">{% csrf_token %}
+    {{ form.non_field_errors }}{{ form.revision }}{{ form.revision.errors }}
+    {% for field in form.visible_fields %}<div>{{ field.label_tag }}{{ field }}{{ field.errors }}</div>{% endfor %}
+    <p>The parent will receive the time and location by email.</p>
+    <button type="submit" class="focus-ring rounded-full bg-deepTeal px-5 py-3 font-bold text-white">{% if meeting %}Save changes and notify parent{% else %}Schedule and invite parent{% endif %}</button>
+  </form>
+  {% endif %}
+  {% if meeting %}
+    <details class="mt-6"><summary class="cursor-pointer font-bold">Cancel meeting</summary>
+      <form method="post" action="{% url 'cancel_family_meeting' meeting.pk %}" class="mt-3">{% csrf_token %}
+        <input type="hidden" name="revision" value="{{ meeting.revision }}">
+        <button class="focus-ring rounded-full border px-4 py-2 font-bold" type="submit">Confirm cancellation and notify parent</button>
+      </form>
+    </details>
+  {% endif %}
+</section>
+{% endblock %}

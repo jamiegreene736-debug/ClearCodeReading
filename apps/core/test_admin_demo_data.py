@@ -4,6 +4,7 @@ from django.test import TestCase, override_settings
 
 from apps.crm.models import NewsletterCampaign, NewsletterDelivery
 from apps.curriculum.models import Lesson
+from apps.meetings.models import FamilyMeeting, MeetingNotice
 from apps.schools.models import School
 from apps.social.models import SocialAccount, SocialPost, SocialPublication
 from apps.workforce.models import PaymentRun, ProviderOnboarding, SensitiveDataReference
@@ -40,6 +41,9 @@ class AdminDemoDataTests(TestCase):
 
     def test_external_workflows_remain_draft_or_pending(self):
         call_command("seed_admin_demo_data", verbosity=0)
+
+        self.assertTrue(FamilyMeeting.objects.filter(location="Demo family meeting room").exists())
+        self.assertFalse(MeetingNotice.objects.exists())
 
         account = SocialAccount.objects.get(network=SocialAccount.Network.FACEBOOK)
         self.assertEqual(account.status, SocialAccount.Status.DISCONNECTED)

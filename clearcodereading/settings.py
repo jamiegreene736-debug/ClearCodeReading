@@ -62,6 +62,7 @@ SHARED_APPS = [
     "apps.resources.apps.ResourcesConfig",
     "apps.notifications.apps.NotificationsConfig",
     "apps.users",
+    "apps.meetings",
     "apps.crm",
     "apps.crm_email.apps.CrmEmailConfig",
     "apps.curriculum",

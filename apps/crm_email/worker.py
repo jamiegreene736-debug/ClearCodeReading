@@ -223,7 +223,9 @@ def run_pass() -> int:
             return 0
         require_configured()
         from apps.crm.website_emails import enqueue_pending_receipts
+        from apps.meetings.mail import process_due_notices
 
+        process_due_notices()
         enqueue_pending_receipts()
         from apps.crm_email.stage_emails import enqueue_stage_emails
 

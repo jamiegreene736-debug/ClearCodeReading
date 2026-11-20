@@ -155,6 +155,7 @@ urlpatterns = [
     path("logout/", LogoutView.as_view(next_page="/"), name="logout"),
     path("account/", AccountProfileView.as_view(), name="account_profile"),
     path("dashboard/", PortalDashboardView.as_view(), name="portal_dashboard"),
+    path("portal/meetings/", include("apps.meetings.urls")),
     path("portal/readers/", PortalReadersView.as_view(), name="portal_readers"),
     path("portal/sessions/", PortalSessionsView.as_view(), name="portal_sessions"),
     path("portal/placements/", PortalPlacementsView.as_view(), name="portal_placements"),
