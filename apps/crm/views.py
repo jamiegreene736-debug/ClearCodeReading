@@ -89,10 +89,14 @@ FAMILY_RESOURCE_PACK_ROOT = (
 )
 
 
+def family_resources_unlocked(request: HttpRequest) -> bool:
+    return bool(request.session.get(FAMILY_RESOURCES_SESSION_KEY) or getattr(getattr(request, "user", None), "can_add_child", False))
+
+
 @require_GET
 def family_resource_pack(request: HttpRequest, filename: str) -> HttpResponse:
     """Serve a downloadable pack only to visitors who completed the email gate."""
-    if not request.session.get(FAMILY_RESOURCES_SESSION_KEY):
+    if not family_resources_unlocked(request):
         return redirect("marketing_resources")
     return serve(request, filename, document_root=FAMILY_RESOURCE_PACK_ROOT)
 
@@ -109,9 +113,7 @@ class FamilyResourcesView(TemplateView):
         from apps.resources.views import library_context
 
         context.update(library_context(self.request))
-        context["resources_unlocked"] = bool(
-            self.request.session.get(FAMILY_RESOURCES_SESSION_KEY)
-        )
+        context["resources_unlocked"] = family_resources_unlocked(self.request)
         context["resource_gate_result"] = (
             self.request.GET.get("signup")
             if self.request.GET.get("signup") in {"invalid", "missing"}

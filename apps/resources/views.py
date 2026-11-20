@@ -18,7 +18,7 @@ from django.utils import timezone
 from django.views.decorators.clickjacking import xframe_options_sameorigin
 from django.views.decorators.http import require_GET, require_http_methods, require_POST
 
-from apps.crm.views import FAMILY_RESOURCES_SESSION_KEY
+from apps.crm.views import family_resources_unlocked
 from apps.resources.access import (
     EditorRequest,
     can_publish,
@@ -487,9 +487,7 @@ def detail(request: HttpRequest, pk: UUID, slug: str) -> HttpResponseBase:
     revision = get_object_or_404(
         published_revisions(), resource_id=pk, resource__slug=slug
     )
-    if revision.access == Revision.Access.FAMILY and not request.session.get(
-        FAMILY_RESOURCES_SESSION_KEY
-    ):
+    if revision.access == Revision.Access.FAMILY and not family_resources_unlocked(request):
         request.session["family_resource_return_to"] = (
             revision.resource.get_absolute_url()
         )
@@ -535,9 +533,7 @@ def asset_response(
 @xframe_options_sameorigin
 def asset(request: HttpRequest, pk: UUID, role: str) -> HttpResponseBase:
     revision = get_object_or_404(published_revisions(), resource_id=pk)
-    if revision.access == Revision.Access.FAMILY and not request.session.get(
-        FAMILY_RESOURCES_SESSION_KEY
-    ):
+    if revision.access == Revision.Access.FAMILY and not family_resources_unlocked(request):
         request.session["family_resource_return_to"] = (
             revision.resource.get_absolute_url()
         )

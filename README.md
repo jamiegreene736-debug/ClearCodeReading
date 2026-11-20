@@ -455,6 +455,7 @@ configuration, and example flag and prediction payloads.
 
 - Inviting a parent in **Manage users** creates a linked **Families / Enrollment** CRM contact or links an existing active contact with the same email.
 - On the parent dashboard, **Add your first child** and **Add another child** open the family setup form. Parents sign the reader forms, including a single opt-in or decline for internal filming and public marketing. The portal stores the wording, choices, signer and timestamp, then opens the private Reader Profile for a photo, school, grade, birthday and interests.
+- The family dashboard includes weekly reading resources, a dated archive, a progress report and a private teacher–family board. Posting a note creates an in-app notification for the other party. Teacher-shared resource links are grouped by the week posted in the program time zone.
 - Parent/guardian API registration also creates a child profile and guardian relationship.
 - Consent logs track consent type, status, version, source, IP, user agent, and expiry.
 - Formal `ConsentRecord` history is the IDEA/IEP authorization source of truth;

@@ -1,0 +1,17 @@
+{% for post in week.teacher_links %}
+  <article class="mt-4 border-b border-deepTeal/10 pb-3">
+    <p class="text-sm font-black text-deepTeal">From {{ post.child.first_name }}’s teacher</p>
+    <a class="font-black text-deepTeal underline" href="{{ post.resource_url }}" target="_blank" rel="noopener noreferrer">{{ post.body|truncatechars:160 }}</a>
+  </article>
+{% endfor %}
+{% if week.activity_title %}
+  <article class="mt-4 rounded-3xl bg-seafoam p-5">
+    <p class="text-sm font-black text-deepTeal">Try this together</p>
+    <h3 class="mt-2 text-xl font-black">{{ week.activity_title }}</h3><p class="mt-2">{{ week.activity_body }}</p>
+    <a class="mt-3 inline-flex text-sm font-black text-deepTeal underline" href="https://ies.ed.gov/use-work/resource-library/resource/other-resource/supporting-your-childs-reading-home" target="_blank" rel="noopener noreferrer">Family reading activities from IES</a>
+  </article>
+{% endif %}
+{% if week.library %}
+  <h3 class="mt-5 text-xl font-black">From the family library</h3>
+  <ul class="mt-2 grid gap-2">{% for resource in week.library %}<li><a class="font-bold text-deepTeal underline" href="{{ resource.resource.get_absolute_url }}">{{ resource.title }}</a></li>{% endfor %}</ul>
+{% endif %}

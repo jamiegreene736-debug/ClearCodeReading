@@ -43,6 +43,7 @@ from apps.crm.views import (
 from apps.core.discovery_views import LlmsTxtView, RobotsTxtView, SitemapXmlView
 from apps.sessions.views import RapidSessionLogView
 from apps.users.family import add_child
+from apps.users.reader_board import board_notifications, reader_board
 from apps.users.reader_profile import reader_photo, reader_profile
 from apps.users.onboarding_views import manage_users, resend_invitation, AcceptInvitationView, gmail_welcome
 from apps.users.account import AccountProfileView
@@ -208,6 +209,8 @@ urlpatterns = [
     path("assign-teacher/", AssignTeacherView.as_view(), name="assign_teacher"),
     path("portal/templates/assign-teacher/", AssignTemplateToTeacherView.as_view(), name="portal_assign_template_to_teacher"),
     path("portal/lessons/assign-child/", AssignLessonTemplateToChildView.as_view(), name="portal_assign_lesson_to_child"),
+    path("portal/readers/<int:child_id>/board/", reader_board, name="portal_reader_board"),
+    path("portal/family/notifications/", board_notifications, name="portal_board_notifications"),
     path("portal/readers/<int:child_id>/forms/", add_child, name="portal_reader_forms"),
     path("portal/readers/<int:child_id>/profile/", reader_profile, name="portal_reader_profile"),
     path("portal/readers/<int:child_id>/photo/", reader_photo, name="portal_reader_photo"),

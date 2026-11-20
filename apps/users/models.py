@@ -437,6 +437,37 @@ class ReaderDetails(models.Model):
     updated_at = models.DateTimeField(auto_now=True)
 
 
+class FamilyResourceWeek(models.Model):
+    week_start = models.DateField(primary_key=True)
+    activity_title = models.CharField(max_length=120)
+    activity_body = models.TextField()
+    library_ids = models.JSONField(default=list)
+
+
+class ReaderBoardPost(models.Model):
+    child = models.ForeignKey(ChildProfile, on_delete=models.CASCADE, related_name="board_posts")
+    author = models.ForeignKey(CustomUser, on_delete=models.PROTECT, related_name="reader_board_posts")
+    submission_id = models.UUIDField()
+    body = models.CharField(max_length=2000)
+    resource_url = models.URLField(max_length=1000, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ["-created_at", "-pk"]
+        indexes = [models.Index(fields=["child", "-created_at"])]
+        constraints = [models.UniqueConstraint(fields=["child", "author", "submission_id"], name="reader_board_submission")]
+
+
+class ReaderBoardNotification(models.Model):
+    post = models.ForeignKey(ReaderBoardPost, on_delete=models.CASCADE, related_name="notifications")
+    recipient = models.ForeignKey(CustomUser, on_delete=models.CASCADE, related_name="reader_board_notifications")
+    read_at = models.DateTimeField(null=True, blank=True)
+
+    class Meta:
+        indexes = [models.Index(fields=["recipient", "read_at"])]
+        constraints = [models.UniqueConstraint(fields=["post", "recipient"], name="reader_board_notification")]
+
+
 class ConsentLog(TimestampedModel):
     class ConsentType(models.TextChoices):
         TERMS = "terms", "Terms"

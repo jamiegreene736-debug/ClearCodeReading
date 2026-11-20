@@ -57,7 +57,7 @@ def is_parent_of_child(user, child):
     ).exists()
 
 
-def models_consent_filter():
+def models_consent_filter() -> Q:
     return Q(consent_expires_at__isnull=True) | Q(consent_expires_at__gt=timezone.now())
 
 

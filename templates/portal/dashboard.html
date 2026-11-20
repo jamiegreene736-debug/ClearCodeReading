@@ -100,6 +100,8 @@
 
       <section class="min-w-0 space-y-6">
         <nav class="sticky top-[4.75rem] z-30 flex gap-2 overflow-x-auto rounded-2xl bg-white/95 p-2 shadow-lg ring-1 ring-ink/10 backdrop-blur" aria-label="Workspace sections">
+          {% if is_parent %}<a class="focus-ring shrink-0 rounded-xl bg-linen px-4 py-3 text-sm font-black text-deepTeal" href="#weekly-resources">Weekly resources</a>{% endif %}
+          {% if is_parent or is_teacher %}<a class="focus-ring shrink-0 rounded-xl bg-linen px-4 py-3 text-sm font-black text-deepTeal" href="#family-boards">Family board</a>{% endif %}
           {% if is_parent and children or is_child %}<a class="focus-ring min-h-11 shrink-0 rounded-xl bg-linen px-4 py-3 text-sm font-black text-deepTeal" href="#progress-overview">Progress</a>{% endif %}
           {% if is_teacher or is_admin %}<a class="focus-ring min-h-11 shrink-0 rounded-xl bg-linen px-4 py-3 text-sm font-black text-deepTeal" href="{% url 'portal_readers' %}">Readers</a>{% endif %}
           {% if is_teacher or is_admin %}<a class="focus-ring min-h-11 shrink-0 rounded-xl bg-linen px-4 py-3 text-sm font-black text-deepTeal" href="{% url 'portal_sessions' %}">Sessions</a>{% endif %}
@@ -108,6 +110,11 @@
           {% if is_admin %}<a class="focus-ring min-h-11 shrink-0 rounded-xl bg-linen px-4 py-3 text-sm font-black text-deepTeal" href="{% url 'portal_teacher_assignments' %}">Teacher assignments</a>{% endif %}
           {% if is_admin %}<a class="focus-ring min-h-11 shrink-0 rounded-xl bg-linen px-4 py-3 text-sm font-black text-deepTeal" href="{% url 'portal_lesson_library' %}">Lesson library</a>{% endif %}
         </nav>
+        {% if is_parent %}
+          {% include "portal/_weekly_family.html" %}
+          {% include "portal/_family_board_links.html" %}
+        {% else %}
+        {% if is_teacher %}{% include "portal/_family_board_links.html" %}{% endif %}
         <section id="program-workspaces" class="rounded-[2rem] bg-white p-6 shadow-xl ring-1 ring-deepTeal/10">
           <p class="text-sm font-black uppercase tracking-[0.18em] text-deepTeal">Open a workspace</p>
           <h2 class="mt-2 text-3xl font-black">Each job has its own page</h2>
@@ -124,19 +131,21 @@
             {% endif %}
           </div>
         </section>
+        {% endif %}
         {% if is_parent %}
           {% for dashboard in parent_dashboards %}
             <section {% if forloop.first %}id="progress-overview"{% endif %} class="scroll-mt-40 rounded-[2rem] bg-white p-5 shadow-xl shadow-deepTeal/10 ring-1 ring-deepTeal/10 sm:p-7">
               <p class="text-sm font-black uppercase tracking-[0.18em] text-deepTeal">This week's reading growth</p>
               <div class="mt-2 flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
                 <div>
-                  <h2 class="text-3xl font-black">{{ dashboard.child.first_name }}'s live progress</h2>
-                  <p class="mt-1 text-sm text-ink/60">Updated automatically from completed sessions.</p>
+                  <h2 class="text-3xl font-black">{{ dashboard.child.first_name }}’s progress report</h2>
+                  <p class="mt-1 text-sm text-ink/60">Week of {{ dashboard.week_start|date:"F j" }} · {{ dashboard.weekly_sessions }} completed session{{ dashboard.weekly_sessions|pluralize }}{% if dashboard.weekly_latest_accuracy != None %} · Latest weekly accuracy {{ dashboard.weekly_latest_accuracy|floatformat:0 }}%{% endif %}</p>
                 </div>
                 <span class="rounded-full bg-seafoam px-4 py-2 text-sm font-black text-deepTeal">{{ dashboard.summary.mastered_skills }} skills mastered</span>
               </div>
 
-              <div class="mt-6 grid gap-4 sm:grid-cols-3">
+              <h3 class="mt-5 font-black">Progress to date</h3>
+              <div class="mt-2 grid gap-4 sm:grid-cols-3">
                 <article class="rounded-3xl bg-seafoam p-5"><p class="text-xs font-black uppercase text-deepTeal">Latest accuracy</p><p class="mt-2 text-4xl font-black">{% if dashboard.summary.latest_accuracy != None %}{{ dashboard.summary.latest_accuracy|floatformat:0 }}%{% else %}--{% endif %}</p></article>
                 <article class="rounded-3xl bg-linen p-5"><p class="text-xs font-black uppercase text-ink/60">Tracked skills</p><p class="mt-2 text-4xl font-black">{{ dashboard.summary.tracked_skills }}</p></article>
                 <article class="rounded-3xl bg-sand p-5"><p class="text-xs font-black uppercase text-mediumTeal">Sessions complete</p><p class="mt-2 text-4xl font-black">{{ dashboard.summary.completed_sessions }}</p></article>
@@ -324,7 +333,7 @@
         {% endif %}
 
 
-        <section id="next-tasks" class="scroll-mt-36 rounded-[2rem] bg-white p-6 shadow-xl shadow-ink/8 ring-1 ring-ink/10">
+        {% if not is_parent %}<section id="next-tasks" class="scroll-mt-36 rounded-[2rem] bg-white p-6 shadow-xl shadow-ink/8 ring-1 ring-ink/10">
           <p class="text-sm font-black uppercase tracking-[0.18em] text-mediumTeal">Next tasks</p>
           <div class="mt-5 grid gap-3 md:grid-cols-3">
             <a class="focus-ring rounded-3xl bg-seafoam p-5 transition hover:-translate-y-1 hover:shadow-xl" href="/assessment/">
@@ -340,7 +349,7 @@
               <span class="mt-2 block text-sm leading-6 text-ink/65">Use growth areas to guide lessons and human follow-up.</span>
             </div>
           </div>
-        </section>
+        </section>{% endif %}
       </section>
     </section>
     {% endif %}

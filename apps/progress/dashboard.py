@@ -116,10 +116,17 @@ def build_parent_dashboard(child):
             "disclaimer": "Simple estimate based on current sequence position and recent attendance; it is not a guarantee.",
         }
 
+    today = timezone.localdate()
+    week_start = today - timedelta(days=today.weekday())
+    weekly_sessions = [session for session in sessions if week_start <= timezone.localdate(session.ended_at or session.scheduled_start) <= today]
+    last_weekly_session = max(weekly_sessions, key=lambda session: session.ended_at or session.scheduled_start, default=None)
+
     return {
         "child": {"id": child.id, "first_name": child.first_name, "display_name": str(child)},
         "generated_at": timezone.now(),
-        "week_start": timezone.localdate() - timedelta(days=timezone.localdate().weekday()),
+        "week_start": week_start,
+        "weekly_sessions": len(weekly_sessions),
+        "weekly_latest_accuracy": _number(last_weekly_session.accuracy_rate) if last_weekly_session else None,
         "summary": {
             "tracked_skills": len(progress),
             "mastered_skills": sum(record.status == Progress.Status.MASTERED for record in progress),
