@@ -5,7 +5,8 @@ from rest_framework.decorators import action
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
 
-from apps.api.permissions import IsSchoolAdmin
+from apps.api.permissions import IsSchoolAdmin, ParentReadOnly
+from apps.crm.parent_contacts import ensure_parent_contact
 from apps.users.models import AuditLog, ChildProfile, ConsentLog, ConsentRecord, CustomUser, GuardianRelationship, Profile
 from apps.users.serializers import (
     AuditLogSerializer,
@@ -24,6 +25,18 @@ class ParentChildRegistrationSerializer(serializers.Serializer):
     relationship_type = serializers.ChoiceField(choices=GuardianRelationship.RelationshipType.choices)
     consents = serializers.ListField(child=serializers.DictField(), allow_empty=False)
 
+    def validate_parent(self, value):
+        email = serializers.EmailField().run_validation(value.get("email"))
+        return {**value, "email": email.strip().lower()}
+
+    def validate_child(self, value):
+        profile = value.get("learning_profile", {})
+        if not isinstance(profile, dict):
+            raise serializers.ValidationError("Enter reader details as an object.")
+        if {"assigned_teacher_id", "assigned_teacher_name", "assigned_teacher_email"} & profile.keys():
+            raise serializers.ValidationError("The school assigns your reader’s teacher.")
+        return value
+
 
 class UserViewSet(viewsets.ModelViewSet):
     queryset = CustomUser.objects.filter(is_deleted=False).select_related("profile")
@@ -32,7 +45,13 @@ class UserViewSet(viewsets.ModelViewSet):
     def get_permissions(self):
         if self.action == "register_parent_child":
             return [AllowAny()]
-        return [IsAuthenticated()]
+        return [IsAuthenticated(), ParentReadOnly()]
+
+    def get_queryset(self):
+        records = super().get_queryset()
+        if self.request.user.role == CustomUser.Role.GUARDIAN and not self.request.user.is_superuser:
+            return records.filter(pk=self.request.user.pk)
+        return records
 
     @action(detail=False, methods=["post"], url_path="register-parent-child")
     def register_parent_child(self, request):
@@ -44,8 +63,9 @@ class UserViewSet(viewsets.ModelViewSet):
         with transaction.atomic():
             password = parent_data.pop("password", None)
             parent, created = CustomUser.objects.get_or_create(
-                email=parent_data["email"],
+                email__iexact=parent_data["email"],
                 defaults={
+                    "email": parent_data["email"],
                     "username": parent_data.get("username", parent_data["email"]),
                     "first_name": parent_data.get("first_name", ""),
                     "last_name": parent_data.get("last_name", ""),
@@ -53,7 +73,12 @@ class UserViewSet(viewsets.ModelViewSet):
                     "phone_number": parent_data.get("phone_number", ""),
                 },
             )
-            if created and password:
+            if not created and (
+                request.user != parent or parent.role != CustomUser.Role.GUARDIAN or parent.is_deleted
+            ):
+                raise serializers.ValidationError({"parent": "Sign in to your parent account to add a child."})
+            if created:
+                ensure_parent_contact(parent)
                 parent.set_password(password)
                 parent.save(update_fields=["password"])
 
@@ -112,26 +137,29 @@ class UserViewSet(viewsets.ModelViewSet):
 
 class ProfileViewSet(viewsets.ModelViewSet):
     serializer_class = ProfileSerializer
-    permission_classes = [IsAuthenticated]
+    permission_classes = [IsAuthenticated, ParentReadOnly]
 
     def get_queryset(self):
-        return Profile.objects.filter(is_deleted=False).select_related("user")
+        records = Profile.objects.filter(is_deleted=False).select_related("user")
+        if self.request.user.role == CustomUser.Role.GUARDIAN and not self.request.user.is_superuser:
+            return records.filter(user=self.request.user)
+        return records
 
 
 class ChildProfileViewSet(viewsets.ModelViewSet):
     serializer_class = ChildProfileSerializer
-    permission_classes = [IsAuthenticated]
+    permission_classes = [IsAuthenticated, ParentReadOnly]
 
     def get_queryset(self):
         queryset = ChildProfile.objects.filter(is_deleted=False).select_related("user", "school")
         if getattr(self.request.user, "role", None) == CustomUser.Role.GUARDIAN:
-            queryset = queryset.filter(guardian_relationships__guardian=self.request.user)
+            queryset = queryset.filter(guardian_relationships__guardian=self.request.user, guardian_relationships__is_deleted=False)
         return queryset.distinct()
 
 
 class GuardianRelationshipViewSet(viewsets.ModelViewSet):
     serializer_class = GuardianRelationshipSerializer
-    permission_classes = [IsAuthenticated]
+    permission_classes = [IsAuthenticated, ParentReadOnly]
 
     def get_queryset(self):
         queryset = GuardianRelationship.objects.filter(is_deleted=False).select_related("guardian", "child")
@@ -139,7 +167,7 @@ class GuardianRelationshipViewSet(viewsets.ModelViewSet):
             queryset = queryset.filter(guardian=self.request.user)
         return queryset
 
-    @action(detail=True, methods=["post"], url_path="grant-consent")
+    @action(detail=True, methods=["post"], url_path="grant-consent", permission_classes=[IsAuthenticated])
     def grant_consent(self, request, pk=None):
         relationship = self.get_object()
         consent_type = request.data.get("consent_type", ConsentLog.ConsentType.DATA_PROCESSING)
@@ -161,7 +189,7 @@ class GuardianRelationshipViewSet(viewsets.ModelViewSet):
         relationship.save(update_fields=["consent_status", "consent_expires_at", "updated_at"])
         return Response(ConsentLogSerializer(log, context=self.get_serializer_context()).data, status=status.HTTP_201_CREATED)
 
-    @action(detail=True, methods=["post"], url_path="revoke-consent")
+    @action(detail=True, methods=["post"], url_path="revoke-consent", permission_classes=[IsAuthenticated])
     def revoke_consent(self, request, pk=None):
         relationship = self.get_object()
         log = ConsentLog.objects.create(
@@ -232,3 +260,9 @@ class AuditLogViewSet(viewsets.ReadOnlyModelViewSet):
     serializer_class = AuditLogSerializer
     permission_classes = [IsAuthenticated]
     queryset = AuditLog.objects.select_related("actor")
+
+    def get_queryset(self):
+        records = super().get_queryset()
+        if self.request.user.role == CustomUser.Role.GUARDIAN and not self.request.user.is_superuser:
+            return records.filter(actor=self.request.user)
+        return records

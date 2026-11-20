@@ -29,12 +29,13 @@ from apps.curriculum.models import StudentPlacement
 from apps.progress.dashboard import build_parent_dashboard
 from apps.scheduling.services import operations_metrics, ranked_group_suggestions
 from apps.sessions.models import Session
+from apps.users.reader_board import board_dashboard_context
 from apps.users.models import ChildProfile, CustomUser, GuardianRelationship
 
 
 DEMO_LOGINS = {
     "admin": "admin@clearcodereading.com",
-    "parent": "parent@clearcodereading.com",
+    "parent": CustomUser.DEMO_PARENT_EMAIL,
     "teacher": "teacher@clearcodereading.com",
 }
 
@@ -207,6 +208,9 @@ class PortalDashboardView(PortalAuthMixin, TemplateView):
         context["is_teacher"] = user.role == CustomUser.Role.TEACHER
         context["is_child"] = user.role == CustomUser.Role.STUDENT
 
+        if context["is_parent"] or context["is_teacher"]:
+            context.update(board_dashboard_context(user, self.request.GET.get("resource_page")))
+
         if context["is_parent"]:
             relationships = GuardianRelationship.objects.filter(
                 guardian=user,
@@ -270,7 +274,8 @@ class PortalDashboardView(PortalAuthMixin, TemplateView):
             allowed_child_ids = {
                 relationship.child_id
                 for relationship in relationships
-                if relationship.consent_status == GuardianRelationship.ConsentStatus.GRANTED
+                if (relationship.consent_expires_at is None or relationship.consent_expires_at > timezone.now())
+                and relationship.consent_status == GuardianRelationship.ConsentStatus.GRANTED
                 and relationship.permissions.get("progress_dashboard") is not False
                 and has_coppa_consent(relationship.child)
             }

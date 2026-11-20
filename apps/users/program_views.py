@@ -105,19 +105,19 @@ class PortalReadersView(ProgramPageMixin, TemplateView):
         family_leads = {}
         if user.has_crm_access and children:
             guardians = GuardianRelationship.objects.filter(child__in=children, is_deleted=False).select_related("guardian")
-            email_to_child = {}
+            children_by_email = {}
             for relationship in guardians:
-                email_to_child.setdefault(relationship.guardian.email.lower(), relationship.child_id)
-            if email_to_child:
+                children_by_email.setdefault(relationship.guardian.email.lower(), []).append(relationship.child_id)
+            if children_by_email:
                 leads = (
                     Lead.objects.filter(is_deleted=False)
                     .annotate(email_lower=Lower("contact_email"))
-                    .filter(email_lower__in=list(email_to_child))
+                    .filter(email_lower__in=list(children_by_email))
                     .order_by("-created_at")
                 )
                 for lead in leads:
-                    child_id = email_to_child.get(lead.email_lower)
-                    family_leads.setdefault(child_id, lead)
+                    for child_id in children_by_email[lead.email_lower]:
+                        family_leads.setdefault(child_id, lead)
         rows = []
         for child in children:
             profile = child.learning_profile or {}

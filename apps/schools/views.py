@@ -5,7 +5,7 @@ from rest_framework.decorators import action
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 
-from apps.api.permissions import IsSchoolAdmin
+from apps.api.permissions import IsSchoolAdmin, ParentReadOnly
 from apps.schools.models import School, SchoolMembership
 from apps.schools.serializers import SchoolMembershipSerializer, SchoolSerializer
 from apps.users.models import AuditLog, CustomUser
@@ -19,7 +19,7 @@ class SchoolOnboardingSerializer(serializers.Serializer):
 
 class SchoolViewSet(viewsets.ModelViewSet):
     serializer_class = SchoolSerializer
-    permission_classes = [IsAuthenticated]
+    permission_classes = [IsAuthenticated, ParentReadOnly]
 
     def get_queryset(self):
         queryset = School.objects.filter(is_deleted=False).prefetch_related("memberships")

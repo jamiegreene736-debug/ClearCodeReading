@@ -1,3 +1,4 @@
+from django.db.models import Q
 from django.utils import timezone
 from rest_framework.permissions import BasePermission, SAFE_METHODS
 
@@ -56,9 +57,7 @@ def is_parent_of_child(user, child):
     ).exists()
 
 
-def models_consent_filter():
-    from django.db.models import Q
-
+def models_consent_filter() -> Q:
     return Q(consent_expires_at__isnull=True) | Q(consent_expires_at__gt=timezone.now())
 
 
@@ -84,23 +83,17 @@ def has_coppa_consent(child, consent_types=None):
 
     from apps.users.models import ConsentLog
 
-    for consent_type in consent_types:
-        if not ConsentLog.objects.filter(
-            child=child,
-            consent_type=consent_type,
-            status=ConsentLog.Status.GRANTED,
-        ).filter(
-            models_consent_filter_for_log(now)
-        ).exists():
-            return False
-
-    return True
-
-
-def models_consent_filter_for_log(now):
-    from django.db.models import Q
-
-    return Q(expires_at__isnull=True) | Q(expires_at__gt=now)
+    # A newer decision from the same guardian supersedes their earlier grant.
+    active_guardians = relationships.values_list("guardian_id", flat=True)
+    decisions = ConsentLog.objects.filter(child=child, consent_type__in=consent_types).filter(
+        Q(guardian__in=active_guardians) | Q(guardian__isnull=True)
+    ).order_by("guardian_id", "consent_type", "-created_at", "-pk").distinct("guardian_id", "consent_type")
+    granted = {
+        decision.consent_type for decision in decisions
+        if decision.status == ConsentLog.Status.GRANTED
+        and (decision.expires_at is None or decision.expires_at > now)
+    }
+    return consent_types.issubset(granted)
 
 
 def user_can_evaluate_child(user, child):
@@ -174,6 +167,17 @@ class IsSchoolAdmin(BasePermission):
             request.user,
             school,
             roles=[SchoolMembership.Role.OWNER, SchoolMembership.Role.ADMIN],
+        )
+
+
+class ParentReadOnly(BasePermission):
+    """Family account management and enrollment use the guardian-scoped portal forms."""
+
+    def has_permission(self, request, view):
+        return (
+            getattr(request.user, "role", None) != CustomUser.Role.GUARDIAN
+            or request.user.is_superuser
+            or request.method in SAFE_METHODS
         )
 
 

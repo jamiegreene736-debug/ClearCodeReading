@@ -1,0 +1,29 @@
+{% extends "portal/reader_form_base.html" %}
+{% block title %}Sign reader forms{% endblock %}
+{% block content %}
+<form method="post" class="reader-card">
+  <p class="step">Step 1 of 2</p><h1>Sign reader forms</h1>
+  {% csrf_token %}{{ form.non_field_errors }}{{ form.submission_id }}
+  {% if form.submission_id.errors %}<p role="alert">Reopen this form and try again.</p>{% endif %}
+  <div class="form-grid">
+    <div>{{ form.first_name.label_tag }}{{ form.first_name }}{{ form.first_name.errors }}</div>
+    {% if form.relationship_type %}<div>{{ form.relationship_type.label_tag }}{{ form.relationship_type }}{{ form.relationship_type.errors }}</div>{% endif %}
+  </div>
+  <fieldset><legend>Reader information and instruction</legend>
+    <label class="choice">{{ form.data_processing }}{{ form.data_processing.label }}</label>{{ form.data_processing.errors }}
+    <p>These two permissions are optional. Both are needed for the progress dashboard.</p>
+    <label class="choice">{{ form.assessment }}{{ form.assessment.label }}</label>
+    <label class="choice">{{ form.school_sharing }}{{ form.school_sharing.label }}</label>
+    <a href="{% url 'marketing_privacy' %}" target="_blank" rel="noopener">Read the privacy notice</a>
+  </fieldset>
+  <fieldset><legend>Photography, filming and public marketing</legend>
+    <p>{{ filming_statement }}</p><p>You can decline and continue with your Reader Profile.</p>
+    {{ form.filming.label_tag }}{{ form.filming }}{{ form.filming.errors }}
+  </fieldset>
+  <fieldset><legend>Electronic signature</legend>
+    {{ form.signed_name.label_tag }}{{ form.signed_name }}{{ form.signed_name.errors }}
+    <label class="choice">{{ form.electronic_signature }}{{ form.electronic_signature.label }}</label>{{ form.electronic_signature.errors }}
+  </fieldset>
+  <footer><button type="submit">Sign and continue</button><a href="{% url 'portal_dashboard' %}">Cancel</a></footer>
+</form>
+{% endblock %}

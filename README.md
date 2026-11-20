@@ -453,7 +453,10 @@ and the parent dashboard uses the current prediction when one is available.
 See `docs/decision_support.md` for rule behavior, on-demand commands, endpoints,
 configuration, and example flag and prediction payloads.
 
-- Parent/guardian registration creates a child profile and guardian relationship.
+- Inviting a parent in **Manage users** creates a linked **Families / Enrollment** CRM contact or links an existing active contact with the same email.
+- On the parent dashboard, **Add your first child** and **Add another child** open the family setup form. Parents sign the reader forms, including a single opt-in or decline for internal filming and public marketing. The portal stores the wording, choices, signer and timestamp, then opens the private Reader Profile for a photo, school, grade, birthday and interests.
+- The family dashboard includes weekly reading resources, a dated archive, a progress report and a private teacher–family board. Posting a note creates an in-app notification for the other party. Teacher-shared resource links are grouped by the week posted in the program time zone.
+- Parent/guardian API registration also creates a child profile and guardian relationship.
 - Consent logs track consent type, status, version, source, IP, user agent, and expiry.
 - Formal `ConsentRecord` history is the IDEA/IEP authorization source of truth;
   legacy child-profile approvals remain a fallback only when no record exists.
@@ -743,3 +746,11 @@ Run the browser regression suite with
 `npx playwright test tests/browser/human-verification.spec.js` (set `PYTHON` to the
 project Python environment if needed). The tests mock Cloudflare callbacks and
 render the real templates without sending submissions to the live site.
+
+### Family boards and Quo texting
+
+Each reader’s board connects their participating guardians and assigned teacher. Dashboard notifications and dated notes work independently of texting. Teachers can attach a resource to a note. On Monday, the previous week’s activities and shared resources move to **Earlier resources**.
+
+To activate SMS, use the Quo workspace that owns **(407) 449-7941**. Set `QUO_API_KEY` on the web service and the CRM Email Worker. Subscribe to `message.received` at `https://www.clearcodereading.com/webhooks/quo/reader-board/` using API version `2026-03-30`. Save the returned signing key as `QUO_WEBHOOK_KEY` on the web service. [Quo webhook setup](https://www.quo.com/docs/2026-03-30/webhooks-quickstart)
+
+From **Family board → Text messages → Connect my phone**, each participant texts the displayed one-time code from their own phone. The school number sends each verified recipient a separate SMS. To post by text, start the message with the reader code shown on the board and in every outbound text. Reply STOP or turn off texting on the board to disconnect. The board shows whether Quo accepted each outbound text. If delivery is uncertain, the original note remains available on the board.

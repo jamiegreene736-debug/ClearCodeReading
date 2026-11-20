@@ -2,7 +2,8 @@ from django.contrib import admin
 from django.contrib.auth.admin import UserAdmin
 from django.utils import timezone
 
-from apps.users.models import AuditLog, ChildProfile, ConsentLog, ConsentRecord, CustomUser, GuardianRelationship, Profile
+from apps.crm.parent_contacts import ensure_parent_contact
+from apps.users.models import AuditLog, ChildProfile, ConsentLog, ConsentRecord, CustomUser, GuardianRelationship, Profile, SignedReaderForms
 
 
 class ProfileInline(admin.StackedInline):
@@ -54,6 +55,11 @@ def reactivate_users(modeladmin, request, queryset):
 
 @admin.register(CustomUser)
 class CustomUserAdmin(UserAdmin):
+    def save_model(self, request, obj, form, change):
+        super().save_model(request, obj, form, change)
+        if not change:
+            ensure_parent_contact(obj)
+
     inlines = (ProfileInline,)
     list_display = ("email", "username", "first_name", "last_name", "role", "is_active", "is_deleted", "created_at")
     list_filter = ("role", "is_active", "is_staff", "is_superuser", "is_deleted", "created_at")
@@ -179,4 +185,21 @@ class AuditLogAdmin(admin.ModelAdmin):
         return False
 
     def has_change_permission(self, request, obj=None):
+        return False
+
+
+@admin.register(SignedReaderForms)
+class SignedReaderFormsAdmin(admin.ModelAdmin):
+    list_display = ("reader_name", "signed_name", "filming_allowed", "signed_at")
+    list_filter = ("filming_allowed", "version")
+    search_fields = ("reader_name", "signed_name", "signer_email")
+    readonly_fields = tuple(field.name for field in SignedReaderForms._meta.fields)
+
+    def has_add_permission(self, request):
+        return False
+
+    def has_change_permission(self, request, obj=None):
+        return False
+
+    def has_delete_permission(self, request, obj=None):
         return False

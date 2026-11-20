@@ -29,6 +29,8 @@ class SoftDeleteModel(models.Model):
 
 
 class CustomUser(AbstractUser, TimestampedModel, SoftDeleteModel):
+    DEMO_PARENT_EMAIL = "parent@clearcodereading.com"
+
     class Role(models.TextChoices):
         SUPER_ADMIN = "super_admin", "Super Admin"
         CRM_USER = "crm_user", "CRM User"
@@ -74,6 +76,17 @@ class CustomUser(AbstractUser, TimestampedModel, SoftDeleteModel):
         except Profile.DoesNotExist:
             preferred = ""
         return (preferred or self.first_name or "").strip()
+
+    @property
+    def can_add_child(self) -> bool:
+        return (
+            self.role == self.Role.GUARDIAN
+            and self.is_active
+            and not self.is_deleted
+            and not self.is_superuser
+            and self.email.lower() != self.DEMO_PARENT_EMAIL
+            and not (isinstance(self.metadata, dict) and self.metadata.get("demo"))
+        )
 
     @property
     def has_resource_access(self) -> bool:
@@ -399,6 +412,62 @@ class GuardianRelationship(TimestampedModel, SoftDeleteModel):
         return f"{self.guardian} -> {self.child}"
 
 
+class SignedReaderForms(models.Model):
+    """Snapshot of the exact forms and choices signed by one guardian for one reader."""
+
+    relationship = models.OneToOneField(GuardianRelationship, on_delete=models.PROTECT, related_name="signed_forms")
+    submission_id = models.UUIDField()
+    signed_name = models.CharField(max_length=200)
+    signer_email = models.EmailField()
+    reader_name = models.CharField(max_length=241)
+    signed_at = models.DateTimeField(auto_now_add=True)
+    version = models.CharField(max_length=32)
+    statements = models.JSONField()
+    assessment_allowed = models.BooleanField()
+    school_sharing_allowed = models.BooleanField()
+    filming_allowed = models.BooleanField()
+
+
+class ReaderDetails(models.Model):
+    child = models.OneToOneField(ChildProfile, on_delete=models.CASCADE, related_name="reader_details")
+    school_name = models.CharField(max_length=200, blank=True)
+    activities = models.CharField(max_length=500, blank=True)
+    favorites = models.CharField(max_length=500, blank=True)
+    photo = models.BinaryField(blank=True, default=bytes)
+    updated_at = models.DateTimeField(auto_now=True)
+
+
+class FamilyResourceWeek(models.Model):
+    week_start = models.DateField(primary_key=True)
+    activity_title = models.CharField(max_length=120)
+    activity_body = models.TextField()
+    library_ids = models.JSONField(default=list)
+
+
+class ReaderBoardPost(models.Model):
+    child = models.ForeignKey(ChildProfile, on_delete=models.CASCADE, related_name="board_posts")
+    author = models.ForeignKey(CustomUser, on_delete=models.PROTECT, related_name="reader_board_posts")
+    submission_id = models.UUIDField()
+    body = models.CharField(max_length=2000)
+    resource_url = models.URLField(max_length=1000, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ["-created_at", "-pk"]
+        indexes = [models.Index(fields=["child", "-created_at"])]
+        constraints = [models.UniqueConstraint(fields=["child", "author", "submission_id"], name="reader_board_submission")]
+
+
+class ReaderBoardNotification(models.Model):
+    post = models.ForeignKey(ReaderBoardPost, on_delete=models.CASCADE, related_name="notifications")
+    recipient = models.ForeignKey(CustomUser, on_delete=models.CASCADE, related_name="reader_board_notifications")
+    read_at = models.DateTimeField(null=True, blank=True)
+
+    class Meta:
+        indexes = [models.Index(fields=["recipient", "read_at"])]
+        constraints = [models.UniqueConstraint(fields=["post", "recipient"], name="reader_board_notification")]
+
+
 class ConsentLog(TimestampedModel):
     class ConsentType(models.TextChoices):
         TERMS = "terms", "Terms"
@@ -502,3 +571,39 @@ class UserInvitation(TimestampedModel):
     sent_at = models.DateTimeField(null=True, blank=True)
     accepted_at = models.DateTimeField(null=True, blank=True)
     error = models.CharField(max_length=255, blank=True)
+
+
+class BoardTextAccount(models.Model):
+    user = models.OneToOneField(CustomUser, on_delete=models.CASCADE, related_name="board_text_account")
+    phone = models.CharField(max_length=16, null=True, unique=True)
+    verified_at = models.DateTimeField(null=True)
+    code_digest = models.CharField(max_length=64, null=True, unique=True)
+    code_expires_at = models.DateTimeField(null=True)
+
+
+class BoardTextDelivery(models.Model):
+    class Status(models.TextChoices):
+        QUEUED = "queued", "Queued"
+        SENDING = "sending", "Sending"
+        ACCEPTED = "accepted", "Accepted by Quo"
+        FAILED = "failed", "Failed"
+        UNCERTAIN = "uncertain", "Delivery unconfirmed"
+        CANCELLED = "cancelled", "Cancelled"
+
+    notification = models.ForeignKey(ReaderBoardNotification, on_delete=models.CASCADE, related_name="text_deliveries")
+    part = models.PositiveSmallIntegerField()
+    verified_at = models.DateTimeField()
+    status = models.CharField(max_length=12, choices=Status.choices, default=Status.QUEUED)
+    attempts = models.PositiveSmallIntegerField(default=0)
+    next_attempt = models.DateTimeField(default=timezone.now)
+    updated_at = models.DateTimeField(auto_now=True)
+    provider_id = models.CharField(max_length=120, blank=True)
+
+    class Meta:
+        constraints = [models.UniqueConstraint(fields=["notification", "part"], name="reader_sms_delivery_part")]
+        indexes = [models.Index(fields=["status", "next_attempt"])]
+
+
+class BoardTextReceipt(models.Model):
+    message_id = models.CharField(primary_key=True, max_length=120)
+    received_at = models.DateTimeField(auto_now_add=True)

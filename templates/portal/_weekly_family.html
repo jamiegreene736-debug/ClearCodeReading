@@ -1,0 +1,17 @@
+<section id="weekly-resources" class="scroll-mt-40 rounded-[2rem] bg-white p-6 shadow-xl ring-1 ring-deepTeal/10">
+  <p class="text-sm font-black text-deepTeal">Week of {{ current_week.week|date:"F j, Y" }}</p>
+  <h2 class="mt-2 text-3xl font-black">This week’s resources</h2>
+  <p class="mt-2 text-sm leading-6 text-ink/70">Try a short reading activity at home and find any links your teacher shared this week.</p>
+  {% include 'portal/_resource_week.html' with week=current_week %}
+  <a href="{% url 'marketing_resources' %}?audience=families" class="mt-3 inline-flex font-black text-deepTeal underline">Browse family resources</a>
+  <section id="earlier-resources" class="mt-6 scroll-mt-40 border-t border-deepTeal/10 pt-4">
+    <h3 class="text-xl font-black">Earlier resources</h3>
+    <p class="mt-2 text-sm leading-6 text-ink/70">Open a past week to find a familiar activity or revisit a teacher’s link.</p>
+    {% for week in earlier_weeks %}
+      <details class="mt-3 rounded-2xl bg-linen p-4"><summary class="cursor-pointer font-black">Week of {{ week.week|date:"F j, Y" }}</summary>
+        {% include 'portal/_resource_week.html' with week=week %}
+      </details>
+    {% empty %}<p class="mt-2 text-ink/70">After this week, you’ll find its resources here.</p>{% endfor %}
+    {% if archive_page.has_other_pages %}<nav class="mt-4 flex gap-4" aria-label="Earlier resource weeks">{% if archive_page.has_previous %}<a href="?resource_page={{ archive_page.previous_page_number }}#earlier-resources">Newer weeks</a>{% endif %}{% if archive_page.has_next %}<a href="?resource_page={{ archive_page.next_page_number }}#earlier-resources">Older weeks</a>{% endif %}</nav>{% endif %}
+  </section>
+</section>

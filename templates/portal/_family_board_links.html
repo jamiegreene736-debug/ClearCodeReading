@@ -1,0 +1,37 @@
+<section id="family-boards" class="scroll-mt-40 rounded-[2rem] bg-white p-6 shadow-xl ring-1 ring-deepTeal/10">
+  <h2 class="text-3xl font-black">{% if is_parent %}Notes from the teacher{% else %}Family notes{% endif %}</h2>
+  <p class="mt-2 text-sm leading-6 text-ink/70">{% if is_parent %}Open your reader’s board to ask a question, share a reading win or reply to the teacher.{% else %}Open a reader’s board to send their family a note or share a practice link.{% endif %} The unread count shows how many new notes are waiting.</p>
+  {% for row in board_rows %}
+    <article class="mt-4 rounded-3xl bg-linen p-5">
+      <div class="flex flex-wrap items-center justify-between gap-2">
+        <h3 class="text-xl font-black">{{ row.child.first_name }}’s board</h3>
+        <span aria-live="polite" data-unread-reader="{{ row.child.pk }}" class="text-sm font-black text-deepTeal">{% if row.unread %}{{ row.unread }} unread{% endif %}</span>
+      </div>
+      {% if is_parent and row.teacher_note %}
+        <p class="mt-2">{{ row.teacher_note.body|truncatechars:220 }}</p>
+        <p class="mt-2 text-sm text-ink/65">{{ row.teacher_note.author.get_full_name|default:row.teacher_note.author.email }} · {{ row.teacher_note.created_at|date:"M j, g:i a T" }}</p>
+      {% elif is_parent %}<p class="mt-2">Teacher notes will appear here.</p>{% endif %}
+      <a href="{% url 'portal_reader_board' row.child.pk %}" class="mt-3 inline-flex rounded-full bg-deepTeal px-4 py-2 font-black text-white">Open board</a>
+    </article>
+  {% empty %}<p class="mt-3">Boards appear here when a reader is connected to your account with active consent.</p>{% endfor %}
+</section>
+{% if board_rows %}<script>
+(() => {
+  const badges = document.querySelectorAll('[data-unread-reader]');
+  async function refresh() {
+    if (document.hidden) return;
+    try {
+      const response = await fetch("{% url 'portal_board_notifications' %}", {headers:{Accept:'application/json'}});
+      if (!response.ok || response.redirected) return;
+      const {unread} = await response.json();
+      for (const badge of badges) {
+        const count = unread[badge.dataset.unreadReader] || 0;
+        const text = count ? count + ' unread' : '';
+        if (badge.textContent !== text) badge.textContent = text;
+      }
+    } catch { /* Counts refresh again when the connection returns. */ }
+  }
+  window.setInterval(refresh, 45000);
+  document.addEventListener('visibilitychange', refresh);
+})();
+</script>{% endif %}

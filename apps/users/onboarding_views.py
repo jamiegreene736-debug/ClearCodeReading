@@ -23,6 +23,7 @@ from django.utils.http import url_has_allowed_host_and_scheme
 from django.views.decorators.http import require_http_methods, require_POST
 
 from apps.crm.models import Lead
+from apps.crm.parent_contacts import ensure_parent_contact
 from apps.crm_email.models import Mailbox
 from apps.crm_email.security import configuration_errors
 from apps.users.invitations import (
@@ -111,9 +112,12 @@ def manage_users(request: PortalRequest) -> HttpResponse:
                         },
                     )
                     invitation = create_invitation(user, request.user)
-                    Lead.objects.filter(
-                        contact_email__iexact=user.email, is_deleted=False
-                    ).update(linked_user=user)
+                    if user.role == CustomUser.Role.GUARDIAN:
+                        ensure_parent_contact(user)
+                    else:
+                        Lead.objects.filter(
+                            contact_email__iexact=user.email, is_deleted=False, linked_user__isnull=True
+                        ).update(linked_user=user)
                     AuditLog.objects.create(
                         actor=request.user,
                         action="user.invited",
@@ -122,6 +126,8 @@ def manage_users(request: PortalRequest) -> HttpResponse:
                         after={"role": user.role},
                     )
             except IntegrityError:
+                if not CustomUser.objects.filter(email__iexact=form.cleaned_data["email"]).exists():
+                    raise
                 form.add_error("email", "A user with this email already exists.")
             else:
                 invitation_feedback(request, deliver_invitation(invitation.pk))

@@ -74,7 +74,9 @@ from apps.users.management.commands.seed_demo_login import (
     DEMO_PARENT_EMAIL,
     DEMO_TEACHER_EMAIL,
 )
-from apps.users.models import AuditLog, ChildProfile, ConsentRecord, CustomUser, Profile
+from apps.users.models import AuditLog, ChildProfile, ConsentRecord, CustomUser, Profile, SignedReaderForms
+from apps.users.family import STATEMENTS
+from uuid import uuid4
 from apps.workforce.models import (
     Agreement,
     ClassificationReview,
@@ -157,6 +159,13 @@ class Command(BaseCommand):
             iep_team_approved_at=now,
         )
         child.refresh_from_db()
+        SignedReaderForms.objects.get_or_create(
+            relationship=child.guardian_relationships.get(guardian=parent),
+            defaults={"submission_id": uuid4, "signed_name": "Demo guardian (sample)",
+                      "signer_email": parent.email, "reader_name": str(child), "version": "demo-only",
+                      "statements": STATEMENTS, "assessment_allowed": True,
+                      "school_sharing_allowed": True, "filming_allowed": False},
+        )
         AuthGroup.objects.get_or_create(name="Demo Content Reviewers")
         for user, role, title in (
             (admin_user, SchoolMembership.Role.OWNER, "Demo Center Owner"),

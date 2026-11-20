@@ -1,0 +1,15 @@
+{% extends "portal/reader_form_base.html" %}
+{% block title %}Signed reader forms{% endblock %}
+{% block content %}
+<article class="reader-card"><h1>Signed reader forms</h1>
+<p>For {{ receipt.reader_name }} · {{ receipt.version }}</p>
+<fieldset><legend>Reader information and instruction</legend><p>{{ receipt.statements.data_processing }}</p>
+<p>{{ receipt.statements.assessment }} <strong>{{ receipt.assessment_allowed|yesno:"Granted,Declined" }}</strong></p>
+<p>{{ receipt.statements.school_sharing }} <strong>{{ receipt.school_sharing_allowed|yesno:"Granted,Declined" }}</strong></p></fieldset>
+<fieldset><legend>Photography, filming and public marketing</legend><p>{{ receipt.statements.filming }}</p>
+<p><strong>{{ receipt.filming_allowed|yesno:"Permission granted,Permission declined" }}</strong></p></fieldset>
+<fieldset><legend>Electronic signature</legend><p>{{ receipt.statements.signature }}</p>
+<p>Signed by <strong>{{ receipt.signed_name }}</strong> ({{ receipt.signer_email }})<br>{{ receipt.signed_at|date:"F j, Y, g:i a T" }}</p></fieldset>
+<footer><button onclick="window.print()" type="button">Print or save a copy</button><a href="{% url 'portal_reader_profile' receipt.relationship.child_id %}">Reader Profile</a></footer>
+</article>
+{% endblock %}
