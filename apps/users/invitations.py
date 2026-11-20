@@ -18,11 +18,10 @@ from django.utils.encoding import force_bytes
 from django.utils.http import urlsafe_base64_encode
 
 from apps.crm_email.automated import (
+    bethany_signature_html,
     copy_for,
     fill,
     fill_html,
-    html_value,
-    signature_logo_html,
 )
 from apps.crm_email.google import Gmail, ProviderError
 from apps.crm_email.models import BETHANY_EMAIL, BETHANY_SIGNATURE, Mailbox
@@ -144,8 +143,7 @@ def _send(invitation: UserInvitation) -> None:
     body = fill(copy.text("body"), values).rstrip() + "\n\n" + BETHANY_SIGNATURE
     body_html = (
         fill_html(copy.html("body"), values)
-        + f"<p>{html_value(BETHANY_SIGNATURE)}</p>"
-        + signature_logo_html(base)
+        + f"<p>{bethany_signature_html(public_url=base)}</p>"
     )
     sender = formataddr(("Bethany Fleming", BETHANY_EMAIL))
     if settings.CRM_EMAIL_ENABLED or not getattr(

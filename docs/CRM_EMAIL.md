@@ -171,16 +171,7 @@ The equity signature can be supplied in pilot settings or taken from that sender
 saved CRM signature; Gmail API sending does not automatically insert a Gmail UI
 signature. Mailbox credentials and normal user-owned drafts remain private.
 
-Bethany's signature block (`BETHANY_SIGNATURE` in `models.py`, editable per pilot)
-is name and credential, title, email address, website and blog. Wherever the
-`{{Bethany’s email signature}}` placeholder is rendered to HTML (`token_html` in
-`automated.py`), the public website header lockup is placed at the bottom of the
-block, below the blog link. That lockup is the gold-and-teal monogram
-(`cc-monogram-gold-teal.png`) with CLEAR in linen, CODE in gold, and READING in
-medium teal on the ink bar, loaded from `PUBLIC_APP_URL` + `/assets/logo/…`; it is
-left out when that setting is not HTTPS, and the plain-text part never has it.
-Her own compose signature stays formatted text because the compose sanitizer
-does not keep images.
+Bethany’s standard ClearCode Reading signature includes her credentials, title, email, website and blog, followed by the full linen logo from the branded website. Portal invitations, family meeting emails and the Bethany signature placeholder share the HTML renderer. The CRM signature editor and compose form preserve this specific logo through draft and send. Plain-text copies include Bethany’s contact details.
 
 The example buttons create clearly named test deals and contacts and exercise the
 same entry signal as ordinary UI/API deal creation. A signed request token and a

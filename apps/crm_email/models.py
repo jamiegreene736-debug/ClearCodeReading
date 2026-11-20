@@ -14,8 +14,14 @@ BETHANY_SIGNATURE = (
     "Website: https://clearcodereading.com\n"
     "Blog: https://clearcodereading.com/blog/"
 )
-# Gold-and-teal monogram used in the public website header lockup.
-BETHANY_SIGNATURE_LOGO = "/assets/logo/cc-monogram-gold-teal.png"
+# The complete ClearCode Reading artwork, served on the public branded domain.
+BETHANY_SIGNATURE_LOGO = "/assets/logo/cc-lockup-linen-ui.png"
+SIGNATURE_SITE = "https://www.clearcodereading.com"
+SIGNATURE_LOGO_URL = SIGNATURE_SITE + BETHANY_SIGNATURE_LOGO
+SIGNATURE_IMAGE = (
+    f'<img src="{SIGNATURE_LOGO_URL}" alt="ClearCode Reading" width="224" height="82" '
+    'style="display:block;max-width:100%;height:auto;border:0">'
+)
 
 
 class Mailbox(models.Model):

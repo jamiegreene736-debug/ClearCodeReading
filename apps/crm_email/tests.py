@@ -3,6 +3,8 @@ import json
 import uuid
 from datetime import datetime, timedelta
 from datetime import timezone as dt_timezone
+from email import policy
+from email.parser import BytesParser
 from typing import Any
 from unittest.mock import MagicMock, patch
 from urllib.parse import parse_qs, urlparse
@@ -14,8 +16,9 @@ from django.urls import reverse
 from django.utils import timezone
 
 from apps.crm.models import CrmActivity, Lead
+from apps.crm_email.automated import bethany_signature_html
 from apps.crm_email.contact_templates import apply_template
-from apps.crm_email.forms import ComposeForm
+from apps.crm_email.forms import ComposeForm, SignatureForm
 from apps.crm_email.google import Gmail, ProviderError, json_request
 from apps.crm_email.models import (
     Attachment,
@@ -134,6 +137,40 @@ class EmailTests(TestCase):
                 },
             },
         }
+
+    def test_saved_signature_logo_survives_compose_and_gmail_mime(self) -> None:
+        logo_url = "https://www.clearcodereading.com/assets/logo/cc-lockup-linen-ui.png"
+        signature = bethany_signature_html(
+            public_url="https://www.clearcodereading.com"
+        )
+        saved = SignatureForm(data={"signature": f"<p>{signature}</p>"})
+        self.assertTrue(saved.is_valid(), saved.errors)
+        self.mailbox.signature = saved.cleaned_data["signature"]
+        self.mailbox.save()
+        self.client.force_login(self.owner)
+        form = self.client.get(
+            reverse("crm_email_compose", args=[self.lead.pk])
+        ).context["form"]
+        draft_html = form["body_html"].value()
+        self.assertIn(logo_url, draft_html)
+        message_form = ComposeForm(
+            data={
+                "draft_id": uuid.uuid4(),
+                "to": self.lead.contact_email,
+                "subject": "Welcome",
+                "follow_up_days": 0,
+                "body_html": draft_html + '<img src="https://tracker.example/pixel">',
+            }
+        )
+        self.assertTrue(message_form.is_valid(), message_form.errors)
+        cleaned = message_form.cleaned_data["body_html"]
+        self.assertEqual(cleaned.count(logo_url), 1)
+        self.assertNotIn("tracker.example", cleaned)
+        message = save_message(self.owner, self.lead, message_form, [], "draft")
+        mime = BytesParser(policy=policy.default).parsebytes(build_mime(message))
+        html_part = mime.get_body(preferencelist=("html",))
+        assert html_part is not None
+        self.assertIn(logo_url, html_part.get_content())
 
     def test_settings_and_contact_routes_render_without_credentials_exposure(
         self,

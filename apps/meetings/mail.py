@@ -12,8 +12,9 @@ from django.db import transaction
 from django.urls import reverse
 from django.utils import timezone
 
+from apps.crm_email.automated import bethany_signature_html, html_value
 from apps.crm_email.google import Gmail, ProviderError
-from apps.crm_email.models import BETHANY_EMAIL, Mailbox
+from apps.crm_email.models import BETHANY_EMAIL, BETHANY_SIGNATURE, Mailbox
 from apps.crm_email.security import EmailError, mailbox_lock
 from apps.crm_email.services import active_mailbox
 from apps.crm_email.sync import provider_id
@@ -47,13 +48,18 @@ def send_notice(client: Gmail, notice: MeetingNotice) -> None:
         MeetingNotice.Kind.REMINDER: "This is a reminder about your upcoming family meeting.",
         MeetingNotice.Kind.CANCEL: "Your family meeting has been cancelled.",
     }[MeetingNotice.Kind(notice.kind)]
-    message.set_content(
+    body = (
         f"Hello {meeting.parent},\n\n{intro}\n\n"
         f"Reader: {meeting.child}\nTeacher: {meeting.teacher}\n"
         f"Start: {local_start:%A, %B %d, %Y at %I:%M %p %Z}\n"
         f"End: {local_end:%A, %B %d, %Y at %I:%M %p %Z}\n"
         f"Meeting location: {meeting.location}\n\n"
         f"View your schedule: {settings.PUBLIC_APP_URL.rstrip('/')}{reverse('family_meetings')}\n"
+    )
+    message.set_content(body + "\n" + BETHANY_SIGNATURE)
+    message.add_alternative(
+        f"<p>{html_value(body.rstrip())}</p><p>{bethany_signature_html()}</p>",
+        subtype="html",
     )
     result = client.request(
         "POST",

@@ -87,7 +87,7 @@ def apply_template(
     return {
         "subject": fill(template.subject, values),
         "body_html": fill_html(clean_html(template.body_html), values)
-        + clean_html(mailbox.signature),
+        + clean_html(mailbox.signature, signature_logo=True),
     }
 
 
@@ -132,7 +132,7 @@ def apply_pipeline_template(key: str, lead: Lead, mailbox: Mailbox) -> dict[str,
         }
     )
     # The source already includes a sign-off; do not duplicate it.
-    signature = clean_html(mailbox.signature)
+    signature = clean_html(mailbox.signature, signature_logo=True)
     body = copy.html("body")
     used = tokens(copy["subject"] + body)
     for token in used:

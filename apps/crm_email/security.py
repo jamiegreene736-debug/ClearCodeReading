@@ -11,6 +11,7 @@ from django.db import connection
 from django.http import HttpRequest
 from django.utils.html import strip_tags
 
+from apps.crm_email.models import SIGNATURE_IMAGE, SIGNATURE_LOGO_URL
 from apps.users.models import CustomUser
 
 
@@ -90,8 +91,8 @@ def digest(value: str) -> str:
     return hashlib.sha256(value.encode()).hexdigest()
 
 
-def clean_html(value: str) -> str:
-    return nh3.clean(
+def clean_html(value: str, *, signature_logo: bool = False) -> str:
+    cleaned = nh3.clean(
         value,
         tags={
             "p",
@@ -107,12 +108,23 @@ def clean_html(value: str) -> str:
             "li",
             "blockquote",
             "a",
-        },
+        }
+        | ({"img"} if signature_logo else set()),
         attributes={"a": {"href", "title"}},
+        tag_attribute_values={"img": {"src": {SIGNATURE_LOGO_URL}}}
+        if signature_logo
+        else None,
         url_schemes={"https", "http", "mailto"},
         url_relative="deny",
         clean_content_tags={"script", "style", "iframe", "object", "svg", "math"},
     )
+
+    if signature_logo:
+        # nh3 leaves an empty tag when it strips an unapproved image source.
+        return cleaned.replace("<img>", "").replace(
+            f'<img src="{SIGNATURE_LOGO_URL}">', SIGNATURE_IMAGE
+        )
+    return cleaned
 
 
 RICH_STYLE_PROPERTIES = {
