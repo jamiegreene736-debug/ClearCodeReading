@@ -7,7 +7,7 @@
   {% csrf_token %}{{ form.non_field_errors }}
   <fieldset><legend>About your reader</legend>
     {% if has_photo %}<img src="{% url 'portal_reader_photo' child.pk %}" width="96" height="96" alt="Current reader photo"><label class="choice">{{ form.remove_photo }}{{ form.remove_photo.label }}</label>{% endif %}
-    <div class="field">{{ form.photo.label_tag }}{{ form.photo }}{{ form.photo.errors }}<small>Optional · JPG, PNG or WebP · up to 5 MB</small></div>
+    <div class="field">{{ form.photo.label_tag }}{{ form.photo }}{{ form.photo.errors }}<small>Optional · JPG, PNG or WebP · up to {{ photo_max_mb }} MB and {{ photo_max_megapixels }} megapixels</small></div>
     <div class="form-grid">
       <div>{{ form.first_name.label_tag }}{{ form.first_name }}{{ form.first_name.errors }}</div>
       <div>{{ form.last_name.label_tag }}{{ form.last_name }}{{ form.last_name.errors }}</div>

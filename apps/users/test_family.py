@@ -159,6 +159,50 @@ class ParentPortalTests(TestCase):
             404,
         )
 
+    def test_reader_profile_accepts_large_photos_and_keeps_a_small_private_copy(self):
+        self.client.post(self.url, self.data)
+        child = ChildProfile.objects.get()
+        profile_url = reverse("portal_reader_profile", args=[child.pk])
+        photo_url = reverse("portal_reader_photo", args=[child.pk])
+        self.assertContains(self.client.get(profile_url), "50 MB and 50 megapixels")
+        for size, format, save_options in (
+            ((3000, 3000), "PNG", {"compress_level": 0}),
+            ((8000, 6000), "JPEG", {}),
+        ):
+            with self.subTest(size=size, format=format):
+                source = BytesIO()
+                Image.new("RGB", size).save(source, format, **save_options)
+                if format == "PNG":
+                    self.assertGreater(len(source.getvalue()), 20 * 1024 * 1024)
+                photo = SimpleUploadedFile(
+                    f"portrait.{format.lower()}", source.getvalue()
+                )
+                self.assertRedirects(
+                    self.client.post(profile_url, {"first_name": "Alex", "photo": photo}),
+                    reverse("portal_dashboard"),
+                )
+                with Image.open(BytesIO(self.client.get(photo_url).content)) as saved:
+                    self.assertEqual(saved.format, "JPEG")
+                    self.assertEqual(max(saved.size), 512)
+
+    def test_reader_profile_still_rejects_oversized_or_non_image_uploads(self):
+        self.client.post(self.url, self.data)
+        profile_url = reverse("portal_reader_profile", args=[ChildProfile.objects.get().pk])
+        source = BytesIO()
+        Image.new("1", (8500, 6000)).save(source, "PNG")
+        for payload, error in (
+            (b"not an image", "Choose a valid JPG, PNG or WebP photo."),
+            (source.getvalue(), "Choose a photo up to 50 megapixels."),
+            (bytes(50 * 1024 * 1024 + 1), "Choose a photo up to 50 MB."),
+        ):
+            with self.subTest(error=error):
+                response = self.client.post(
+                    profile_url,
+                    {"first_name": "Alex", "photo": SimpleUploadedFile("portrait.png", payload)},
+                )
+                self.assertContains(response, error)
+        self.assertFalse(ReaderDetails.objects.exists())
+
     def test_existing_reader_must_sign_before_opening_profile(self) -> None:
         child = ChildProfile.objects.create(first_name="Existing")
         GuardianRelationship.objects.create(

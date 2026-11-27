@@ -19,6 +19,12 @@ from apps.users.models import AuditLog, ChildProfile, ReaderDetails, SignedReade
 from apps.users.onboarding_views import PortalRequest
 
 
+PHOTO_MAX_MB = 50
+PHOTO_MAX_MEGAPIXELS = 50
+PHOTO_MAX_BYTES = PHOTO_MAX_MB * 1024 * 1024
+PHOTO_MAX_PIXELS = PHOTO_MAX_MEGAPIXELS * 1_000_000
+
+
 class ReaderProfileForm(forms.Form):
     first_name = forms.CharField(max_length=120)
     last_name = forms.CharField(max_length=120, required=False)
@@ -71,14 +77,15 @@ class ReaderProfileForm(forms.Form):
         upload = self.cleaned_data.get("photo")
         if not upload:
             return None
-        if upload.size > 5 * 1024 * 1024:
-            raise forms.ValidationError("Choose a photo smaller than 5 MB.")
+        if upload.size > PHOTO_MAX_BYTES:
+            raise forms.ValidationError(f"Choose a photo up to {PHOTO_MAX_MB} MB.")
         try:
             with Image.open(upload, formats=["JPEG", "PNG", "WEBP"]) as source:
-                if source.width * source.height > 20_000_000:
+                if source.width * source.height > PHOTO_MAX_PIXELS:
                     raise forms.ValidationError(
-                        "Choose a smaller photo (up to 20 megapixels)."
+                        f"Choose a photo up to {PHOTO_MAX_MEGAPIXELS} megapixels."
                     )
+                source.draft("RGB", (512, 512))
                 source.thumbnail((512, 512))
                 image = ImageOps.exif_transpose(source).convert("RGB")
                 image.info.clear()
@@ -162,6 +169,8 @@ def reader_profile(request: PortalRequest, child_id: int) -> HttpResponse:
             "form": form,
             "child": child,
             "has_photo": has_photo,
+            "photo_max_mb": PHOTO_MAX_MB,
+            "photo_max_megapixels": PHOTO_MAX_MEGAPIXELS,
             "today": timezone.localdate(),
         },
     )
