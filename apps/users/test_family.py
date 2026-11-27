@@ -1,9 +1,11 @@
+from datetime import timedelta
 from io import BytesIO
 from uuid import uuid4
 
 from django.core.files.uploadedfile import SimpleUploadedFile
 from django.test import TestCase
 from django.urls import reverse
+from django.utils import timezone
 from PIL import Image
 from rest_framework.test import APIClient
 
@@ -68,6 +70,72 @@ class ParentPortalTests(TestCase):
         self.assertNotContains(dashboard, "Alex")
         self.assertNotContains(dashboard, "Robin")
         self.assertContains(dashboard, "Add your first child")
+
+    def test_my_children_menu_reopens_private_profiles_from_multiple_pages(self):
+        dashboard_url = reverse("portal_dashboard")
+        self.assertContains(
+            self.client.get(dashboard_url), "No children are linked to your account yet."
+        )
+        self.client.post(self.url, self.data)
+        self.client.post(
+            self.url,
+            {**self.data, "first_name": "Robin", "submission_id": str(uuid4())},
+        )
+        alex = ChildProfile.objects.get(first_name="Alex")
+        robin = ChildProfile.objects.get(first_name="Robin")
+        alex_url = reverse("portal_reader_profile", args=[alex.pk])
+        robin_url = reverse("portal_reader_profile", args=[robin.pk])
+        self.assertRedirects(
+            self.client.post(alex_url, {"first_name": "Alex", "school_name": "Lake School"}),
+            dashboard_url,
+        )
+
+        for url in (dashboard_url, reverse("account_profile"), robin_url):
+            with self.subTest(url=url):
+                page = self.client.get(url)
+                self.assertContains(page, "My Children")
+                self.assertContains(page, 'data-testid="child-profile-menu-link"', count=2)
+                self.assertContains(page, f'href="{alex_url}"')
+                self.assertContains(page, f'href="{robin_url}"')
+                self.assertContains(page, "Edit profile", count=2)
+        edit = self.client.get(alex_url)
+        self.assertNotContains(edit, "Step 2 of 2")
+        self.assertEqual(edit.context["form"]["school_name"].value(), "Lake School")
+
+    def test_my_children_menu_respects_existing_relationship_access_and_forms(self):
+        account_url = reverse("account_profile")
+        other = CustomUser.objects.create_user(
+            username="other", email="other@example.com"
+        )
+        cases = [
+            ("Pending Reader", self.parent, {}, True),
+            ("Other Reader", other, {}, False),
+            ("Revoked Reader", self.parent, {"consent_status": "revoked"}, False),
+            ("Expired Reader", self.parent,
+             {"consent_expires_at": timezone.now() - timedelta(days=1)}, False),
+            ("Removed Reader", self.parent, {"is_deleted": True}, False),
+        ]
+        for name, guardian, overrides, _ in cases:
+            child = ChildProfile.objects.create(first_name=name)
+            GuardianRelationship.objects.create(
+                child=child, guardian=guardian,
+                **{"consent_status": "pending", **overrides},
+            )
+        page = self.client.get(account_url)
+        self.assertContains(page, "Finish setup", count=1)
+        for name, _, _, is_visible in cases:
+            child = ChildProfile.objects.get(first_name=name)
+            profile = reverse("portal_reader_profile", args=[child.pk])
+            if is_visible:
+                self.assertContains(page, name)
+                self.assertContains(page, f'href="{profile}"')
+                self.assertRedirects(
+                    self.client.get(profile), reverse("portal_reader_forms", args=[child.pk])
+                )
+            else:
+                self.assertNotContains(page, name)
+                self.assertNotContains(page, f'href="{profile}"')
+                self.assertEqual(self.client.get(profile).status_code, 404)
 
     def test_invalid_submission_has_no_side_effects(self) -> None:
         for field, value in (
