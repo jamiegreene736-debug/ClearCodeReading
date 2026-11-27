@@ -6,6 +6,7 @@ from django.utils import timezone
 from apps.curriculum.models import StudentPlacement
 from apps.decision_support.models import MilestonePrediction
 from apps.progress.models import MasteryRecord, Progress
+from apps.progress.og_weekly import family_progress
 from apps.sessions.models import Session
 
 
@@ -159,4 +160,5 @@ def build_parent_dashboard(child):
         "home_practice": latest.home_practice_suggestion.strip() if latest else "",
         "milestone": milestone,
         "foundational_skills_only": True,
+        "og_plus": family_progress(child),
     }

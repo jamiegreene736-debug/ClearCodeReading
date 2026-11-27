@@ -149,6 +149,7 @@
                 <span class="rounded-full bg-seafoam px-4 py-2 text-sm font-black text-deepTeal">{{ dashboard.summary.mastered_skills }} skills mastered</span>
               </div>
 
+              {% if dashboard.og_plus %}{% include "portal/_og_family_progress.html" with og=dashboard.og_plus only %}{% endif %}
               <h3 class="mt-5 font-black">Progress to date</h3>
               <p class="mt-2 text-sm leading-6 text-ink/70">These totals include all completed sessions recorded for your reader.</p>
               <div class="mt-2 grid gap-4 sm:grid-cols-3">
@@ -217,6 +218,11 @@
         {% endif %}
 
         {% if is_teacher %}
+          {% for snapshot in student_snapshots %}
+            {% if snapshot.can_record_og %}
+            <a class="block rounded-2xl bg-white p-4 font-black text-deepTeal underline" href="{% url 'og_weekly_assessment' snapshot.child.id %}">Record OG+ weekly assessment for {{ snapshot.child }}</a>
+            {% endif %}
+          {% endfor %}
           <section id="lesson-planning" class="scroll-mt-36 rounded-[2rem] bg-white p-6 shadow-xl shadow-ink/8 ring-1 ring-ink/10">
             <div class="flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
               <div>
