@@ -36,15 +36,13 @@ STATEMENTS = {
 }
 
 
-def family_relationship(
-    parent: CustomUser, child_id: int, *, lock: bool = False
-) -> GuardianRelationship:
-    if not parent.can_add_child:
-        raise PermissionDenied
-    relationships = (
+def editable_family_relationships(parent: CustomUser):
+    """Relationships eligible for the guardian profile or its signed-forms step."""
+    if not parent.can_add_child or not parent.pk:
+        return GuardianRelationship.objects.none()
+    return (
         GuardianRelationship.objects.filter(
             guardian=parent,
-            child_id=child_id,
             is_deleted=False,
             child__is_deleted=False,
             consent_status__in=[
@@ -58,6 +56,14 @@ def family_relationship(
         )
         .select_related("child")
     )
+
+
+def family_relationship(
+    parent: CustomUser, child_id: int, *, lock: bool = False
+) -> GuardianRelationship:
+    if not parent.can_add_child:
+        raise PermissionDenied
+    relationships = editable_family_relationships(parent).filter(child_id=child_id)
     if lock:
         relationships = relationships.select_for_update()
     return get_object_or_404(relationships)

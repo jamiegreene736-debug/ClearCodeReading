@@ -2,7 +2,7 @@
 {% block title %}Reader Profile{% endblock %}
 {% block content %}
 <form method="post" enctype="multipart/form-data" class="reader-card">
-  <p class="step">Step 2 of 2 · <a href="{% url 'portal_reader_forms' child.pk %}">View signed forms</a></p>
+  <p class="step">{% if not has_saved_profile %}Step 2 of 2 · {% endif %}<a href="{% url 'portal_reader_forms' child.pk %}">View signed forms</a></p>
   <h1>{{ child.first_name }}’s Reader Profile</h1>
   {% csrf_token %}{{ form.non_field_errors }}
   <fieldset><legend>About your reader</legend>

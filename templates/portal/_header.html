@@ -1,3 +1,4 @@
+{% load family_navigation %}
 <header data-portal-header class="sticky top-0 z-40 border-b border-deepTeal/10 bg-linen/95 backdrop-blur-xl">
   <nav aria-label="Portal navigation" class="mx-auto flex max-w-7xl flex-wrap items-center justify-between gap-3 px-4 py-3 sm:px-6 lg:flex-nowrap lg:px-8">
     <a href="{% url 'portal_dashboard' %}" aria-label="ClearCode Reading portal home" class="focus-ring shrink-0 rounded-xl">
@@ -116,15 +117,28 @@
       {% elif request.user.role == 'guardian' %}
         <li class="static lg:relative" data-portal-disclosure>
           <button id="family-navigation-button" data-testid="family-menu-button" class="focus-ring inline-flex min-h-11 items-center gap-2 rounded-full px-3 py-2 text-sm font-black text-ink/70 transition hover:-translate-y-0.5 hover:bg-white/70 hover:text-deepTeal sm:px-4" type="button" aria-expanded="false" aria-controls="family-navigation-panel">
-            My child
+            My Children
             <svg aria-hidden="true" class="h-3 w-3 transition-transform" data-disclosure-chevron viewBox="0 0 12 8" fill="none" stroke="currentColor" stroke-width="2"><path d="m1 1.5 5 5 5-5" /></svg>
           </button>
           <div id="family-navigation-panel" class="absolute left-4 right-4 top-[calc(100%+.65rem)] z-50 hidden max-h-[70vh] overflow-y-auto rounded-3xl bg-white p-3 shadow-2xl shadow-ink/20 ring-1 ring-ink/10 lg:left-0 lg:right-auto lg:w-[22rem]" aria-labelledby="family-navigation-button">
-            <p class="px-3 pb-2 text-xs font-black uppercase tracking-[0.16em] text-mediumTeal">Parent workspace</p>
-            <ul class="grid gap-1">
-              {% if request.user.can_add_child %}
+            {% if request.user.can_add_child %}
+              {% guardian_profile_links request.user as child_links %}
+              <ul class="grid gap-1" aria-label="Child profiles">
+                {% for relationship in child_links %}
+                  <li>
+                    <a data-testid="child-profile-menu-link" href="{% url 'portal_reader_profile' relationship.child_id %}" class="focus-ring block break-words rounded-2xl px-3 py-3 hover:bg-linen">
+                      <span class="block font-black">{{ relationship.child }}</span>
+                      <span class="mt-1 block text-xs text-ink/60">{% if relationship.has_signed_forms %}Edit profile{% else %}Finish setup{% endif %}</span>
+                    </a>
+                  </li>
+                {% empty %}
+                  <li class="px-3 py-2 text-sm text-ink/70">No children are linked to your account yet.</li>
+                {% endfor %}
                 <li><a href="{% url 'portal_add_child' %}" class="focus-ring block rounded-2xl px-3 py-3 font-black hover:bg-linen">Add a child</a></li>
-              {% endif %}
+              </ul>
+            {% endif %}
+            <p class="px-3 pb-2 pt-3 text-xs font-black uppercase tracking-[0.16em] text-mediumTeal">Parent workspace</p>
+            <ul class="grid gap-1">
               <li><a href="{% url 'family_meetings' %}" class="focus-ring block rounded-2xl px-3 py-3 font-black hover:bg-linen">Family meetings</a></li>
               <li><a href="{% url 'portal_dashboard' %}#progress-overview" class="focus-ring block rounded-2xl px-3 py-3 hover:bg-linen"><span class="block font-black">Weekly progress</span><span class="mt-1 block text-xs text-ink/60">Growth, fluency, and specialist notes</span></a></li>
               <li><a href="{% url 'portal_dashboard' %}#teacher-plan" class="focus-ring block rounded-2xl px-3 py-3 font-black hover:bg-linen">Teacher plan</a></li>

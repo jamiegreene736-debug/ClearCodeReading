@@ -169,6 +169,7 @@ def reader_profile(request: PortalRequest, child_id: int) -> HttpResponse:
             "form": form,
             "child": child,
             "has_photo": has_photo,
+            "has_saved_profile": details is not None,
             "photo_max_mb": PHOTO_MAX_MB,
             "photo_max_megapixels": PHOTO_MAX_MEGAPIXELS,
             "today": timezone.localdate(),
