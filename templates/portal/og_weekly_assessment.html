@@ -1,0 +1,38 @@
+{% extends "portal/page.html" %}
+{% block title %}OG+ weekly assessment{% endblock %}
+{% block content %}
+<section class="mx-auto max-w-3xl rounded-3xl bg-white p-6">
+  <a href="{% url 'portal_dashboard' %}">Back to dashboard</a>
+  <h1 class="mt-3 text-3xl font-black">OG+ weekly assessment</h1>
+  <p class="mt-2">{{ child }}{% if state.current_concept %} · Current concept {{ state.current_concept }}{% endif %}</p>
+  <form method="post" class="mt-5 space-y-4">
+    {% csrf_token %}
+    {{ form.non_field_errors }}
+    {% for field in form %}
+      <div>
+        <label class="font-bold" for="{{ field.id_for_label }}">{{ field.label }}</label>
+        {{ field }}
+        {% if field.help_text %}<p class="text-sm">{{ field.help_text }}</p>{% endif %}
+        {{ field.errors }}
+      </div>
+    {% endfor %}
+    <button class="rounded-full bg-deepTeal px-5 py-3 font-bold text-white" type="submit">Save assessment</button>
+  </form>
+  {% if recent_reports %}
+  <h2 class="mt-8 text-xl font-black">Recent assessments</h2>
+  {% for report in recent_reports %}
+    <details class="mt-2 rounded-xl bg-linen p-3">
+      <summary class="cursor-pointer font-bold">{{ report.assessed_on|date:"F j, Y" }} · Concept {{ report.concept }}{% if report.concept_passed %} · Passed{% endif %}</summary>
+      <p>Word and Red Word dictation: {{ report.scores.word_spelling.correct }}/{{ report.scores.word_spelling.attempted }} and {{ report.scores.red_words.correct }}/{{ report.scores.red_words.attempted }}.</p>
+      <p>Sentence spelling: {{ report.scores.sentence_spelling.correct }}/{{ report.scores.sentence_spelling.attempted }}.</p>
+      <p>Oral reading: {{ report.scores.wcpm }} correct words per minute.</p>
+      <p>Comprehension: {{ report.scores.comprehension.correct }}/{{ report.scores.comprehension.attempted }}.</p>
+      {% if report.scores.word_notes %}<p>Word dictation: {{ report.scores.word_notes }}</p>{% endif %}
+      {% if report.scores.sentence_notes %}<p>Sentence dictation: {{ report.scores.sentence_notes }}</p>{% endif %}
+      {% if report.scores.fluency_notes %}<p>Fluency: {{ report.scores.fluency_notes }}</p>{% endif %}
+      {% if report.scores.comprehension_notes %}<p>Comprehension: {{ report.scores.comprehension_notes }}</p>{% endif %}
+    </details>
+  {% endfor %}
+  {% endif %}
+</section>
+{% endblock %}

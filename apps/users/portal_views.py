@@ -27,6 +27,8 @@ from apps.curriculum.models import (
 from apps.curriculum.placement import confirm_recommendation
 from apps.curriculum.models import StudentPlacement
 from apps.progress.dashboard import build_parent_dashboard
+from apps.progress.models import OgFamilyPlan
+from apps.progress.og_weekly import can_record_og
 from apps.scheduling.services import operations_metrics, ranked_group_suggestions
 from apps.sessions.models import Session
 from apps.users.family_teachers import current_family_teacher, reader_teacher_fields, teaching_accounts
@@ -312,6 +314,7 @@ class PortalDashboardView(PortalAuthMixin, TemplateView):
             next_session_by_child = {}
             for session in upcoming_sessions:
                 next_session_by_child.setdefault(session.child_id, session)
+            og_child_ids = set(OgFamilyPlan.objects.filter(child__in=children).values_list("child_id", flat=True))
             student_snapshots = [
                 {
                     "child": child,
@@ -321,6 +324,7 @@ class PortalDashboardView(PortalAuthMixin, TemplateView):
                     "teacher_name": (child.learning_profile or {}).get("assigned_teacher_name") or "",
                     "unassigned": not (child.learning_profile or {}).get("assigned_teacher_id"),
                     "can_log_session": user_can_log_session(user, child),
+                    "can_record_og": child.id in og_child_ids and can_record_og(user, child),
                 }
                 for child in children
             ]

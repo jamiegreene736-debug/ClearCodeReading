@@ -42,6 +42,7 @@ from apps.crm.views import (
 )
 from apps.core.discovery_views import LlmsTxtView, RobotsTxtView, SitemapXmlView
 from apps.sessions.views import RapidSessionLogView
+from apps.progress.og_weekly import weekly_assessment
 from apps.users.family import add_child
 from apps.notifications.quo_views import board_text_settings, quo_webhook
 from apps.users.reader_board import board_notifications, reader_board
@@ -162,6 +163,7 @@ urlpatterns = [
     path("portal/results/", PortalResultsView.as_view(), name="portal_results"),
     path("portal/invitations/", PortalInvitationsView.as_view(), name="portal_invitations"),
     path("portal/sessions/rapid-log/", RapidSessionLogView.as_view(), name="rapid_session_log"),
+    path("portal/readers/<int:child_id>/og-weekly-assessment/", weekly_assessment, name="og_weekly_assessment"),
     path("crm/hiring/", HiringWorkspaceView.as_view(), name="crm_hiring"),
     path("crm/hiring/<int:pk>/update/", HiringUpdateView.as_view(), name="crm_hiring_update"),
     path("crm/hiring/<int:pk>/assign/", HiringAssignView.as_view(), name="crm_hiring_assign"),

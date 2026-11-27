@@ -94,3 +94,42 @@ class MasteryRecord(TimestampedModel, SoftDeleteModel):
 
     def __str__(self):
         return f"{self.child} mastered {self.skill}"
+
+
+class OgFamilyPlan(models.Model):
+    """Reader-specific publisher concept numbers, separate from ClearCode graph positions."""
+
+    child = models.OneToOneField("users.ChildProfile", on_delete=models.CASCADE, related_name="og_family_plan")
+    first_concept = models.PositiveSmallIntegerField(default=26)
+    last_concept = models.PositiveSmallIntegerField(default=83)
+    excluded_concepts = models.JSONField(default=list, blank=True)
+
+    def concepts(self):
+        return [n for n in range(self.first_concept, self.last_concept + 1) if n not in self.excluded_concepts]
+
+
+class OgConceptResources(models.Model):
+    plan = models.ForeignKey(OgFamilyPlan, on_delete=models.CASCADE, related_name="resource_packs")
+    concept = models.PositiveSmallIntegerField()
+    connection_letter = models.URLField(max_length=500)
+    fluency_practice = models.URLField(max_length=500)
+    decodable_passage = models.URLField(max_length=500)
+
+    class Meta:
+        constraints = [models.UniqueConstraint(fields=["plan", "concept"], name="unique_og_resource_pack")]
+
+
+class OgWeeklyAssessment(models.Model):
+    plan = models.ForeignKey(OgFamilyPlan, on_delete=models.CASCADE, related_name="assessments")
+    teacher = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.PROTECT)
+    assessed_on = models.DateField()
+    concept = models.PositiveSmallIntegerField()
+    scores = models.JSONField()
+    concept_passed = models.BooleanField(default=False)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ["-assessed_on", "-id"]
+        constraints = [
+            models.UniqueConstraint(fields=["plan", "assessed_on", "concept"], name="unique_og_weekly_assessment"),
+        ]

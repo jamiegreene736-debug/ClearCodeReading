@@ -1,0 +1,29 @@
+<div class="mt-5 rounded-3xl bg-linen p-5">
+  <h3 class="text-xl font-black">OG+ concept progress</h3>
+  {% if og.current_concept %}<p class="mt-2 font-bold">Current concept: {{ og.current_concept }}</p>
+  {% else %}<p class="mt-2 font-bold">Assigned concepts completed</p>{% endif %}
+  {% with report=og.progress_report %}
+  {% if report %}
+    <h4 class="mt-4 font-black">Latest weekly assessment</h4>
+    <p>{{ report.date|date:"F j, Y" }} · Concept {{ report.concept }}</p>
+    <dl class="mt-2 grid gap-2 sm:grid-cols-2">
+      {% for result in report.fractions %}
+        <div><dt class="font-bold">{{ result.label }}</dt><dd>{{ result.correct }}/{{ result.attempted }}</dd></div>
+      {% endfor %}
+      <div><dt class="font-bold">Correct words per minute ({{ report.fluency_title }})</dt><dd>{{ report.wcpm }}</dd></div>
+      {% if report.accuracy != None %}<div><dt class="font-bold">Oral reading accuracy</dt><dd>{{ report.accuracy }}%</dd></div>{% endif %}
+      <div><dt class="font-bold">Appropriate word spacing</dt><dd>{{ report.spacing|capfirst }}</dd></div>
+    </dl>
+  {% endif %}
+  {% endwith %}
+  {% for pack in og.resource_packs %}
+    <div class="mt-4">
+      <h4 class="font-black">Concept {{ pack.concept }} family resources</h4>
+      {% if pack.unlocked %}
+        <ul class="mt-2 grid gap-2">
+          {% for link in pack.links %}<li><a class="font-bold text-deepTeal underline" href="{{ link.url }}" target="_blank" rel="noopener noreferrer">{{ link.label }}</a></li>{% endfor %}
+        </ul>
+      {% else %}<p>Available after your teacher records that you passed this concept.</p>{% endif %}
+    </div>
+  {% endfor %}
+</div>
